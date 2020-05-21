@@ -47,6 +47,7 @@ Private Type Bucket
 End Type
 '
 Private Type Iterator
+    Initilized As Boolean
     CurrentSlot As Long
     Slots As Long
     Buckets() As Bucket
@@ -139,35 +140,13 @@ Public Property Get GetValues() As Variant()
      
 End Property
 
-'Public Function Snapshot(ByRef Keys() As String, ByRef Values() As Variant) As Boolean
-'
-'    Dim i As Long, j As Long
-'
-'    With myClass
-'        If Not (.Count = 0) Then
-'            ReDim Keys(1 To .Count)
-'            ReDim Values(1 To .Count)
-'
-'            For i = LBound(.Buckets, 1) To UBound(.Buckets, 1)
-'                With .Buckets(i)
-'                    If (.State And HAS_ENTRY) = HAS_ENTRY Then
-'                        Keys(Increment(j)) = .Key
-'                        If VarType(.Value) = vbObject Then Set Values(j) = .Value Else Values(j) = .Value
-'                    End If
-'                End With
-'            Next
-'            Snapshot = True
-'        End If
-'    End With
-'
-'End Function
-
 Public Property Get Count() As Long
     Count = myClass.Count
 End Property
 
 Public Sub StartIterator()
      With myClass.Iterator
+        .Initilized = True
         .Buckets = myClass.Buckets
         .Slots = myClass.HashSize
         .CurrentSlot = -1
@@ -177,6 +156,7 @@ End Sub
 Public Sub ResetIterator()
     With myClass.Iterator
         Erase .Buckets
+        .Initilized = False
         .CurrentSlot = -1
         .Slots = 0
     End With
@@ -198,14 +178,18 @@ Public Function EntryLoaded( _
                 EntryLoaded = True: Exit Function
             End If
         Loop
+        
+        If Not .Initilized Then
+            'error
+        End If
     End With
-    
+      
     Call Me.ResetIterator
 
 End Function
 
 Public Property Get Item(ByVal Key As String) As Variant
-    If (FindEntry(Key, myClass.CurrentSlot)) Then
+    If (FindBy(Key, myClass.CurrentSlot)) Then
         With myClass.Buckets(myClass.CurrentSlot)
             If VarType(.Value) = vbObject Then Set Item = .Value Else Item = .Value
         End With
@@ -220,9 +204,8 @@ Public Property Get LastAccess() As Variant
     End With
 End Property
 
-Public Function Contains(ByVal Key As String) As Boolean: Contains = FindEntry(Key, myClass.CurrentSlot): End Function
+Public Function Contains(ByVal Key As String) As Boolean: Contains = FindBy(Key, myClass.CurrentSlot): End Function
 Public Function Add(ByVal Key As String, ByVal Value As Variant): Call Insert(Key, Value): End Function
-Public Function Add2(ByVal Key As String, ByVal Value As Variant, ByVal HashValue As Long): Call Insert(Key, Value, HashValue): End Function
 Public Property Let Item(ByVal Key As String, ByVal Value As Variant): Call Insert(Key, Value): End Property
 
 Public Sub CloneBy(ByVal Other As HashTable)
@@ -233,41 +216,31 @@ Public Sub CloneBy(ByVal Other As HashTable)
   
     With Other
         Call Me.Build(.LoadSize, .LoadFactor, .HashMode)
+        Call .StartIterator
         Do While .EntryLoaded(k, v, h): Call Insert(k, v, h): Loop
     End With
     
 End Sub
 
 Public Function Copy() As HashTable
-    Dim clone As HashTable
-    Set clone = New HashTable
-    Call clone.CloneBy(Me)
-    
-'    With myClass
-'        Call ht.Build(.LoadSize, .LoadFactor, .HashMode)
-'
-'        For i = LBound(.Buckets, 1) To UBound(.Buckets, 1)
-'            With .Buckets(i)
-'                If (.State And HAS_ENTRY) = HAS_ENTRY Then _
-'                    Call ht.Add2(.Key, .Value, .HashCode)
-'            End With
-'        Next
-'    End With
+    Dim Clone As HashTable
+    Set Clone = New HashTable
+    Call Clone.CloneBy(Me)
    
-    Set Copy = clone
+    Set Copy = Clone
 
 End Function
 
 Public Function RemoveAll()
     With myClass
-        Call Me.ResetIterator
+        'Call Me.ResetIterator
         ReDim .Buckets(.HashSize)
         .Count = 0
         .CurrentSlot = -1
     End With
 End Function
 
-Public Function RemoveRange(ByRef Keys As Variant)
+Public Function RemoveBy(ByRef Keys As Variant)
     Dim k
     If Not IsArray(Keys) Then
         'error invalid type
@@ -283,7 +256,7 @@ Public Function Remove(ByVal Key As String)
     Dim Slot As Long
     
     With myClass
-        If FindEntry(Key, Slot) Then
+        If FindBy(Key, Slot) Then
             s = (.Buckets(Slot).State And Not HAS_ENTRY)
             .Buckets(Slot) = EmptyBucket: .Buckets(Slot).State = s
             Call Decrement(.Count)
@@ -464,7 +437,7 @@ Private Function Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
         .HashSize = Size
          
          If HasEntry Then _
-            Call FindEntry(b.Key, .CurrentSlot)
+            Call FindBy(b.Key, .CurrentSlot)
             
     End With
     
@@ -488,22 +461,22 @@ Private Function PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRe
 
 End Function
 
-Private Function FindEntry(ByVal Key As String, Optional ByRef Slot As Long) As Boolean
+Private Function FindBy(ByVal Key As String, Optional ByRef Slot As Long) As Boolean
 
-    Dim try As Long
+    Dim Try As Long
     
     With InitialHashing(Me.HashValue(Key, myClass.HashMode), myClass.HashSize)
         Do
             If ((myClass.Buckets(.Index).State And HAS_ENTRY) = HAS_ENTRY) Then
                 If (StrComp(myClass.Buckets(.Index).Key, Key, vbBinaryCompare) = ZERO) Then _
-                    Slot = .Index: FindEntry = True: Exit Function
+                    Slot = .Index: FindBy = True: Exit Function
             End If
             
             If (Not (myClass.Buckets(.Index).State And HAS_COLLISION) = HAS_COLLISION) Then _
-                Slot = -1: FindEntry = False: Exit Function
+                Slot = -1: FindBy = False: Exit Function
             
-            If ((Increment(try)) > .Size) Then _
-                Slot = -1: FindEntry = False: Exit Function
+            If ((Increment(Try)) > .Size) Then _
+                Slot = -1: FindBy = False: Exit Function
                 
             .Index = Modulo(.Index + .Incr, .Size)
         Loop
@@ -513,7 +486,7 @@ End Function
 
 Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef HashValue As Long = -1)
 
-    Dim try As Long
+    Dim Try As Long
     
     With myClass
         If (.Count >= .LoadSize) Then
@@ -550,7 +523,7 @@ Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef H
             End With
             
             .Index = Modulo(.Index + .Incr, .Size)
-        Loop While (Increment(try) < .Size)
+        Loop While (Increment(Try) < .Size)
     End With
 
 End Sub
