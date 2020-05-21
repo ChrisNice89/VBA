@@ -33,8 +33,7 @@ Sub Test()
     'Ensures that the iterator records all current entries
     'Newly added entries are not recorded after starting an iterator
     Call ht.StartIterator
-    'Entries that are loaded by the iterator can only be called up once
-    'The second time the entry is retrieved, vbempty is returned!
+    'calling 'CurrentX' can lead to an error outside of the loop
     Do While ht.EntryLoaded
         Debug.Print ht.CurrentType = vbDataObject
         Debug.Print ht.CurrentKey
