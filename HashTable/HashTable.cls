@@ -131,28 +131,25 @@ Public Property Get HashMode() As Hashing
 End Property
 
 Public Property Get GetKeys() As String()
-    
-    With myClass.Iterator
-        If Not .IsUpToDate Then _
-            .IsUpToDate = Me.Fill(.Keys, .Values)
-    
-        GetKeys = .Keys
-    End With
-    
+    If Me.Snapshot Then _
+        GetKeys = myClass.Iterator.Keys
 End Property
 
 Public Property Get GetValues() As Variant()
-    
-    With myClass.Iterator
-        If Not .IsUpToDate Then _
-            .IsUpToDate = Me.Fill(.Keys, .Values)
-    
-        GetValues = .Values
-    End With
-
+    If Me.Snapshot Then _
+        GetValues = myClass.Iterator.Values
 End Property
 
-Public Function Fill(ByRef Keys() As String, ByRef Values() As Variant) As Boolean
+Public Function Snapshot() As Boolean
+    With myClass.Iterator
+        If Not .IsUpToDate Then _
+            .IsUpToDate = Fill(.Keys, .Values)
+    
+        Snapshot = .IsUpToDate
+    End With
+End Function
+
+Private Function Fill(ByRef Keys() As String, ByRef Values() As Variant) As Boolean
 
     Dim i As Long, j As Long
     
@@ -160,7 +157,7 @@ Public Function Fill(ByRef Keys() As String, ByRef Values() As Variant) As Boole
         If Not (.Count = 0) Then
             ReDim Keys(1 To .Count)
             ReDim Values(1 To .Count)
-
+    
             For i = LBound(.Buckets, 1) To UBound(.Buckets, 1)
                 With .Buckets(i)
                     If (.State And HAS_ENTRY) = HAS_ENTRY Then
@@ -243,10 +240,10 @@ Public Function EntryLoaded() As Boolean
                 EntryLoaded = True: Exit Function
             End If
         Loop
+        .CurrentSlot = -1
+        .KeyLoaded = False: .ValueLoaded = False: .HashLoaded = False
     End With
    
-    Call Me.ResetIterator
-    
 End Function
 
 Public Property Get Item(ByVal Key As String) As Variant
