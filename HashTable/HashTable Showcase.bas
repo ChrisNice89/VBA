@@ -24,7 +24,7 @@ Sub Test()
         
         If ht.Contains("Key" & i) Then
             'Fast item access, triggers an error if 'Contains' failed
-            Debug.Print ht.LastCheck
+            Debug.Print ht.LastAccess
             'Slowly because 'Contains' method is implicitly called again
             'Debug.Print ht.Item("Key" & i)
         End If
@@ -34,7 +34,7 @@ Sub Test()
     'Newly added entries are not recorded after starting an iterator
     Call ht.StartIterator
     'Entries that are loaded by the iterator can only be called up once
-    'The second time the entry is retrieved, null is returned!
+    'The second time the entry is retrieved, vbempty is returned!
     Do While ht.EntryLoaded
         Debug.Print ht.CurrentType
         Debug.Print ht.CurrentKey

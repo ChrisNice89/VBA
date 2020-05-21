@@ -247,13 +247,18 @@ Public Function EntryLoaded() As Boolean
 End Function
 
 Public Property Get Item(ByVal Key As String) As Variant
-    If (Me.Contains(Key)) Then _
-        Item = Me.LastCheck
+    If (FindEntry(Key, myClass.CurrentSlot)) Then
+        With myClass.Buckets(myClass.CurrentSlot)
+            If VarType(.Value) = vbObject Then Set Item = .Value Else Item = .Value
+        End With
+    Else
+        Item = Null
+    End If
 End Property
 
-Public Property Get LastCheck() As Variant
+Public Property Get LastAccess() As Variant
     With myClass.Buckets(myClass.CurrentSlot)
-        If VarType(.Value) = vbObject Then Set LastCheck = .Value Else LastCheck = .Value
+        If VarType(.Value) = vbObject Then Set LastAccess = .Value Else LastAccess = .Value
     End With
 End Property
 
