@@ -236,7 +236,6 @@ End Sub
 Public Function EntryLoaded() As Boolean
     
     With myClass.Iterator
-         .State = ZERO
         Do While Increment(.CurrentSlot) < .Slots
             If (.Buckets(.CurrentSlot).State And HAS_ENTRY) = HAS_ENTRY Then
                 .CurrentEntry = .Buckets(.CurrentSlot)
@@ -244,6 +243,7 @@ Public Function EntryLoaded() As Boolean
                 EntryLoaded = True: Exit Function
             End If
         Loop
+        .State = ZERO
         .CurrentSlot = -1
     End With
    
