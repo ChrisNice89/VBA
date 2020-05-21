@@ -14,17 +14,17 @@ Sub Test()
 '    As entries are added to a hashtable, the hashtable's actual capacity increases
 '    Smaller load factors cause faster average lookup times at the cost of increased memory consumption
 '    This Hashtable uses double hashing, two different hash functions are implemented
-    Call ht.Build(Capacity:=10, LoadFactor:=0.75, HashFunction:=Function1)
+    Call ht.Build(Capacity:=10, LoadFactor:=0.7, HashFunction:=Function1)
     
     Dim i As Long
-    For i = 1 To 20
+    For i = 1 To 10000
         'Objects can also be inserted
         'existing key value pairs are overwritten
         Call ht.Add("Key" & i, "Value" & i)
         
         If ht.Contains("Key" & i) Then
             'Fast item access, triggers an error if 'Contains' failed
-            Debug.Print ht.LastAccess
+            'Debug.Print ht.LastAccess
             'Slowly because 'Contains' method is implicitly called again
             'Debug.Print ht.Item("Key" & i)
         End If
@@ -32,39 +32,46 @@ Sub Test()
 
     'Ensures that the iterator records all current entries
     'Newly added entries are not recorded after starting an iterator
-    Call ht.StartIterator
-    'calling 'CurrentX' can lead to an error outside of the loop
-    Do While ht.EntryLoaded
-        Debug.Print ht.CurrentType = vbDataObject
-        Debug.Print ht.CurrentKey
-        Debug.Print ht.CurrentItem
-    Loop
 
-    Dim ht_Copy As HashTable
-    Set ht_Copy = ht.Copy
-    
-    'Snapshot' generate a snapshot of the data internally
-    'Call ht_Copy.Snapshot
-    'GetKeys or GetValues uses a current snapshot
-    
-    'Entries do not correspond to the insert order and can differ from the order of the original table
-    For i = 1 To ht_Copy.Count
-        Debug.Print ht_Copy.GetKeys()(i)
-    Next
-    
+    Dim k As String
     Dim v As Variant
-    For Each v In ht_Copy.GetValues
-        Debug.Print v
-    Next
+    Call ht.StartIterator
+'    Do While ht.EntryLoaded(k, v)
+'        Debug.Print k
+'        Debug.Print v
+'    Loop
+
+    Dim htClone As HashTable
+    Set htClone = ht.Copy
+    Call htClone.StartIterator
+'    Do While htClone.EntryLoaded(k, v)
+'        Debug.Print k
+'        Debug.Print v
+'    Loop
+    'Entries do not correspond to the insert order and can differ from the order of the original table
+'    For Each v In ht_Copy.GetValues
+'        'Debug.Print v
+'    Next
     
     'deletes the current snapshot
-    Call ht_Copy.ResetIterator
+    Call htClone.ResetIterator
     
     'Generates an overview
     Debug.Print ht.ToString
+    Debug.Print htClone.ToString
     
     'All entries are deleted
     Call ht.RemoveAll
-    Call ht_Copy.RemoveAll
+    Call htClone.RemoveAll
 
 End Sub
+
+
+
+
+
+
+
+
+
+
