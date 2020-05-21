@@ -36,7 +36,7 @@ Sub Test()
     'Entries that are loaded by the iterator can only be called up once
     'The second time the entry is retrieved, vbempty is returned!
     Do While ht.EntryLoaded
-        Debug.Print ht.CurrentType
+        Debug.Print ht.CurrentType = vbDataObject
         Debug.Print ht.CurrentKey
         Debug.Print ht.CurrentItem
     Loop

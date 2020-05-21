@@ -19,6 +19,11 @@ Private Const NOT_IS_EMPTY As Byte = 255
 Private Const HAS_COLLISION As Byte = 2 ^ 0
 Private Const HAS_ENTRY As Byte = 2 ^ 1
 
+'Iterationstate
+Private Const KEY_LOADED As Byte = 2 ^ 1
+Private Const VALUE_LOADED As Byte = 2 ^ 2
+Private Const HASH_LOADED As Byte = 2 ^ 3
+
 Public Enum Hashing
     Function1 = 1
     Function2
@@ -51,10 +56,8 @@ Private Type Iterator
     CurrentSlot As Long
     Slots As Long
     Buckets() As Bucket
-    KeyLoaded As Boolean
-    ValueLoaded As Boolean
-    HashLoaded As Boolean
     IsUpToDate As Boolean
+    State As Byte
     Keys() As String
     Values() As Variant
 End Type
@@ -179,8 +182,8 @@ End Property
 
 Public Property Get CurrentHashValue() As Variant
     With myClass.Iterator
-        If .HashLoaded Then
-            CurrentHashValue = .CurrentEntry.HashCode: .HashLoaded = False
+        If (.State And HASH_LOADED) = HASH_LOADED Then
+            CurrentHashValue = .CurrentEntry.HashCode: .State = (.State And Not HASH_LOADED)
         Else
             CurrentHashValue = Null
         End If
@@ -189,8 +192,8 @@ End Property
 
 Public Property Get CurrentKey() As Variant
     With myClass.Iterator
-        If .KeyLoaded Then
-            CurrentKey = .CurrentEntry.Key: .KeyLoaded = False
+          If (.State And KEY_LOADED) = KEY_LOADED Then
+            CurrentKey = .CurrentEntry.Key: .State = (.State And Not KEY_LOADED)
         Else
             CurrentKey = Null
         End If
@@ -200,12 +203,12 @@ End Property
 Public Property Get CurrentType() As VbVarType: CurrentType = VarType(myClass.Iterator.CurrentEntry.Value): End Property
 Public Property Get CurrentItem() As Variant
     With myClass.Iterator
-        If .ValueLoaded Then
+        If (.State And VALUE_LOADED) = VALUE_LOADED Then
             If VarType(.CurrentEntry.Value) = vbObject Then Set CurrentItem = .CurrentEntry.Value Else CurrentItem = .CurrentEntry.Value
         Else
             CurrentItem = Null
         End If
-        .ValueLoaded = False
+        .State = (.State And Not VALUE_LOADED)
     End With
 End Property
 
@@ -223,7 +226,7 @@ Public Sub ResetIterator()
         Erase .Values
         Erase .Buckets
         .IsUpToDate = False
-        .KeyLoaded = False: .ValueLoaded = False: .HashLoaded = False
+        .State = ZERO
         .CurrentSlot = -1
         .Slots = 0
         .CurrentEntry = EmptyBucket
@@ -233,15 +236,15 @@ End Sub
 Public Function EntryLoaded() As Boolean
     
     With myClass.Iterator
+         .State = ZERO
         Do While Increment(.CurrentSlot) < .Slots
             If (.Buckets(.CurrentSlot).State And HAS_ENTRY) = HAS_ENTRY Then
                 .CurrentEntry = .Buckets(.CurrentSlot)
-                .KeyLoaded = True: .ValueLoaded = True: .HashLoaded = True
+                .State = KEY_LOADED Or VALUE_LOADED Or HASH_LOADED
                 EntryLoaded = True: Exit Function
             End If
         Loop
         .CurrentSlot = -1
-        .KeyLoaded = False: .ValueLoaded = False: .HashLoaded = False
     End With
    
 End Function
