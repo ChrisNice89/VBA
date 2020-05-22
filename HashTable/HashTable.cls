@@ -16,8 +16,8 @@ Private Const MAXLONG As Long = 2 ^ 31 - 1
 Private Const ZERO As Byte = 0
 Private Const IS_EMPTY As Byte = 0
 Private Const NOT_IS_EMPTY As Byte = 255
-Private Const HAS_COLLISION As Byte = 2 ^ 0
-Private Const HAS_ENTRY As Byte = 2 ^ 1
+Private Const HAS_ENTRY As Byte = 2 ^ 0
+Private Const HAS_COLLISION As Byte = 2 ^ 1
 
 Public Enum Hashing
     Function1 = 1
@@ -62,7 +62,7 @@ Private Type Member
     Const As Constant
     HashMode As Hashing
     Cache As Cache
-    Occupancy As Long
+    OCCUPANCY As Long
     Count As Long
     Capacity As Long
     RawSize As Long
@@ -427,7 +427,7 @@ Public Function ToString() As String
                         "LoadFactor: " & .LoadFactor & vbNewLine & _
                         "LoadSize: " & .LoadSize & vbNewLine & _
                         "Elements: " & .Count & vbNewLine & _
-                        "Occupancy: " & .Occupancy & vbNewLine & _
+                        "Occupancy: " & .OCCUPANCY & vbNewLine & _
                         "HashFunction: " & .HashMode
     End With
 End Function
@@ -454,7 +454,7 @@ Private Function Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     Dim i As Long, HasEntry As Boolean
     
     With myClass
-        .Occupancy = 0
+        .OCCUPANCY = 0
         
         If ForceNewHashing Then
             For i = LBound(.Buckets) To UBound(.Buckets)
@@ -484,17 +484,18 @@ Private Function Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     
 End Function
 
-Private Function PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef Hash As HashItem)
+Private Function PutEntry( _
+                                            ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef Hash As HashItem)
 
-    Entry.State = (Entry.State And Not HAS_COLLISION)
+    Entry.State = HAS_ENTRY
     
     With Hash
         Do
-            If (Buckets(.Index).State Xor IS_EMPTY) = IS_EMPTY Then _
+            If (Buckets(.Index).State = IS_EMPTY) Then _
                 Buckets(.Index) = Entry: Exit Function
             
              If Not (Buckets(.Index).State And HAS_COLLISION) = HAS_COLLISION Then _
-                Buckets(.Index).State = (HAS_ENTRY + HAS_COLLISION): Call Increment(myClass.Occupancy)
+                Buckets(.Index).State = (HAS_ENTRY + HAS_COLLISION): Call Increment(myClass.OCCUPANCY)
                 
             .Index = Modulo(.Index + .Incr, .Size)
         Loop
@@ -532,7 +533,7 @@ Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef H
     With myClass
         If (.Count >= .LoadSize) Then
             Call Rehash(Expandprime(.HashSize), False)
-        ElseIf ((.Occupancy > .LoadSize) And (.Count > .Const.RehashBarrier)) Then
+        ElseIf ((.OCCUPANCY > .LoadSize) And (.Count > .Const.RehashBarrier)) Then
             Call Rehash(.HashSize, False)
         End If
         
@@ -559,7 +560,7 @@ Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef H
                 End If
                 
                 If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _
-                    .State = (.State Or HAS_COLLISION): Call Increment(myClass.Occupancy)
+                    .State = (HAS_ENTRY Or HAS_COLLISION): Call Increment(myClass.OCCUPANCY)
                 
             End With
             
