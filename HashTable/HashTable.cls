@@ -46,8 +46,8 @@ Private Type Bucket
     State As Byte
 End Type
 '
-Private Type Iterator
-    Initilized As Boolean
+Private Type Cache
+    Prepared As Boolean
     CurrentSlot As Long
     Slots As Long
     Buckets() As Bucket
@@ -56,7 +56,7 @@ End Type
 Private Type Member
     Const As Constant
     HashMode As Hashing
-    Iterator As Iterator
+    Cache As Cache
     Occupancy As Long
     Count As Long
     Capacity As Long
@@ -144,30 +144,30 @@ Public Property Get Count() As Long
     Count = myClass.Count
 End Property
 
-Public Sub StartIterator()
-     With myClass.Iterator
-        .Initilized = True
+Public Sub CachePrepare()
+     With myClass.Cache
+        .Prepared = True
         .Buckets = myClass.Buckets
         .Slots = myClass.HashSize
         .CurrentSlot = -1
     End With
 End Sub
 
-Public Sub ResetIterator()
-    With myClass.Iterator
+Public Sub CacheClear()
+    With myClass.Cache
+        .Prepared = False
         Erase .Buckets
-        .Initilized = False
         .CurrentSlot = -1
         .Slots = 0
     End With
 End Sub
 
-Public Function EntryLoaded( _
-                                            ByRef Key As String, _
-                                            ByRef Value As Variant, _
-                                            Optional ByRef HashValue As Long = -1) As Boolean
+Public Function Cached( _
+                                        ByRef Key As String, _
+                                        ByRef Value As Variant, _
+                                        Optional ByRef HashValue As Long = -1) As Boolean
     
-    With myClass.Iterator
+    With myClass.Cache
         Do While Increment(.CurrentSlot) < .Slots
             If (.Buckets(.CurrentSlot).State And HAS_ENTRY) = HAS_ENTRY Then
                 With .Buckets(.CurrentSlot)
@@ -175,16 +175,16 @@ Public Function EntryLoaded( _
                     If VarType(.Value) = vbObject Then Set Value = .Value Else Value = .Value
                     If Not HashValue = -1 Then HashValue = .HashCode
                 End With
-                EntryLoaded = True: Exit Function
+                Cached = True: Exit Function
             End If
         Loop
         
-        If Not .Initilized Then
+        If Not .Prepared Then
             'error
         End If
     End With
       
-    Call Me.ResetIterator
+    Call Me.CacheClear
 
 End Function
 
@@ -216,20 +216,11 @@ Public Sub CloneBy(ByVal Other As HashTable)
   
     With Other
         Call Me.Build(.LoadSize, .LoadFactor, .HashMode)
-        Call .StartIterator
-        Do While .EntryLoaded(k, v, h): Call Insert(k, v, h): Loop
+        Call .CachePrepare
+        Do While .Cached(k, v, h): Call Insert(k, v, h): Loop
     End With
     
 End Sub
-
-Public Function Copy() As HashTable
-    Dim Clone As HashTable
-    Set Clone = New HashTable
-    Call Clone.CloneBy(Me)
-   
-    Set Copy = Clone
-
-End Function
 
 Public Function RemoveAll()
     With myClass

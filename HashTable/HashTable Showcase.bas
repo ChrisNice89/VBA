@@ -30,31 +30,29 @@ Sub Test()
         End If
     Next
 
-    'Ensures that the iterator records all current entries
-    'Newly added entries are not recorded after starting an iterator
+    'Ensures that the Cache records all current entries
+    'Newly added entries are not recorded after starting caching
 
     Dim k As String
     Dim v As Variant
-    Call ht.StartIterator
-'    Do While ht.EntryLoaded(k, v)
-'        Debug.Print k
-'        Debug.Print v
-'    Loop
-
+    
+    Call ht.CachePrepare
+    Do While ht.Cached(k, v)
+        Debug.Print k
+        Debug.Print v
+    Loop
+    
+    'deletes the current snapshot / is implicitly called when cached fails
+    'Call htClone.CacheClear
+    
     Dim htClone As HashTable
-    Set htClone = ht.Copy
-    Call htClone.StartIterator
-'    Do While htClone.EntryLoaded(k, v)
-'        Debug.Print k
-'        Debug.Print v
-'    Loop
+    Set htClone = New HashTable
+    Call htClone.CloneBy(ht)
+    
     'Entries do not correspond to the insert order and can differ from the order of the original table
 '    For Each v In ht_Copy.GetValues
 '        'Debug.Print v
 '    Next
-    
-    'deletes the current snapshot
-    Call htClone.ResetIterator
     
     'Generates an overview
     Debug.Print ht.ToString
