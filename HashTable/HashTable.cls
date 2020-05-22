@@ -24,6 +24,11 @@ Public Enum Hashing
     Function2
 End Enum
 
+Private Enum Data
+    Values
+    Keys
+End Enum
+
 Private Type Constant
     MaxVal As Long
     InitialSize As Long
@@ -132,13 +137,49 @@ Public Property Get HashMode() As Hashing
     HashMode = myClass.HashMode
 End Property
 
-Public Property Get GetKeys() As String()
-   
+Public Property Get GetKeys() As Variant()
+    
+    Dim Output() As Variant
+    Call Load(Keys, Output)
+    GetKeys = Output
+    
 End Property
 
 Public Property Get GetValues() As Variant()
-     
+    
+    Dim Output() As Variant
+    Call Load(Values, Output)
+    GetValues = Output
+    
 End Property
+
+Private Sub Load(ByVal Data As Data, ByRef Vector() As Variant)
+    
+    If myClass.Count = 0 Then _
+        Vector = Array(): Exit Sub
+    
+    ReDim Vector(1 To myClass.Count)
+    Dim i As Long, j As Long
+    
+    Select Case Data
+        Case Values
+            For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+                If myClass.Buckets(i).State And HAS_ENTRY = HAS_ENTRY Then _
+                    If VarType(myClass.Buckets(i).Value) = vbObject Then _
+                        Set Vector(Increment(j)) = myClass.Buckets(i).Value _
+                    Else Vector(Increment(j)) = myClass.Buckets(i).Value
+            
+            Next
+        Case Keys
+             For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+                If myClass.Buckets(i).State And HAS_ENTRY = HAS_ENTRY Then _
+                    Vector(Increment(j)) = myClass.Buckets(i).Key
+            
+            Next
+        Case Else
+            'error invalid case
+    End Select
+End Sub
 
 Public Property Get Count() As Long
     Count = myClass.Count
@@ -172,8 +213,13 @@ Public Function Cached( _
             If (.Buckets(.CurrentSlot).State And HAS_ENTRY) = HAS_ENTRY Then
                 With .Buckets(.CurrentSlot)
                     Key = .Key
-                    If VarType(.Value) = vbObject Then Set Value = .Value Else Value = .Value
-                    If Not HashValue = -1 Then HashValue = .HashCode
+                    If VarType(.Value) = vbObject Then _
+                        Set Value = .Value _
+                    Else Value = .Value
+                    
+                    If Not HashValue = -1 Then _
+                        HashValue = .HashCode
+                
                 End With
                 Cached = True: Exit Function
             End If
@@ -191,7 +237,10 @@ End Function
 Public Property Get Item(ByVal Key As String) As Variant
     If (FindBy(Key, myClass.CurrentSlot)) Then
         With myClass.Buckets(myClass.CurrentSlot)
-            If VarType(.Value) = vbObject Then Set Item = .Value Else Item = .Value
+            If VarType(.Value) = vbObject Then _
+                Set Item = .Value _
+            Else Item = .Value
+        
         End With
     Else
         Item = Null
@@ -200,7 +249,9 @@ End Property
 
 Public Property Get LastAccess() As Variant
     With myClass.Buckets(myClass.CurrentSlot)
-        If VarType(.Value) = vbObject Then Set LastAccess = .Value Else LastAccess = .Value
+        If VarType(.Value) = vbObject Then _
+            Set LastAccess = .Value _
+        Else LastAccess = .Value
     End With
 End Property
 
@@ -224,7 +275,6 @@ End Sub
 
 Public Function RemoveAll()
     With myClass
-        'Call Me.ResetIterator
         ReDim .Buckets(.HashSize)
         .Count = 0
         .CurrentSlot = -1

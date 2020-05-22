@@ -14,10 +14,10 @@ Sub Test()
 '    As entries are added to a hashtable, the hashtable's actual capacity increases
 '    Smaller load factors cause faster average lookup times at the cost of increased memory consumption
 '    This Hashtable uses double hashing, two different hash functions are implemented
-    Call ht.Build(Capacity:=10, LoadFactor:=0.7, HashFunction:=Function1)
+    Call ht.Build(Capacity:=7, LoadFactor:=0.7, HashFunction:=Function1)
     
     Dim i As Long
-    For i = 1 To 10000
+    For i = 1 To 10
         'Objects can also be inserted
         'existing key value pairs are overwritten
         Call ht.Add("Key" & i, "Value" & i)
@@ -50,9 +50,13 @@ Sub Test()
     Call htClone.CloneBy(ht)
     
     'Entries do not correspond to the insert order and can differ from the order of the original table
-'    For Each v In ht_Copy.GetValues
-'        'Debug.Print v
-'    Next
+    For Each v In htClone.GetValues
+        Debug.Print v
+    Next
+    
+    For Each v In htClone.GetKeys
+        Debug.Print v
+    Next
     
     'Generates an overview
     Debug.Print ht.ToString
