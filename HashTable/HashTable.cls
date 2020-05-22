@@ -39,7 +39,6 @@ End Type
 '
 Private Type HashItem
     Incr As Long
-    Seed As Long
     Size As Long
     Index As Long
 End Type
@@ -484,8 +483,7 @@ Private Function Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     
 End Function
 
-Private Function PutEntry( _
-                                            ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef Hash As HashItem)
+Private Function PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef Hash As HashItem)
 
     Entry.State = HAS_ENTRY
     
