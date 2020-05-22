@@ -157,27 +157,30 @@ Private Sub Load(ByVal Data As Data, ByRef Vector() As Variant)
     If myClass.Count = 0 Then _
         Vector = Array(): Exit Sub
     
-    ReDim Vector(1 To myClass.Count)
     Dim i As Long, j As Long
     
-    Select Case Data
-        Case Values
-            For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
-                If myClass.Buckets(i).State And HAS_ENTRY = HAS_ENTRY Then _
-                    If VarType(myClass.Buckets(i).Value) = vbObject Then _
-                        Set Vector(Increment(j)) = myClass.Buckets(i).Value _
-                    Else Vector(Increment(j)) = myClass.Buckets(i).Value
-            
-            Next
-        Case Keys
-             For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
-                If myClass.Buckets(i).State And HAS_ENTRY = HAS_ENTRY Then _
-                    Vector(Increment(j)) = myClass.Buckets(i).Key
-            
-            Next
-        Case Else
-            'error invalid case
-    End Select
+    With myClass
+        ReDim Vector(1 To .Count)
+        Select Case Data
+            Case Values
+                For i = LBound(.Buckets) To UBound(.Buckets)
+                    If .Buckets(i).State And HAS_ENTRY = HAS_ENTRY Then _
+                        If VarType(.Buckets(i).Value) = vbObject Then _
+                            Set Vector(Increment(j)) = .Buckets(i).Value _
+                        Else Vector(Increment(j)) = .Buckets(i).Value
+                
+                Next
+            Case Keys
+                 For i = LBound(.Buckets) To UBound(.Buckets)
+                    If .Buckets(i).State And HAS_ENTRY = HAS_ENTRY Then _
+                        Vector(Increment(j)) = .Buckets(i).Key
+                
+                Next
+            Case Else
+                'error invalid case
+        End Select
+    End With
+    
 End Sub
 
 Public Property Get Count() As Long
@@ -246,11 +249,11 @@ Public Property Get Item(ByVal Key As String) As Variant
     End If
 End Property
 
-Public Property Get LastAccess() As Variant
+Public Property Get LastCheck() As Variant
     With myClass.Buckets(myClass.CurrentSlot)
         If VarType(.Value) = vbObject Then _
-            Set LastAccess = .Value _
-        Else LastAccess = .Value
+            Set LastCheck = .Value _
+        Else LastCheck = .Value
     End With
 End Property
 
@@ -545,14 +548,18 @@ Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef H
             With myClass.Buckets(.Index)
                 If ((.State And HAS_ENTRY) = HAS_ENTRY) Then
                     If (StrComp(.Key, Key, vbBinaryCompare) = ZERO) Then
-                        If VarType(Value) = vbObject Then Set .Value = Value Else .Value = Value
+                        If VarType(Value) = vbObject Then _
+                            Set .Value = Value _
+                        Else .Value = Value
                         Exit Sub
                     End If
                 Else
                     .State = HAS_ENTRY
                     .HashCode = HashValue
                     .Key = Key
-                    If VarType(Value) = vbObject Then Set .Value = Value Else .Value = Value
+                    If VarType(Value) = vbObject Then _
+                        Set .Value = Value _
+                    Else .Value = Value
                     Call Increment(myClass.Count)
                     Exit Sub
                 End If
