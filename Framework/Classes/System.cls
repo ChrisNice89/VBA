@@ -7,6 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal ByteLen As Long, ByVal Destination As Long, ByVal Source As Long) As Long
+Private Declare Sub ZeroMemory Lib "Kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal cbCopy As Long)
+Private Declare Sub CopyMemory Lib "Kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Scr As Any, ByVal cbCopy As Long)
+
 Public Enum SortOrder
     Descending = -1
     Ascending = 1
@@ -33,10 +37,16 @@ Public Function ErrorRaised(ByVal Source As IObject, ByVal Message As String) As
     Set ErrorRaised = Me.Create(New Error, Error, 12)
 End Function
 
+Public Sub ShiftData(ByVal Dst As Long, ByVal Src As Long, ByVal Bytes As Long)
+    Call CopyBytes(Size, Dst, Src)
+    Call ZeroMemory(ByVal Src, Bytes)
+End Sub
+
 Public Function Create(ByRef Instance As IObject, ByRef Template As IObject, ByVal Size As Long) As IObject
     If Instance.Equals(Template) Then
-        'call copybytes(size,Instance.VirtualStruct,Template.VirtualStruct)
-        'call ZeroMemory (Template.VirtualStruct,size)
+        'Call CopyBytes(Size, Instance.VirtualPointer, Template.VirtualPointer)
+        Call CopyMemory(ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer, Size)
+        Call ZeroMemory(ByVal Template.VirtualPointer, Size)
         Set Create = Instance
     End If
 End Function

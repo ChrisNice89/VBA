@@ -11,9 +11,9 @@ Implements IObject
 
 Private Type Member
     Value As String
-    Internal As LongPtr
 End Type
 Private m As Member
+Private internal As Long
 
 Public Function Build(ByVal Value As String) As TString
     m.Value = Value
@@ -21,8 +21,12 @@ Public Function Build(ByVal Value As String) As TString
 End Function
 
 Private Sub Class_Initialize()
-    m.Internal = VarPtr(m)
+    internal = VarPtr(m)
 End Sub
+
+Public Property Get Value() As String
+    Value = m.Value
+End Property
 
 Private Function IObject_Clone() As IObject
     
@@ -32,15 +36,11 @@ Private Function IObject_Clone() As IObject
     Dim c As Member
     
     With System
-        c.Internal = .IObject(Clone).VirtualPointer
-        c.Value = m.Value
-        m.Internal = c.Internal
-
-        IObject_Clone = .Create(Clone, Me, LenB(m))
+        internal = VarPtr(c)
+        Call .ShiftData(VarPtr(c), VarPtr(m), LenB(m))
+        Set IObject_Clone = .Create(Clone, Me, LenB(m))
+        internal = VarPtr(m)
     End With
-    
-    m.Internal = VarPtr(m)
-    
 End Function
 
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
@@ -59,6 +59,6 @@ Private Function IObject_ToString() As String
 
 End Function
 
-Private Property Get IObject_VirtualPointer() As LongLong
-    IObject_VirtualPointer = m.Internal
+Private Property Get IObject_VirtualPointer() As Long
+    IObject_VirtualPointer = internal
 End Property
