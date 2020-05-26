@@ -9,27 +9,27 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
 
-#If Mac Then
-  #If Win64 Then
+'#If Mac Then
+'  #If Win64 Then
     Private Declare PtrSafe Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As Long) As LongPtr
     Private Declare PtrSafe Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long) As LongPtr
     Private Declare PtrSafe Function ZeroMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long) As LongPtr
-  #Else
+'  #Else
     'Private Declare Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As Long, ByVal src As Long, ByVal size As Long) As Long
     'Private Declare Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal size As Long) As Long
-  #End If
-#ElseIf VBA7 Then
-  #If Win64 Then
-    Private Declare PtrSafe Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As LongLong)
-    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal Size As LongLong)
-  #Else
-    Private Declare PtrSafe Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As Long)
-    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long)
-  #End If
-#Else
-  'Private Declare Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As Long, ByVal src As Long, ByVal size As Long)
-  'Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal size As Long)
-#End If
+'  #End If
+'#ElseIf VBA7 Then
+'  #If Win64 Then
+'    Private Declare PtrSafe Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As LongLong)
+'    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal Size As LongLong)
+'  #Else
+'    Private Declare PtrSafe Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As Long)
+'    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long)
+'  #End If
+'#Else
+'  'Private Declare Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As Long, ByVal src As Long, ByVal size As Long)
+'  'Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal size As Long)
+'#End If
 
 ''#If VBA7 Then
 '    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal ByteLen As Long, ByRef Destination As LongPtr, ByVal Source As LongPtr) As Long
@@ -80,14 +80,37 @@ Public Sub CopyData(ByVal Dst As LongPtr, ByVal src As LongPtr, ByVal Bytes As L
     'Call CopyBytes(Bytes, ByVal Dst, ByVal Src) 'works
 End Sub
 
+'Was können wir zu diesen Tests sagen? Nun, wir können sagen, dass alle Variablen, die in der Mitte einer UDT-Deklaration
+'kein Vielfaches von 4 Bytes belegen (die Reihenfolge der Deklaration bestimmt die Reihenfolge,
+'in der sie im Speicher gespeichert sind), aufgefüllt werden, sodass sie DWORD-ausgerichtet sind.
 Public Function Create(ByVal Instance As IObject, ByVal Template As IObject, ByVal Size As Long) As IObject
     Dim z As Long: z = 0
     If Instance.Equals(Template) Then
         'Call CopyBytes(Size, ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer)'works
-        'CopyMemory_byVar ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer, Size
-         CopyMemory_byVar Instance.VirtualPointer, Template.VirtualPointer, Size
+        CopyMemory_byVar Instance.VirtualPointer, Template.VirtualPointer, Size
+        CopyMemory_byVar Instance.VirtualPointer, Template.VirtualPointer, Size
         'Call ZeroMemory(ByVal Template.VirtualPointer, Size) ' works on win
         Set Create = Instance
+    End If
+End Function
+
+Public Function Create2(ByVal Instance As IObject, ByVal Template As IObject) As IObject
+    Dim Bytes() As Byte
+    Dim Ptr As LongPtr
+    Dim Size As Long
+    
+    If Instance.Equals(Template) Then
+        Bytes = Template.Serialize
+        Ptr = VarPtr(Bytes(LBound(Bytes, 1)))
+        Size = UBound(Bytes)
+        
+        Call CopyMemory_byVar(ByVal Instance.VirtualPointer, ByVal Ptr, Size)
+        Call CopyMemory_byVar(ByVal Ptr, 0&, Size)
+        'Call ZeroMemory(ByVal Ptr, Size)  ' works on win
+        
+        'Call CopyBytes(Size, ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer)'works
+
+        Set Create2 = Instance
     End If
 End Function
 
@@ -221,8 +244,9 @@ Public Function HashValue(ByRef ascii() As Byte, Optional ByVal HashFunction As 
 
 End Function
 
+Public Function SizeOf() As Long
 
-
+End Function
 
 
 Private Sub Class_Initialize()

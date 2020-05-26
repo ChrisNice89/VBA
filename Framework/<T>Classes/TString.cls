@@ -16,7 +16,12 @@ Private Type Member
     O As Object
 End Type
 Private m As Member
-Private internal As LongPtr
+
+Private Type Internal
+    Size As Long
+    Pointer As LongPtr
+End Type
+Private Virtual As Internal
 
 Public Function Build(ByVal Value As String) As TString
     m.Value = Value
@@ -28,7 +33,7 @@ Public Property Get O() As Object
     Set O = m.O
 End Property
 Private Sub Class_Initialize()
-    internal = VarPtr(m)
+    Virtual.Pointer = VarPtr(m)
 End Sub
 
 Public Property Get Value() As String
@@ -43,12 +48,26 @@ Private Function IObject_Clone() As IObject
     Dim c As Member
     
     With System
-        'internal = VarPtr(c)
-        Call .CopyData(VarPtr(c), VarPtr(m), LenB(m))
-        internal = VarPtr(c)
-        Set IObject_Clone = .Create(Clone, Me, LenB(m))
-        internal = VarPtr(m)
+'        Call .CopyData(VarPtr(c), VarPtr(m), LenB(m))
+'        internal = VarPtr(c)
+'        Set IObject_Clone = .Create(Clone, Me, LenB(m))
+'        internal = VarPtr(m)
+        
+        Call .CopyData(VarPtr(c), Virtual.Pointer, .IObject(Me).Size)
+        Virtual.Pointer = VarPtr(c)
+        Set IObject_Clone = .Create(Clone, Me, .IObject(Me).Size)
+        Virtual.Pointer = VarPtr(m)
     End With
+End Function
+
+Private Function IObject_Serialize() As Byte()
+    Dim c As Member
+    Dim b() As Byte
+    ReDim b(1 To LenB(Member))
+    
+    Call System.CopyData(VarPtr(b), VarPtr(m), UBound(m))
+    IObject_Serialize = b
+
 End Function
 
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
@@ -72,5 +91,5 @@ Private Function IObject_ToString() As String
 End Function
 
 Private Property Get IObject_VirtualPointer() As LongPtr
-    IObject_VirtualPointer = internal
+    IObject_VirtualPointer = Virtual.Pointer
 End Property

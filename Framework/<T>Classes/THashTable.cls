@@ -9,6 +9,8 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
 
+Implements IObject
+
 Private Const MAXVALUE As Double = 2 ^ 31
 Private Const MAXLONG As Long = 2 ^ 31 - 1
 
@@ -18,7 +20,6 @@ Private Const IS_EMPTY As Byte = 0
 Private Const NOT_IS_EMPTY As Byte = 255
 Private Const HAS_ENTRY As Byte = 2 ^ 0
 Private Const HAS_COLLISION As Byte = 2 ^ 1
-
 
 Private Enum Data
     Values
@@ -71,6 +72,7 @@ Private Type Member
 End Type
 '
 Private myclass As Member
+Private Internal As LongPtr
 
 Private Sub Class_Initialize()
     With myclass.Const
@@ -85,6 +87,7 @@ Private Sub Class_Initialize()
         .HashPrime = 101
         .RehashBarrier = 100
     End With
+    Internal = VarPtr(myclass)
     'Call Me.Build(0, 0.7)
 End Sub
 
@@ -251,20 +254,6 @@ Public Function Contains(ByVal Key As String) As Boolean: Contains = FindBy(Key,
 Public Function Add(ByVal Key As String, ByVal Value As IObject): Call Insert(Key, Value): End Function
 Public Property Let Item(ByVal Key As String, ByVal Value As IObject): Call Insert(Key, Value): End Property
 
-Public Sub CloneBy(ByVal Other As THashtable)
-    
-    Dim k As String
-    Dim v As IObject
-    Dim h As Long
-  
-    With Other
-        Call Me.Build(.GenericType, .LoadSize, .LoadFactor, .HashMode)
-        Call .CachePrepare
-        Do While .Cached(k, v, h): Call Insert(k, v, h): Loop
-    End With
-    
-End Sub
-
 Public Function RemoveAll()
     With myclass
         ReDim .Buckets(.HashSize)
@@ -343,7 +332,7 @@ Private Function IsPrime(ByVal Candidate As Long) As Boolean
 End Function
 
 Public Function HashValue(ByVal Text As String, Optional ByVal HashFunction As Hashing = Hashing.Function1) As Long
-            HashValue = System.HashValue(StrConv(Text, vbFromUnicode), HashFunction)
+        HashValue = System.HashValue(StrConv(Text, vbFromUnicode), HashFunction)
 End Function
 
 Private Function Expandprime(ByVal OldSize As Long) As Long
@@ -523,7 +512,58 @@ Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef H
 
 End Sub
 
+Private Function IObject_Clone() As IObject
+    
+    Dim Clone As THashtable
+    Set Clone = New THashtable
+    
+    Dim c As Member
+    
+    With System
+        'internal = VarPtr(c)
+        Call .CopyData(VarPtr(c), VarPtr(myclass), LenB(myclass))
+        Internal = VarPtr(c)
+        Set Clone = .Create(Clone, Me, LenB(m))
+        Internal = VarPtr(m)
+    End With
+    
+End Function
 
+Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
+    Dim ht As THashtable
+    If Other.Equals(Me) Then
+        Set ht = Other
+        Select Case True
+            Case ht.Count < Me.Count: IObject_CompareTo = IsGreater
+            Case ht.Count > Me.Count: IObject_CompareTo = IsLower
+            Case Else: IObject_CompareTo = IsEqual
+        End Select
+    End Function
 
+Private Sub IObject_Dispose()
 
+End Sub
 
+Private Function IObject_Equals(Other As IObject) As Boolean
+    IObject_Equals = (TypeOf Other Is THashtable)
+End Function
+
+Private Property Get IObject_HashValue() As Long
+    IObject_HashValue = System.HashValue
+End Property
+
+Private Function IObject_Serialize() As Byte()
+
+End Function
+
+Private Property Get IObject_Size() As Long
+
+End Property
+
+Private Function IObject_ToString() As String
+    IObject_ToString = Me.ToString
+End Function
+
+Private Property Get IObject_VirtualPointer() As LongLong
+    IObject_VirtualPointer = Internal
+End Property
