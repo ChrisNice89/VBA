@@ -16,7 +16,7 @@ Private Type Member
     O As Object
 End Type
 Private m As Member
-Private internal As Long
+Private internal As LongPtr
 
 Public Function Build(ByVal Value As String) As TString
     m.Value = Value
@@ -55,6 +55,10 @@ Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
  
 End Function
 
+Private Sub IObject_Dispose()
+
+End Sub
+
 Private Function IObject_Equals(Other As IObject) As Boolean
     IObject_Equals = TypeOf Other Is TString
 End Function
@@ -67,6 +71,6 @@ Private Function IObject_ToString() As String
 
 End Function
 
-Private Property Get IObject_VirtualPointer() As Long
+Private Property Get IObject_VirtualPointer() As LongPtr
     IObject_VirtualPointer = internal
 End Property

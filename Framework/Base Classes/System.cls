@@ -6,12 +6,48 @@ Attribute VB_Name = "System"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 Option Explicit
 
-Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal ByteLen As Long, ByRef Destination As Long, ByVal Source As Long) As Long
-Private Declare Sub ZeroMemory Lib "Kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal cbCopy As Long)
-Private Declare Sub CopyMemory Lib "Kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Scr As Any, ByVal cbCopy As Long)
+#If Mac Then
+  #If Win64 Then
+    Private Declare PtrSafe Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As Long) As LongPtr
+    Private Declare PtrSafe Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long) As LongPtr
+    Private Declare PtrSafe Function ZeroMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long) As LongPtr
+  #Else
+    'Private Declare Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As Long, ByVal src As Long, ByVal size As Long) As Long
+    'Private Declare Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal size As Long) As Long
+  #End If
+#ElseIf VBA7 Then
+  #If Win64 Then
+    Private Declare PtrSafe Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As LongLong)
+    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal Size As LongLong)
+  #Else
+    Private Declare PtrSafe Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As Long)
+    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long)
+  #End If
+#Else
+  'Private Declare Sub CopyMemory_byPtr Lib "kernel32" Alias "RtlMoveMemory" (ByVal dest As Long, ByVal src As Long, ByVal size As Long)
+  'Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef src As Any, ByVal size As Long)
+#End If
+
+''#If VBA7 Then
+'    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal ByteLen As Long, ByRef Destination As LongPtr, ByVal Source As LongPtr) As Long
+'    Private Declare PtrSafe Sub ZeroMemory Lib "Kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal cbCopy As Long)
+'    Private Declare PtrSafe Sub CopyMemory Lib "Kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Scr As Any, ByVal cbCopy As Long)
+''#Else
+''    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal ByteLen As Long, ByRef Destination As Long, ByVal Source As Long) As Long
+''    Private Declare Sub ZeroMemory Lib "Kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal cbCopy As Long)
+''    Private Declare Sub CopyMemory Lib "Kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Scr As Any, ByVal cbCopy As Long)
+''#End If
+
+Const MAXVALUE As Double = 2 ^ 31
+Const MAXLONG As Long = 2 ^ 31 - 1
+
+Public Enum Hashing
+    Function1 = 1
+    Function2
+End Enum
 
 Public Enum SortOrder
     Descending = -1
@@ -39,18 +75,18 @@ Public Function ErrorRaised(ByVal Source As IObject, ByVal Message As String) As
     Set ErrorRaised = Me.Create(New Error, Error, 12)
 End Function
 
-Public Sub CopyData(ByVal Dst As Long, ByVal Src As Long, ByVal Bytes As Long)
-    Call CopyMemory(ByVal Dst, ByVal Src, Bytes) 'Works
+Public Sub CopyData(ByVal Dst As LongPtr, ByVal src As LongPtr, ByVal Bytes As Long)
+    Call CopyMemory_byVar(ByVal Dst, ByVal src, Bytes) 'Works
     'Call CopyBytes(Bytes, ByVal Dst, ByVal Src) 'works
-    'Call ZeroMemory(ByVal Src, Bytes)
 End Sub
 
 Public Function Create(ByVal Instance As IObject, ByVal Template As IObject, ByVal Size As Long) As IObject
-  
+    Dim z As Long: z = 0
     If Instance.Equals(Template) Then
         'Call CopyBytes(Size, ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer)'works
-        Call CopyMemory(ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer, Size)
-        Call ZeroMemory(ByVal Template.VirtualPointer, Size)
+        'CopyMemory_byVar ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer, Size
+         CopyMemory_byVar Instance.VirtualPointer, Template.VirtualPointer, Size
+        'Call ZeroMemory(ByVal Template.VirtualPointer, Size) ' works on win
         Set Create = Instance
     End If
 End Function
@@ -140,6 +176,55 @@ Private Sub Quicksort(ByRef Elements() As IObject, ByVal LB As Long, ByVal UB As
     
 End Sub
 
+Public Function HashValue(ByRef ascii() As Byte, Optional ByVal HashFunction As Hashing = Hashing.Function1) As Long
+    
+    Dim h As Double
+    Dim i As Long
+    
+    Select Case HashFunction
+        Case Hashing.Function1
+            
+            Const Shift As Long = 2& ^ 5
+            Dim h1 As Double: h1 = 352654597# 'LeftShift(5381,16))+5381
+            Dim h2 As Double: h2 = h1
+            
+            For i = LBound(ascii) To UBound(ascii) - 1
+                h1 = Me.X0R((h1 * Shift) + h1, ascii(i)): h2 = Me.X0R((h2 * Shift) + h2, ascii(i + 1))
+            Next
+            
+            h = h1 + (h2 * 1566083941#)
+        
+        Case Hashing.Function2
+            
+             Dim Length As Long: Length = UBound(ascii()) + 1
+             Dim n As Long
+             
+             For n = (Length / 2) To 1 Step -1
+                h = h + ascii(i)
+                h = Me.X0R(Me.X0R(LeftShift(h, 16), Me.LeftShift(ascii(i + 1), 11)), h)
+                h = h + Me.RightShift(h, 11)
+                i = i + 2
+            Next
+            
+            If ((Length Mod 2) = 1) Then
+                h = h + ascii(i) + 1566083941
+                h = Me.X0R(h, LeftShift(h, 10))
+                h = h + Me.RightShift(h, 1)
+            End If
+            
+            h = Me.X0R(h, Me.LeftShift(h, 3)): h = h + Me.RightShift(h, 5)
+            h = Me.X0R(h, Me.LeftShift(h, 4)): h = h + Me.RightShift(h, 17)
+            h = Me.X0R(h, Me.LeftShift(h, 25)): h = h + Me.RightShift(h, 6)
+    End Select
+    
+    HashValue = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
+
+End Function
+
+
+
+
+
 Private Sub Class_Initialize()
     If Not (Me Is System) Then
      
@@ -150,7 +235,6 @@ Private Sub Class_Initialize()
 End Sub
 
 Public Function IObject(ByRef Instance As IObject) As IObject: Set IObject = Instance: End Function
-Public Function Hash(ByRef Instance As IObject) As Long: Hash = Instance.HashValue: End Function
 Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function

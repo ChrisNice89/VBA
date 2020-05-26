@@ -2,10 +2,10 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "HashTable"
+Attribute VB_Name = "THashtable"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
 
@@ -19,10 +19,6 @@ Private Const NOT_IS_EMPTY As Byte = 255
 Private Const HAS_ENTRY As Byte = 2 ^ 0
 Private Const HAS_COLLISION As Byte = 2 ^ 1
 
-Public Enum Hashing
-    Function1 = 1
-    Function2
-End Enum
 
 Private Enum Data
     Values
@@ -46,7 +42,7 @@ End Type
 Private Type Bucket
     HashCode As Long
     Key As String
-    Value As Variant
+    Value As IObject
     State As Byte
 End Type
 '
@@ -59,6 +55,7 @@ End Type
 '
 Private Type Member
     Const As Constant
+    TValue As IObject
     HashMode As Hashing
     Cache As Cache
     OCCUPANCY As Long
@@ -88,14 +85,16 @@ Private Sub Class_Initialize()
         .HashPrime = 101
         .RehashBarrier = 100
     End With
-    Call Me.Build(0, 0.7)
+    'Call Me.Build(0, 0.7)
 End Sub
 
 Public Function Build( _
+                                    ByVal TValue As IObject, _
                                     ByVal Capacity As Long, _
                                     Optional ByVal LoadFactor As Double = 0.72, _
                                     Optional ByVal HashFunction As Hashing = Hashing.Function1)
     With myclass
+        
         If Capacity < 0 Then
             'error out of range
         End If
@@ -114,6 +113,8 @@ Public Function Build( _
         Else
             .HashSize = .Const.InitialSize
         End If
+        
+        Set .TValue = TValue
         ReDim .Buckets(.HashSize - 1)
         .LoadSize = Int(.LoadFactor * .HashSize)
         
@@ -123,6 +124,10 @@ Public Function Build( _
         
     End With
 End Function
+
+Public Property Get GenericType() As IObject
+Set GenericType = myclass.TValue
+End Property
 
 Public Property Get LoadSize() As Long
     LoadSize = myclass.LoadSize
@@ -165,9 +170,7 @@ Private Sub Load(ByVal Data As Data, ByRef Vector() As Variant)
             Case Values
                 For i = LBound(.Buckets) To UBound(.Buckets)
                     If .Buckets(i).State And HAS_ENTRY = HAS_ENTRY Then _
-                        If VarType(.Buckets(i).Value) = vbObject Then _
-                            Set Vector(Increment(j)) = .Buckets(i).Value _
-                        Else Vector(Increment(j)) = .Buckets(i).Value
+                        Set Vector(Increment(j)) = .Buckets(i).Value
                 
                 Next
             Case Keys
@@ -215,9 +218,7 @@ Public Function Cached( _
             If (.Buckets(.CurrentSlot).State And HAS_ENTRY) = HAS_ENTRY Then
                 With .Buckets(.CurrentSlot)
                     Key = .Key
-                    If VarType(.Value) = vbObject Then _
-                        Set Value = .Value _
-                    Else Value = .Value
+                    Set Value = .Value
                     
                     If Not HashValue = -1 Then _
                         HashValue = .HashCode
@@ -236,39 +237,28 @@ Public Function Cached( _
 
 End Function
 
-Public Property Get Item(ByVal Key As String) As Variant
+Public Property Get Item(ByVal Key As String) As IObject
     If (FindBy(Key, myclass.CurrentSlot)) Then
-        With myclass.Buckets(myclass.CurrentSlot)
-            If VarType(.Value) = vbObject Then _
-                Set Item = .Value _
-            Else Item = .Value
-        
-        End With
-    Else
-        Item = Null
+        Set Item = myclass.Buckets(myclass.CurrentSlot).Value
     End If
 End Property
 
 Public Property Get LastCheck() As Variant
-    With myclass.Buckets(myclass.CurrentSlot)
-        If VarType(.Value) = vbObject Then _
-            Set LastCheck = .Value _
-        Else LastCheck = .Value
-    End With
+    Set LastCheck = myclass.Buckets(myclass.CurrentSlot).Value
 End Property
 
 Public Function Contains(ByVal Key As String) As Boolean: Contains = FindBy(Key, myclass.CurrentSlot): End Function
-Public Function Add(ByVal Key As String, ByVal Value As Variant): Call Insert(Key, Value): End Function
-Public Property Let Item(ByVal Key As String, ByVal Value As Variant): Call Insert(Key, Value): End Property
+Public Function Add(ByVal Key As String, ByVal Value As IObject): Call Insert(Key, Value): End Function
+Public Property Let Item(ByVal Key As String, ByVal Value As IObject): Call Insert(Key, Value): End Property
 
-Public Sub CloneBy(ByVal Other As HashTable)
+Public Sub CloneBy(ByVal Other As THashtable)
     
     Dim k As String
-    Dim v As Variant
+    Dim v As IObject
     Dim h As Long
   
     With Other
-        Call Me.Build(.LoadSize, .LoadFactor, .HashMode)
+        Call Me.Build(.GenericType, .LoadSize, .LoadFactor, .HashMode)
         Call .CachePrepare
         Do While .Cached(k, v, h): Call Insert(k, v, h): Loop
     End With
@@ -353,49 +343,7 @@ Private Function IsPrime(ByVal Candidate As Long) As Boolean
 End Function
 
 Public Function HashValue(ByVal Text As String, Optional ByVal HashFunction As Hashing = Hashing.Function1) As Long
-    
-    Dim h As Double
-    Dim i As Long
-    Dim ascii() As Byte: ascii() = StrConv(Text, vbFromUnicode)
-    
-    Select Case HashFunction
-        Case Hashing.Function1
-            
-            Const Shift As Long = 2& ^ 5
-            Dim h1 As Double: h1 = 352654597# 'LeftShift(5381,16))+5381
-            Dim h2 As Double: h2 = h1
-            
-            For i = LBound(ascii) To UBound(ascii) - 1
-                h1 = X0R((h1 * Shift) + h1, ascii(i)): h2 = X0R((h2 * Shift) + h2, ascii(i + 1))
-            Next
-            
-            h = h1 + (h2 * 1566083941#)
-        
-        Case Hashing.Function2
-            
-             Dim Length As Long: Length = UBound(ascii()) + 1
-             Dim n As Long
-             
-             For n = (Length / 2) To 1 Step -1
-                h = h + ascii(i)
-                h = X0R(X0R(LeftShift(h, 16), LeftShift(ascii(i + 1), 11)), h)
-                h = h + RightShift(h, 11)
-                i = i + 2
-            Next
-            
-            If ((Length Mod 2) = 1) Then
-                h = h + ascii(i) + 1566083941
-                h = X0R(h, LeftShift(h, 10))
-                h = h + RightShift(h, 1)
-            End If
-            
-            h = X0R(h, LeftShift(h, 3)): h = h + RightShift(h, 5)
-            h = X0R(h, LeftShift(h, 4)): h = h + RightShift(h, 17)
-            h = X0R(h, LeftShift(h, 25)): h = h + RightShift(h, 6)
-    End Select
-    
-    HashValue = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
-
+            HashValue = System.HashValue(StrConv(Text, vbFromUnicode), HashFunction)
 End Function
 
 Private Function Expandprime(ByVal OldSize As Long) As Long
@@ -527,11 +475,15 @@ Private Function FindBy(ByVal Key As String, Optional ByRef Slot As Long) As Boo
 
 End Function
 
-Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef HashValue As Long = -1)
+Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef HashValue As Long = -1)
 
     Dim Try As Long
     
     With myclass
+        If Not Value.Equals(.TValue) Then
+            'sys error
+        End If
+        
         If (.Count >= .LoadSize) Then
             Call Rehash(Expandprime(.HashSize), False)
         ElseIf ((.OCCUPANCY > .LoadSize) And (.Count > .Const.RehashBarrier)) Then
@@ -539,7 +491,7 @@ Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef H
         End If
         
         If (HashValue = -1) Then _
-            HashValue = Me.HashValue(Key, .HashMode)
+            HashValue = System.HashValue(StrConv(Key, vbFromUnicode), .HashMode)
       
     End With
     
@@ -548,18 +500,14 @@ Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef H
             With myclass.Buckets(.Index)
                 If ((.State And HAS_ENTRY) = HAS_ENTRY) Then
                     If (StrComp(.Key, Key, vbBinaryCompare) = ZERO) Then
-                        If VarType(Value) = vbObject Then _
-                            Set .Value = Value _
-                        Else .Value = Value
+                        Set .Value = Value
                         Exit Sub
                     End If
                 Else
                     .State = HAS_ENTRY
                     .HashCode = HashValue
                     .Key = Key
-                    If VarType(Value) = vbObject Then _
-                        Set .Value = Value _
-                    Else .Value = Value
+                    Set .Value = Value
                     Call Increment(myclass.Count)
                     Exit Sub
                 End If
@@ -574,6 +522,8 @@ Private Sub Insert(ByRef Key As String, ByRef Value As Variant, Optional ByRef H
     End With
 
 End Sub
+
+
 
 
 
