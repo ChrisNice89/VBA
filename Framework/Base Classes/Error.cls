@@ -14,6 +14,7 @@ Private Enum ErrorNumber
     OutOfRange_
     Overflow_
     NotEqual_
+    PreDeclared_
 End Enum
 
 Private Type Member
@@ -55,6 +56,13 @@ Public Function NotEqual(ByRef a As IObject, ByRef b As IObject) As Error
     m.Message = "<" & Typename$(a) & "> !=  <" & Typename$(b) & ">"
     m.Type = "Not Equal"
     Set NotEqual = Me
+End Function
+
+Public Function PreDeclared() As Error
+    m.Number = PreDeclared_
+    m.Type = "PreDeclared Instantating"
+    m.Message = "Invalid use of 'New' Keyword " & m.Message
+    Set PreDeclared = Me
 End Function
 
 Public Function InvalidInput() As Error

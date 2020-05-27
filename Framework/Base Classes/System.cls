@@ -78,12 +78,22 @@ Public Enum SystemState
 End Enum
 Private s As SystemState
 
+Private Type Member
+    Errors As VBA.Collection
+End Type
+Private myClass As Member
+
 Public Property Get State() As SystemState
         State = s
 End Property
 
 Public Function Error(ByVal Source As IObject, ByVal Method As String, Optional ByVal Message As String) As Error
-    Set Error = Error.Build(Source, Method, Message)
+    
+    Dim e As Error
+    Set e = Error.Build(Source, Method, Message)
+    Call myClass.Errors.Add(e)
+    Set Error = e
+    
 End Function
 
 Public Sub CopyData(ByVal Dst As LongPtr, ByVal Src As LongPtr, ByVal Bytes As Long)
@@ -100,6 +110,8 @@ Public Function Create(ByVal Instance As IObject, ByVal Template As IObject, ByV
         Call CopyMemory_byVar(ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer, Size)
         Call ZeroMemory(ByVal Template.VirtualPointer, Size)
         Set Create = Instance
+    Else
+        Call Me.Error(Me, "Public Function Create").NotEqual(Instance, Template)
     End If
 End Function
 
@@ -239,12 +251,10 @@ End Function
 
 
 Private Sub Class_Initialize()
-    If Not (Me Is System) Then
-     
-        Err.Raise 5, Typename$(Me), Typename$(Me) & " (Run-time error '5': Invalid use of New Keyword) - System class must not be instantiated."
-        'Call Err.Raise(5, TypeName$(Me), "Invalid instance use " & TypeName$(Me) & ".Build() to instatiate new " & TypeName$(Me) & " objects.")
-    End If
-
+    If Not (Me Is System) Then _
+        Me.Error(Me, "Private Sub Class_Initialize()", "System class must not be instantiated").PreDeclared.Raise
+   
+    Set myClass.Errors = New VBA.Collection
 End Sub
 
 Public Function ClassName(ByRef Instance As IObject) As String: ClassName = "<" & Typename$(Instance) & ">": End Function
