@@ -15,8 +15,7 @@ Public Function ToString() As String: End Function
 Public Function Clone() As IObject: End Function
 Public Sub Dispose(): End Sub
 Public Property Get VirtualPointer() As LongPtr: End Property
-Public Function Serialize() As Byte(): End Function
 
 Private Sub Class_Initialize()
-    Err.Raise 5, TypeName$(Me), TypeName$(Me) & " (Run-time error '5': Invalid procedure call or argument) - Interface class must not be instantiated."
+    Err.Raise 5, Typename$(Me), Typename$(Me) & " (Run-time error '5': Invalid procedure call or argument) - Interface class must not be instantiated."
 End Sub

@@ -71,41 +71,42 @@ Private Type Member
     CurrentSlot As Long
 End Type
 '
-Private myclass As Member
-Private Internal As LongPtr
+Private myClass As Member
+Private Type Internal
+    Size As Long
+    Pointer As LongPtr
+End Type
+Private Virtual As Internal
 
 Private Sub Class_Initialize()
-    With myclass.Const
-        .Primes = Array(3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353, 431, 521, 631, 761, 919, _
-                                1103, 1327, 1597, 1931, 2333, 2801, 3371, 4049, 4861, 5839, 7013, 8419, 10103, 12143, 14591, _
-                                17519, 21023, 25229, 30293, 36353, 43627, 52361, 62851, 75431, 90523, 108631, 130363, 156437, _
-                                187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263, _
-                                1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369)
-    
-        .MaxVal = MAXLONG
-        .InitialSize = getMinPrime
-        .HashPrime = 101
-        .RehashBarrier = 100
-    End With
-    Internal = VarPtr(myclass)
-    'Call Me.Build(0, 0.7)
+    Virtual.Pointer = VarPtr(myClass)
 End Sub
 
 Public Function Build( _
                                     ByVal TValue As IObject, _
-                                    ByVal Capacity As Long, _
+                                    Optional ByVal Capacity As Long, _
                                     Optional ByVal LoadFactor As Double = 0.72, _
-                                    Optional ByVal HashFunction As Hashing = Hashing.Function1)
-    With myclass
+                                    Optional ByVal HashFunction As Hashing = Hashing.Function1) As THashtable
+    
+    With myClass
+        With .Const
+            .Primes = Array(3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353, 431, 521, 631, 761, 919, _
+                                    1103, 1327, 1597, 1931, 2333, 2801, 3371, 4049, 4861, 5839, 7013, 8419, 10103, 12143, 14591, _
+                                    17519, 21023, 25229, 30293, 36353, 43627, 52361, 62851, 75431, 90523, 108631, 130363, 156437, _
+                                    187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263, _
+                                    1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369)
         
-        If Capacity < 0 Then
-            'error out of range
-        End If
+            .MaxVal = MAXLONG
+            .InitialSize = getMinPrime
+            .HashPrime = 101
+            .RehashBarrier = 100
+        End With
         
         If Not (LoadFactor >= 0.1 And LoadFactor <= 1#) Then
             'error out of range
         End If
         
+        Set .TValue = TValue
         .LoadFactor = LoadFactor
         .Capacity = Capacity
         .RawSize = .Capacity / .LoadFactor
@@ -117,7 +118,6 @@ Public Function Build( _
             .HashSize = .Const.InitialSize
         End If
         
-        Set .TValue = TValue
         ReDim .Buckets(.HashSize - 1)
         .LoadSize = Int(.LoadFactor * .HashSize)
         
@@ -126,22 +126,25 @@ Public Function Build( _
         End If
         
     End With
+    
+    Set Build = System.Create(New THashtable, Me, LenB(myClass))
+    
 End Function
 
-Public Property Get GenericType() As IObject
-Set GenericType = myclass.TValue
+Public Property Get TValue() As IObject
+    Set TValue = myClass.TValue
 End Property
 
 Public Property Get LoadSize() As Long
-    LoadSize = myclass.LoadSize
+    LoadSize = myClass.LoadSize
 End Property
 
 Public Property Get LoadFactor() As Double
-    LoadFactor = myclass.LoadFactor
+    LoadFactor = myClass.LoadFactor
 End Property
 
 Public Property Get HashMode() As Hashing
-    HashMode = myclass.HashMode
+    HashMode = myClass.HashMode
 End Property
 
 Public Property Get GetKeys() As Variant()
@@ -162,12 +165,12 @@ End Property
 
 Private Sub Load(ByVal Data As Data, ByRef Vector() As Variant)
     
-    If myclass.Count = 0 Then _
+    If myClass.Count = 0 Then _
         Vector = Array(): Exit Sub
     
     Dim i As Long, j As Long
     
-    With myclass
+    With myClass
         ReDim Vector(1 To .Count)
         Select Case Data
             Case Values
@@ -190,20 +193,20 @@ Private Sub Load(ByVal Data As Data, ByRef Vector() As Variant)
 End Sub
 
 Public Property Get Count() As Long
-    Count = myclass.Count
+    Count = myClass.Count
 End Property
 
 Public Sub CachePrepare()
-     With myclass.Cache
+     With myClass.Cache
         .Prepared = True
-        .Buckets = myclass.Buckets
-        .Slots = myclass.HashSize
+        .Buckets = myClass.Buckets
+        .Slots = myClass.HashSize
         .CurrentSlot = -1
     End With
 End Sub
 
 Public Sub CacheClear()
-    With myclass.Cache
+    With myClass.Cache
         .Prepared = False
         Erase .Buckets
         .CurrentSlot = -1
@@ -213,10 +216,10 @@ End Sub
 
 Public Function Cached( _
                                         ByRef Key As String, _
-                                        ByRef Value As Variant, _
+                                        ByRef Value As IObject, _
                                         Optional ByRef HashValue As Long = -1) As Boolean
     
-    With myclass.Cache
+    With myClass.Cache
         Do While Increment(.CurrentSlot) < .Slots
             If (.Buckets(.CurrentSlot).State And HAS_ENTRY) = HAS_ENTRY Then
                 With .Buckets(.CurrentSlot)
@@ -241,21 +244,21 @@ Public Function Cached( _
 End Function
 
 Public Property Get Item(ByVal Key As String) As IObject
-    If (FindBy(Key, myclass.CurrentSlot)) Then
-        Set Item = myclass.Buckets(myclass.CurrentSlot).Value
+    If (FindBy(Key, myClass.CurrentSlot)) Then
+        Set Item = myClass.Buckets(myClass.CurrentSlot).Value
     End If
 End Property
 
 Public Property Get LastCheck() As Variant
-    Set LastCheck = myclass.Buckets(myclass.CurrentSlot).Value
+    Set LastCheck = myClass.Buckets(myClass.CurrentSlot).Value
 End Property
 
-Public Function Contains(ByVal Key As String) As Boolean: Contains = FindBy(Key, myclass.CurrentSlot): End Function
+Public Function Contains(ByVal Key As String) As Boolean: Contains = FindBy(Key, myClass.CurrentSlot): End Function
 Public Function Add(ByVal Key As String, ByVal Value As IObject): Call Insert(Key, Value): End Function
 Public Property Let Item(ByVal Key As String, ByVal Value As IObject): Call Insert(Key, Value): End Property
 
 Public Function RemoveAll()
-    With myclass
+    With myClass
         ReDim .Buckets(.HashSize)
         .Count = 0
         .CurrentSlot = -1
@@ -277,7 +280,7 @@ Public Function Remove(ByVal Key As String)
     Dim s As Byte
     Dim Slot As Long
     
-    With myclass
+    With myClass
         If FindBy(Key, Slot) Then
             s = (.Buckets(Slot).State And Not HAS_ENTRY)
             .Buckets(Slot) = EmptyBucket: .Buckets(Slot).State = s
@@ -298,7 +301,7 @@ Private Function getPrime(ByVal Min As Long) As Long
         'error
     End If
     
-    With myclass.Const
+    With myClass.Const
         For p = LBound(.Primes) To UBound(.Primes)
             If .Primes(p) >= Min Then _
                 getPrime = .Primes(p): Exit Function
@@ -339,18 +342,18 @@ Private Function Expandprime(ByVal OldSize As Long) As Long
     
     Dim NewSize As Long: NewSize = OldSize * 2
     
-    If NewSize > myclass.Const.MaxVal Then
-        Expandprime = myclass.Const.MaxVal
+    If NewSize > myClass.Const.MaxVal Then
+        Expandprime = myClass.Const.MaxVal
     Else
         Expandprime = getPrime(NewSize)
     End If
 End Function
 
 Private Sub Expand()
-    Call Rehash(Expandprime(myclass.HashSize), False)
+    Call Rehash(Expandprime(myClass.HashSize), False)
 End Sub
 
-Private Function getMinPrime() As Long: getMinPrime = myclass.Const.Primes(LBound(myclass.Const.Primes, 1)): End Function
+Private Function getMinPrime() As Long: getMinPrime = myClass.Const.Primes(LBound(myClass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
 Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
@@ -361,7 +364,7 @@ Private Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - 
 Private Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 
 Public Function ToString() As String
-    With myclass
+    With myClass
         ToString = "HashSize: " & .HashSize & vbNewLine & _
                         "LoadFactor: " & .LoadFactor & vbNewLine & _
                         "LoadSize: " & .LoadSize & vbNewLine & _
@@ -379,7 +382,7 @@ Private Function InitialHashing(ByVal HashValue As Long, ByVal HashSize As Long)
         '.Seed = HashValue:
         .Size = HashSize
         .Index = Modulo(HashValue, .Size)
-        .Incr = 1 + Modulo((CDbl(HashValue) * myclass.Const.HashPrime), (.Size - 1))
+        .Incr = 1 + Modulo((CDbl(HashValue) * myClass.Const.HashPrime), (.Size - 1))
     End With
     
     LSet InitialHashing = Hash
@@ -392,13 +395,13 @@ Private Function Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     Dim b As Bucket
     Dim i As Long, HasEntry As Boolean
     
-    With myclass
+    With myClass
         .OCCUPANCY = 0
         
         If ForceNewHashing Then
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If (.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-                    b = .Buckets(i): b.HashCode = Me.HashValue(b.Key, myclass.HashMode): Call PutEntry(NewBuckets, b, InitialHashing(b.HashCode, Size))
+                    b = .Buckets(i): b.HashCode = Me.HashValue(b.Key, myClass.HashMode): Call PutEntry(NewBuckets, b, InitialHashing(b.HashCode, Size))
             Next
         Else
             For i = LBound(.Buckets) To UBound(.Buckets)
@@ -433,7 +436,7 @@ Private Function PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRe
                 Buckets(.Index) = Entry: Exit Function
             
              If Not (Buckets(.Index).State And HAS_COLLISION) = HAS_COLLISION Then _
-                Buckets(.Index).State = (HAS_ENTRY + HAS_COLLISION): Call Increment(myclass.OCCUPANCY)
+                Buckets(.Index).State = (HAS_ENTRY + HAS_COLLISION): Call Increment(myClass.OCCUPANCY)
                 
             .Index = Modulo(.Index + .Incr, .Size)
         Loop
@@ -445,14 +448,14 @@ Private Function FindBy(ByVal Key As String, Optional ByRef Slot As Long) As Boo
 
     Dim Try As Long
     
-    With InitialHashing(Me.HashValue(Key, myclass.HashMode), myclass.HashSize)
+    With InitialHashing(Me.HashValue(Key, myClass.HashMode), myClass.HashSize)
         Do
-            If ((myclass.Buckets(.Index).State And HAS_ENTRY) = HAS_ENTRY) Then
-                If (StrComp(myclass.Buckets(.Index).Key, Key, vbBinaryCompare) = ZERO) Then _
+            If ((myClass.Buckets(.Index).State And HAS_ENTRY) = HAS_ENTRY) Then
+                If (StrComp(myClass.Buckets(.Index).Key, Key, vbBinaryCompare) = ZERO) Then _
                     Slot = .Index: FindBy = True: Exit Function
             End If
             
-            If (Not (myclass.Buckets(.Index).State And HAS_COLLISION) = HAS_COLLISION) Then _
+            If (Not (myClass.Buckets(.Index).State And HAS_COLLISION) = HAS_COLLISION) Then _
                 Slot = -1: FindBy = False: Exit Function
             
             If ((Increment(Try)) > .Size) Then _
@@ -468,10 +471,9 @@ Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef H
 
     Dim Try As Long
     
-    With myclass
-        If Not Value.Equals(.TValue) Then
-            'sys error
-        End If
+    With myClass
+        If Not .TValue.Equals(Value) Then _
+            Call System.Error(Me, "Private Sub Insert").NotEqual(.TValue, Value).Raise
         
         If (.Count >= .LoadSize) Then
             Call Rehash(Expandprime(.HashSize), False)
@@ -484,9 +486,9 @@ Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef H
       
     End With
     
-    With InitialHashing(HashValue, myclass.HashSize)
+    With InitialHashing(HashValue, myClass.HashSize)
         Do
-            With myclass.Buckets(.Index)
+            With myClass.Buckets(.Index)
                 If ((.State And HAS_ENTRY) = HAS_ENTRY) Then
                     If (StrComp(.Key, Key, vbBinaryCompare) = ZERO) Then
                         Set .Value = Value
@@ -497,12 +499,12 @@ Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef H
                     .HashCode = HashValue
                     .Key = Key
                     Set .Value = Value
-                    Call Increment(myclass.Count)
+                    Call Increment(myClass.Count)
                     Exit Sub
                 End If
                 
                 If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _
-                    .State = (HAS_ENTRY Or HAS_COLLISION): Call Increment(myclass.OCCUPANCY)
+                    .State = (HAS_ENTRY Or HAS_COLLISION): Call Increment(myClass.OCCUPANCY)
                 
             End With
             
@@ -517,14 +519,12 @@ Private Function IObject_Clone() As IObject
     Dim Clone As THashtable
     Set Clone = New THashtable
     
-    Dim c As Member
+    Dim c As Member: c = myClass
+     Virtual.Pointer = VarPtr(c)
     
     With System
-        'internal = VarPtr(c)
-        Call .CopyData(VarPtr(c), VarPtr(myclass), LenB(myclass))
-        Internal = VarPtr(c)
-        Set Clone = .Create(Clone, Me, LenB(m))
-        Internal = VarPtr(m)
+        Set Clone = .Create(Clone, Me, LenB(myClass))
+        Virtual.Pointer = VarPtr(myClass)
     End With
     
 End Function
@@ -538,7 +538,8 @@ Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
             Case ht.Count > Me.Count: IObject_CompareTo = IsLower
             Case Else: IObject_CompareTo = IsEqual
         End Select
-    End Function
+    End If
+End Function
 
 Private Sub IObject_Dispose()
 
@@ -549,15 +550,7 @@ Private Function IObject_Equals(Other As IObject) As Boolean
 End Function
 
 Private Property Get IObject_HashValue() As Long
-    IObject_HashValue = System.HashValue
-End Property
-
-Private Function IObject_Serialize() As Byte()
-
-End Function
-
-Private Property Get IObject_Size() As Long
-
+   IObject_HashValue = Me.Count + Me.LoadFactor + Me.LoadSize + myClass.OCCUPANCY
 End Property
 
 Private Function IObject_ToString() As String
@@ -565,5 +558,5 @@ Private Function IObject_ToString() As String
 End Function
 
 Private Property Get IObject_VirtualPointer() As LongLong
-    IObject_VirtualPointer = Internal
+    IObject_VirtualPointer = Virtual.Pointer
 End Property

@@ -9,11 +9,23 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
 
+
+
+Private Const POINTERSIZE As LongPtr = 4 ' 8/ 64 bit
+Private Declare PtrSafe Sub CopyMemory_byPtr Lib "Kernel32" Alias "RtlMoveMemory" (ByVal Dst As LongPtr, ByVal Src As LongPtr, ByVal Size As Long)
+Private Declare PtrSafe Sub CopyMemory_byVar Lib "Kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Src As Any, ByVal Size As Long)
+Private Declare PtrSafe Sub ZeroMemory Lib "Kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Size As Long)
+'http://www.vbforums.com/showthread.php?101169-FillMemory-ZeroMemory
+Private Declare PtrSafe Sub FillMemory Lib "kernel32.dll" Alias "RtlFillMemory" (ByRef Dst As Any, ByVal Size As Long, ByVal Fill As Byte)
+Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
+Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
+
+'
 '#If Mac Then
 '  #If Win64 Then
-    Private Declare PtrSafe Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As LongPtr, ByVal src As LongPtr, ByVal Size As Long) As LongPtr
-    Private Declare PtrSafe Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long) As LongPtr
-    Private Declare PtrSafe Function ZeroMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long) As LongPtr
+'    Private Declare PtrSafe Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As LongPtr, ByVal Src As LongPtr, ByVal Size As Long) As LongPtr
+'    Private Declare PtrSafe Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef Src As Any, ByVal Size As Long) As LongPtr
+'    Private Declare PtrSafe Function ZeroMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef Src As Any, ByVal Size As Long) As LongPtr
 '  #Else
     'Private Declare Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As Long, ByVal src As Long, ByVal size As Long) As Long
     'Private Declare Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal size As Long) As Long
@@ -70,13 +82,12 @@ Public Property Get State() As SystemState
         State = s
 End Property
 
-Public Function ErrorRaised(ByVal Source As IObject, ByVal Message As String) As Error
-
-    Set ErrorRaised = Me.Create(New Error, Error, 12)
+Public Function Error(ByVal Source As IObject, ByVal Method As String, Optional ByVal Message As String) As Error
+    Set Error = Error.Build(Source, Method, Message)
 End Function
 
-Public Sub CopyData(ByVal Dst As LongPtr, ByVal src As LongPtr, ByVal Bytes As Long)
-    Call CopyMemory_byVar(ByVal Dst, ByVal src, Bytes) 'Works
+Public Sub CopyData(ByVal Dst As LongPtr, ByVal Src As LongPtr, ByVal Bytes As Long)
+    Call CopyMemory_byVar(ByVal Dst, ByVal Src, Bytes) 'Works
     'Call CopyBytes(Bytes, ByVal Dst, ByVal Src) 'works
 End Sub
 
@@ -84,33 +95,11 @@ End Sub
 'kein Vielfaches von 4 Bytes belegen (die Reihenfolge der Deklaration bestimmt die Reihenfolge,
 'in der sie im Speicher gespeichert sind), aufgefüllt werden, sodass sie DWORD-ausgerichtet sind.
 Public Function Create(ByVal Instance As IObject, ByVal Template As IObject, ByVal Size As Long) As IObject
-    Dim z As Long: z = 0
     If Instance.Equals(Template) Then
         'Call CopyBytes(Size, ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer)'works
-        CopyMemory_byVar Instance.VirtualPointer, Template.VirtualPointer, Size
-        CopyMemory_byVar Instance.VirtualPointer, Template.VirtualPointer, Size
-        'Call ZeroMemory(ByVal Template.VirtualPointer, Size) ' works on win
+        Call CopyMemory_byVar(ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer, Size)
+        Call ZeroMemory(ByVal Template.VirtualPointer, Size)
         Set Create = Instance
-    End If
-End Function
-
-Public Function Create2(ByVal Instance As IObject, ByVal Template As IObject) As IObject
-    Dim Bytes() As Byte
-    Dim Ptr As LongPtr
-    Dim Size As Long
-    
-    If Instance.Equals(Template) Then
-        Bytes = Template.Serialize
-        Ptr = VarPtr(Bytes(LBound(Bytes, 1)))
-        Size = UBound(Bytes)
-        
-        Call CopyMemory_byVar(ByVal Instance.VirtualPointer, ByVal Ptr, Size)
-        Call CopyMemory_byVar(ByVal Ptr, 0&, Size)
-        'Call ZeroMemory(ByVal Ptr, Size)  ' works on win
-        
-        'Call CopyBytes(Size, ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer)'works
-
-        Set Create2 = Instance
     End If
 End Function
 
@@ -252,12 +241,13 @@ End Function
 Private Sub Class_Initialize()
     If Not (Me Is System) Then
      
-        Err.Raise 5, TypeName$(Me), TypeName$(Me) & " (Run-time error '5': Invalid use of New Keyword) - System class must not be instantiated."
+        Err.Raise 5, Typename$(Me), Typename$(Me) & " (Run-time error '5': Invalid use of New Keyword) - System class must not be instantiated."
         'Call Err.Raise(5, TypeName$(Me), "Invalid instance use " & TypeName$(Me) & ".Build() to instatiate new " & TypeName$(Me) & " objects.")
     End If
 
 End Sub
 
+Public Function ClassName(ByRef Instance As IObject) As String: ClassName = "<" & Typename$(Instance) & ">": End Function
 Public Function IObject(ByRef Instance As IObject) As IObject: Set IObject = Instance: End Function
 Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function

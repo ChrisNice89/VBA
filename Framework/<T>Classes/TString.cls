@@ -45,29 +45,14 @@ Private Function IObject_Clone() As IObject
     Dim Clone As TString
     Set Clone = New TString
     
-    Dim c As Member
+    Dim c As Member: c = m
+    Virtual.Pointer = VarPtr(c)
     
     With System
-'        Call .CopyData(VarPtr(c), VarPtr(m), LenB(m))
-'        internal = VarPtr(c)
-'        Set IObject_Clone = .Create(Clone, Me, LenB(m))
-'        internal = VarPtr(m)
-        
-        Call .CopyData(VarPtr(c), Virtual.Pointer, .IObject(Me).Size)
         Virtual.Pointer = VarPtr(c)
-        Set IObject_Clone = .Create(Clone, Me, .IObject(Me).Size)
+        Set IObject_Clone = .Create(Clone, Me, LenB(m))
         Virtual.Pointer = VarPtr(m)
     End With
-End Function
-
-Private Function IObject_Serialize() As Byte()
-    Dim c As Member
-    Dim b() As Byte
-    ReDim b(1 To LenB(Member))
-    
-    Call System.CopyData(VarPtr(b), VarPtr(m), UBound(m))
-    IObject_Serialize = b
-
 End Function
 
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
