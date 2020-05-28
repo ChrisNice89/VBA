@@ -7,6 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
+Public Enum ComparerEnum
+    IsLower = -1
+    IsEqual = 0
+    IsGreater = 1
+End Enum
 
 Public Property Get HashValue() As Long: End Property
 Public Function Equals(ByRef Other As IObject) As Boolean: End Function
@@ -17,5 +22,5 @@ Public Sub Dispose(): End Sub
 Public Property Get VirtualPointer() As LongPtr: End Property
 
 Private Sub Class_Initialize()
-    Err.Raise 5, Typename$(Me), Typename$(Me) & " (Run-time error '5': Invalid procedure call or argument) - Interface class must not be instantiated."
+    Call Skynet.Push(Me, "Private Sub Class_Initialize()").InterfaceInstantiation.Raise
 End Sub
