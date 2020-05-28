@@ -10,6 +10,7 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Implements IObject
+Implements IEnumerator
 
 Private Const MAXVALUE As Double = 2 ^ 31
 Private Const MAXLONG As Long = 2 ^ 31 - 1
@@ -43,7 +44,7 @@ End Type
 Private Type Bucket
     HashCode As Long
     Key As String
-    Value As IObject
+    value As IObject
     State As Byte
 End Type
 '
@@ -127,7 +128,7 @@ Public Function Build( _
         
     End With
     
-    Set Build = System.Create(New THashtable, Me, LenB(myClass))
+    Set Build = Skynet.Create(New THashtable, Me, LenB(myClass))
     
 End Function
 
@@ -176,7 +177,7 @@ Private Sub Load(ByVal Data As Data, ByRef Vector() As Variant)
             Case Values
                 For i = LBound(.Buckets) To UBound(.Buckets)
                     If .Buckets(i).State And HAS_ENTRY = HAS_ENTRY Then _
-                        Set Vector(Increment(j)) = .Buckets(i).Value
+                        Set Vector(Increment(j)) = .Buckets(i).value
                 
                 Next
             Case Keys
@@ -216,7 +217,7 @@ End Sub
 
 Public Function Cached( _
                                         ByRef Key As String, _
-                                        ByRef Value As IObject, _
+                                        ByRef value As IObject, _
                                         Optional ByRef HashValue As Long = -1) As Boolean
     
     With myClass.Cache
@@ -224,7 +225,7 @@ Public Function Cached( _
             If (.Buckets(.CurrentSlot).State And HAS_ENTRY) = HAS_ENTRY Then
                 With .Buckets(.CurrentSlot)
                     Key = .Key
-                    Set Value = .Value
+                    Set value = .value
                     
                     If Not HashValue = -1 Then _
                         HashValue = .HashCode
@@ -245,17 +246,17 @@ End Function
 
 Public Property Get Item(ByVal Key As String) As IObject
     If (FindBy(Key, myClass.CurrentSlot)) Then
-        Set Item = myClass.Buckets(myClass.CurrentSlot).Value
+        Set Item = myClass.Buckets(myClass.CurrentSlot).value
     End If
 End Property
 
 Public Property Get LastCheck() As Variant
-    Set LastCheck = myClass.Buckets(myClass.CurrentSlot).Value
+    Set LastCheck = myClass.Buckets(myClass.CurrentSlot).value
 End Property
 
 Public Function Contains(ByVal Key As String) As Boolean: Contains = FindBy(Key, myClass.CurrentSlot): End Function
-Public Function Add(ByVal Key As String, ByVal Value As IObject): Call Insert(Key, Value): End Function
-Public Property Let Item(ByVal Key As String, ByVal Value As IObject): Call Insert(Key, Value): End Property
+Public Function Add(ByVal Key As String, ByVal value As IObject): Call Insert(Key, value): End Function
+Public Property Let Item(ByVal Key As String, ByVal value As IObject): Call Insert(Key, value): End Property
 
 Public Function RemoveAll()
     With myClass
@@ -335,7 +336,7 @@ Private Function IsPrime(ByVal Candidate As Long) As Boolean
 End Function
 
 Public Function HashValue(ByVal Text As String, Optional ByVal HashFunction As Hashing = Hashing.Function1) As Long
-        HashValue = System.HashValue(StrConv(Text, vbFromUnicode), HashFunction)
+        HashValue = Skynet.HashValue(StrConv(Text, vbFromUnicode), HashFunction)
 End Function
 
 Private Function Expandprime(ByVal OldSize As Long) As Long
@@ -358,8 +359,8 @@ Private Function EmptyBucket() As Bucket: End Function
 Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
-Private Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function
-Private Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
+Private Function RightShift(ByVal value As Long, Shift As Byte) As Double: RightShift = value / (2& ^ Shift): End Function
+Private Function LeftShift(ByVal value As Long, Shift As Byte) As Double: LeftShift = value * (2& ^ Shift): End Function
 Private Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
 Private Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 
@@ -467,13 +468,13 @@ Private Function FindBy(ByVal Key As String, Optional ByRef Slot As Long) As Boo
 
 End Function
 
-Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef HashValue As Long = -1)
+Private Sub Insert(ByRef Key As String, ByRef value As IObject, Optional ByRef HashValue As Long = -1)
 
     Dim Try As Long
     
     With myClass
-        If Not .TValue.Equals(Value) Then _
-            Call System.Push(Me, "Private Sub Insert").NotEqual(.TValue, Value).Raise
+        If Not .TValue.Equals(value) Then _
+            Call Skynet.Push(Me, "Private Sub Insert").NotEqual(.TValue, value).Raise
         
         If (.Count >= .LoadSize) Then
             Call Rehash(Expandprime(.HashSize), False)
@@ -482,7 +483,7 @@ Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef H
         End If
         
         If (HashValue = -1) Then _
-            HashValue = System.HashValue(StrConv(Key, vbFromUnicode), .HashMode)
+            HashValue = Skynet.HashValue(StrConv(Key, vbFromUnicode), .HashMode)
       
     End With
     
@@ -491,14 +492,14 @@ Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef H
             With myClass.Buckets(.Index)
                 If ((.State And HAS_ENTRY) = HAS_ENTRY) Then
                     If (StrComp(.Key, Key, vbBinaryCompare) = ZERO) Then
-                        Set .Value = Value
+                        Set .value = value
                         Exit Sub
                     End If
                 Else
                     .State = HAS_ENTRY
                     .HashCode = HashValue
                     .Key = Key
-                    Set .Value = Value
+                    Set .value = value
                     Call Increment(myClass.Count)
                     Exit Sub
                 End If
@@ -514,19 +515,58 @@ Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef H
 
 End Sub
 
+Public Sub FillEnumerator(ByRef Enumerator As IEnumerator)
+  
+    Dim c As Member
+    With c.Cache
+        .Prepared = True
+        .Buckets = myClass.Buckets
+        .Slots = myClass.HashSize
+        .CurrentSlot = -1
+    End With
+  
+    Virtual.Pointer = VarPtr(c)
+    Set Enumerator = Skynet.Create(New THashtable, Me, LenB(myClass))
+    Virtual.Pointer = VarPtr(myClass)
+    
+End Sub
+
+Private Property Get IEnumerator_Current() As Variant
+
+End Property
+
+Private Function IEnumerator_MoveNext() As Boolean
+    With myClass.Cache
+        Do While Increment(.CurrentSlot) < .Slots
+            If (.Buckets(.CurrentSlot).State And HAS_ENTRY) = HAS_ENTRY Then
+                With .Buckets(.CurrentSlot)
+'                    Key = .Key
+'                    Set Value = .Value
+                    
+                End With
+                IEnumerator_MoveNext = True: Exit Function
+            End If
+        Loop
+        
+        If Not .Prepared Then
+            'error
+        End If
+    End With
+End Function
+
+Private Sub IEnumerator_Reset()
+
+End Sub
+
 Private Function IObject_Clone() As IObject
     
-    Dim Clone As THashtable
-    Set Clone = New THashtable
-    
     Dim c As Member: c = myClass
-     Virtual.Pointer = VarPtr(c)
+    c.CurrentSlot = -1
+    Virtual.Pointer = VarPtr(c)
     
-    With System
-        Set Clone = .Create(Clone, Me, LenB(myClass))
-        Virtual.Pointer = VarPtr(myClass)
-    End With
-    
+    Set IObject_Clone = Skynet.Create(New THashtable, Me, LenB(myClass))
+    Virtual.Pointer = VarPtr(myClass)
+   
 End Function
 
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
