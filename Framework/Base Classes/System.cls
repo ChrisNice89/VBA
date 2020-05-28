@@ -9,8 +9,6 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
 
-
-
 Private Const POINTERSIZE As LongPtr = 4 ' 8/ 64 bit
 Private Declare PtrSafe Sub CopyMemory_byPtr Lib "Kernel32" Alias "RtlMoveMemory" (ByVal Dst As LongPtr, ByVal Src As LongPtr, ByVal Size As Long)
 Private Declare PtrSafe Sub CopyMemory_byVar Lib "Kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Src As Any, ByVal Size As Long)
@@ -66,12 +64,6 @@ Public Enum SortOrder
     Ascending = 1
 End Enum
 
-Public Enum ComparerEnum
-    IsLower = -1
-    IsEqual = 0
-    IsGreater = 1
-End Enum
-
 Public Enum SystemState
     Ready
     BuildNew
@@ -79,20 +71,50 @@ End Enum
 Private s As SystemState
 
 Private Type Member
-    Errors As VBA.Collection
+    CallStack As New VBA.Collection
 End Type
 Private myClass As Member
+Private WithEvents CurrentTask As Task
+Attribute CurrentTask.VB_VarHelpID = -1
 
 Public Property Get State() As SystemState
         State = s
 End Property
 
-Public Function Error(ByVal Source As IObject, ByVal Method As String, Optional ByVal Message As String) As Error
+Public Function Push(ByVal Source As IObject, ByVal Method As String) As Task
+
+    Set CurrentTask = Task.Build(Source, Method)
+    Call myClass.CallStack.Add(CurrentTask)
+    Set Push = CurrentTask
     
-    Dim e As Error
-    Set e = Error.Build(Source, Method, Message)
-    Call myClass.Errors.Add(e)
-    Set Error = e
+End Function
+
+Public Function Peek() As Task
+        Set CurrentTask = myClass.CallStack(myClass.CallStack.Count)
+        Set Peek = CurrentTask
+End Function
+
+Public Function Pop() As Task
+    Set Pop = Me.Peek
+    
+    With myClass.CallStack
+        Call .Remove(.Count)
+    End With
+End Function
+
+Private Sub CurrentTask_Complete()
+
+End Sub
+
+Private Sub CurrentTask_Failed(raiseGlobal As Boolean)
+
+End Sub
+
+Public Function ToString() As String
+    Dim t As IObject
+    For Each t In myClass.CallStack
+        Debug.Print t.ToString
+    Next
     
 End Function
 
@@ -111,7 +133,7 @@ Public Function Create(ByVal Instance As IObject, ByVal Template As IObject, ByV
         Call ZeroMemory(ByVal Template.VirtualPointer, Size)
         Set Create = Instance
     Else
-        Call Me.Error(Me, "Public Function Create").NotEqual(Instance, Template)
+        Call Me.Push(Me, "Public Function Create").NotEqual(Instance, Template).Raise
     End If
 End Function
 
@@ -252,9 +274,8 @@ End Function
 
 Private Sub Class_Initialize()
     If Not (Me Is System) Then _
-        Me.Error(Me, "Private Sub Class_Initialize()", "System class must not be instantiated").PreDeclared.Raise
+        Call Me.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise("System class must not be instantiated")
    
-    Set myClass.Errors = New VBA.Collection
 End Sub
 
 Public Function ClassName(ByRef Instance As IObject) As String: ClassName = "<" & Typename$(Instance) & ">": End Function
@@ -266,4 +287,3 @@ Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightS
 Public Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
 Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
-

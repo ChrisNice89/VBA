@@ -473,7 +473,7 @@ Private Sub Insert(ByRef Key As String, ByRef Value As IObject, Optional ByRef H
     
     With myClass
         If Not .TValue.Equals(Value) Then _
-            Call System.Error(Me, "Private Sub Insert").NotEqual(.TValue, Value).Raise
+            Call System.Push(Me, "Private Sub Insert").NotEqual(.TValue, Value).Raise
         
         If (.Count >= .LoadSize) Then
             Call Rehash(Expandprime(.HashSize), False)

@@ -2,12 +2,15 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "Error"
+Attribute VB_Name = "Task"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Implements IObject
+
+Public Event Failed(ByRef raiseGlobal As Boolean)
+Public Event Complete()
 
 Private Enum ErrorNumber
     Invalid_
@@ -18,6 +21,7 @@ Private Enum ErrorNumber
 End Enum
 
 Private Type Member
+    HasError As Boolean
     Source As Object
     Message As String
     Type As String
@@ -32,47 +36,67 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Function Build(ByVal Source As Object, ByVal Method As String, ByVal Message As String) As Error
+Public Property Get HasError() As Boolean
+    HasError = m.HasError
+End Property
+
+Public Function Build(ByVal Source As Object, ByVal Method As String) As Task
     Set m.Source = Source
     m.Method = Method
-    m.Message = Message
-    Set Build = System.Create(New Error, Me, LenB(m))
+    Set Build = System.Create(New Task, Me, LenB(m))
 End Function
 
-Public Function Overflow() As Error
+Public Sub Complete()
+    RaiseEvent Complete
+End Sub
+
+Public Function Overflow() As Task
     m.Number = Overflow_
     m.Type = "Overflow"
     Set Overflow = Me
 End Function
 
-Public Function OutOfRange() As Error
+Public Function InvalidOperationException() As Task
+
+End Function
+
+Public Function OutOfRange() As Task
     m.Number = OutOfRange_
     m.Type = "OutOfRange"
     Set OutOfRange = Me
 End Function
 
-Public Function NotEqual(ByRef a As IObject, ByRef b As IObject) As Error
+Public Function NotEqual(ByRef a As IObject, ByRef b As IObject) As Task
     m.Number = NotEqual_
     m.Message = "<" & Typename$(a) & "> !=  <" & Typename$(b) & ">"
     m.Type = "Not Equal"
     Set NotEqual = Me
 End Function
 
-Public Function PreDeclared() As Error
+Public Function Instantiation() As Task
     m.Number = PreDeclared_
     m.Type = "PreDeclared Instantating"
-    m.Message = "Invalid use of 'New' Keyword " & m.Message
-    Set PreDeclared = Me
+    m.Message = "Invalid use of 'New' Keyword "
+    Set Instantiation = Me
 End Function
 
-Public Function InvalidInput() As Error
+Public Function InvalidInput() As Task
     m.Number = Invalid_
     m.Type = "Invalid Input"
     Set InvalidInput = Me
 End Function
 
-Public Sub Raise()
-    Call Err.Raise(m.Number, Typename$(m.Source), System.IObject(Me).ToString)
+Public Sub Raise(Optional ByVal Message As String)
+    Dim raiseVBA As Boolean
+    raiseVBA = True
+    
+    m.Message = m.Message & Message
+    
+    RaiseEvent Failed(raiseVBA)
+    
+    If raiseGlobal Then _
+        Call Err.Raise(m.Number, Typename$(m.Source), System.IObject(Me).ToString)
+        
 End Sub
 
 Private Sub Class_Initialize()
