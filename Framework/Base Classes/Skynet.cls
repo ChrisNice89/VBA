@@ -118,15 +118,30 @@ End Sub
 'Was können wir zu diesen Tests sagen? Nun, wir können sagen, dass alle Variablen, die in der Mitte einer UDT-Deklaration
 'kein Vielfaches von 4 Bytes belegen (die Reihenfolge der Deklaration bestimmt die Reihenfolge,
 'in der sie im Speicher gespeichert sind), aufgefüllt werden, sodass sie DWORD-ausgerichtet sind.
-Public Function Create(ByVal Instance As IObject, ByVal Prototype As IObject, ByVal Size As Long) As IObject
-    If Instance.Equals(Prototype) Then
+'Public Function Create(ByRef Instance As IObject, ByRef Prototype As IObject, ByVal Size As Long) As IObject
+'    If Instance.Equals(Prototype) Then
+'        'Call CopyBytes(Size, ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer)'works
+'        Call CopyMemory_byVar(ByVal Instance.VirtualPointer, ByVal Prototype.VirtualPointer, Size)
+'        Call ZeroMemory(ByVal Prototype.VirtualPointer, Size)
+'        Set Create = Instance
+'    Else
+'        Call Me.Push(Me, "Public Function Create").NotEqual(Instance, Prototype).Raise
+'    End If
+'End Function
+
+Public Function Create(ByRef Prototype As IPrototype) As Object
+    
+    Dim Clone As IPrototype
+    
+    With Prototype
+        Set Clone = .NewInstance
         'Call CopyBytes(Size, ByVal Instance.VirtualPointer, ByVal Template.VirtualPointer)'works
-        Call CopyMemory_byVar(ByVal Instance.VirtualPointer, ByVal Prototype.VirtualPointer, Size)
-        Call ZeroMemory(ByVal Prototype.VirtualPointer, Size)
-        Set Create = Instance
-    Else
-        Call Me.Push(Me, "Public Function Create").NotEqual(Instance, Prototype).Raise
-    End If
+        Call CopyMemory_byVar(ByVal Clone.VirtualPointer, ByVal .VirtualPointer, .Size)
+        Call ZeroMemory(ByVal .VirtualPointer, .Size)
+    End With
+    
+    Set Build = Clone
+   
 End Function
 
 Public Function Search( _
