@@ -10,6 +10,7 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Implements IObject
+Implements IPrototype
 Implements IEnumerator
 
 Private Const MAXVALUE As Double = 2 ^ 31
@@ -128,7 +129,7 @@ Public Function Build( _
         
     End With
     
-    Set Build = Skynet.Create(New THashtable, Me, LenB(myClass))
+    Set Build = Skynet.Create(Me)
     
 End Function
 
@@ -563,8 +564,7 @@ Private Function IObject_Clone() As IObject
     Dim c As Member: c = myClass
     c.CurrentSlot = -1
     Virtual.Pointer = VarPtr(c)
-    
-    Set IObject_Clone = Skynet.Create(New THashtable, Me, LenB(myClass))
+    Set IObject_Clone = Skynet.Create(Me)
     Virtual.Pointer = VarPtr(myClass)
    
 End Function
@@ -600,3 +600,7 @@ End Function
 Private Property Get IObject_VirtualPointer() As LongLong
     IObject_VirtualPointer = Virtual.Pointer
 End Property
+
+Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New THashtable: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
+Private Property Get IPrototype_VirtualPointer() As LongLong: IPrototype_VirtualPointer = Virtual.Pointer: End Property
