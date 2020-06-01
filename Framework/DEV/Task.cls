@@ -71,9 +71,9 @@ Public Function OutOfRange() As Task
     Set OutOfRange = Me
 End Function
 
-Public Function NotEqual(ByRef a As IObject, ByRef b As IObject) As Task
+Public Function NotEqual(ByRef A As IObject, ByRef B As IObject) As Task
     myClass.Number = NotEqual_
-    myClass.Message = "<" & Typename$(a) & "> !=  <" & Typename$(b) & ">"
+    myClass.Message = "<" & Typename$(A) & "> !=  <" & Typename$(B) & ">"
     myClass.Type = "Not Equal"
     Set NotEqual = Me
 End Function
@@ -142,7 +142,7 @@ End Function
 
 Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New Task: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
-Private Property Get IPrototype_VirtualPointer() As LongLong: IPrototype_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 
 

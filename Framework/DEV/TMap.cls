@@ -95,7 +95,7 @@ Public Function Build( _
        ByVal TKey As IObject, _
        ByVal TValue As IObject, _
        Optional ByVal Capacity As Long, _
-       Optional ByVal LoadFactor As Double = 0.72, _
+       Optional ByVal LoadFactor As Double = 0.7, _
        Optional ByVal HashFunction As Hashing = Hashing.Function1) As TMap
     
     With myClass
@@ -131,6 +131,7 @@ Public Function Build( _
         
         ReDim .Buckets(.HashSize - 1)
         .LoadSize = Int(.LoadFactor * .HashSize)
+        .CurrentSlot = -1
         
         If (.LoadSize < .HashSize) Then
             'error invalid loadsize
@@ -283,13 +284,13 @@ End Sub
 
 Public Sub Remove(ByVal Key As IObject)
     
-    Dim s As Byte
+    Dim S As Byte
     Dim Slot As Long
     
     With myClass
         If FindBy(Key, Slot) Then
-            s = (.Buckets(Slot).State And Not HAS_ENTRY)
-            .Buckets(Slot) = EmptyBucket: .Buckets(Slot).State = s
+            S = (.Buckets(Slot).State And Not HAS_ENTRY)
+            .Buckets(Slot) = EmptyBucket: .Buckets(Slot).State = S
             Call Decrement(.Count)
             
             If (Slot = .CurrentSlot) Then _
@@ -299,27 +300,27 @@ Public Sub Remove(ByVal Key As IObject)
     
 End Sub
 
-Private Function getPrime(ByVal Min As Long) As Long
+Private Function getPrime(ByVal min As Long) As Long
     
     Dim p As Long
     
-    If Min < 0 Then
+    If min < 0 Then
         'error
     End If
     
     With myClass.Const
         For p = LBound(.Primes) To UBound(.Primes)
-            If .Primes(p) >= Min Then _
+            If .Primes(p) >= min Then _
                 getPrime = .Primes(p): Exit Function
         Next
         
-        For p = Min To .MaxVal
+        For p = min To .MaxVal
             If IsPrime(p) And ((p - 1) Mod .HashPrime) <> 0 Then _
                 getPrime = p: Exit Function
         Next
     End With
     
-    getPrime = Min
+    getPrime = min
     
 End Function
 
@@ -362,7 +363,7 @@ End Sub
 Private Function getMinPrime() As Long: getMinPrime = myClass.Const.Primes(LBound(myClass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
 
-Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
+Private Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
@@ -390,36 +391,35 @@ End Function
 Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
 
     Dim NewBuckets() As Bucket: ReDim NewBuckets(Size - 1)
-    Dim b As Bucket
+    Dim B As Bucket
     Dim i As Long
-    Dim HasEntry As Boolean
-    
+  
     With myClass
         .OCCUPANCY = 0
         
         If ForceNewHashing Then
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    b = .Buckets(i): b.HashCode = b.Key.HashValue: Call PutEntry(NewBuckets, b, InitialHashing(b.HashCode, Size))
+                    B = .Buckets(i): B.HashCode = B.Key.HashValue: Call PutEntry(NewBuckets, B, InitialHashing(B.HashCode, Size))
             Next
         Else
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    b = .Buckets(i): Call PutEntry(NewBuckets, b, InitialHashing(b.HashCode, Size))
+                    B = .Buckets(i): Call PutEntry(NewBuckets, B, InitialHashing(B.HashCode, Size))
             Next
         End If
         
-        'b = EmptyBucket
+        B = EmptyBucket
         
         If .CurrentSlot >= 0 Then _
-           Set b.Key = .Buckets(.CurrentSlot).Key: HasEntry = True
+           Set B.Key = .Buckets(.CurrentSlot).Key
 
         .Buckets = NewBuckets
         .LoadSize = Int(.LoadFactor * Size)
         .HashSize = Size
          
-        If HasEntry Then _
-           Call FindBy(b.Key, .CurrentSlot)
+        If Not B.Key Is Nothing Then _
+           Call FindBy(B.Key, .CurrentSlot)
             
     End With
     
@@ -613,7 +613,7 @@ End Function
 
 Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New TMap: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
-Private Property Get IPrototype_VirtualPointer() As LongLong: IPrototype_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 
 
