@@ -1,3 +1,3 @@
 # VBA
-I show you how deep the rabbit-hole goes
+Open 'Framework' and you might go right down the rabbit hole...
 
