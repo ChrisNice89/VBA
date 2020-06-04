@@ -284,7 +284,7 @@ Private Sub Class_Initialize()
    
 End Sub
 
-Public Function ClassName(ByRef Instance As IObject) As String: ClassName = "<" & Typename$(Instance) & ">": End Function
+Public Function ClassName(ByRef Instance As IObject) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function
 Public Function IObject(ByRef Instance As IObject) As IObject: Set IObject = Instance: End Function
 Public Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
