@@ -11,6 +11,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Public Property Get Field(ByVal Index As Variant) As IValue: End Property
+Attribute Field.VB_UserMemId = 0
 Public Property Get Name(ByVal Index As Long) As String: End Property
 Public Property Get Count() As Long: End Property
 

@@ -3,12 +3,21 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
+Sub Cmdtest()
+
+    Dim cmd As SqlCommand
+    Dim sql As String
+    sql = "SomeSql"
+    Set cmd = SqlCommand.Build(sql, SqlConnection)
+    Debug.Print cmd.sql.Replace("Some", "Somee").Value
+End Sub
+
 Sub ParameterTest()
 
 Dim cmd As SqlCommand
 Set cmd = SqlCommand.Build("SomeSql", SqlConnection)
 
-Call cmd.CreateParameter(TString.Build("Christian"), "Name").AddValue(TString.Build("Christoph"))
+Call cmd.CreateParameter(TString("Christian"), "Name").AddValue(TString("Christoph"))
 Debug.Print cmd.Parameter("Name").Current.Value
 
 Debug.Print cmd.Parameter("Name").UseValue(2).Object.ToString
@@ -30,25 +39,17 @@ Set p2 = p1
 Debug.Print p1.Equals(p2)
 
 Dim p3 As SqlParameter
-Set p3 = SqlParameter.Build(TString.Build("Christian"), 1, "Name")
+Set p3 = SqlParameter.Build(TString("Christian"), 1, "Name")
 Debug.Print Christian.Equals(p3.Current)
 
 
 Dim p4 As IObject
-Set p4 = cmd.CreateParameter(TString.Build("04.04.20"), "Datum").AddValue(TString.Build("01.01.21"))
+Set p4 = cmd.CreateParameter(TDate(#4/4/2020#), "Datum").AddValue(TDate(#1/1/2021#))
 
 Debug.Print p4.Equals(p1)
 
 
 End Sub
-
-
-
-
-
-
-
-
 
 
 
@@ -71,7 +72,7 @@ Dim n As TNumeric
 Dim s As TString
 
 Set n = TNumeric.Build(100.55, DefaultNumber)
-Set s = TString.Build("test", , DefaultString)
+Set s = TString("test", , DefaultString)
 
 
 End Sub
@@ -92,17 +93,17 @@ Sub Compare()
     Dim v As TString
     Dim i As Long
     Dim A(1 To 1000) As IObject
-    Dim B(1 To 1000) As IObject
+    Dim b(1 To 1000) As IObject
     
     For i = 1 To 1000
-        Set A(i) = TString.Build("A")
-        Set B(i) = TString.Build("B")
+        Set A(i) = TString("A")
+        Set b(i) = TString("B")
     Next
     
     Dim t As New Timer
     t.StartCounter
     For i = 1 To 1000
-        If Not A(i).CompareTo(B(i)) = IsLower Then
+        If Not A(i).CompareTo(b(i)) = IsLower Then
             Debug.Print "error"
         End If
     Next
@@ -118,17 +119,17 @@ Sub Equals()
     Dim v As TString
     Dim i As Long
     Dim A(1 To 1000) As IObject
-    Dim B(1 To 1000) As IObject
+    Dim b(1 To 1000) As IObject
     
     For i = 1 To 1000
-        Set A(i) = TString.Build("Key" & i)
-        Set B(i) = TString.Build("xey" & i)
+        Set A(i) = TString("Key" & i)
+        Set b(i) = TString("xey" & i)
     Next
     
     Dim t As New Timer
     t.StartCounter
     For i = 1 To 1000
-        Call A(i).Equals(B(i))
+        Call A(i).Equals(b(i))
     Next
     Debug.Print t.TimeElapsed
 
@@ -145,8 +146,8 @@ Sub test()
     Dim t As New Timer
     t.StartCounter
     For i = 1 To 10000
-        Set k = TString.Build("Key" & i)
-        Set v = TString.Build("Value" & i)
+        Set k = TString("Key" & i)
+        Set v = TString("Value" & i)
         Call map.Add(k, v)
     Next
     Debug.Print t.TimeElapsed
@@ -154,14 +155,22 @@ Sub test()
 End Sub
 
 Sub ttt()
-    Dim k As TString
-    Dim v As IObject
+    Dim s As TString
+    Dim n As TNumeric
+    Dim d As TDate
+    Dim b As TBoolean
+    Dim f As TFloat
     Dim i As Long
     Dim t As New Timer
     
     t.StartCounter
     For i = 1 To 10000
-        Set v = TString.Build("Value" & i)
+        Set s = TString("Value" & i)
+        Set n = TNumeric(i)
+        Set d = TDate("01.01.2020")
+        Set b = TBoolean(True)
+        Set f = TFloat(i / 100)
+        
     Next
     Debug.Print t.TimeElapsed
 

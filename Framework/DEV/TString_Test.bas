@@ -41,7 +41,7 @@ Private Sub TStringInitialize()
     'Arrange:
     
     'Act:
-    Set SUT = TString.Build("TestValue")
+    Set SUT = TString("TestValue")
     
     'Assert:
     Assert.AreNotEqual VarPtr(SUT), VarPtr(TString)
@@ -62,11 +62,11 @@ Private Sub TStringInitialize_Instances()
     Dim i As Long
     'Act:
     For i = 1 To 10000
-        Set s1 = TString.Build("TestValue" & i)
+        Set s1 = TString("TestValue" & i)
     Next
     
-    Set s1 = TString.Build("TestValue")
-    Set s2 = TString.Build("TestValue2")
+    Set s1 = TString("TestValue")
+    Set s2 = TString("TestValue2")
     'Assert:
     Assert.AreNotEqual VarPtr(s1), VarPtr(s2)
 
@@ -83,7 +83,7 @@ Private Sub TStringValue()
     'Arrange:
     Dim result As String
     'Act:
-    Set SUT = TString.Build("TestValue")
+    Set SUT = TString("TestValue")
     result = SUT.Value
     'Assert:
     Assert.AreEqual "TestValue", result
@@ -104,8 +104,8 @@ Private Sub TStringValue2()
     Dim s2 As TString
     
     'Act:
-    Set s1 = TString.Build("TestValue")
-    Set s2 = TString.Build("TestValue2")
+    Set s1 = TString("TestValue")
+    Set s2 = TString("TestValue2")
     'Assert:
     Assert.AreNotEqual s1.Value, s2.Value
 
@@ -125,8 +125,8 @@ Private Sub TStringValue2_Equal()
     Dim s2 As TString
     
     'Act:
-    Set s1 = TString.Build("TestValue")
-    Set s2 = TString.Build("TestValue")
+    Set s1 = TString("TestValue")
+    Set s2 = TString("TestValue")
     'Assert:
     Assert.AreEqual s1.Value, s2.Value
 

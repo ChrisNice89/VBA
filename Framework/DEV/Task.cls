@@ -46,6 +46,7 @@ Public Property Get HasError() As Boolean
 End Property
 
 Public Function Build(ByVal Source As Object, ByVal Method As String) As Task
+Attribute Build.VB_UserMemId = 0
     Set myClass.Source = Source
     myClass.Method = Method
     Set Build = Skynet.Create(Me)
@@ -71,9 +72,9 @@ Public Function OutOfRange() As Task
     Set OutOfRange = Me
 End Function
 
-Public Function NotEqual(ByRef A As IObject, ByRef B As IObject) As Task
+Public Function NotEqual(ByRef A As IObject, ByRef b As IObject) As Task
     myClass.Number = NotEqual_
-    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(B) & ">"
+    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(b) & ">"
     myClass.Type = "Not Equal"
     Set NotEqual = Me
 End Function
