@@ -12,27 +12,30 @@ Option Explicit
 
 Implements IObject
 Implements IPrototype
+Implements IValue
+
+Public Enum TStringFormat
+    [_First]
+    DefaultString
+    Trim
+    LTrim
+    RTrim
+    [_Last]
+End Enum
 
 Private Type Member
     Value As String
+    Format As TStringFormat
     HashFunction As Hashing
 End Type
 Private myClass As Member
+'Private Formats() As String
 
 Private Type Internal
     Size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
-
-Public Function Build(ByVal Value As String, Optional ByVal HashFunction As Hashing = Hashing.Function1) As TString
-    With myClass
-        .Value = Value
-        .HashFunction = HashFunction
-    End With
-    
-    Set Build = Skynet.Create(TString)
-End Function
 
 Public Property Get Length() As String
     Length = Len(myClass.Value)
@@ -50,10 +53,6 @@ Public Property Get Character(ByVal Index As Long) As String
     Character = VBA.Mid$(myClass.Value, Index, 1)
 End Property
 
-Public Property Get Value() As String
-    Value = myClass.Value 'VBA.Mid$(.Ascii, 1, .Length)
-End Property
-
 Public Function ToCharArray() As String()
     Dim Chars() As String
     Dim i As Long
@@ -69,9 +68,46 @@ Public Function ToCharArray() As String()
 End Function
 Public Function ToByteArray() As Byte(): ToByteArray = StrConv(myClass.Value, vbFromUnicode): End Function
 
+Public Property Get Format() As TStringFormat
+    Format = myClass.Format
+End Property
+
+Public Property Get Value() As String
+    Value = myClass.Value 'VBA.Mid$(.Ascii, 1, .Length)
+End Property
+
+Public Function Build( _
+                        ByVal Value As String, _
+                        Optional ByVal HashFunction As Hashing = Hashing.Function1, _
+                        Optional ByVal Format As TStringFormat = TStringFormat.DefaultString) As TString
+    With myClass
+        .Value = Value
+        .Format = Format
+        .HashFunction = HashFunction
+    End With
+    
+    Set Build = Skynet.Create(Me)
+End Function
+
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
+    'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
+
+Private Function IValue_Build(ByVal Value As Variant, Optional ByVal Format As Byte) As IObject
+    
+    With myClass
+        .Value = Value
+        .Format = Format
+    End With
+    
+    Set IValue_Build = Skynet.Create(Me)
+End Function
+Private Property Get IValue_Object() As IObject: Set IValue_Object = Me: End Property
+Private Property Get IValue_DatabaseType() As AdoDataType
+
+End Property
+Private Property Get IValue_Value() As Variant: IValue_Value = myClass.Value: End Property
 
 Private Function IObject_Clone() As IObject
     
@@ -93,8 +129,8 @@ Private Function IObject_Equals(Other As IObject) As Boolean
     If Other Is Nothing Then IObject_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IObject_Equals = False: Exit Function
 
-    Dim S As TString: Set S = Other
-    If Not (S.Length = Me.Length) Then IObject_Equals = False: Exit Function
+    Dim s As TString: Set s = Other
+    If Not (s.Length = Me.Length) Then IObject_Equals = False: Exit Function
 
 '    Dim i As Long
 '    Dim strB() As Byte: strB = S.ToByteArray
@@ -105,17 +141,17 @@ Private Function IObject_Equals(Other As IObject) As Boolean
 '
 '    IObject_Equals = True
 '
-    IObject_Equals = (StrComp(myClass.Value, S.Value, vbBinaryCompare) = 0)
+    IObject_Equals = (StrComp(myClass.Value, s.Value, vbBinaryCompare) = 0)
      
 End Function
 
 'TODO TMap IObject_CompareTo
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
-    Dim S As TString
+    Dim s As TString
     Dim i As Long
     
     If Other.IsRelatedTo(Me) Then
-        Set S = Other
+        Set s = Other
 '        Dim strB() As Byte: strB = S.ToByteArray
 '
 '        l = S.Length
@@ -128,7 +164,7 @@ Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
 '            End Select
 '        Next
 '        IObject_CompareTo = IsEqual
-        Select Case StrComp(myClass.Value, S.Value, vbBinaryCompare)
+        Select Case StrComp(myClass.Value, s.Value, vbBinaryCompare)
             Case 1: IObject_CompareTo = IsGreater '=  1     (String1 and String2 are not equal; String1 is greater than String2
             Case -1: IObject_CompareTo = IsLower '= -1     (String1 and String2 are not equal; String1 is less than String2)
             Case Else: IObject_CompareTo = IsEqual '=  0     (String1 and String2 are equal)
@@ -138,7 +174,16 @@ End Function
 
 Private Property Get IObject_HashValue() As Long: IObject_HashValue = Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.HashFunction): End Property
 Private Function IObject_IsRelatedTo(Other As IObject) As Boolean: IObject_IsRelatedTo = (TypeOf Other Is TString): End Function
-Private Function IObject_ToString() As String: IObject_ToString = myClass.Value: End Function
+Private Function IObject_ToString() As String
+
+    Select Case myClass.Format
+        Case TStringFormat.DefaultString: IObject_ToString = myClass.Value: Exit Function
+        Case TStringFormat.Trim: IObject_ToString = VBA.Trim$(myClass.Value): Exit Function
+        Case TStringFormat.LTrim: IObject_ToString = VBA.LTrim$(myClass.Value): Exit Function
+        Case TStringFormat.RTrim: IObject_ToString = VBA.RTrim$(myClass.Value): Exit Function
+    End Select
+    
+End Function
 
 Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New TString: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property

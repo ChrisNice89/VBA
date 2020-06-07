@@ -73,7 +73,7 @@ End Function
 
 Public Function NotEqual(ByRef A As IObject, ByRef B As IObject) As Task
     myClass.Number = NotEqual_
-    myClass.Message = "<" & Typename$(A) & "> !=  <" & Typename$(B) & ">"
+    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(B) & ">"
     myClass.Type = "Not Equal"
     Set NotEqual = Me
 End Function
@@ -100,7 +100,7 @@ Public Sub Raise(Optional ByVal Message As String)
     RaiseEvent Failed(raiseVBA)
     
     If raiseVBA Then _
-        Call Err.Raise(myClass.Number, Typename$(myClass.Source), Skynet.IObject(Me).ToString)
+        Call Err.Raise(myClass.Number, TypeName$(myClass.Source), Skynet.IObject(Me).ToString)
         
 End Sub
 
@@ -133,7 +133,7 @@ Private Function IObject_IsRelatedTo(Other As IObject) As Boolean
 End Function
 
 Private Function IObject_ToString() As String
-    IObject_ToString = "Source :: " & Typename$(myClass.Source) _
+    IObject_ToString = "Source :: " & TypeName$(myClass.Source) _
                         & vbNewLine & "ErrorType :: " & myClass.Type _
                         & vbNewLine & "Errornumber :: (#" & myClass.Number & ")" _
                         & vbNewLine & "Procedure :: " & myClass.Method _

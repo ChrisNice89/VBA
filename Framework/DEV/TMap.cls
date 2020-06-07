@@ -284,13 +284,13 @@ End Sub
 
 Public Sub Remove(ByVal Key As IObject)
     
-    Dim S As Byte
+    Dim s As Byte
     Dim Slot As Long
     
     With myClass
         If FindBy(Key, Slot) Then
-            S = (.Buckets(Slot).State And Not HAS_ENTRY)
-            .Buckets(Slot) = EmptyBucket: .Buckets(Slot).State = S
+            s = (.Buckets(Slot).State And Not HAS_ENTRY)
+            .Buckets(Slot) = EmptyBucket: .Buckets(Slot).State = s
             Call Decrement(.Count)
             
             If (Slot = .CurrentSlot) Then _
@@ -300,27 +300,27 @@ Public Sub Remove(ByVal Key As IObject)
     
 End Sub
 
-Private Function getPrime(ByVal min As Long) As Long
+Private Function getPrime(ByVal Min As Long) As Long
     
     Dim p As Long
     
-    If min < 0 Then
+    If Min < 0 Then
         'error
     End If
     
     With myClass.Const
         For p = LBound(.Primes) To UBound(.Primes)
-            If .Primes(p) >= min Then _
+            If .Primes(p) >= Min Then _
                 getPrime = .Primes(p): Exit Function
         Next
         
-        For p = min To .MaxVal
+        For p = Min To .MaxVal
             If IsPrime(p) And ((p - 1) Mod .HashPrime) <> 0 Then _
                 getPrime = p: Exit Function
         Next
     End With
     
-    getPrime = min
+    getPrime = Min
     
 End Function
 
@@ -600,8 +600,8 @@ End Function
 
 Private Function IObject_ToString() As String
     With myClass
-        IObject_ToString = "TKey: " & Typename$(.TKey) & vbNewLine & _
-                           "TValue: " & Typename$(.TValue) & vbNewLine & _
+        IObject_ToString = "TKey: " & TypeName$(.TKey) & vbNewLine & _
+                           "TValue: " & TypeName$(.TValue) & vbNewLine & _
                            "HashSize: " & .HashSize & vbNewLine & _
                            "LoadFactor: " & .LoadFactor & vbNewLine & _
                            "LoadSize: " & .LoadSize & vbNewLine & _

@@ -2,6 +2,89 @@ Attribute VB_Name = "Modul1"
 '@Folder "Entwicklung"
 
 Option Explicit
+
+Sub ParameterTest()
+
+Dim cmd As SqlCommand
+Set cmd = SqlCommand.Build("SomeSql", SqlConnection)
+
+Call cmd.CreateParameter(TString.Build("Christian"), "Name").AddValue(TString.Build("Christoph"))
+Debug.Print cmd.Parameter("Name").Current.Value
+
+Debug.Print cmd.Parameter("Name").UseValue(2).Object.ToString
+
+Dim Christian As IObject
+Dim Christoph As IObject
+
+Set Christian = cmd.Parameter("Name").Value(1)
+Set Christoph = cmd.Parameter("Name").Value(2)
+
+Debug.Print Christoph.CompareTo(Christian) = IsGreater
+
+Dim p1 As IObject
+Dim p2 As IObject
+
+Set p1 = cmd.Parameter(1)
+Set p2 = p1
+
+Debug.Print p1.Equals(p2)
+
+Dim p3 As SqlParameter
+Set p3 = SqlParameter.Build(TString.Build("Christian"), 1, "Name")
+Debug.Print Christian.Equals(p3.Current)
+
+
+Dim p4 As IObject
+Set p4 = cmd.CreateParameter(TString.Build("04.04.20"), "Datum").AddValue(TString.Build("01.01.21"))
+
+Debug.Print p4.Equals(p1)
+
+
+End Sub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sub TestTType()
+
+Dim n As TNumeric
+Dim s As TString
+
+Set n = TNumeric.Build(100.55, DefaultNumber)
+Set s = TString.Build("test", , DefaultString)
+
+
+End Sub
+
+Sub TNumeric_Test()
+
+
+Dim n As TNumeric
+Set n = TNumeric.Build(2 ^ 31)
+
+Debug.Print Skynet.IObject(n).HashValue
+
+End Sub
 Sub Compare()
 
 
@@ -70,12 +153,9 @@ Sub test()
     Debug.Print Skynet.IObject(map).ToString
 End Sub
 
-
 Sub ttt()
-
-
     Dim k As TString
-    Dim v As TString
+    Dim v As IObject
     Dim i As Long
     Dim t As New Timer
     
