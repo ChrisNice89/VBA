@@ -20,7 +20,22 @@ Implements IValue
 Public Enum TDateFormat
     [_First]
     DefaultDate
-   
+    
+    [_Last]
+End Enum
+
+Public Enum DateInterval
+    [_First]
+    Year
+    Quarter
+    Month
+    DayOfYear
+    Day
+    Weekday
+    Week
+    Hour
+    Minute
+    Second
     [_Last]
 End Enum
 
@@ -30,6 +45,7 @@ Private Type Member
    
 End Type
 Private myClass As Member
+Private Interval() As String
 'Private Formats() As String
 
 Private Type Internal
@@ -37,6 +53,31 @@ Private Type Internal
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
+
+Public Property Get ToDay() As String
+    'Day = Format(DateSerial2016, 11, 4), "dddd")
+End Property
+
+Public Function Add(ByVal Number As Long, ByVal i As DateInterval) As TDate
+    Set Add = TDate(DateAdd(Me.IntervalName(i), Number, myClass.Value), myClass.Format)
+End Function
+
+Public Function DifferenceTo(ByVal D As TDate, ByVal i As DateInterval) As Long
+    DifferenceTo = DateDiff(Me.IntervalName(i), myClass.Value, D.Value)
+End Function
+
+Public Property Get IntervalName(ByVal i As DateInterval) As String
+    IntervalName = Interval(i)
+End Property
+
+Public Function Build2( _
+                            ByVal Day As Integer, _
+                            ByVal Month As Integer, _
+                            ByVal Year As Integer, _
+                            Optional ByVal Format As TDateFormat = TDateFormat.DefaultDate) As TDate
+        
+    Set Build2 = TDate(VBA.DateSerial(Year, Month, Day), myClass.Format)
+End Function
 
 Public Property Get Value() As Date
     Value = myClass.Value
@@ -48,8 +89,7 @@ Public Function Build( _
 Attribute Build.VB_UserMemId = 0
 With myClass
         .Value = Value
-        .Format = Format
-        
+        .Format = Format        
     End With
     
     Set Build = Skynet.Create(Me)
@@ -57,6 +97,18 @@ End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
+    ReDim Interval(DateInterval.[_First] To DateInterval.[_Last])
+    Interval(DateInterval.Day) = "d"
+    Interval(DateInterval.DayOfYear) = "y"
+    Interval(DateInterval.Hour) = "h"
+    Interval(DateInterval.Minute) = "n"
+    Interval(DateInterval.Month) = "m"
+    Interval(DateInterval.Quarter) = "q"
+    Interval(DateInterval.Second) = "s"
+    Interval(DateInterval.Week) = "ww"
+    Interval(DateInterval.Weekday) = "w"
+    Interval(DateInterval.Year) = "yyyy"
+    
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
 
@@ -95,20 +147,20 @@ Private Function IObject_Equals(Other As IObject) As Boolean
     If Other Is Nothing Then IObject_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IObject_Equals = False: Exit Function
 
-    Dim d As TDate: Set d = Other
+    Dim D As TDate: Set D = Other
    
-    IObject_Equals = (myClass.Value = d.Value)
+    IObject_Equals = (myClass.Value = D.Value)
      
 End Function
 
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
-    Dim d As TDate
+    Dim D As TDate
     
     If Other.IsRelatedTo(Me) Then
-        Set d = Other
+        Set D = Other
         Select Case True
-            Case myClass.Value > d.Value: IObject_CompareTo = IsGreater
-            Case myClass.Value < d.Value: IObject_CompareTo = IsLower
+            Case myClass.Value > D.Value: IObject_CompareTo = IsGreater
+            Case myClass.Value < D.Value: IObject_CompareTo = IsLower
             Case Else: IObject_CompareTo = IsEqual
         End Select
     End If
