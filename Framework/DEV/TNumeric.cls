@@ -77,7 +77,8 @@ Public Property Get Value() As Currency
 End Property
 
 Public Function Build(ByVal Value As Currency, Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As TNumeric
-    With myClass
+Attribute Build.VB_UserMemId = 0
+With myClass
         .Value = Value
         .Format = Format
     End With
@@ -130,7 +131,7 @@ Private Function IObject_Clone() As IObject
     Virtual.Pointer = VarPtr(myClass)
    
 End Function
-'TODO TMap IObject_Dispose
+
 Private Sub IObject_Dispose()
     myClass = EmptyStructure
 End Sub
@@ -147,22 +148,21 @@ Private Function IObject_Equals(Other As IObject) As Boolean
      
 End Function
 
-'TODO TMap IObject_CompareTo
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
     Dim n As TNumeric
     
     If Other.IsRelatedTo(Me) Then
         Set n = Other
         Select Case True
-            Case myClass.Value > n.Value: IObject_CompareTo = IsGreater '=  1     (String1 and String2 are not equal; String1 is greater than String2
-            Case myClass.Value < n.Value: IObject_CompareTo = IsLower '= -1     (String1 and String2 are not equal; String1 is less than String2)
-            Case Else: IObject_CompareTo = IsEqual '=  0     (String1 and String2 are equal)
+            Case myClass.Value > n.Value: IObject_CompareTo = IsGreater
+            Case myClass.Value < n.Value: IObject_CompareTo = IsLower
+            Case Else: IObject_CompareTo = IsEqual
         End Select
     End If
 End Function
 
 Private Property Get IObject_HashValue() As Long: IObject_HashValue = Skynet.LimitDouble(myClass.Value): End Property
-Private Function IObject_IsRelatedTo(Other As IObject) As Boolean: IObject_IsRelatedTo = (TypeOf Other Is TString): End Function
+Private Function IObject_IsRelatedTo(Other As IObject) As Boolean: IObject_IsRelatedTo = (TypeOf Other Is TNumeric): End Function
 Private Function IObject_ToString() As String: IObject_ToString = VBA.Format$(myClass.Value, Formats(Me.Format)): End Function
     
 Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New TNumeric: End Property

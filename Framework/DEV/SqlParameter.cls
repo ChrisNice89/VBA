@@ -23,12 +23,14 @@ Private Type Member
     Index As Byte
     HashFunction As Hashing
 End Type
+
 Private myClass As Member
 
 Private Type Internal
     Size As Long
     Pointer As LongPtr
 End Type
+
 Private Virtual As Internal
 
 Public Property Get Count() As Long
@@ -92,10 +94,12 @@ Private Function IObject_Clone() As IObject
     Virtual.Pointer = VarPtr(myClass)
    
 End Function
+
 'TODO TMap IObject_Dispose
 Private Sub IObject_Dispose()
     myClass = EmptyStructure
 End Sub
+
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IObject_Equals(Other As IObject) As Boolean
@@ -123,13 +127,16 @@ Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
 End Function
 
 Private Property Get IObject_HashValue() As Long:
-IObject_HashValue = 0
-'Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.HashFunction): End Property
+    IObject_HashValue = 0
+    'Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.HashFunction): End Property
+
 End Property
 Private Function IObject_IsRelatedTo(Other As IObject) As Boolean: IObject_IsRelatedTo = (TypeOf Other Is SqlParameter): End Function
+
 Private Function IObject_ToString() As String: IObject_ToString = "": End Function
 
 Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New SqlParameter: End Property
+
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

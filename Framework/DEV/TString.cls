@@ -53,6 +53,10 @@ Public Property Get Character(ByVal Index As Long) As String
     Character = VBA.Mid$(myClass.Value, Index, 1)
 End Property
 
+Public Function Replace(ByVal Find As String, ReplaceWith As String) As TString
+    Set Replace = TString(VBA.Replace$(myClass.Value, Find, ReplaceWith), myClass.HashFunction, myClass.Format)
+End Function
+
 Public Function ToCharArray() As String()
     Dim Chars() As String
     Dim i As Long
@@ -80,7 +84,8 @@ Public Function Build( _
                         ByVal Value As String, _
                         Optional ByVal HashFunction As Hashing = Hashing.Function1, _
                         Optional ByVal Format As TStringFormat = TStringFormat.DefaultString) As TString
-    With myClass
+Attribute Build.VB_UserMemId = 0
+With myClass
         .Value = Value
         .Format = Format
         .HashFunction = HashFunction
@@ -95,7 +100,6 @@ Private Sub Class_Initialize()
 End Sub
 
 Private Function IValue_Build(ByVal Value As Variant, Optional ByVal Format As Byte) As IObject
-    
     With myClass
         .Value = Value
         .Format = Format
@@ -118,7 +122,7 @@ Private Function IObject_Clone() As IObject
     Virtual.Pointer = VarPtr(myClass)
    
 End Function
-'TODO TMap IObject_Dispose
+
 Private Sub IObject_Dispose()
     myClass = EmptyStructure
 End Sub
@@ -145,7 +149,6 @@ Private Function IObject_Equals(Other As IObject) As Boolean
      
 End Function
 
-'TODO TMap IObject_CompareTo
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
     Dim s As TString
     Dim i As Long
@@ -165,9 +168,9 @@ Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
 '        Next
 '        IObject_CompareTo = IsEqual
         Select Case StrComp(myClass.Value, s.Value, vbBinaryCompare)
-            Case 1: IObject_CompareTo = IsGreater '=  1     (String1 and String2 are not equal; String1 is greater than String2
-            Case -1: IObject_CompareTo = IsLower '= -1     (String1 and String2 are not equal; String1 is less than String2)
-            Case Else: IObject_CompareTo = IsEqual '=  0     (String1 and String2 are equal)
+            Case 1: IObject_CompareTo = IsGreater
+            Case -1: IObject_CompareTo = IsLower
+            Case Else: IObject_CompareTo = IsEqual
         End Select
     End If
 End Function

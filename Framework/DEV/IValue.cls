@@ -20,6 +20,7 @@ End Enum
 
 Public Function Build(ByVal Value As Variant, Optional ByVal Format As Byte) As IObject: End Function
 Public Property Get Value() As Variant: End Property
+Attribute Value.VB_UserMemId = 0
 Public Property Get DatabaseType() As AdoDataType: End Property
 Public Property Get Object() As IObject: End Property
 

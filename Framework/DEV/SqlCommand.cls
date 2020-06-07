@@ -22,21 +22,27 @@ Public Event Dispose()
 
 Private Type Member
     Connection As SqlConnection
-    Sql As String
+    sql As TString
     Parameter As VBA.Collection
 End Type
+
 Private myClass As Member
 
 Private Type Internal
     Size As Long
     Pointer As LongPtr
 End Type
+
 Private Virtual As Internal
 
 Public Sub Execute()
 
     RaiseEvent WillExecute
 End Sub
+
+Public Property Get sql() As TString
+    Set sql = myClass.sql
+End Property
 
 Public Property Get Parameter(ByVal Index As Variant) As SqlParameter
     Set Parameter = myClass.Parameter(Index)
@@ -54,7 +60,7 @@ Public Function CreateParameter(ByRef Value As IValue, Optional ByVal Name As St
     Dim p As SqlParameter
     
     If Name = vbNullString Then _
-        Name = p & myClass.Parameter.Count + 1
+       Name = "p" & myClass.Parameter.Count + 1
     
     Set p = SqlParameter.Build(Value, myClass.Parameter.Count + 1, Name)
     Call Me.AddParameter(p)
@@ -67,10 +73,10 @@ Public Sub Prepare()
 
     RaiseEvent Prepare
 End Sub
-Public Function Build(ByVal Sql As String, ByRef Connection As SqlConnection) As SqlCommand
-    
+
+Public Function Build(ByVal sql As String, ByRef Connection As SqlConnection) As SqlCommand
     With myClass
-        .Sql = Sql
+        Set .sql = TString(sql)
         Set .Connection = Connection
         Set .Parameter = New VBA.Collection
     End With
@@ -91,10 +97,12 @@ Private Function IObject_Clone() As IObject
     Virtual.Pointer = VarPtr(myClass)
    
 End Function
+
 'TODO TMap IObject_Dispose
 Private Sub IObject_Dispose()
     myClass = EmptyStructure
 End Sub
+
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IObject_Equals(Other As IObject) As Boolean
@@ -121,9 +129,12 @@ End Function
 
 Private Property Get IObject_HashValue() As Long: IObject_HashValue = 0: End Property
 Private Function IObject_IsRelatedTo(Other As IObject) As Boolean: IObject_IsRelatedTo = (TypeOf Other Is SqlCommand): End Function
+
 Private Function IObject_ToString() As String: IObject_ToString = "": End Function
 
 Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New SqlCommand: End Property
+
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
+
 

@@ -391,7 +391,7 @@ End Function
 Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
 
     Dim NewBuckets() As Bucket: ReDim NewBuckets(Size - 1)
-    Dim B As Bucket
+    Dim b As Bucket
     Dim i As Long
   
     With myClass
@@ -400,26 +400,26 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
         If ForceNewHashing Then
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    B = .Buckets(i): B.HashCode = B.Key.HashValue: Call PutEntry(NewBuckets, B, InitialHashing(B.HashCode, Size))
+                    b = .Buckets(i): b.HashCode = b.Key.HashValue: Call PutEntry(NewBuckets, b, InitialHashing(b.HashCode, Size))
             Next
         Else
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    B = .Buckets(i): Call PutEntry(NewBuckets, B, InitialHashing(B.HashCode, Size))
+                    b = .Buckets(i): Call PutEntry(NewBuckets, b, InitialHashing(b.HashCode, Size))
             Next
         End If
         
-        B = EmptyBucket
+        b = EmptyBucket
         
         If .CurrentSlot >= 0 Then _
-           Set B.Key = .Buckets(.CurrentSlot).Key
+           Set b.Key = .Buckets(.CurrentSlot).Key
 
         .Buckets = NewBuckets
         .LoadSize = Int(.LoadFactor * Size)
         .HashSize = Size
          
-        If Not B.Key Is Nothing Then _
-           Call FindBy(B.Key, .CurrentSlot)
+        If Not b.Key Is Nothing Then _
+           Call FindBy(b.Key, .CurrentSlot)
             
     End With
     
