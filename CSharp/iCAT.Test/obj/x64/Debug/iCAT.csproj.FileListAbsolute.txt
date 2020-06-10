@@ -1,0 +1,6 @@
+C:\Users\cnitz\Documents\GitHub\VBA\CSharp\SqlTools.Test\bin\x64\Debug\iCAT.dll
+C:\Users\cnitz\Documents\GitHub\VBA\CSharp\SqlTools.Test\bin\x64\Debug\iCAT.pdb
+C:\Users\cnitz\Documents\GitHub\VBA\CSharp\SqlTools.Test\obj\x64\Debug\iCAT.csprojAssemblyReference.cache
+C:\Users\cnitz\Documents\GitHub\VBA\CSharp\SqlTools.Test\obj\x64\Debug\iCAT.csproj.CoreCompileInputs.cache
+C:\Users\cnitz\Documents\GitHub\VBA\CSharp\SqlTools.Test\obj\x64\Debug\iCAT.dll
+C:\Users\cnitz\Documents\GitHub\VBA\CSharp\SqlTools.Test\obj\x64\Debug\iCAT.pdb
