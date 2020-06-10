@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{B480C4FF-D4B7-4B3B-BEFD-0D61639DE8CD}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AccessCodeLib.Data.SqlTools.Converter.Tests</RootNamespace>
+    <AssemblyName>AccessCodeLib.Data.SqlTools.Converter.Tests</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="nunit.framework, Version=2.6.0.12051, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Jet\Dao\ConditionConverterTests.cs" />
+    <Compile Include="Jet\SqlConverterToolsTests.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Jet\SqlConverterTests.cs" />
+    <Compile Include="Jet\Dao\SqlConverterTests.cs" />
+    <Compile Include="Jet\Adodb\SqlGeneratorTests.cs" />
+    <Compile Include="TSql\SqlGeneratorTests_Tsql.cs" />
+    <Compile Include="_TestHelper\ConditionConverterTestBase.cs" />
+    <Compile Include="_TestHelper\SqlConverterTestBase.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Common.Sql\AccessCodeLib.Data.Common.Sql.csproj">
+      <Project>{5F7D31CE-1329-440F-89C9-7AD2FA9B7345}</Project>
+      <Name>AccessCodeLib.Data.Common.Sql</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\SqlTools.Converter\AccessCodeLib.Data.SqlTools.Converter.csproj">
+      <Project>{7D7AC3D3-CF38-424E-AD08-836601E5376D}</Project>
+      <Name>AccessCodeLib.Data.SqlTools.Converter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\SqlTools\AccessCodeLib.Data.SqlTools.csproj">
+      <Project>{055B1444-B115-4D96-965D-B68A66970C4A}</Project>
+      <Name>AccessCodeLib.Data.SqlTools</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

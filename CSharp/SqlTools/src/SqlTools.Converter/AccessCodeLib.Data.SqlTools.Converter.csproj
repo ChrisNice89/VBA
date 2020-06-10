@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{7D7AC3D3-CF38-424E-AD08-836601E5376D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AccessCodeLib.Data.SqlTools.Converter</RootNamespace>
+    <AssemblyName>AccessCodeLib.Data.SqlTools.Converter</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Common\Ansi92\ConditionConverter.cs" />
+    <Compile Include="Exceptions\NotSupportedRelationalOperatorException.cs" />
+    <Compile Include="Exceptions\NotSupportedSourceException.cs" />
+    <Compile Include="Exceptions\NotSupportedTypeException.cs" />
+    <Compile Include="Interfaces\IValueConverter.cs" />
+    <Compile Include="Jet\Oledb\SqlConverter.cs" />
+    <Compile Include="Common\Ansi92\NameConverter.cs" />
+    <Compile Include="Common\Ansi92\SqlConverter.cs" />
+    <Compile Include="Common\Ansi92\SqlConverterTools.cs" />
+    <Compile Include="ConditionConverter.cs" />
+    <Compile Include="Jet\Dao\ConditionConverter.cs" />
+    <Compile Include="Jet\NameConverter.cs" />
+    <Compile Include="Jet\Dao\SqlConverter.cs" />
+    <Compile Include="Jet\SqlConverterTools.cs" />
+    <Compile Include="Interfaces\IConditionConverter.cs" />
+    <Compile Include="Interfaces\INameConvertor.cs" />
+    <Compile Include="Jet\ValueConverter.cs" />
+    <Compile Include="Common\Ansi92\ValueConverter.cs" />
+    <Compile Include="Mssql\ValueConverter.cs" />
+    <Compile Include="NameConverter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SqlConverter.cs" />
+    <Compile Include="Mssql\NameConverter.cs" />
+    <Compile Include="Mssql\SqlConverter.cs" />
+    <Compile Include="Mssql\SqlConverterTools.cs" />
+    <Compile Include="SqlConverterTools.cs" />
+    <Compile Include="ValueConverter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common.Sql\AccessCodeLib.Data.Common.Sql.csproj">
+      <Project>{5F7D31CE-1329-440F-89C9-7AD2FA9B7345}</Project>
+      <Name>AccessCodeLib.Data.Common.Sql</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Properties\AssemblyInfo.template" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>"$(ProjectDir)..\..\tools\svn\subwcrev.cmd" "$(ProjectDir)." "$(ProjectDir)Properties\AssemblyInfo.template" "$(ProjectDir)Properties\AssemblyInfo.cs"</PreBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

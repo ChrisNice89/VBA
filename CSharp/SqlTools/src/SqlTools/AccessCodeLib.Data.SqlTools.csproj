@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{055B1444-B115-4D96-965D-B68A66970C4A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AccessCodeLib.Data.SqlTools</RootNamespace>
+    <AssemblyName>AccessCodeLib.Data.SqlTools</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ConditionGenerator.cs" />
+    <Compile Include="Interfaces\IConditionGenerator.cs" />
+    <Compile Include="Interfaces\IFieldGenerator.cs" />
+    <Compile Include="Interfaces\ISqlGenerator.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SqlGenerator.cs" />
+    <Compile Include="FieldGenerator.cs" />
+    <Compile Include="SqlToolsFactory.cs" />
+    <Compile Include="Sql\BetweenValue.cs" />
+    <Compile Include="Sql\BooleanValue.cs" />
+    <Compile Include="Sql\ConditionGroup.cs" />
+    <Compile Include="Sql\ConditionStatement.cs" />
+    <Compile Include="Sql\ConditionString.cs" />
+    <Compile Include="Sql\DateTimeValue.cs" />
+    <Compile Include="Sql\Field.cs" />
+    <Compile Include="Sql\FieldAlias.cs" />
+    <Compile Include="Sql\FieldCondition.cs" />
+    <Compile Include="Sql\FieldList.cs" />
+    <Compile Include="Sql\FieldsStatement.cs" />
+    <Compile Include="Sql\FromStatement.cs" />
+    <Compile Include="Sql\GroupByStatement.cs" />
+    <Compile Include="Sql\HavingStatement.cs" />
+    <Compile Include="Sql\JoinStatement.cs" />
+    <Compile Include="Sql\NamedSource.cs" />
+    <Compile Include="Sql\NullValue.cs" />
+    <Compile Include="Sql\NumericValue.cs" />
+    <Compile Include="Sql\OrderByStatement.cs" />
+    <Compile Include="Sql\SelectStatement.cs" />
+    <Compile Include="Sql\SourceAlias.cs" />
+    <Compile Include="Sql\SqlStatement.cs" />
+    <Compile Include="Sql\SubSelectSource.cs" />
+    <Compile Include="Sql\TextValue.cs" />
+    <Compile Include="Sql\ValueArray.cs" />
+    <Compile Include="Sql\WhereStatement.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Properties\AssemblyInfo.template" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common.Sql\AccessCodeLib.Data.Common.Sql.csproj">
+      <Project>{5F7D31CE-1329-440F-89C9-7AD2FA9B7345}</Project>
+      <Name>AccessCodeLib.Data.Common.Sql</Name>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>"$(ProjectDir)..\..\tools\svn\subwcrev.cmd" "$(ProjectDir)." "$(ProjectDir)Properties\AssemblyInfo.template" "$(ProjectDir)Properties\AssemblyInfo.cs"</PreBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

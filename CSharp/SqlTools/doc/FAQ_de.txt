@@ -1,0 +1,7 @@
+Der FAQ-Bereich ist im Forum von access-codelib.net
+
+Allgemeine Fragen zur Entwicklungsumgebung der AccessCodeLib.DotNetLib-Projekte:
+http://forum.access-codelib.net/viewforum.php?f=28
+
+Fragen speziell zu SqlTools:
+http://forum.access-codelib.net/viewforum.php?f=29

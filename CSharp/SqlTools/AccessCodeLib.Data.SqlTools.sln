@@ -1,0 +1,72 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccessCodeLib.Data.SqlTools", "src\SqlTools\AccessCodeLib.Data.SqlTools.csproj", "{055B1444-B115-4D96-965D-B68A66970C4A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccessCodeLib.Data.SqlTools.interop", "src\SqlTools.interop\AccessCodeLib.Data.SqlTools.interop.csproj", "{D986F12D-DC1E-4287-B12A-D17427B2FEE4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccessCodeLib.Data.SqlTools.Tests", "tests\SqlTools.Tests\AccessCodeLib.Data.SqlTools.Tests.csproj", "{618C8A99-874E-4F11-91A3-135274E4EE47}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7D7AC3D3-CF38-424E-AD08-836601E5376D} = {7D7AC3D3-CF38-424E-AD08-836601E5376D}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{BFA6F7C6-722F-4600-B7AE-2037608350A4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccessCodeLib.Data.SqlTools.interop.Tests", "tests\SqlTools.interop.Tests\AccessCodeLib.Data.SqlTools.interop.Tests.csproj", "{88731076-809B-43EA-83BA-E11B68AE737C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7D7AC3D3-CF38-424E-AD08-836601E5376D} = {7D7AC3D3-CF38-424E-AD08-836601E5376D}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccessCodeLib.Data.SqlTools.Converter", "src\SqlTools.Converter\AccessCodeLib.Data.SqlTools.Converter.csproj", "{7D7AC3D3-CF38-424E-AD08-836601E5376D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5F7D31CE-1329-440F-89C9-7AD2FA9B7345} = {5F7D31CE-1329-440F-89C9-7AD2FA9B7345}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccessCodeLib.Data.Common.Sql", "src\Common.Sql\AccessCodeLib.Data.Common.Sql.csproj", "{5F7D31CE-1329-440F-89C9-7AD2FA9B7345}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccessCodeLib.Data.SqlTools.Converter.Tests", "tests\SqlTools.Converter.Tests\AccessCodeLib.Data.SqlTools.Converter.Tests.csproj", "{B480C4FF-D4B7-4B3B-BEFD-0D61639DE8CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{055B1444-B115-4D96-965D-B68A66970C4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{055B1444-B115-4D96-965D-B68A66970C4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{055B1444-B115-4D96-965D-B68A66970C4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{055B1444-B115-4D96-965D-B68A66970C4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D986F12D-DC1E-4287-B12A-D17427B2FEE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D986F12D-DC1E-4287-B12A-D17427B2FEE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D986F12D-DC1E-4287-B12A-D17427B2FEE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D986F12D-DC1E-4287-B12A-D17427B2FEE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{618C8A99-874E-4F11-91A3-135274E4EE47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{618C8A99-874E-4F11-91A3-135274E4EE47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{618C8A99-874E-4F11-91A3-135274E4EE47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{618C8A99-874E-4F11-91A3-135274E4EE47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88731076-809B-43EA-83BA-E11B68AE737C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88731076-809B-43EA-83BA-E11B68AE737C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88731076-809B-43EA-83BA-E11B68AE737C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88731076-809B-43EA-83BA-E11B68AE737C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D7AC3D3-CF38-424E-AD08-836601E5376D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D7AC3D3-CF38-424E-AD08-836601E5376D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D7AC3D3-CF38-424E-AD08-836601E5376D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D7AC3D3-CF38-424E-AD08-836601E5376D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F7D31CE-1329-440F-89C9-7AD2FA9B7345}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F7D31CE-1329-440F-89C9-7AD2FA9B7345}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F7D31CE-1329-440F-89C9-7AD2FA9B7345}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F7D31CE-1329-440F-89C9-7AD2FA9B7345}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B480C4FF-D4B7-4B3B-BEFD-0D61639DE8CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B480C4FF-D4B7-4B3B-BEFD-0D61639DE8CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B480C4FF-D4B7-4B3B-BEFD-0D61639DE8CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B480C4FF-D4B7-4B3B-BEFD-0D61639DE8CD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{618C8A99-874E-4F11-91A3-135274E4EE47} = {BFA6F7C6-722F-4600-B7AE-2037608350A4}
+		{88731076-809B-43EA-83BA-E11B68AE737C} = {BFA6F7C6-722F-4600-B7AE-2037608350A4}
+		{B480C4FF-D4B7-4B3B-BEFD-0D61639DE8CD} = {BFA6F7C6-722F-4600-B7AE-2037608350A4}
+	EndGlobalSection
+EndGlobal

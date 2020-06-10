@@ -1,0 +1,32 @@
+﻿using System.Reflection;
+using System.Runtime.InteropServices;
+
+// Allgemeine Informationen über eine Assembly werden über die folgenden 
+// Attribute gesteuert. Ändern Sie diese Attributwerte, um die Informationen zu ändern,
+// die mit einer Assembly verknüpft sind.
+[assembly: AssemblyTitle("AccessCodeLib.Data.SqlTools")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("access-codelib.net")]
+[assembly: AssemblyProduct("AccessCodeLib.Data.SqlTools")]
+[assembly: AssemblyCopyright("access-codelib.net")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+
+// Durch Festlegen von ComVisible auf "false" werden die Typen in dieser Assembly unsichtbar 
+// für COM-Komponenten. Wenn Sie auf einen Typ in dieser Assembly von 
+// COM zugreifen müssen, legen Sie das ComVisible-Attribut für diesen Typ auf "true" fest.
+[assembly: ComVisible(false)]
+
+// Die folgende GUID bestimmt die ID der Typbibliothek, wenn dieses Projekt für COM verfügbar gemacht wird
+[assembly: Guid("43f84112-aef3-42fa-a138-e6a03e80f2f7")]
+
+// Versionsinformationen für eine Assembly bestehen aus den folgenden vier Werten:
+//
+//      Major Version ... Eine Änderung bedeutet: nicht mehr (zwangsweise) kompatibel	
+//      Minor Version ... Abwärtskompatiblität ist gegeben - es kann aber neue Funktionalitäten geben.
+//      Revision	  ... Nur kleine Änderungen wie Fehler-Behebungen, Behebung vom Layout-Unschönheiten usw.
+//      SVN-Rev.      ... Subversion-Revision-Nr. (... für Entwickler. um den exakten Code-Zustand erkennen zu können)
+//
+[assembly: AssemblyVersion("0.4.*")]
+[assembly: AssemblyFileVersion("0.4.0.$WCREV$")]

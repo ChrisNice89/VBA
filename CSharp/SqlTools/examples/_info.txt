@@ -1,0 +1,3 @@
+
+ Beispiel-Dateien (Access-Anwendungen usw.)
+ ... soll Anwendung der Bibliotheken zeigen

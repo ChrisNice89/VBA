@@ -1,0 +1,4 @@
+
+ Dokumentation der Bibliothek 
+ ... eventuell per Doxygen o. ä.
+ 
