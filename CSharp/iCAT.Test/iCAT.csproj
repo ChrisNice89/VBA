@@ -65,9 +65,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TFactory\Constants.cs" />
     <Compile Include="TFactory\Factory.cs" />
-    <Compile Include="TFactory\IFactory.cs" />
     <Compile Include="TObjects\IObject.cs" />
+    <Compile Include="TObjects\IValue.cs" />
+    <Compile Include="TObjects\TDate.cs" />
     <Compile Include="TObjects\Test.cs" />
     <Compile Include="TObjects\TString.cs" />
     <Compile Include="TObjects\TNumeric.cs" />
