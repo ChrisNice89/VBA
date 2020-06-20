@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Skynet.Objects.TObjects;
+using Skynet.Objects.TObjects.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -22,4 +24,4 @@ namespace Skynet.Objects
         IObject<T> Object();
         object Value { get; }
     }
-}
+}   

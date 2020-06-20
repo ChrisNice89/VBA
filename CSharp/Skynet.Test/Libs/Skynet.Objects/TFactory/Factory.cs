@@ -6,6 +6,8 @@ using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Configuration;
 using Skynet.Objects.Enums;
+using System.Diagnostics;
+using RGiesecke.DllExport;
 
 namespace Skynet.Objects
 {
@@ -74,14 +76,14 @@ namespace Skynet.Objects
 
         string CreateConnection(Connectiontype T);
     }
-
-    [ComVisible(false)]
-    [Guid("20999B4B-E0CC-4BA9-AFBC-04E7F72217B2"), InterfaceType(ComInterfaceType.InterfaceIsDual)]
-    public interface IFactoryTObjets
-    { 
-        TString TString(object value);
-        TDate TDate(object value);
-        TNumeric TNumeric(object value);
+    static class Exports
+    {
+        [DllExport]
+        [return: MarshalAs(UnmanagedType.IDispatch)]
+        public static Object Factory()
+        {
+            return new Factory();
+        }
     }
 }
 

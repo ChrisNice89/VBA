@@ -17,11 +17,11 @@ namespace Skynet.Objects
     [ComVisible(true)]
     [Guid("18B999A2-FC40-42D6-A4CD-815AD147BC5E"),ClassInterface(ClassInterfaceType.None)]
     [ProgId(Constants.ProgID + ".TNumeric")]
-    public class TNumeric : INumeric,IValue
+    public class TNumeric : INumeric
     {
         public int Value { get; }
         public IObject Object => (IObject)this;
-        object IValue.Value => (object)Value;
+        
         public string Test()
         {
             return this.GetType().ToString();

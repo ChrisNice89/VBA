@@ -18,11 +18,10 @@ namespace Skynet.Objects
     [ComVisible(true)]
     [Guid("D5A3D24A-C15F-44CA-8183-13E0708A98FE"), ClassInterface(ClassInterfaceType.None)]
     [ProgId(Constants.ProgID + ".TNumeric")]
-    public class TDate : IDate,IValue
+    public class TDate : IDate
     {
         public DateTime Value { get; }
         public IObject Object =>  (IObject)this;
-        object IValue.Value => (object)Value;
 
         public string Test()
         {

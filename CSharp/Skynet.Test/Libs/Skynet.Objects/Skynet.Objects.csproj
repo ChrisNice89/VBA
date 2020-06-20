@@ -8,8 +8,8 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Skynet.Objects</RootNamespace>
-    <AssemblyName>SkynetObjects</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <AssemblyName>Skynet.Objects</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -23,6 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,6 +32,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -41,6 +43,7 @@
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
@@ -51,11 +54,39 @@
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="RGiesecke.DllExport.Metadata, Version=1.0.0.0, Culture=neutral, PublicKeyToken=8f52d83c1a22df51, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\UnmanagedExports.1.2.7\lib\net\RGiesecke.DllExport.Metadata.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -76,10 +107,14 @@
     <Compile Include="Settings.cs" />
     <Compile Include="TFactory\Constants.cs" />
     <Compile Include="TFactory\Factory.cs" />
+    <Compile Include="TObjects\ExtensionMethods.cs" />
     <Compile Include="TObjects\IObject.cs" />
+    <Compile Include="TObjects\IParameter.cs" />
     <Compile Include="TObjects\IValue.cs" />
+    <Compile Include="TObjects\TBase.cs" />
     <Compile Include="TObjects\TDate.cs" />
     <Compile Include="TObjects\Test.cs" />
+    <Compile Include="TObjects\TParameter.cs" />
     <Compile Include="TObjects\TString.cs" />
     <Compile Include="TObjects\TNumeric.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -107,4 +142,5 @@
     <PreBuildEvent>
     </PreBuildEvent>
   </PropertyGroup>
+  <Import Project="../../packages/UnmanagedExports.1.2.7/tools/RGiesecke.DllExport.targets" Condition="Exists('../../packages/UnmanagedExports.1.2.7/tools/RGiesecke.DllExport.targets')" />
 </Project>

@@ -14,6 +14,8 @@ namespace Skynet.Objects
     {
         Boolean Equals(IObject other);
         CompareResult CompareTo(IObject other);
+        Boolean IsRelatedTo(IObject other);
+        //int HashCode(IObject other);
     }
 
     [ComVisible(false)]
