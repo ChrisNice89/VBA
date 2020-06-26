@@ -17,13 +17,14 @@ Implements IObject
 Implements IPrototype
 
 Private Type Member
+    TValue As IValue
     Value As IValue
     Values As VBA.Collection
     Name As String
     Index As Byte
-    HashFunction As Hashing
+    Hashfunction As Hashing
+    Parameter As ADODB.Parameter
 End Type
-
 Private myClass As Member
 
 Private Type Internal
@@ -42,20 +43,42 @@ Public Property Get Index() As Byte
 End Property
 
 Public Property Get Name() As String
-    Name = myClass.Name
+    Name = myClass.Parameter.Name
+End Property
+
+Public Property Get TValue() As IValue
+    Set TValue = myClass.TValue
 End Property
 
 Public Property Get Value(ByVal Index As Byte) As IValue
     Set Value = myClass.Values(Index)
 End Property
 
+Public Property Get Parameter() As ADODB.Parameter
+    Set Parameter = myClass.Parameter
+End Property
+
+Public Sub Update(ByVal Value As IValue)
+    With myClass
+        If Not .TValue.Object.IsRelatedTo(Value) Then
+        
+        End If
+        Set .Value = Value
+        'Edit
+        .Parameter.Size = Len(.Value.Value)
+        .Parameter.Value = .Value.Value
+   End With
+End Sub
+
 Public Function UseValue(ByVal Index As Byte) As IValue
-    Set myClass.Value = myClass.Values(Index)
-    Set UseValue = myClass.Value
+    With myClass
+        Call Me.Update(.Values(Index))
+        Set UseValue = .Value
+    End With
 End Function
 
-Public Property Get Current() As IValue
-    Set Current = myClass.Value
+Public Property Get CurrentValue() As IValue
+    Set CurrentValue = myClass.Value
 End Property
 
 Public Function AddValue(ByRef Value As IValue) As SqlParameter
@@ -68,21 +91,41 @@ Public Function AddValue(ByRef Value As IValue) As SqlParameter
     
 End Function
 
-Public Function Build(ByRef Value As IValue, Index As Byte, Optional ByVal Name As String = vbNullString) As SqlParameter
+Public Function Build( _
+                        ByRef TValue As IValue, _
+                        Optional ByVal Name As String = "?") As SqlParameter
     With myClass
-        Set .Value = Value
-        Set .Values = New VBA.Collection
-        .Values.Add Value
+        Set .TValue = TValue
+        Set .Parameter = New ADODB.Parameter
+        With .Parameter
+            .Name = Name
+            .Type = myClass.TValue.DatabaseType
+            .Size = Len(myClass.TValue.Value)
+            .Value = myClass.TValue.Value
+        End With
         .Index = Index
-        .Name = IIf(Name = vbNullString, "p" & Index, Name)
     End With
     
-    Set Build = Skynet.Create(Me)
+    Set Build = New SqlParameter
+    'Set myClass.Value = New VBA.Collection
+    'myclass.Values.Add Value
+    'Set Build = Skynet.Create(Me)
     
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
+    
+    If Not Me Is SqlParameter Then
+         With myClass
+            Set .Parameter = SqlParameter.Parameter
+            Set .TValue = SqlParameter.TValue
+            Set .Values = New VBA.Collection
+            .Index = SqlParameter.Index
+        End With
+        Call Skynet.CastObject(SqlParameter).Dispose
+    End If
+
 End Sub
 
 Private Function IObject_Clone() As IObject
@@ -108,9 +151,9 @@ Private Function IObject_Equals(Other As IObject) As Boolean
     If Not Other.IsRelatedTo(Me) Then IObject_Equals = False: Exit Function
 
     Dim p As SqlParameter: Set p = Other
- 
+    'If Not p.Count = Me.Count Then IObject_Equals = False: Exit Function
     
-    IObject_Equals = Me.Current.Object.Equals(p.Current.Object)
+    IObject_Equals = (Me.CurrentValue.Object.Equals(p.CurrentValue.Object))
      
 End Function
 
@@ -121,7 +164,7 @@ Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
     
     If Other.IsRelatedTo(Me) Then
         Dim p As SqlParameter: Set p = Other
-        IObject_CompareTo = myClass.Value.Object.CompareTo(p.Current)
+        IObject_CompareTo = myClass.Value.Object.CompareTo(p.CurrentValue)
     End If
     
 End Function
@@ -136,7 +179,6 @@ Private Function IObject_IsRelatedTo(Other As IObject) As Boolean: IObject_IsRel
 Private Function IObject_ToString() As String: IObject_ToString = "": End Function
 
 Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New SqlParameter: End Property
-
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

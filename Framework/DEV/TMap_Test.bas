@@ -41,7 +41,7 @@ Private Sub TMapInitialize()
     'Arrange:
     
     'Act:
-    Set SUT = TMap.Build(TString, TString)
+    Set SUT = TMap.Build '(TString, TString)
     
     'Assert:
     Assert.AreNotEqual VarPtr(SUT), VarPtr(TMap)
@@ -61,8 +61,8 @@ Private Sub TMap_Two_Instances()
     Dim sut2 As TMap
     
     'Act:
-    Set sut1 = TMap.Build(TString, TString)
-    Set sut2 = TMap.Build(TString, TString)
+    Set sut1 = TMap.Build '(TString, TString)
+    Set sut2 = TMap.Build '(TString, TString)
     'Assert:
     Assert.AreNotEqual VarPtr(sut1), VarPtr(sut2)
 
@@ -78,17 +78,17 @@ Private Sub TMapOverall_2()
     
     'Arrange:
     Dim i As Long
-    Dim k As TString
+    Dim K As TString
     Dim v As TString
     
     'Act:
    
-    Set SUT = TMap.Build(TString, TString, 0, 0.7)
+    Set SUT = TMap.Build '(TString, TString, 0, 0.7)
     
     For i = 1 To 10000
-        Set k = TString("Key" & i)
+        Set K = TString("Key" & i)
         Set v = TString("Value" & i)
-        Call SUT.Add(k, v)
+        Call SUT.Add(K, v)
     Next
     
     Assert.Succeed
@@ -113,7 +113,7 @@ Private Sub TMapValue_AddThree_TSTring()
     Set s2 = TString("TestKey2")
     Set s3 = TString("TestKey3")
     
-    Set SUT = TMap.Build(TString, TString)
+    Set SUT = TMap.Build '(TString, TString)
     
     Call SUT.Add(s1, TString("TestValue"))
     SUT.Item(s2) = TString("TestValue2")
@@ -136,43 +136,42 @@ Private Sub TMapOverall()
     
     'Arrange:
     Dim i As Long
-    Dim k As TString
+    Dim K As TString
     Dim v As TString
     
     'Act:
    
-    Set SUT = TMap.Build(TString, TString)
+    Set SUT = TMap.Build '(TString, TString)
     
     For i = 1 To 500
-        Set k = TString("Key" & i)
+        Set K = TString("Key" & i)
         Set v = TString("Value" & i)
-        Call SUT.Add(k, v)
+        Call SUT.Add(K, v)
     Next
     Assert.IsTrue (SUT.Count = 500)
     
     For i = 501 To 1000
-        Set k = TString("Key" & i)
+        Set K = TString("Key" & i)
         Set v = TString("Value" & i)
-        Set SUT.Item(k) = v
+        Set SUT.Item(K) = v
     Next
     
     Assert.IsTrue (SUT.Count = 1000)
     
+    Dim x As TNumeric
     For i = 1 To 1000
-        Set k = TString("Key" & i)
-        If SUT.Contains(k) Then
-            Set v = SUT.LastCheck
-            Assert.AreEqual "Value" & i, v.Value
+        Set K = TString("Key" & i)
+        Set x = TNumeric(i)
+        If SUT.TryGetValue(K, x) Then
+            Assert.AreEqual "Value" & i, x.Value
         Else
-            Assert.Fail ("SUT.Contains(TString(Key & i))")
+            Assert.Fail ("SUT.Contains(TString(Key & i)) failed")
         End If
         
-        Set v = SUT.Item(k)
+        Set v = SUT.Item(K)
         Assert.AreEqual "Value" & i, v.Value
     Next
-    
-    
-    
+
     Assert.IsFalse SUT.Contains(TString("Key" & i))
     Set v = SUT.Item(TString("Key" & i))
     Assert.IsNothing v

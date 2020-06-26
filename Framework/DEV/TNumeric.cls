@@ -56,29 +56,19 @@ Public Function ToLong() As Long
     End If
 End Function
 
-Public Function Minus(ByVal Other As TNumeric) As TNumeric
-    Set Minus = TNumeric.Build(myClass.Value - Other.Value)
-End Function
-
-Public Function Plus(ByVal Other As TNumeric) As TNumeric
-    Set Plus = TNumeric.Build(myClass.Value + Other.Value)
-End Function
+Public Function Minus(ByVal Other As TNumeric) As TNumeric: Set Minus = TNumeric.Build(myClass.Value - Other.Value): End Function
+Public Function Plus(ByVal Other As TNumeric) As TNumeric: Set Plus = TNumeric.Build(myClass.Value + Other.Value): End Function
+Public Property Get Format() As TNumericFormat: Format = myClass.Format: End Property
+Public Property Get Value() As Currency: Value = myClass.Value: End Property
 
 Public Function Add(ByVal Factor As Currency) As TNumeric
-    Set Add = TNumeric.Build(myClass.Value + Factor)
+    Set Add = TNumeric(myClass.Value + Factor)
 End Function
-
-Public Property Get Format() As TNumericFormat
-    Format = myClass.Format
-End Property
-
-Public Property Get Value() As Currency
-    Value = myClass.Value
-End Property
 
 Public Function Build(ByVal Value As Currency, Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As TNumeric
 Attribute Build.VB_UserMemId = 0
-With myClass
+    
+    With myClass
         .Value = Value
         .Format = Format
     End With
@@ -107,15 +97,6 @@ Private Sub Class_Initialize()
     
 End Sub
 
-Private Function IValue_Build(ByVal Value As Variant, Optional ByVal Format As Byte) As IObject
-    
-    With myClass
-        .Value = Value
-        .Format = Format
-    End With
-    
-    Set IValue_Build = Skynet.Create(Me)
-End Function
 Private Property Get IValue_Object() As IObject: Set IValue_Object = Me: End Property
 Private Property Get IValue_DatabaseType() As AdoDataType
 

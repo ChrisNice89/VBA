@@ -107,14 +107,9 @@
     <Compile Include="Settings.cs" />
     <Compile Include="TFactory\Constants.cs" />
     <Compile Include="TFactory\Factory.cs" />
-    <Compile Include="TObjects\ExtensionMethods.cs" />
     <Compile Include="TObjects\IObject.cs" />
-    <Compile Include="TObjects\IParameter.cs" />
-    <Compile Include="TObjects\IValue.cs" />
     <Compile Include="TObjects\TBase.cs" />
     <Compile Include="TObjects\TDate.cs" />
-    <Compile Include="TObjects\Test.cs" />
-    <Compile Include="TObjects\TParameter.cs" />
     <Compile Include="TObjects\TString.cs" />
     <Compile Include="TObjects\TNumeric.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

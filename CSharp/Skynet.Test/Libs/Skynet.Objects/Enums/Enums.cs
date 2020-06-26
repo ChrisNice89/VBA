@@ -40,17 +40,3 @@ public enum CompareResult : int
     [Description("Equals")]
     Equals = 0
 }
-[ComVisible(true)]
-[Guid("79C8F897-FDE8-4AE2-8D7D-71FA83EC307A")]
-public enum Connectiontype : int
-{
-    [Description("EXCEL")]
-    EXCEL = 0,
-    [Description("CSV")]
-    CSV,
-    [Description("SQL")]
-    SQL,
-    [Description("MSACCESS")]
-    MSACCESS
-}
-

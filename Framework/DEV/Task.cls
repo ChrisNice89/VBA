@@ -72,9 +72,9 @@ Public Function OutOfRange() As Task
     Set OutOfRange = Me
 End Function
 
-Public Function NotEqual(ByRef A As IObject, ByRef b As IObject) As Task
+Public Function NotEqual(ByRef A As IObject, ByRef B As IObject) As Task
     myClass.Number = NotEqual_
-    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(b) & ">"
+    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(B) & ">"
     myClass.Type = "Not Equal"
     Set NotEqual = Me
 End Function
@@ -101,7 +101,7 @@ Public Sub Raise(Optional ByVal Message As String)
     RaiseEvent Failed(raiseVBA)
     
     If raiseVBA Then _
-        Call Err.Raise(myClass.Number, TypeName$(myClass.Source), Skynet.IObject(Me).ToString)
+        Call Err.Raise(myClass.Number, TypeName$(myClass.Source), Skynet.CastObject(Me).ToString)
         
 End Sub
 

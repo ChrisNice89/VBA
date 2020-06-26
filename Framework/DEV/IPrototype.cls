@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 '@Exposed
 Option Explicit
-'@Folder "Interface"
+'@Folder "Base"
 Public Property Get VirtualPointer() As LongPtr: End Property
 Public Property Get Size() As Long: End Property
 Public Property Get NewInstance() As IPrototype: End Property

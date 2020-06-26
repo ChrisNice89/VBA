@@ -10,12 +10,13 @@ namespace Skynet.Objects
     [ComVisible(true)]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)] // intelsense
     [Guid("268AE869-9119-47FE-976D-AD48AA382131")]
-    public interface IObject: IFormattable
+    public interface IObject
     {
         Boolean Equals(IObject other);
         CompareResult CompareTo(IObject other);
         Boolean IsRelatedTo(IObject other);
-        //int HashCode(IObject other);
+        string ToString();
+
     }
 
     [ComVisible(false)]

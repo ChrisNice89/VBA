@@ -22,26 +22,40 @@ Public Event Dispose()
 
 Private Type Member
     Connection As SqlConnection
-    sql As TString
+    Transaction As SqlTransaction
+    Sql As TString
     Parameter As VBA.Collection
 End Type
-
 Private myClass As Member
 
 Private Type Internal
     Size As Long
     Pointer As LongPtr
 End Type
-
 Private Virtual As Internal
+
+Public Function LoadEntity(ByVal Entity As IEntity) As VBA.Collection
+
+
+
+End Function
 
 Public Sub Execute()
 
     RaiseEvent WillExecute
+    
 End Sub
 
-Public Property Get sql() As TString
-    Set sql = myClass.sql
+Public Property Get Transaction() As SqlTransaction
+    Set Transaction = myClass.Transaction
+End Property
+
+Public Property Get Sql() As TString
+    Set Sql = myClass.Sql
+End Property
+
+Public Property Get CountParameter() As Long
+    CountParameter = myClass.Parameter.Count
 End Property
 
 Public Property Get Parameter(ByVal Index As Variant) As SqlParameter
@@ -49,7 +63,7 @@ Public Property Get Parameter(ByVal Index As Variant) As SqlParameter
 End Property
 
 Public Function AddParameter(ByRef Parameter As SqlParameter) As SqlCommand
-    
+
     Call myClass.Parameter.Add(Parameter, Parameter.Name)
     Set AddParameter = Me
 
@@ -58,26 +72,23 @@ End Function
 Public Function CreateParameter(ByRef Value As IValue, Optional ByVal Name As String = vbNullString) As SqlParameter
 
     Dim p As SqlParameter
-    
+
     If Name = vbNullString Then _
        Name = "p" & myClass.Parameter.Count + 1
-    
-    Set p = SqlParameter.Build(Value, myClass.Parameter.Count + 1, Name)
+
+    Set p = SqlParameter(Value, Name)
     Call Me.AddParameter(p)
-    
+
     Set CreateParameter = p
-    
+
 End Function
 
-Public Sub Prepare()
-
-    RaiseEvent Prepare
-End Sub
-
-Public Function Build(ByVal sql As String, ByRef Connection As SqlConnection) As SqlCommand
+Public Function Build(ByVal Sql As String, ByVal Connection As SqlConnection) As SqlCommand
+    
     With myClass
-        Set .sql = TString(sql)
+        Set .Sql = TString(Sql)
         Set .Connection = Connection
+        Set .Transaction = SqlTransaction.Build(Me)
         Set .Parameter = New VBA.Collection
     End With
     
@@ -111,9 +122,7 @@ Private Function IObject_Equals(Other As IObject) As Boolean
     If Not Other.IsRelatedTo(Me) Then IObject_Equals = False: Exit Function
 
     Dim cmd As SqlCommand: Set cmd = Other
-   
-
-    IObject_Equals = False
+    IObject_Equals = (Skynet.CastObject(cmd.Sql).Equals(Me.Sql))
      
 End Function
 
@@ -127,13 +136,11 @@ Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
     End If
 End Function
 
-Private Property Get IObject_HashValue() As Long: IObject_HashValue = 0: End Property
+Private Property Get IObject_HashValue() As Long: IObject_HashValue = ObjPtr(Me): End Property
 Private Function IObject_IsRelatedTo(Other As IObject) As Boolean: IObject_IsRelatedTo = (TypeOf Other Is SqlCommand): End Function
-
 Private Function IObject_ToString() As String: IObject_ToString = "": End Function
 
 Private Property Get IPrototype_NewInstance() As IPrototype: Set IPrototype_NewInstance = New SqlCommand: End Property
-
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

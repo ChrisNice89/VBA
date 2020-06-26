@@ -81,12 +81,12 @@ Private Sub TStringValue()
     On Error GoTo TestFail
     
     'Arrange:
-    Dim result As String
+    Dim Result As String
     'Act:
     Set SUT = TString("TestValue")
-    result = SUT.Value
+    Result = SUT.Value
     'Assert:
-    Assert.AreEqual "TestValue", result
+    Assert.AreEqual "TestValue", Result
 
 TestExit:
     Exit Sub

@@ -6,45 +6,32 @@ using System.Text;
 
 namespace Skynet.Objects
 {
-    [ComVisible(true)]
-    [Guid("18727C24-0875-4DEE-80BB-38BD6D4457A7"), InterfaceType(ComInterfaceType.InterfaceIsDual)]
-    public interface INumeric
+    public class TNumeric : TBase<TNumeric, int>, INumeric
     {
-        string Test();
-        int Value { get;  }
+    #region constructors
+    public TNumeric() : base(0) { }
+    public TNumeric(int Value) : base(Value){ }
+    #endregion constructors
+    #region implicit operator 
+    public static implicit operator TNumeric(int value) { return new TNumeric(value); }
+    public static implicit operator int(TNumeric TCustom) { return TCustom._value; }
+    #endregion implicit operator 
+    #region Com
+    int INumeric.Value => this._value;
+    IObject INumeric.Object => this;
+    #region IObject
+    bool IObject.Equals(IObject other) => base.Equals(other);
+    CompareResult IObject.CompareTo(IObject other) => base.CompareTo(other);
+    bool IObject.IsRelatedTo(IObject other) => base.IsRelatedTo(other);
+    string IObject.ToString() => base.ToString();
+        #endregion IObject
+        #endregion com
     }
-
-    [ComVisible(true)]
-    [Guid("18B999A2-FC40-42D6-A4CD-815AD147BC5E"),ClassInterface(ClassInterfaceType.None)]
-    [ProgId(Constants.ProgID + ".TNumeric")]
-    public class TNumeric : INumeric
+    [Guid("F3FDC204-C03C-42B8-B64B-3B57917B17F7"), ComVisible(true),
+    InterfaceType(ComInterfaceType.InterfaceIsDual)]
+    public interface INumeric : IObject
     {
-        public int Value { get; }
-        public IObject Object => (IObject)this;
-        
-        public string Test()
-        {
-            return this.GetType().ToString();
-        }
-        public bool Equals(IObject other)
-        {
-            throw new NotImplementedException();
-        }
-
-        public CompareResult CompareTo(IObject other)
-        {
-            throw new NotImplementedException();
-        }
-
-        public string ToString(string format, IFormatProvider formatProvider)
-        {
-            throw new NotImplementedException();
-        }
-
-        public TNumeric() { }
-        public TNumeric(int Value)
-        {
-            this.Value = Value;
-        }
+        IObject Object { get; }
+        int Value { get; }
     }
 }

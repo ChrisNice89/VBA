@@ -38,9 +38,8 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get Value() As Boolean
-    Value = myClass.Value
-End Property
+Public Property Get Object() As IValue: Set Object = Me: End Property
+Public Property Get Value() As Boolean: Value = myClass.Value: End Property
 
 Public Function Build( _
                         ByVal Value As Boolean, _
@@ -60,15 +59,6 @@ Private Sub Class_Initialize()
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
 
-Private Function IValue_Build(ByVal Value As Variant, Optional ByVal Format As Byte) As IObject
-    
-    With myClass
-        .Value = Value
-        .Format = Format
-    End With
-    
-    Set IValue_Build = Skynet.Create(Me)
-End Function
 Private Property Get IValue_Object() As IObject: Set IValue_Object = Me: End Property
 Private Property Get IValue_DatabaseType() As AdoDataType
 
@@ -95,20 +85,20 @@ Private Function IObject_Equals(Other As IObject) As Boolean
     If Other Is Nothing Then IObject_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IObject_Equals = False: Exit Function
 
-    Dim b As TBoolean: Set b = Other
+    Dim B As TBoolean: Set B = Other
    
-    IObject_Equals = (myClass.Value = b.Value)
+    IObject_Equals = (myClass.Value = B.Value)
      
 End Function
 
 Private Function IObject_CompareTo(Other As IObject) As ComparerEnum
-    Dim b As TBoolean
+    Dim B As TBoolean
     
     If Other.IsRelatedTo(Me) Then
-        Set b = Other
+        Set B = Other
         Select Case True
-            Case myClass.Value > b.Value: IObject_CompareTo = IsGreater
-            Case myClass.Value < b.Value: IObject_CompareTo = IsLower
+            Case myClass.Value > B.Value: IObject_CompareTo = IsGreater
+            Case myClass.Value < B.Value: IObject_CompareTo = IsLower
             Case Else: IObject_CompareTo = IsEqual
         End Select
     End If

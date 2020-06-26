@@ -11,37 +11,18 @@ using RGiesecke.DllExport;
 
 namespace Skynet.Objects
 {
-    [ComVisible(true)]
-    [Guid("0A577329-8441-427C-843F-5632C49F0763"), ClassInterface(ClassInterfaceType.None)]
-    [ProgId(Constants.ProgID + ".Factory")]
+    [Guid("00452587-C641-4F1F-92B6-483A4E146611"),
+    ProgId(Constants.ProgID + ".Factory"),
+    ClassInterface(ClassInterfaceType.None),
+    ComDefaultInterface(typeof(IFactory)),
+    ComVisible(true),
+    ComSourceInterfaces(typeof(IFactoryEvents))]
     public class Factory : IFactory
     {
+        public event Action<IObject> Created;
         public Constants Constant()
         {
             return new Constants();
-        }
-
-        public string CreateConnection(Connectiontype T)
-        {
-            string Key = T.GetDescription();
-            if (Key != null){
-                return ConfigurationManager.ConnectionStrings[Key].ConnectionString;
-            }
-          
-            switch (T)
-            {
-                case Connectiontype.EXCEL:
-                    {
-                      return ConfigurationManager.ConnectionStrings["EXCEL"].ConnectionString;
-                    }
-                case Connectiontype.SQL:
-                    {
-                        return ConfigurationManager.ConnectionStrings["SQL"].ConnectionString;
-                    }
-                default: break;
-
-            }
-            return "";
         }
 
         public TDate TDate(DateTime Value)
@@ -73,9 +54,15 @@ namespace Skynet.Objects
         TString TString(string Value);
         TDate TDate(DateTime value);
         TNumeric TNumeric(int value);
-
-        string CreateConnection(Connectiontype T);
     }
+
+    [Guid("2FA865CE-7B95-40C5-8471-AC5C8306C51C"), ComVisible(true),
+    InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    public interface IFactoryEvents
+    {
+        void Created(IObject instance);
+    }
+
     static class Exports
     {
         [DllExport]

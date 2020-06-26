@@ -111,8 +111,6 @@ namespace Skynet.Objects
                 return default(T);
             }
         }
-
-        
         #endregion CompareTo
         public override string ToString()
         {
@@ -122,9 +120,7 @@ namespace Skynet.Objects
         {
             return EqualityComparer<TValue>.Default.GetHashCode(_value);
         }
-
     }
-
     [ComVisible(true)]
     [Guid("25911AF5-3292-4676-9545-A9D7D965A20C"), InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface IInterface
@@ -149,23 +145,6 @@ namespace Skynet.Objects
             var ret = new T();
             return ret;
         }
-
-        public static T TryConvert<T>(object input)
-        {
-            if (input is T)
-            {
-                return (T)input;
-            }
-            try
-            {
-                return (T)Convert.ChangeType(input, typeof(T));
-            }
-            catch (InvalidCastException)
-            {
-                return default(T);
-            }
-        }
-
     }
     class Foo : IInterface
     {

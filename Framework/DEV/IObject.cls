@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 '@Exposed
 Option Explicit
-'@Folder "Interface"
+'@Folder "Base"
 Public Enum ComparerEnum
     IsLower = -1
     IsEqual = 0

@@ -89,7 +89,7 @@ Public Function Build( _
 Attribute Build.VB_UserMemId = 0
 With myClass
         .Value = Value
-        .Format = Format        
+        .Format = Format
     End With
     
     Set Build = Skynet.Create(Me)
@@ -112,15 +112,6 @@ Private Sub Class_Initialize()
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
 
-Private Function IValue_Build(ByVal Value As Variant, Optional ByVal Format As Byte) As IObject
-    
-    With myClass
-        .Value = Value
-        .Format = Format
-    End With
-    
-    Set IValue_Build = Skynet.Create(Me)
-End Function
 Private Property Get IValue_Object() As IObject: Set IValue_Object = Me: End Property
 Private Property Get IValue_DatabaseType() As AdoDataType
 

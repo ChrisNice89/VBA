@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 '@Exposed
 Option Explicit
-'@Folder "Interface"
+'@Folder "<T>Enumerable"
 Public Property Get Current() As Variant: End Property
 Public Function MoveNext() As Boolean: End Function
 Public Sub Reset(): End Sub

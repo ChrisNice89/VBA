@@ -69,6 +69,11 @@ Public Enum SortOrder
     Ascending = 1
 End Enum
 
+Public Enum SortMethod
+    IntrospectiveSort = -1
+    DepthLimitedQuickSort = 1
+End Enum
+
 Public Enum SystemState
     Ready
     BuildNew
@@ -155,10 +160,10 @@ Public Function Search( _
 End Function
 'https://referencesource.microsoft.com/#mscorlib/system/array.cs,c9d30a83673759f0
 Private Function BinarySearch( _
-                                                 ByRef Objects() As IObject, _
-                                                 ByRef Value As IObject, _
-                                                 ByVal Index As Long, _
-                                                 ByVal Length As Long) As Long
+                                ByRef Objects() As IObject, _
+                                ByRef Value As IObject, _
+                                ByVal Index As Long, _
+                                ByVal Length As Long) As Long
                                                 
 
     Dim i As Long
@@ -193,7 +198,11 @@ Public Sub Sort(ByRef Objects() As IObject, Optional ByVal Order As SortOrder = 
     Call Quicksort(Objects, LBound(Objects, 1), UBound(Objects, 1), Order)
 End Sub
 
-Private Sub Quicksort(ByRef Elements() As IObject, ByVal LB As Long, ByVal UB As Long, ByVal Order As SortOrder)
+Private Sub Quicksort( _
+                        ByRef Elements() As IObject, _
+                        ByVal LB As Long, _
+                        ByVal UB As Long, _
+                        ByVal Order As SortOrder)
 
     Dim i As Long
     Dim j As Long
@@ -228,12 +237,14 @@ Private Sub Quicksort(ByRef Elements() As IObject, ByVal LB As Long, ByVal UB As
     
 End Sub
 
-Public Function HashValue(ByRef Ascii() As Byte, Optional ByVal HashFunction As Hashing = Hashing.Function1) As Long
+Public Function HashValue( _
+                            ByRef Ascii() As Byte, _
+                            Optional ByVal Hashfunction As Hashing = Hashing.Function1) As Long
     
     Dim h As Double
     Dim i As Long
     
-    Select Case HashFunction
+    Select Case Hashfunction
         Case Hashing.Function1
             
             Const Shift As Long = 2& ^ 5
@@ -284,14 +295,18 @@ Private Sub Class_Initialize()
    
 End Sub
 
+Public Property Get MaxArraySize() As Long
+    MaxArraySize = MAXLONG
+End Property
+
 Public Function ClassName(ByRef Instance As IObject) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function
-Public Function IObject(ByRef Instance As IObject) As IObject: Set IObject = Instance: End Function
-Public Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
+Public Function CastObject(ByRef Instance As IObject) As IObject: Set CastObject = Instance: End Function
+Public Function Modulo(ByVal A As Double, ByVal M As Double) As Long: Modulo = (A - (Int(A / M) * M)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function
 Public Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
-Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
+Public Function LimitDouble(ByVal D As Double) As Long: LimitDouble = CLng(D - (Fix(D / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 
 
