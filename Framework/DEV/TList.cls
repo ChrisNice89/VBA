@@ -15,6 +15,7 @@ Option Explicit
 
 Private Type Member
     Items() As IObject
+    Length as Long
     Count As Long
     Capacity As Long
     DefaultCapacity As Long
@@ -34,6 +35,7 @@ Public Property Let Capacity(ByVal Value As Long)
         If (Value > 0) Then
             ReDim newItems(1 To Value) ' Redim Preserve Myclass.Items( 1 to Value)
             If (myClass.Count > 0) Then
+		myClass.Capacity=Value
                 'Skynet ArrayCopy(newItems,myclass.Items)
             End If
         Else
@@ -69,7 +71,7 @@ End Function
 
 Public Function Add(ByRef Item As IObject) As TList
 
-    If (myClass.Count = UBound(myClass.Items, 1)) Then Call EnsureCapacity(myClass.Count + 1)
+    If (myClass.Count = myClass.Capacity) Then Call EnsureCapacity(myClass.Count + 1)
     myClass.Count = myClass.Count + 1
     Set myClass.Items(myClass.Count) = Item
     Set Add = Me
@@ -77,10 +79,14 @@ Public Function Add(ByRef Item As IObject) As TList
 End Function
 
 Public Function AddObjects(ByRef Items() As IObject) As TList
-
+	
+    'Check Array 
+    'Length, Dims eat
+    'Take all
     If myClass.Count = 0 Then
         myClass.Items = Items
-        myClass.Count = UBound(Items)
+	myClass.Capacity = UBound(Items,1)'Items.Length
+        myClass.Count = myClass.Lengt 
     Else
         'Copy
     End If

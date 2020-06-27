@@ -147,6 +147,17 @@ Public Function Create(ByRef Prototype As IPrototype) As Object
 
 End Function
 
+Public Function IndexOf(byval Item as IObject,Byref Items() as IObject) as long
+
+	Dim i as long
+	for i =lbound(Items) to Ubound(Items)
+	    if (Items(i).Equals(Item)) then _
+	        IndexOf =i:Exit function
+	next
+
+	IndexOf = -1
+end function
+
 Public Function Search( _
                         ByRef Objects() As IObject, _
                         ByRef Value As IObject, _
