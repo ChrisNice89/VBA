@@ -10,9 +10,10 @@ Attribute VB_Exposed = True
 '@Exposed
 Option Explicit
 '@Folder "Base"
+Public Property Get Default() As Object: End Property
 Public Property Get VirtualPointer() As LongPtr: End Property
 Public Property Get Size() As Long: End Property
-Public Property Get NewInstance() As IPrototype: End Property
+Public Function CreateDefault() As IPrototype: End Function
 
 'Private Sub Class_Initialize()
 '    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise

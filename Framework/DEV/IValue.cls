@@ -21,7 +21,7 @@ End Enum
 Public Property Get Value() As Variant: End Property
 Attribute Value.VB_UserMemId = 0
 Public Property Get DatabaseType() As AdoDataType: End Property
-Public Property Get Object() As IObject: End Property
+Public Property Get Object() As IGeneric: End Property
 
 'Private Sub Class_Initialize()
 '    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise
