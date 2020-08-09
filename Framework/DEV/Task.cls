@@ -81,7 +81,7 @@ End Sub
 
 Public Sub RaiseIfNothing(ByRef o As Object)
     If (o Is Nothing) Then _
-        Call Me.NULLPOINTER.Raise
+        Call Me.NullPointer.Raise
 
 End Sub
 
@@ -103,10 +103,10 @@ Public Function NoNegativ() As Task
     Set NoNegativ = Me
 End Function
 
-Public Function NULLPOINTER() As Task
+Public Function NullPointer() As Task
     myClass.Number = NullPointer_
     myClass.Type = "NullPointer"
-    Set NULLPOINTER = Me
+    Set NullPointer = Me
 End Function
 
 Public Function NotSupported() As Task

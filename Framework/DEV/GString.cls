@@ -25,6 +25,7 @@ End Enum
 
 Private Type Member
     Value As String
+    Length As Long
     Format As TStringFormat
     Hashfunction As Hashing
 End Type
@@ -38,7 +39,7 @@ End Type
 Private Virtual As Internal
 
 Public Property Get Hashfunction() As Hashing: Hashfunction = myClass.Hashfunction: End Property
-Public Property Get Length() As Long: Length = Len(myClass.Value): End Property
+Public Property Get Length() As Long: Length = myClass.Length: End Property
 Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myClass.Value, 1, 1): End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myClass.Value, Len(myClass.Value), 1): End Property
 Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myClass.Value, Index, 1): End Property
@@ -82,25 +83,27 @@ Public Function Build( _
                         Optional ByVal Hashfunction As Hashing = Hashing.Function1, _
                         Optional ByVal Format As TStringFormat = TStringFormat.DefaultString) As GString
 Attribute Build.VB_UserMemId = 0
-With myClass
+    With myClass
         .Value = Value
+        .Length = Len(Value)
         .Format = Format
         .Hashfunction = Hashfunction
     End With
     
-    Set Build = New GString    'faster then Skynet
-    'Set Build = Skynet.Create(Me)
+    Set Build = New GString
+    Call Skynet.Generic(GString)
+    
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
     If Not Me Is GString Then
-         With myClass
-            .Value = GString.Value
-            .Format = GString.Format
-            .Hashfunction = GString.Hashfunction
+         With GString
+            myClass.Value = .Value
+            myClass.Length = .Length
+            myClass.Format = .Format
+            myClass.Hashfunction = .Hashfunction
         End With
-        Call Skynet.Generic(GString).Dispose
     End If
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
@@ -128,23 +131,19 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Not TypeOf Other Is GString Then IGeneric_Equals = False: Exit Function
 
     Dim S As GString: Set S = Other
-    If Not (S.Length = Me.Length) Then IGeneric_Equals = False: Exit Function
+    If Not (myClass.Length = Me.Length) Then IGeneric_Equals = False: Exit Function
 
     IGeneric_Equals = (StrComp(myClass.Value, S.Value, vbBinaryCompare) = 0)
      
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim S As GString
-    Dim i As Long
+    Dim S As GString: Set S = Other
     
-    If TypeOf Other Is GString Then
-        Set S = Other
-        Select Case StrComp(myClass.Value, S.Value, vbBinaryCompare)
-            Case 1: IGeneric_CompareTo = IsGreater
-            Case -1: IGeneric_CompareTo = IsLower
-            Case Else: IGeneric_CompareTo = IsEqual
-        End Select
+    If Other Is Nothing Then
+        IGeneric_CompareTo = IsLower
+    Else
+        IGeneric_CompareTo = StrComp(myClass.Value, S.Value, vbBinaryCompare)
     End If
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.Hashfunction): End Property

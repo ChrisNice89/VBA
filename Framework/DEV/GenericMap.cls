@@ -15,6 +15,7 @@ Option Explicit
 Implements IPrototype
 Implements IGeneric
 Implements IGenericCollection
+
 'Implements IGenericEnumerator
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
@@ -29,7 +30,7 @@ Private Const HAS_COLLISION As Byte = 2 ^ 1
 
 Private Enum Data
     Values
-    Keys
+    keys
 End Enum
 
 Private Type Constant
@@ -65,6 +66,7 @@ Private Type Member
     LoadSize As Long
     LoadFactor As Double
     Buckets() As Bucket
+    IsReadOnly As Boolean
 End Type
 
 '
@@ -78,12 +80,14 @@ Private Virtual As Internal
 Public Property Get LoadSize() As Long: LoadSize = myClass.LoadSize: End Property
 Public Property Get LoadFactor() As Double: LoadFactor = myClass.LoadFactor: End Property
 Public Property Get Count() As Long: Count = myClass.Count: End Property
-Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
-
 Public Property Let Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myClass.Buckets(FindEntry(Key)).Value: End Property
 Attribute Item.VB_UserMemId = 0
+Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
+Public Function GetKeys() As IGenericReadOnlyList: Set GetKeys = LoadKeys(GenericArray.Build(Me.Count), GenericArray.LowerBound).AsReadOnly: End Function
+Public Function GetValues() As IGenericReadOnlyList: Set GetValues = LoadValues(GenericArray.Build(Me.Count), GenericArray.LowerBound).AsReadOnly: End Function
+
 Private Function getMinPrime() As Long: getMinPrime = myClass.Const.Primes(LBound(myClass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
 Private Function Modulo(ByVal a As Double, ByVal M As Double) As Long: Modulo = (a - (Int(a / M) * M)): End Function
@@ -118,7 +122,6 @@ Public Function Build( _
         If Not (LoadFactor >= 0.1 And LoadFactor <= 1#) Then _
            Call Skynet.Push(Me, "Build").ArgOutOfRange.Raise("Not (LoadFactor >= 0.1 And LoadFactor <= 1#")
     
-       
         .LoadFactor = LoadFactor
         .RawSize = Capacity / .LoadFactor
         
@@ -138,28 +141,36 @@ Public Function Build( _
     
 End Function
 
-Public Property Get GetKeys() As Variant()
+Private Function LoadKeys(ByVal keys As GenericArray, ByVal ArrayIndex As Long) As GenericArray
+    Dim i As Long
     
-    Dim Output() As Variant
-    Call Load(Keys, Output)
-    GetKeys = Output
+    For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+        If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+            Set keys(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
+    Next
     
-End Property
+    Set LoadKeys = keys
+    
+End Function
 
-Public Property Get GetValues() As Variant()
+Private Function LoadValues(ByVal Values As GenericArray, ByVal ArrayIndex As Long) As GenericArray
+    Dim i As Long
     
-    Dim Output() As Variant
-    Call Load(Values, Output)
-    GetValues = Output
+    For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+        If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+            Set Values(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
+    Next
     
-End Property
+    Set LoadValues = Values
+    
+End Function
 
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
              
     Dim Try As Long
     
     If (Key Is Nothing) Then _
-        Call Skynet.Push(Me, "TryGetValue").NULLPOINTER.Raise("Key is nothing")
+        Call Skynet.Push(Me, "TryGetValue").NullPointer.Raise("Key is nothing")
     
     With InitialHashing(Key.HashValue, myClass.HashSize)
         Do
@@ -198,7 +209,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     Dim h As HashItem
     
     If (Key Is Nothing) Then _
-        Call Skynet.Push(Me, "FindEntry").NULLPOINTER.Raise("Key is nothing")
+        Call Skynet.Push(Me, "FindEntry").NullPointer.Raise("Key is nothing")
     
     h = InitialHashing(Key.HashValue, myClass.HashSize)
     Do
@@ -237,43 +248,8 @@ Public Function Remove(ByVal Key As IGeneric) As Boolean
     End If
 End Function
 
-Private Sub Load(ByVal Data As Data, ByRef Vector() As Variant)
-    
-    If myClass.Count = 0 Then _
-       Vector = Array(): Exit Sub
-    
-    Dim i As Long, j As Long
-    
-    With myClass
-        ReDim Vector(1 To .Count)
-        Select Case Data
-        Case Values
-            For i = LBound(.Buckets) To UBound(.Buckets)
-                If Not (.Buckets(i).Key Is Nothing) Then _
-                    Set Vector(Increment(j)) = .Buckets(i).Value
-                
-            Next
-        Case Keys
-            For i = LBound(.Buckets) To UBound(.Buckets)
-                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    Set Vector(Increment(j)) = .Buckets(i).Key
-                
-            Next
-        
-        Case Else
-            Call Skynet.Push(Me, "Load").InvalidOperation.Raise("Load argument for keys/ values not specified")
-        
-        End Select
-    End With
-    
-End Sub
-
 Public Sub Clear()
-    With myClass
-        'Erase .Buckets
-        ReDim .Buckets(.HashSize)
-        .Count = 0
-    End With
+     Call Skynet.Generic(Me).Dispose
 End Sub
 
 Private Function getPrime(ByVal Min As Long) As Long
@@ -398,7 +374,7 @@ Public Sub Add(ByRef Key As IGeneric, ByRef Value As IGeneric)
     Dim HashValue As Long
     
     If (Key Is Nothing) Then _
-        Call Skynet.Push(Me, "Insert").NULLPOINTER.Raise("Key is nothing")
+        Call Skynet.Push(Me, "Insert").NullPointer.Raise("Key is nothing")
         
     With myClass
         If (.Count >= .LoadSize) Then
@@ -436,15 +412,19 @@ Public Sub Add(ByRef Key As IGeneric, ByRef Value As IGeneric)
 
 End Sub
 
-Public Sub FillEnumerator(ByRef Enumerator As IGenericEnumerator)
-  
-'    Dim c As Member
-'
-'
-'    Virtual.Pointer = VarPtr(c)
-'    Set Enumerator = Skynet.Create(Me)
-'    Virtual.Pointer = VarPtr(myClass)
-'
+Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+
+    If (GArray Is Nothing) Then _
+        Call Skynet.Push(Me, "CopyTo").NullPointer.Raise("GArray Is Nothing")
+    
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+        Call Skynet.Push(Me, "CopyTo").IndexOutofRange.Raise("(Index < 0) Or (Index > GArray.Length)")
+
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
+        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("(GArray.Length - Index < Me.Count)")
+    
+    Call LoadValues(Values:=GArray, ArrayIndex:=ArrayIndex)
+
 End Sub
 
 Private Sub Class_Terminate()
@@ -518,12 +498,10 @@ End Function
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
-Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
+Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Sub IGenericCollection_CopyTo(ByVal GA As GenericArray, ByVal ArrayIndex As Long)
-    
-End Sub
-
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = LoadValues(GenericArray.Build(Me.Count), GenericArray.LowerBound): End Function
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
 
 End Function

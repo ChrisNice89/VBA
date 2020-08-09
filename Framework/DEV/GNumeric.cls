@@ -122,20 +122,20 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim N As GNumeric: Set N = Other
+    Dim n As GNumeric: Set n = Other
 
-    IGeneric_Equals = (myClass.Value = N.Value)
+    IGeneric_Equals = (myClass.Value = n.Value)
      
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim N As GNumeric
+    Dim n As GNumeric
     
     If Other.IsRelatedTo(Me) Then
-        Set N = Other
+        Set n = Other
         Select Case True
-            Case myClass.Value > N.Value: IGeneric_CompareTo = IsGreater
-            Case myClass.Value < N.Value: IGeneric_CompareTo = IsLower
+            Case myClass.Value > n.Value: IGeneric_CompareTo = IsGreater
+            Case myClass.Value < n.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If

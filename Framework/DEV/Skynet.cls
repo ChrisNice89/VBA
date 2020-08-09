@@ -14,14 +14,14 @@ Option Explicit
 
 Private Const MAXVALUE As Double = 2 ^ 31
 Private Const MAX_INT32 As Long = &H7FFFFFFF
-Private Const NULLPOINTER As Long = 0
+Private Const NullPointer As Long = 0
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
     Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As LongPtr)
     Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
-    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal src As LongPtr) As Long
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
     Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Size As LongPtr)
 #Else
@@ -29,8 +29,8 @@ Private Const NULLPOINTER As Long = 0
     Private Const POINTERSIZE As Long = 4
     Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As Long)
     Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal Src As Long) As Long
-    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As Long, ByVal Src As Long) As Long
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal src As Long) As Long
+    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As Long, ByVal src As Long) As Long
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Size As Long)
 #End If
@@ -68,12 +68,11 @@ Public Enum SystemState
 End Enum
 
 Private Type Member
-    CallStack As New VBA.Collection
+    x As Long
 End Type
 Private myClass As Member
 '@MemberAttribute VB_VarHelpID, -1
-Private WithEvents CurrentTask As Task
-Attribute CurrentTask.VB_VarHelpID = -1
+
 
 Public Property Get MaxLong() As Long
     MaxLong = MAX_INT32
@@ -83,29 +82,8 @@ Public Sub Assert(ByVal t As Task)
    Call Err.Raise(t.ErrorNumber, TypeName$(t.Source), Me.Generic(t).ToString)
 End Sub
 
-Public Function Contract(ByVal Source As Object, ByVal Method As String) As Task
-    Set Contract = Task.Build(Source, Method)
-End Function
-
 Public Function Push(ByVal Source As Object, ByVal Method As String) As Task
-
-    Set CurrentTask = Task.Build(Source, Method)
-    Call myClass.CallStack.Add(CurrentTask)
-    Set Push = CurrentTask
-    
-End Function
-
-Public Function Peek() As Task
-        Set CurrentTask = myClass.CallStack(myClass.CallStack.Count)
-        Set Peek = CurrentTask
-End Function
-
-Public Function Pop() As Task
-    Set Pop = Me.Peek
-    
-    With myClass.CallStack
-        Call .Remove(.Count)
-    End With
+    Set Push = Task.Build(Source, Method)
 End Function
 
 Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
@@ -114,11 +92,12 @@ Public Sub ClearData(ByVal Dst As LongPtr, ByVal Bytes As Long)
     Call FillMemory(ByVal Dst, Bytes, 0) 'Call ZeroMemory(ByVal dst, Bytes)
 End Sub
 
-Public Sub CopyData(ByVal Dst As LongPtr, ByVal Src As LongPtr, ByVal Bytes As Long, Optional ByVal ClearSource As Boolean = False)
-    Call CopyMemory_byVar(ByVal Dst, ByVal Src, Bytes) 'Works
+Public Sub CopyData(ByVal Dst As LongPtr, ByVal src As LongPtr, ByVal Bytes As Long, Optional ByVal ClearSource As Boolean = False)
+    
+    Call CopyMemory_byVar(ByVal Dst, ByVal src, Bytes) 'Works
     'Call CopyBytes(Bytes, ByVal Dst, ByVal Src) 'works
     If ClearSource Then _
-        Call ZeroMemory(ByVal Src, Bytes) 'FillMemory(ByVal Src, Bytes, 0)
+        Call ZeroMemory(ByVal src, Bytes) 'FillMemory(ByVal Src, Bytes, 0)
 End Sub
 
 Public Function Create(ByRef Prototype As IPrototype) As Object
@@ -145,11 +124,12 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
         If Not (VarType(SomeArray) And VbVarType.vbArray) = VbVarType.vbArray Then _
             .Push(Me, "ArrayPointer").InvalidInput.Raise ("Not (IsArray(SomeArray))")
     
-        Call .CopyData(Dst:=ByVal VarPtr(vType), Src:=ByVal VarPtr(SomeArray), Bytes:=2&)
-        Call .CopyData(Dst:=ByVal VarPtr(PointerOf), Src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=.PointerLength)
+        Call .CopyData(Dst:=ByVal VarPtr(vType), src:=ByVal VarPtr(SomeArray), Bytes:=2&)
+        Call .CopyData(Dst:=ByVal VarPtr(PointerOf), src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSIZE)
+        
         'if SomeArray is defined x() as ...
         If (vType And VT_BYREF) = VT_BYREF Then _
-            Call .CopyData(Dst:=ByVal VarPtr(PointerOf), Src:=ByVal PointerOf, Bytes:=.PointerLength)
+            Call .CopyData(Dst:=ByVal VarPtr(PointerOf), src:=ByVal PointerOf, Bytes:=POINTERSIZE)
     End With
     
 End Function
@@ -169,8 +149,8 @@ Public Function SequenceCompare(ByVal a As IGenericList, ByVal b As IGenericList
         
         Dim i As Long, c As ComparerEnum
         Do While (InterlockedIncrement(i) < a.Elements.Count And c = IsEqual)
-            If Not a.Item(i) Is Nothing Then _
-                c = a.Item(i).Equals(b.Item(i))
+            If Not a(i) Is Nothing Then _
+                c = a(i).Equals(b(i))
         Loop
     End If
     
@@ -222,13 +202,14 @@ End Function
 
 '@Ignore ProcedureCanBeWrittenAsFunction
 Public Sub Sort(ByRef Objects() As IGeneric, Optional ByVal Order As SortOrder = SortOrder.Ascending)
-    Call Quicksort(Objects, LBound(Objects, 1), UBound(Objects, 1), Order)
+    Call Quicksort(Objects, LBound(Objects, 1), UBound(Objects, 1), 0, Order) ' 32
 End Sub
 
 Private Sub Quicksort( _
-                        ByRef Elements() As IGeneric, _
-                        ByVal lb As Long, _
-                        ByVal UB As Long, _
+                        ByRef Element() As IGeneric, _
+                        ByVal left As Long, _
+                        ByVal right As Long, _
+                        ByVal depthLimit As Long, _
                         ByVal Order As SortOrder)
 
     Dim i As Long
@@ -237,31 +218,119 @@ Private Sub Quicksort( _
     Dim pivot As IGeneric
     Dim tmp As IGeneric
     
-    If (lb > UB) Then Exit Sub
-    
-    i = lb: j = UB
-    Set pivot = Elements((i + j) / 2)
+    If (left > right) Then Exit Sub
     
     Do
-        Do While (Elements(i).CompareTo(pivot) = IsLower * Order): i = i + 1: Loop
-        Do While (Elements(j).CompareTo(pivot) = IsGreater * Order): j = j + 1: Loop
-        
-        If (i <= j) Then
-            Set tmp = Elements(i)
-            Set Elements(i) = Elements(j)
-            Set Elements(j) = tmp
+        If (depthLimit = 0) Then _
+            Call HeapSort(Element, left, right): Exit Sub
+                
+        i = left: j = right
+        Set pivot = Element(i + ((j - i) / 2))
+            
+        Do
+            If (pivot Is Nothing) Then
+                Do While Not (Element(j) Is Nothing): j = j - 1: Loop
+            Else
+                Do While (pivot.CompareTo(Element(i)) = IsGreater * Order): i = i + 1: Loop
+                Do While (pivot.CompareTo(Element(j)) = IsLower * Order): j = j - 1: Loop
+            End If
+            
+            If (i > j) Then _
+                Exit Do
+                
+            If (i < j) Then _
+                Set tmp = Element(i): _
+                Set Element(i) = Element(j): _
+                Set Element(j) = tmp
+          
             i = i + 1: j = j - 1
+            
+        Loop While (i <= j)
+        
+        depthLimit = depthLimit - 1
+        
+        If (j - left) < (right - i) Then
+            If (left < j) Then Call Quicksort(Element, left, j, depthLimit, Order)
+            left = i
+        Else
+            If (i < right) Then Call Quicksort(Element, i, right, depthLimit, Order)
+            right = j
         End If
-    Loop Until (i > j)
+    Loop While (left < right)
+End Sub
+
+Private Sub HeapSort(ByRef keys() As IGeneric, ByVal lo As Long, ByVal hi As Long)
     
-    If (j - lb) < (UB - i) Then
-        Call Quicksort(Elements, lb, j, Order)
-        Call Quicksort(Elements, i, UB, Order)
-    Else
-        Call Quicksort(Elements, i, UB, Order)
-        Call Quicksort(Elements, lb, j, Order)
+    Dim n As Long: n = hi - lo + 1
+    Dim i As Long: i = n / 2
+    
+    Do While i >= 1
+        Call DownHeap(keys, i, n, lo)
+        i = i - 1
+    Loop
+    
+'    For i = n / 2 To 1 Step -2
+'        Call DownHeap(keys, i, n, lo)
+'    Next
+'    For i = n To 1 Step -2
+'        Call Swap(keys, lo, lo + i - 1)
+'        Call DownHeap(keys, 1, i - 1, lo)
+'    Next
+'
+    i = n
+    Do While i > 1
+        Call Swap(keys, lo, lo + i - 1)
+        Call DownHeap(keys, 1, i - 1, lo)
+        i = i - 1
+    Loop
+    
+End Sub
+
+Private Sub DownHeap(ByRef keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
+
+    Dim d As IGeneric: Set d = keys(lo + i - 1)
+    Dim child As Long
+    
+    On Error GoTo err_handler
+    
+    Do While (i <= n / 2)
+        child = 2 * i
+        If (child < n) Then
+            If (keys(lo + child - 1) Is Nothing) Then
+                child = child + 1
+            ElseIf (keys(lo + child - 1).CompareTo(keys(lo + child)) = IsLower) Then
+                child = child + 1
+            End If
+        End If
+        
+        If (keys(lo + child - 1) Is Nothing) Then
+            Exit Do
+        End If
+        
+        If (keys(lo + child - 1).CompareTo(d) = IsLower) Then
+            Exit Do
+        End If
+        
+        Set keys(lo + i - 1) = keys(lo + child - 1)
+        i = child
+    Loop
+    
+    Set keys(lo + i - 1) = d
+    On Error GoTo 0
+Exit Sub
+err_handler:
+    
+    Debug.Print "DownHeap"
+End Sub
+
+Private Sub Swap(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
+    Dim t As IGeneric
+    
+    If Not (i = j) Then
+        Set t = a(i)
+        Set a(i) = a(j)
+        Set a(j) = t
     End If
-    
 End Sub
 
 Public Function HashValue( _
@@ -288,9 +357,9 @@ Public Function HashValue( _
         Case Hashing.Function2
             
              Dim Length As Long: Length = UBound(Ascii) + 1
-             Dim N As Long
+             Dim n As Long
              
-             For N = (Length / 2) To 1 Step -1
+             For n = (Length / 2) To 1 Step -1
                 h = h + Ascii(i)
                 h = Me.X0R(Me.X0R(LeftShift(h, 16), Me.LeftShift(Ascii(i + 1), 11)), h)
                 h = h + Me.RightShift(h, 11)
@@ -326,7 +395,7 @@ Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i:
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function
 Public Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
-Public Function LimitDouble(ByVal D As Double) As Long: LimitDouble = CLng(D - (Fix(D / MAXVALUE) * MAXVALUE)): End Function
+Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 
 

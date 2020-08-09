@@ -15,7 +15,7 @@ Option Explicit
 
 Implements IPrototype
 Implements IGeneric
-Implements IGenericList
+Implements IGenericReadOnlyList
 Implements IGenericCollection
 
 'Pointer
@@ -29,10 +29,8 @@ Private Const E_OUTOFMEMORY As Long = &H8007000E
 Private Const DISP_E_ARRAYISLOCKED As Long = &H8002000D
 Private Const E_UNEXPECTED As Long = &H8000FFFF
 
-Private Const OPTION_BASE As Byte = 1 'Option Base { 0 | 1 }
+Private Const MIN_INDEX As Long = 1 'Option Base { 0 | 1 }
 Private Const MAX_ARRAY_LENGHT As Long = &H7FEFFFFF
-
-Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
 
 Private Type SAFEARRAYBOUND
     cElements    As Long
@@ -91,7 +89,9 @@ End Type
     Private Declare Function SafeArrayUnlock Lib "oleaut32.dll" (ByRef psa As Any) As Long
     Private Declare Function SafeArrayLock Lib "oleaut32.dll" (ByRef psa As Any) As Long
 #End If
- 
+
+Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (ByRef Var() As Any) As Long
+
 Private Type Member
    Struct As SAFEARRAYSTRUCT
    Descriptor As LongPtr
@@ -100,6 +100,8 @@ Private Type Member
    Indices() As Long
    ptrIndices As LongPtr
    Internal() As IGeneric
+   pOld As Long
+   IsReadOnly As Boolean
 End Type
 Private myClass As Member
 
@@ -110,36 +112,46 @@ End Type
 Private Virtual As Internal
 
 Public Property Get MaxLength() As Long: MaxLength = MAX_ARRAY_LENGHT: End Property
-Public Property Get LowerBound() As Long: LowerBound = OPTION_BASE: End Property
+Public Property Get LowerBound() As Long: LowerBound = MIN_INDEX: End Property
 Public Property Get IsEmpty() As Boolean: IsEmpty = (myClass.Descriptor = 0): End Property
 Public Property Get Descriptor() As LongPtr: Descriptor = myClass.Descriptor: End Property
 'Public Property Get Count(Optional ByVal Dimension As Long = 1) As Long: Call Catch(SafeArrayGetUBound(ByVal myClass.Descriptor, Dimension, Count)): End Property 'at least 1!
-Public Property Get LengthOf(ByVal Dimension As Long) As Long:: Call Catch(SafeArrayGetUBound(ByVal myClass.Descriptor, Dimension, LengthOf)): End Property
+Public Property Get LengthOf(ByVal Dimension As Long) As Long: Call Catch(SafeArrayGetUBound(ByVal myClass.Descriptor, Dimension, LengthOf)): End Property
 Public Property Get Length() As Long: Length = myClass.Elements: End Property
 Public Property Get TotalSize() As LongPtr: TotalSize = myClass.Size: End Property
 Public Property Get Rank() As Long: Rank = SafeArrayGetDim(ByVal myClass.Descriptor): End Property
-
-Public Property Set ElementAt(ByVal Row As Long, Optional ByVal Column As Long = OPTION_BASE, ByVal Value As IGeneric)
-    myClass.Indices(0) = Row: myClass.Indices(1) = Column
-
-    If (SafeArrayPutElement(ByVal myClass.Descriptor, ByVal myClass.ptrIndices, ByVal ObjPtr(Value)) = DISP_E_BADINDEX) Then _
-        Call Skynet.Push(Me, "Set Object").InvalidInput.Raise("Invalid Index")
-    
-'       Set myClass.Internal(Row, Column) = Value
-End Property
-
-Public Property Get ElementAt(ByVal Row As Long, Optional ByVal Column As Long = OPTION_BASE) As IGeneric
+Public Property Set ElementAt(ByVal Index As Long, ByVal Value As IGeneric): Set myClass.Internal(Index) = Value: End Property
+Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myClass.Internal(Index): End Property
 Attribute ElementAt.VB_UserMemId = 0
-    myClass.Indices(0) = Row: myClass.Indices(1) = Column
 
-    If (SafeArrayGetElement(ByVal myClass.Descriptor, ByVal myClass.ptrIndices, ElementAt) = DISP_E_BADINDEX) Then _
+Public Function SetValue(ByVal Value As IGeneric, ParamArray Indices() As Variant)
+    Dim i As Long
+
+    ReDim Index(0 To UBound(Indices)) As Long
+
+    For i = 0 To UBound(Indices)
+        Index(i) = Indices(i)
+    Next
+    If (SafeArrayPutElement(ByVal myClass.Descriptor, Index(0), ByVal ObjPtr(Value)) = DISP_E_BADINDEX) Then _
+        Call Skynet.Push(Me, "Set Object").InvalidInput.Raise("Invalid Index")
+End Function
+
+Public Function GetValue(ParamArray Indices() As Variant) As IGeneric
+    Dim i As Long
+
+    ReDim Index(0 To UBound(Indices)) As Long
+
+    For i = 0 To UBound(Indices)
+        Index(i) = Indices(i)
+    Next
+
+    If (SafeArrayGetElement(ByVal myClass.Descriptor, Index(0), GetValue) = DISP_E_BADINDEX) Then _
         Call Skynet.Push(Me, "Get Object").InvalidInput.Raise("Invalid Index")
         
-'       Set ElementAt = myClass.Internal(Row, Column)
-End Property
+End Function
 
 Public Function AdressOf(ByVal Element As Long) As LongPtr
-    AdressOf = myClass.Struct.pvData + (Me.SizeOf(Element - OPTION_BASE))
+    AdressOf = myClass.Struct.pvData + (Me.SizeOf(Element - MIN_INDEX))
 End Function
 
 Public Function SizeOf(ByVal Elements As Long) As Long
@@ -160,6 +172,10 @@ Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
     
 End Function
 
+Public Function AsReadOnly() As IGenericReadOnlyList
+    Set AsReadOnly = GenericReadOnlyList.Build(Me)
+End Function
+
 Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef S As SAFEARRAYSTRUCT)
     With Skynet
         Call .CopyData(ByVal Descriptor, VarPtr(S), 16&): _
@@ -167,49 +183,51 @@ Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef S As SAFEARRAYSTRUCT)
     End With
 End Sub
 
-Public Function Build(ByVal Rows As Long, Optional ByVal Columns As Long = OPTION_BASE) As GenericArray
-    
+Public Function Build(ByVal Rows As Long, Optional ByVal Columns As Long = MIN_INDEX) As GenericArray
+
     Dim SAB() As SAFEARRAYBOUND
     Dim i As Long
-    
-    If (Rows < OPTION_BASE) Or (Columns < OPTION_BASE) Then _
+
+    If (Rows < MIN_INDEX) Or (Columns < MIN_INDEX) Then _
         Call Skynet.Push(Me, "Build").ArgOutOfRange.Raise("A zero(one)-based array indexed array has its first item indexed as 0(1)")
-       
+
     If Columns > 1 Then
        ReDim SAB(1 To 2)
        SAB(2).cElements = Columns
-       SAB(2).lLbound = OPTION_BASE
+       SAB(2).lLbound = MIN_INDEX
     Else
         ReDim SAB(1 To 1)
     End If
-    
+
     With SAB(1)
         .cElements = Rows
-        .lLbound = OPTION_BASE
+        .lLbound = MIN_INDEX
     End With
-    
+
     With myClass
         .Descriptor = SafeArrayCreateEx(VbVarType.vbObject, UBound(SAB), SAB(1), ByVal 0&)
-'        ReDim .Internal(1 To Rows, 1 To Columns)
-'        .Descriptor = Skynet.PointerOf(.Internal)
+
         If (.Descriptor = 0) Then _
-            Call Skynet.Push(Me, "Build").InvalidOperation.Raise("SafeArrayCreateEx returned zero")
+            Call Skynet.Push(Me, "Build").InvalidOperation.Raise("myClass.Descriptor = 0")
         
+        .pOld = Skynet.PointerOf(.Internal): Call SafeArrayDestroyDescriptor(ByVal .pOld)
+        Call Skynet.CopyData(ByVal VarPtrArray(myClass.Internal), VarPtr(.Descriptor), 4&)
+        .Struct = GetArrayStructure(.Descriptor)
+
         ReDim .Indices(1)
         .ptrIndices = VarPtr(.Indices(0))
-        .Struct = GetArrayStructure(.Descriptor)
         .Elements = 1
         .Size = 1
-        
+
         For i = LBound(.Struct.Bounds) To UBound(.Struct.Bounds)
             .Elements = .Elements * .Struct.Bounds(i).cElements
             .Size = .Size * .Struct.Bounds(i).cElements * .Struct.cbElements
         Next
 
     End With
-    
+
     Set Build = Skynet.Create(Me)
-       
+
 End Function
 
 Private Sub Class_Initialize()
@@ -218,7 +236,6 @@ End Sub
 
 Private Sub Class_Terminate()
     If Not (Me.IsEmpty) Then
-    
         Call Skynet.Generic(Me).Dispose
     End If
 End Sub
@@ -239,7 +256,7 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
         Call Skynet.Push(Me, "SlizeColumn").IndexOutofRange.Raise("Index not valid")
     
     If (Me.IsEmpty) Then _
-        Call Skynet.Push(Me, "SlizeColumn").NULLPOINTER.Raise("Me.IsEmpty")
+        Call Skynet.Push(Me, "SlizeColumn").NullPointer.Raise("Me.IsEmpty")
         
     Set Column = GenericArray.Build(Me.LengthOf(1))
   
@@ -256,55 +273,103 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     
 End Function
 
+Public Sub Copy( _
+                    ByVal SrcArray As GenericArray, _
+                    ByVal SrcIndex As Long, _
+                    ByVal DstArray As GenericArray, _
+                    ByVal DstIndex As Long, _
+                    ByVal Elements As Long)
+                    
+    Dim Overlay As SAFEARRAYSTRUCT
+ 
+    If (SrcArray Is Nothing) Or (DstArray Is Nothing) Then _
+        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("SrcArray Is Nothing) Or (DstArray Is Nothing)")
+    
+    If (SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX) Then _
+        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX)")
+        
+    If (DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX) Then _
+        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX)")
+        
+    If (Elements < 1) Then _
+        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("Elements to copy  <  1")
+    
+    With Overlay
+        .cDims = 1
+        .fFeatures = 1088
+        .cbElements = 4&
+        ReDim .Bounds(1 To 1)
+        .Bounds(1).cElements = Elements
+        .Bounds(1).lLbound = MIN_INDEX
+    End With
+    
+    With SrcArray
+        Overlay.pvData = .AdressOf(Element:=SrcIndex)
+        Call SwitchTo(.Descriptor, Overlay)
+    End With
+   
+    With DstArray
+        Overlay.pvData = .AdressOf(Element:=DstIndex)
+        Call SwitchTo(.Descriptor, Overlay)
+    End With
+    
+    Call Catch(SafeArrayCopyData(ByVal SrcArray.Descriptor, ByVal DstArray.Descriptor))
+    
+    Call SrcArray.Refresh
+    Call DstArray.Refresh
+    
+End Sub
+
 Public Sub CopyTo( _
                     ByVal GArray As GenericArray, _
                     ByVal ArrayIndex As Long, _
                     ByVal SourceIndex As Long, _
                     Optional ByVal Elements As Long = 0)
-                    
-    Dim Overlay As SAFEARRAYSTRUCT
- 
-    If (Elements < 0) Then _
-        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("Elements to copy  <  0")
 
     If (Elements = 0) Then _
         Elements = Me.Length
+
+    Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=SourceIndex, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Elements)
+End Sub
+
+Public Sub ResizeTo(ByVal newSize As Long)
     
-'    If (SourceAdress < Me.DataPointer) Or (SourceAdress > Me.DataPointer + Me.Size) Then _
-'        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("Invalid SourceAdress")
-'
-'    If ((Me.DataPointer + Me.Size) Mod SourceAdress) / myClass.Struct.cbElements < Elements Then _
-'        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("Elements to copy > source start - source end")
-'
-'    If (GA Is Nothing) Or (GA.IsEmpty) Then _
-'        Call Skynet.Push(Me, "CopyTo").NULLPOINTER.Raise("GA Is Nothing")
-'
-'    If (GAAdress < GA.DataPointer) Or (GAAdress > GA.DataPointer + GA.Size) Then _
-'        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("Invalid GAAdress")
-'
-'    If ((GA.DataPointer + GA.Size) Mod GAAdress) / myClass.Struct.cbElements < Elements Then _
-'        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("Elements to copy > GA start - GA end")
+    Dim newDescriptor As Long
+    Dim newStruct As SAFEARRAYSTRUCT
+    Dim bound As SAFEARRAYBOUND
     
-    With Overlay
-        .pvData = Me.AdressOf(SourceIndex)
-        .cDims = 1
-        .cbElements = myClass.Struct.cbElements
-        .fFeatures = myClass.Struct.fFeatures
-        ReDim .Bounds(1 To 1)
-        .Bounds(1).cElements = Elements
-        .Bounds(1).lLbound = OPTION_BASE
-    End With
-    
-    Call SwitchTo(myClass.Descriptor, Overlay)
+    If Not (Me.Rank = 1) Then _
+        Call Skynet.Push(Me, "Copy").NotSupported.Raise("Me.Rank != 1")
+''The hard way ;)
+'    With myClass.struct
+'        .Bounds(1).cElements = newSize
+'        newDescriptor = SafeArrayCreateEx(VbVarType.vbObject, .cDims, .Bounds(1), ByVal 0&)
+'        newStruct = GetArrayStructure(newDescriptor)
+'        Call Skynet.CopyData(Dst:=newStruct.pvData, src:=.pvData, Bytes:=myClass.Size, ClearSource:=True)
+'    End With
+'
+'    With myClass
+'        Call Catch(SafeArrayDestroy(ByVal Descriptor))
+'        .Descriptor = newDescriptor
+'        .struct = newStruct
+'        .Elements = newSize
+'        .Size = newSize * .struct.cbElements
+'    End With
+'
+    bound.cElements = newSize
+    bound.lLbound = MIN_INDEX
    
-    With GArray
-        Overlay.pvData = .AdressOf(ArrayIndex)
-        Call SwitchTo(.Descriptor, Overlay)
-        Call Catch(SafeArrayCopyData(ByVal myClass.Descriptor, ByVal .Descriptor))
-        Call .Refresh
+    With myClass
+         Call Catch(SafeArrayRedim(ByVal .Descriptor, bound))
+        .Struct = GetArrayStructure(.Descriptor)
+        .Elements = newSize
+        .Size = newSize * .Struct.cbElements
     End With
     
-    Call SwitchTo(myClass.Descriptor, myClass.Struct)
+End Sub
+
+Public Sub Sort()
+    Call Skynet.Sort(myClass.Internal)
 End Sub
 
 Public Sub Refresh()
@@ -312,19 +377,28 @@ Public Sub Refresh()
 End Sub
 
 Public Function Test()
-    Dim x() As IGeneric
-    'ReDim x(1 To 10, 1 To 2)
+'    Dim x() As IGeneric
+'    Dim ptr As LongPtr
+'    ptr = Skynet.PointerOf(x)
+'
+'    'ReDim x(1 To 10, 1 To 2)
+'
+'    Set Me.ElementAt(1) = GString("Test")
+'    Call SwitchTo(ptr, myClass.Struct)
+'
+'    Debug.Print x(1).ToString
+'
+'    Call Catch(SafeArrayDestroyDescriptor(ByVal ptr))
+
+    Set Me(1) = GString("Test")
+    Debug.Print myClass.Internal(1)
     
-    Set Me.ElementAt(1) = GString("Test")
-    Call SwitchTo(Skynet.PointerOf(x), myClass.Struct)
-    
-    Debug.Print x(1).ToString
 End Function
 
 Private Function GetArrayStructure(ByVal SafeArrayPointer As LongPtr) As SAFEARRAYSTRUCT
     
     If (SafeArrayPointer = 0) Then _
-        Skynet.Push(Me, "GetArrayStructure").NULLPOINTER.Raise ("SafeArrayPointer")
+        Skynet.Push(Me, "GetArrayStructure").NullPointer.Raise ("SafeArrayPointer")
 
     Call Skynet.CopyData(VarPtr(GetArrayStructure), SafeArrayPointer, 16&)
     
@@ -346,7 +420,7 @@ End Function
 
 Public Function IndexOf( _
                             ByVal Value As IGeneric, _
-                            Optional ByVal StartIndex As Long = OPTION_BASE, _
+                            Optional ByVal StartIndex As Long = MIN_INDEX, _
                             Optional ByVal Count As Long, _
                             Optional ByVal CheckArguments As Boolean = True) As Long
     
@@ -358,7 +432,7 @@ Public Function IndexOf( _
         If Not (Me.Rank = 1) Then _
             Call Skynet.Push(Me, "IndexOf").NotSupported.Raise("Me.Rank != 1")
             
-        Dim lb As Long: lb = OPTION_BASE
+        Dim lb As Long: lb = MIN_INDEX
         If (StartIndex < lb) Or (StartIndex > Me.LengthOf(1) + lb) Then _
             Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(StartIndex < lb) Or (StartIndex > Me.Count() + lb)")
     
@@ -370,9 +444,8 @@ Public Function IndexOf( _
         End If
     End If
     
-    EndIndex = StartIndex + Count - OPTION_BASE
+    EndIndex = StartIndex + Count - MIN_INDEX
     
-        
     If Not (Value Is Nothing) Then
         For i = StartIndex To EndIndex
             myClass.Indices(0) = i
@@ -398,25 +471,25 @@ Public Sub Transpose()
     Const ZEROPOINTER As Long = 0
     Dim ptrT1 As LongPtr, ptrT2 As LongPtr
     Dim t1() As ObjectTransfer, t2() As ObjectTransfer
-    Dim i As Long, j As Long, M As Long, N As Long
+    Dim i As Long, j As Long, M As Long, n As Long
     
     If (Me.IsEmpty) Then _
-        Call Skynet.Push(Me, "Transpose").NULLPOINTER.Raise("SafeArray not allocated")
+        Call Skynet.Push(Me, "Transpose").NullPointer.Raise("SafeArray not allocated")
         
     If (Me.Rank <> 2) Then _
         Call Skynet.Push(Me, "Transpose").InvalidOperation.Raise("Rank <> 2")
         
     With myClass.Struct
         M = .Bounds(2).cElements
-        N = .Bounds(1).cElements
+        n = .Bounds(1).cElements
         
-        ReDim t1(1 To M, 1 To N)
-        ReDim t2(1 To N, 1 To M)
+        ReDim t1(1 To M, 1 To n)
+        ReDim t2(1 To n, 1 To M)
 
         ptrT1 = VarPtr(t1(1, 1))
         ptrT2 = VarPtr(t2(1, 1))
 
-        Call Skynet.CopyData(Dst:=ByVal ptrT1, Src:=ByVal .pvData, Bytes:=Me.TotalSize)
+        Call Skynet.CopyData(Dst:=ByVal ptrT1, src:=ByVal .pvData, Bytes:=Me.TotalSize)
         
         For i = LBound(t1, 1) To UBound(t1, 1)
             For j = LBound(t1, 2) To UBound(t1, 2)
@@ -424,13 +497,13 @@ Public Sub Transpose()
             Next
         Next
     
-        Call Skynet.CopyData(Dst:=ByVal .pvData, Src:=ByVal ptrT2, Bytes:=Me.TotalSize)
+        Call Skynet.CopyData(Dst:=ByVal .pvData, src:=ByVal ptrT2, Bytes:=Me.TotalSize)
 
         Dim Bounds() As SAFEARRAYBOUND
         ReDim Bounds(1 To 2)
         Bounds(1) = .Bounds(2): Bounds(2) = .Bounds(1)
 
-        Call Skynet.CopyData(Dst:=ByVal Me.Descriptor + 16&, Src:=VarPtr(Bounds(1)), Bytes:=.cDims * 8&)
+        Call Skynet.CopyData(Dst:=ByVal Me.Descriptor + 16&, src:=VarPtr(Bounds(1)), Bytes:=.cDims * 8&)
         .Bounds(1) = Bounds(2): .Bounds(2) = Bounds(1)
      
     End With
@@ -440,10 +513,6 @@ Public Sub Transpose()
 '        Call .CopyData(ByVal ptrT2, ByVal VarPtr(ZEROPOINTER), .PointerLength)
 '    End With
 '
-End Sub
-
-Public Sub Sort(Optional ByVal Column As Long = 1)
-
 End Sub
 
 Public Sub Feature()
@@ -489,25 +558,32 @@ End Sub
 
 'IGeneric
 Private Sub IGeneric_Dispose()
-    If (SafeArrayUnlock(myClass.Descriptor) = S_OK) Then
-        Call Catch(SafeArrayDestroyData(ByVal Me.Descriptor))
-        Call Catch(SafeArrayDestroyDescriptor(ByVal Me.Descriptor))
-'    Call Catch(SafeArrayDestroy(ByVal Descriptor))
-    End If
+'    If (SafeArrayUnlock(myClass.Descriptor) = S_OK) Then
+'        Call Catch(SafeArrayDestroyData(ByVal Me.Descriptor))
+'        Call Catch(SafeArrayDestroyDescriptor(ByVal Me.Descriptor))
+''    Call Catch(SafeArrayDestroy(ByVal Descriptor))
+'    End If
     myClass = EmptyStructure
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass
-    c.Descriptor = 0
+    Dim c As Member
+    
 '    With GetArrayStructure(Skynet.PointerOf(c.List))
 '
 '    End With
 '    c.Descriptor = Skynet.PointerOf(c.List)
     
-    Call Catch(SafeArrayCopy(ByVal myClass.Descriptor, c.Descriptor))
+    With c
+        Call Catch(SafeArrayCopy(ByVal myClass.Descriptor, .Descriptor))
+        ReDim .Indices(1) '!
+        .ptrIndices = VarPtr(.Indices(0)) '!
+        .Struct = GetArrayStructure(.Descriptor) '! pv.data
+        .Elements = myClass.Elements
+        .Size = myClass.Size
+    End With
     
     Virtual.Pointer = VarPtr(c)
     Set IGeneric_Clone = Skynet.Create(Me)
@@ -515,6 +591,7 @@ Private Function IGeneric_Clone() As IGeneric
     
 End Function
 
+Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_Equals = Skynet.SequenceCompare(Me, Other) = IsEqual: End Function
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum: IGeneric_CompareTo = Skynet.SequenceCompare(Me, Other): End Function
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericArray): End Function
@@ -526,23 +603,22 @@ Private Function IGeneric_ToString() As String
                         "MemorySize: " & Me.TotalSize & " Byte"
 End Function
 
-'IGenericList
-Private Property Get IGenericList_Elements() As IGenericCollection: Set IGenericList_Elements = Me: End Property
-Private Property Get IGenericList_Item(ByVal Index As Long) As IGeneric: Set IGenericList_Item = Me(Index): End Property
-Private Property Set IGenericList_Item(ByVal Index As Long, ByVal Item As IGeneric): Set Me(Index) = Item: End Property
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
-Private Function IGenericList_IndexOf(ByVal Item As IGeneric) As Long: IGenericList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=Me.LowerBound, Count:=Me.Length): End Function
-
-'IGCollection
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Length: End Property
+'IGenericCollection
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = True: End Property
-Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
+Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Length: End Property
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=1, SourceIndex:=Me.LowerBound, Elements:=Me.Length): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Skynet.Generic(Me).Clone: End Function
 
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
 
 End Function
+
+'IGenericReadOnlyList
+Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
+Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = Me(Index): End Property
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=Me.Length, CheckArguments:=True): End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericArray: End Function

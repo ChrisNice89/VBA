@@ -16,7 +16,8 @@ Public Property Get IsReadOnly() As Boolean: End Property
 Public Property Get Count() As Long: End Property
 
 Public Function NewEnumerator() As IGenericEnumerator: End Function
-Public Sub CopyTo(ByVal GA As GenericArray, ByVal ArrayIndex As Long): End Sub
+Public Function ToArray() As GenericArray: End Function
+Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
 Public Sub Clear(): End Sub
 
 'Private Sub Class_Initialize()

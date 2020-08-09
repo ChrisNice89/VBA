@@ -4,23 +4,108 @@ Attribute VB_Name = "Modul1"
 Option Explicit
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 
-Public Sub CollectionTest()
 
-    Dim x As IGeneric
+Sub assdsd()
     
     Dim i As Long
-    Dim List As Collection
-    Set List = New Collection
+    Dim ga As GenericArray
+    Set ga = GenericArray.Build(100)
     
+    
+    Call ga.SetValue(GString("b"), 13)
+    Call ga.SetValue(GString("c"), 14)
+    Call ga.SetValue(GString("a"), 15)
+    Call ga.SetValue(GString("h"), 16)
+    Call ga.SetValue(GString("s"), 17)
+    Call ga.SetValue(GString("d"), 18)
+    Call ga.SetValue(GString("zz"), 19)
+    Call ga.SetValue(GString("c"), 20)
+    Call ga.SetValue(GString("x"), 21)
+    Call ga.SetValue(GString("e"), 22)
+    Call ga.SetValue(GString("t"), 23)
+    Call ga.SetValue(GString("a"), 24)
+    
+    Call ga.SetValue(GString("a"), 50)
+    Call ga.SetValue(GString("c"), 51)
+    Call ga.SetValue(GString("a"), 52)
+    Call ga.SetValue(GString("j"), 53)
+    Call ga.SetValue(GString("s"), 54)
+    Call ga.SetValue(GString("ö"), 55)
+    Call ga.SetValue(GString("q"), 56)
+    Call ga.SetValue(GString("k"), 57)
+    Call ga.SetValue(GString("x"), 58)
+    Call ga.SetValue(GString("h"), 59)
+    Call ga.SetValue(GString("t"), 60)
+    Call ga.SetValue(GString("a"), 61)
+    
+    Call ga.SetValue(GString("z"), 70)
+    Call ga.SetValue(GString("h"), 71)
+    Call ga.SetValue(GString("t"), 72)
+    Call ga.SetValue(GString("ä"), 73)
+    
+    Call ga.SetValue(GString("c"), 80)
+    Call ga.SetValue(GString("a"), 81)
+    Call ga.SetValue(GString("e"), 82)
+    Call ga.SetValue(GString("f"), 83)
+    Call ga.SetValue(GString("d"), 84)
+    Call ga.SetValue(GString("zz"), 85)
+    Call ga.SetValue(GString("c"), 86)
+    Call ga.SetValue(GString("x"), 87)
+    Call ga.SetValue(GString("e"), 88)
+    Call ga.SetValue(GString("f"), 89)
+    Call ga.SetValue(GString("a"), 90)
+    
+    Call ga.Sort
+
+    For i = 1 To ga.Length
+        If Not ga(i) Is Nothing Then _
+            Debug.Print "i: " & i & "  " & ga(i)
+    Next
+
+End Sub
+
+Public Sub Redim1()
+    
+    Dim i As Long
+    ReDim a(1 To 50000) As IGeneric
+    
+    For i = 1 To 50000
+        Set a(i) = GString("test" & i)
+    Next
     Dim t As Timer
     Set t = New Timer
-  
     t.StartCounter
-    For i = 1 To 50000
-        Call List.Add(GString("test" & i))
-
-    Next
+    ReDim Preserve a(1 To 100000)
     Debug.Print t.TimeElapsed
+
+End Sub
+
+Public Sub Redim2()
+    Dim t As Timer
+    Dim i As Long
+'    Dim a(1 To 250) As IGeneric
+'
+    Dim a As GenericArray
+    Set a = GenericArray.Build(250)
+
+    For i = 1 To 250
+        Set a(i) = GString("test" & i)
+    Next
+'
+'    Set t = New Timer
+'    t.StartCounter
+'    For i = 1 To 250
+'        Set a(i) = a(i)
+'    Next
+'    Debug.Print t.TimeElapsed
+
+    Dim List As GenericList
+    Set List = GenericList.Build()
+    For i = 1 To 5
+        List.Add GString("testX" & i)
+    Next
+
+    Call List.InsertAll(3, a)
 
 End Sub
 
@@ -45,7 +130,7 @@ End Sub
 
 Public Sub Arraytest()
     Dim i As Long
-    Dim GA As GenericArray 'IGenericList
+    Dim ga As GenericArray 'IGenericList
 '    Set sa = SafeArray.Build(10, 2)
 '
 '    For i = 1 To sa.Count
@@ -67,11 +152,11 @@ Public Sub Arraytest()
     Set t = New Timer
     
     Dim a(1 To 10000) As IGeneric
-    Set GA = GenericArray.Build(10000)
+    Set ga = GenericArray.Build(10000)
     
     t.StartCounter
-    For i = 1 To GA.Length
-        Set GA(i) = GString("Test" & i)
+    For i = 1 To ga.Length
+        Set ga(i) = GString("Test" & i)
         'GA(i).ToString
     Next
 '    For i = 1 To GA.Length
@@ -87,38 +172,47 @@ Public Sub Arraytest()
 '    Next
 '    Debug.Print t.TimeElapsed
     
+    
+    Dim readOnly As IGenericReadOnlyList
+    Set readOnly = ga.AsReadOnly
+    
 End Sub
 
 Public Sub ListTest()
 
     Dim i As Long
     Dim List As GenericList
-    Set List = GenericList.Build(1000)
+    Set List = GenericList.Build()
     
-    For i = 1 To 1000
+    Dim t As Timer
+    Set t = New Timer
+    t.StartCounter
+    For i = 1 To 10000
         Call List.Add(GString("test" & i))
     Next
-    Debug.Print List.IndexOf(GString("test" & 999), 999, 2)
-    Call List.Insert(500, GString("eingefügt an 500"))
-    Debug.Print List(500)
-    
-    Dim List2 As GenericList
-    Set List2 = Skynet.Generic(List).Clone
-    Debug.Print List2.Count
-    Call List.Insert(1, GString("eingefügt an 1"))
-    Debug.Print List(1)
-    Debug.Print List2(1)
-    
-    Dim List3 As GenericList
-    Set List3 = List.SubList(1002, 1002)
-
-'    For i = 1 To List2.Count
-'        Debug.Print List2.ElementAt(i).ToString
-'    Next
-    Dim roList As GenericReadOnlyList
-    Set roList = List3.AsReadOnly
-    Debug.Print roList(1)
-    Set List = Nothing
+    Debug.Print t.TimeElapsed
+'
+'    Debug.Print List.IndexOf(GString("test" & 999), 1, 999)
+'    Call List.Insert(500, GString("eingefügt an 500"))
+'    Debug.Print List.IndexOf(GString("eingefügt an 500"))
+'
+'    Dim List2 As GenericList
+'    Set List2 = Skynet.Generic(List).Clone
+'    Debug.Print List2.Count
+'    Call List.Insert(1, GString("eingefügt an 1"))
+'    Debug.Print List(1)
+'    Debug.Print List2(1)
+'
+'    Dim List3 As GenericList
+'    Set List3 = List.GetRange(1, 100)
+'
+''    For i = 1 To List2.Count
+''        Debug.Print List2.ElementAt(i).ToString
+''    Next
+'    Dim readOnly As IGenericReadOnlyList
+'    Set readOnly = List3.AsReadOnly
+'    Debug.Print readOnly(1)
+'    Set List = Nothing
 
 End Sub
 
@@ -168,6 +262,12 @@ Sub TMaptest()
     Debug.Print hm2.Item(GString("Key" & 1)).ToString
     Debug.Print hm.Item(GString("Key" & 1)).ToString
     
+    Dim keys As IGenericReadOnlyList
+    Set keys = hm.GetKeys
+
+    Debug.Print keys.IndexOf(GString("Key" & 5))
+    Debug.Print keys(434)
+ 
 End Sub
 'Sub Cmdtest()
 '
