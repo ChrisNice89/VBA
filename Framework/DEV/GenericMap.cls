@@ -30,7 +30,7 @@ Private Const HAS_COLLISION As Byte = 2 ^ 1
 
 Private Enum Data
     Values
-    keys
+    Keys
 End Enum
 
 Private Type Constant
@@ -90,7 +90,7 @@ Public Function GetValues() As IGenericReadOnlyList: Set GetValues = LoadValues(
 
 Private Function getMinPrime() As Long: getMinPrime = myClass.Const.Primes(LBound(myClass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
-Private Function Modulo(ByVal a As Double, ByVal M As Double) As Long: Modulo = (a - (Int(a / M) * M)): End Function
+Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
@@ -141,15 +141,15 @@ Public Function Build( _
     
 End Function
 
-Private Function LoadKeys(ByVal keys As GenericArray, ByVal ArrayIndex As Long) As GenericArray
+Private Function LoadKeys(ByVal Keys As GenericArray, ByVal ArrayIndex As Long) As GenericArray
     Dim i As Long
     
     For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
         If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set keys(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
+            Set Keys(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
     Next
     
-    Set LoadKeys = keys
+    Set LoadKeys = Keys
     
 End Function
 

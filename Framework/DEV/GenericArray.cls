@@ -471,7 +471,7 @@ Public Sub Transpose()
     Const ZEROPOINTER As Long = 0
     Dim ptrT1 As LongPtr, ptrT2 As LongPtr
     Dim t1() As ObjectTransfer, t2() As ObjectTransfer
-    Dim i As Long, j As Long, M As Long, n As Long
+    Dim i As Long, j As Long, m As Long, n As Long
     
     If (Me.IsEmpty) Then _
         Call Skynet.Push(Me, "Transpose").NullPointer.Raise("SafeArray not allocated")
@@ -480,11 +480,11 @@ Public Sub Transpose()
         Call Skynet.Push(Me, "Transpose").InvalidOperation.Raise("Rank <> 2")
         
     With myClass.Struct
-        M = .Bounds(2).cElements
+        m = .Bounds(2).cElements
         n = .Bounds(1).cElements
         
-        ReDim t1(1 To M, 1 To n)
-        ReDim t2(1 To n, 1 To M)
+        ReDim t1(1 To m, 1 To n)
+        ReDim t2(1 To n, 1 To m)
 
         ptrT1 = VarPtr(t1(1, 1))
         ptrT2 = VarPtr(t2(1, 1))

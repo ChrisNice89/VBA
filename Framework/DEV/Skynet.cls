@@ -78,8 +78,8 @@ Public Property Get MaxLong() As Long
     MaxLong = MAX_INT32
 End Property
 
-Public Sub Assert(ByVal t As Task)
-   Call Err.Raise(t.ErrorNumber, TypeName$(t.Source), Me.Generic(t).ToString)
+Public Sub Assert(ByVal T As Task)
+   Call Err.Raise(T.ErrorNumber, TypeName$(T.Source), Me.Generic(T).ToString)
 End Sub
 
 Public Function Push(ByVal Source As Object, ByVal Method As String) As Task
@@ -183,7 +183,7 @@ Private Function BinarySearch( _
         c = Objects(i).CompareTo(Value)
         Select Case c
             Case IsGreater: hi = i - 1
-            Case IsLower: lo = i + 1
+            Case islower: lo = i + 1
             Case Else: BinarySearch = i: Exit Function
         End Select
     
@@ -202,134 +202,204 @@ End Function
 
 '@Ignore ProcedureCanBeWrittenAsFunction
 Public Sub Sort(ByRef Objects() As IGeneric, Optional ByVal Order As SortOrder = SortOrder.Ascending)
-    Call Quicksort(Objects, LBound(Objects, 1), UBound(Objects, 1), 0, Order) ' 32
+    Call Quicksort(Objects, LBound(Objects, 1), UBound(Objects, 1), 0)
 End Sub
+
+'Private Sub Quicksort( _
+'                        ByRef Element() As IGeneric, _
+'                        ByVal Left As Long, _
+'                        ByVal Right As Long, _
+'                        ByVal DepthLimit As Long)
+'
+'    Dim i As Long
+'    Dim j As Long
+'    Dim middle As Long
+'
+'    Dim pivot As IGeneric
+'    Dim tmp As IGeneric
+'
+'    If (Left > Right) Then _
+'        Exit Sub
+'
+'    Do
+'        If (DepthLimit = 0) Then _
+'            Call HeapSort(Element, Left, Right): Exit Sub
+'
+'        i = Left: j = Right
+'        middle = i + ((j - i) / 2)
+'
+'        Call SwapIfGreater(Element, i, middle)
+'        Call SwapIfGreater(Element, i, j)
+'        Call SwapIfGreater(Element, middle, j)
+'
+'        Set pivot = Element(middle)
+'
+'        Do
+'            If (pivot Is Nothing) Then
+'                Do While Not (Element(i) Is Nothing): i = i + 1: Loop
+'            Else
+'                Do While (pivot.CompareTo(Element(i)) = islower): i = i + 1: Loop
+'                Do While (pivot.CompareTo(Element(j)) = IsGreater): j = j - 1: Loop
+'            End If
+'
+'            If (i > j) Then _
+'                Exit Do
+'
+'            If (i < j) Then _
+'                Set tmp = Element(i): _
+'                Set Element(i) = Element(j): _
+'                Set Element(j) = tmp
+'
+'            i = i + 1: j = j - 1
+'
+'        Loop While (i <= j)
+'
+'        DepthLimit = DepthLimit - 1
+'
+'        If (j - Left) <= (Right - i) Then
+'            If (Left < j) Then _
+'                Call Quicksort(Element, Left, j, DepthLimit)
+'            Left = i
+'        Else
+'            If (i < Right) Then _
+'                Call Quicksort(Element, i, Right, DepthLimit)
+'            Right = j
+'        End If
+'
+'    Loop While (Left < Right)
+'
+'End Sub
 
 Private Sub Quicksort( _
                         ByRef Element() As IGeneric, _
-                        ByVal left As Long, _
-                        ByVal right As Long, _
-                        ByVal depthLimit As Long, _
-                        ByVal Order As SortOrder)
+                        ByVal Left As Long, _
+                        ByVal Right As Long, _
+                        ByVal DepthLimit As Long)
 
     Dim i As Long
     Dim j As Long
-    
+    Dim middle As Long
+
     Dim pivot As IGeneric
     Dim tmp As IGeneric
-    
-    If (left > right) Then Exit Sub
-    
+
+    If (Left > Right) Then _
+        Exit Sub
+
     Do
-        If (depthLimit = 0) Then _
-            Call HeapSort(Element, left, right): Exit Sub
-                
-        i = left: j = right
-        Set pivot = Element(i + ((j - i) / 2))
-            
+        If (DepthLimit = 0) Then _
+            Call HeapSort(Element, Left, Right): Exit Sub
+
+        i = Left: j = Right
+        middle = i + ((j - i) / 2)
+
+        Call SwapIfGreater(Element, i, middle)
+        Call SwapIfGreater(Element, i, j)
+        Call SwapIfGreater(Element, middle, j)
+
+        Set pivot = Element(middle)
+
         Do
             If (pivot Is Nothing) Then
                 Do While Not (Element(j) Is Nothing): j = j - 1: Loop
             Else
-                Do While (pivot.CompareTo(Element(i)) = IsGreater * Order): i = i + 1: Loop
-                Do While (pivot.CompareTo(Element(j)) = IsLower * Order): j = j - 1: Loop
+                Do While (pivot.CompareTo(Element(i)) = IsGreater): i = i + 1: Loop
+                Do While (pivot.CompareTo(Element(j)) = islower): j = j - 1: Loop
             End If
-            
+
             If (i > j) Then _
                 Exit Do
-                
+
             If (i < j) Then _
                 Set tmp = Element(i): _
                 Set Element(i) = Element(j): _
                 Set Element(j) = tmp
-          
+
             i = i + 1: j = j - 1
-            
+
         Loop While (i <= j)
-        
-        depthLimit = depthLimit - 1
-        
-        If (j - left) < (right - i) Then
-            If (left < j) Then Call Quicksort(Element, left, j, depthLimit, Order)
-            left = i
+
+        DepthLimit = DepthLimit - 1
+
+        If (j - Left) <= (Right - i) Then
+            If (Left < j) Then _
+                Call Quicksort(Element, Left, j, DepthLimit)
+            Left = i
         Else
-            If (i < right) Then Call Quicksort(Element, i, right, depthLimit, Order)
-            right = j
+            If (i < Right) Then _
+                Call Quicksort(Element, i, Right, DepthLimit)
+            Right = j
         End If
-    Loop While (left < right)
+
+    Loop While (Left < Right)
+
 End Sub
 
-Private Sub HeapSort(ByRef keys() As IGeneric, ByVal lo As Long, ByVal hi As Long)
-    
+Private Sub HeapSort(ByRef Keys() As IGeneric, ByVal lo As Long, ByVal hi As Long)
+
     Dim n As Long: n = hi - lo + 1
-    Dim i As Long: i = n / 2
-    
-    Do While i >= 1
-        Call DownHeap(keys, i, n, lo)
-        i = i - 1
-    Loop
-    
-'    For i = n / 2 To 1 Step -2
-'        Call DownHeap(keys, i, n, lo)
-'    Next
-'    For i = n To 1 Step -2
-'        Call Swap(keys, lo, lo + i - 1)
-'        Call DownHeap(keys, 1, i - 1, lo)
-'    Next
-'
-    i = n
-    Do While i > 1
-        Call Swap(keys, lo, lo + i - 1)
-        Call DownHeap(keys, 1, i - 1, lo)
-        i = i - 1
-    Loop
-    
+    Dim i As Long
+
+    For i = n / 2 To 1 Step -1
+        Call DownHeap(Keys, i, n, lo)
+    Next
+    For i = n To 2 Step -1
+        Call Swap(Keys, lo, lo + i - 1)
+        Call DownHeap(Keys, 1, i - 1, lo)
+    Next
+
 End Sub
+'MaxHeap
+Private Sub DownHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
-Private Sub DownHeap(ByRef keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
-
-    Dim d As IGeneric: Set d = keys(lo + i - 1)
+    Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim child As Long
-    
-    On Error GoTo err_handler
-    
+
     Do While (i <= n / 2)
         child = 2 * i
         If (child < n) Then
-            If (keys(lo + child - 1) Is Nothing) Then
+            If (Keys(lo + child - 1) Is Nothing) Then
                 child = child + 1
-            ElseIf (keys(lo + child - 1).CompareTo(keys(lo + child)) = IsLower) Then
+            ElseIf (Keys(lo + child - 1).CompareTo(Keys(lo + child)) = islower) Then
                 child = child + 1
             End If
         End If
         
-        If (keys(lo + child - 1) Is Nothing) Then
+        If (Keys(lo + child - 1) Is Nothing) Then _
             Exit Do
-        End If
         
-        If (keys(lo + child - 1).CompareTo(d) = IsLower) Then
+        If (Keys(lo + child - 1).CompareTo(d) = islower) Then _
             Exit Do
-        End If
-        
-        Set keys(lo + i - 1) = keys(lo + child - 1)
+      
+        Set Keys(lo + i - 1) = Keys(lo + child - 1)
         i = child
     Loop
     
-    Set keys(lo + i - 1) = d
-    On Error GoTo 0
-Exit Sub
-err_handler:
-    
-    Debug.Print "DownHeap"
+    Set Keys(lo + i - 1) = d
+
 End Sub
 
+Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As Long)
+    
+    Dim T As IGeneric
+    
+    If Not (a = b) Then
+        If Not (Keys(a) Is Nothing) Then
+            If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
+                Set T = Keys(a)
+                Set Keys(a) = Keys(b)
+                Set Keys(b) = T
+            End If
+        End If
+    End If
+End Sub
 Private Sub Swap(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
-    Dim t As IGeneric
+    Dim T As IGeneric
     
     If Not (i = j) Then
-        Set t = a(i)
+        Set T = a(i)
         Set a(i) = a(j)
-        Set a(j) = t
+        Set a(j) = T
     End If
 End Sub
 
@@ -390,7 +460,7 @@ End Sub
 Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function
 Public Function Generic(ByRef Instance As IGeneric) As IGeneric: Set Generic = Instance: End Function
 Attribute Generic.VB_UserMemId = 0
-Public Function Modulo(ByVal a As Double, ByVal M As Double) As Long: Modulo = (a - (Int(a / M) * M)): End Function
+Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function

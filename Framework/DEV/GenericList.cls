@@ -173,12 +173,12 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Collection As IGenericCollection
                 Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(c.Count))
 
         End With
-        Dim t As Timer
-        Set t = New Timer
-        t.StartCounter
+        Dim T As Timer
+        Set T = New Timer
+        T.StartCounter
         Call c.CopyTo(GArray:=myClass.Items, ArrayIndex:=Index)
         myClass.Size = myClass.Size + c.Count
-        Debug.Print t.TimeElapsed
+        Debug.Print T.TimeElapsed
     
     Else
         Set en = Collection

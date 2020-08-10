@@ -138,13 +138,14 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim S As GString: Set S = Other
+    Dim S As GString
     
-    If Other Is Nothing Then
-        IGeneric_CompareTo = IsLower
-    Else
-        IGeneric_CompareTo = StrComp(myClass.Value, S.Value, vbBinaryCompare)
-    End If
+    If Other Is Nothing Then _
+        IGeneric_CompareTo = IsGreater: Exit Function
+    
+    Set S = Other
+    IGeneric_CompareTo = StrComp(myClass.Value, S.Value, vbBinaryCompare)
+
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.Hashfunction): End Property
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GString): End Function

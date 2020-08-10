@@ -11,7 +11,7 @@ Attribute VB_Exposed = True
 Option Explicit
 '@Folder "Base"
 Public Enum ComparerEnum
-    IsLower = -1
+    islower = -1
     IsEqual = 0
     IsGreater = 1
 End Enum

@@ -11,7 +11,6 @@ Sub assdsd()
     Dim ga As GenericArray
     Set ga = GenericArray.Build(100)
     
-    
     Call ga.SetValue(GString("b"), 13)
     Call ga.SetValue(GString("c"), 14)
     Call ga.SetValue(GString("a"), 15)
@@ -24,7 +23,7 @@ Sub assdsd()
     Call ga.SetValue(GString("e"), 22)
     Call ga.SetValue(GString("t"), 23)
     Call ga.SetValue(GString("a"), 24)
-    
+
     Call ga.SetValue(GString("a"), 50)
     Call ga.SetValue(GString("c"), 51)
     Call ga.SetValue(GString("a"), 52)
@@ -37,14 +36,14 @@ Sub assdsd()
     Call ga.SetValue(GString("h"), 59)
     Call ga.SetValue(GString("t"), 60)
     Call ga.SetValue(GString("a"), 61)
-    
+
     Call ga.SetValue(GString("z"), 70)
     Call ga.SetValue(GString("h"), 71)
     Call ga.SetValue(GString("t"), 72)
     Call ga.SetValue(GString("ä"), 73)
-    
+
     Call ga.SetValue(GString("c"), 80)
-    Call ga.SetValue(GString("a"), 81)
+    Call ga.SetValue(GString(""), 81)
     Call ga.SetValue(GString("e"), 82)
     Call ga.SetValue(GString("f"), 83)
     Call ga.SetValue(GString("d"), 84)
@@ -54,7 +53,7 @@ Sub assdsd()
     Call ga.SetValue(GString("e"), 88)
     Call ga.SetValue(GString("f"), 89)
     Call ga.SetValue(GString("a"), 90)
-    
+    Call ga.SetValue(GString("a"), 100)
     Call ga.Sort
 
     For i = 1 To ga.Length
@@ -72,16 +71,16 @@ Public Sub Redim1()
     For i = 1 To 50000
         Set a(i) = GString("test" & i)
     Next
-    Dim t As Timer
-    Set t = New Timer
-    t.StartCounter
+    Dim T As Timer
+    Set T = New Timer
+    T.StartCounter
     ReDim Preserve a(1 To 100000)
-    Debug.Print t.TimeElapsed
+    Debug.Print T.TimeElapsed
 
 End Sub
 
 Public Sub Redim2()
-    Dim t As Timer
+    Dim T As Timer
     Dim i As Long
 '    Dim a(1 To 250) As IGeneric
 '
@@ -114,9 +113,9 @@ Public Sub normalArraytest()
     Dim i As Long
     ReDim a(10000) As IGeneric
     
-    Dim t As Timer
-    Set t = New Timer
-    t.StartCounter
+    Dim T As Timer
+    Set T = New Timer
+    T.StartCounter
     
     For i = 1 To 10000
 '        If i > UBound(a) Then _
@@ -124,7 +123,7 @@ Public Sub normalArraytest()
 '
         Set a(i) = GString("Test1" & i)
     Next
-    Debug.Print t.TimeElapsed
+    Debug.Print T.TimeElapsed
 
 End Sub
 
@@ -148,13 +147,13 @@ Public Sub Arraytest()
 '
 '    Call sa.Transpose
     
-    Dim t As Timer
-    Set t = New Timer
+    Dim T As Timer
+    Set T = New Timer
     
     Dim a(1 To 10000) As IGeneric
     Set ga = GenericArray.Build(10000)
     
-    t.StartCounter
+    T.StartCounter
     For i = 1 To ga.Length
         Set ga(i) = GString("Test" & i)
         'GA(i).ToString
@@ -163,7 +162,7 @@ Public Sub Arraytest()
 '        Set GA(i) = GString("Test" & i)
 '        'GA(i).ToString
 '    Next
-    Debug.Print t.TimeElapsed
+    Debug.Print T.TimeElapsed
      
 '    t.StartCounter
 '    For i = 1 To UBound(a)
@@ -184,13 +183,13 @@ Public Sub ListTest()
     Dim List As GenericList
     Set List = GenericList.Build()
     
-    Dim t As Timer
-    Set t = New Timer
-    t.StartCounter
+    Dim T As Timer
+    Set T = New Timer
+    T.StartCounter
     For i = 1 To 10000
         Call List.Add(GString("test" & i))
     Next
-    Debug.Print t.TimeElapsed
+    Debug.Print T.TimeElapsed
 '
 '    Debug.Print List.IndexOf(GString("test" & 999), 1, 999)
 '    Call List.Insert(500, GString("eingefügt an 500"))
@@ -219,8 +218,8 @@ End Sub
 Public Sub Sometest()
     Dim i As Long
     
-    Dim t As Timer
-    Set t = New Timer
+    Dim T As Timer
+    Set T = New Timer
     
     Dim z(1 To 1000) As IGeneric
 
@@ -230,18 +229,18 @@ Public Sub Sometest()
     
     Dim x(1 To 1000) As IGeneric
 
-    t.StartCounter
+    T.StartCounter
     For i = 1 To 1000
         Set x(i) = z(i)
     Next
-    Debug.Print t.TimeElapsed
+    Debug.Print T.TimeElapsed
 End Sub
 
 
 Sub TMaptest()
 
     Dim i As Long
-    Dim K As GString
+    Dim k As GString
     Dim V As GString
     
     Dim hm As GenericMap
@@ -262,11 +261,11 @@ Sub TMaptest()
     Debug.Print hm2.Item(GString("Key" & 1)).ToString
     Debug.Print hm.Item(GString("Key" & 1)).ToString
     
-    Dim keys As IGenericReadOnlyList
-    Set keys = hm.GetKeys
+    Dim Keys As IGenericReadOnlyList
+    Set Keys = hm.GetKeys
 
-    Debug.Print keys.IndexOf(GString("Key" & 5))
-    Debug.Print keys(434)
+    Debug.Print Keys.IndexOf(GString("Key" & 5))
+    Debug.Print Keys(434)
  
 End Sub
 'Sub Cmdtest()
