@@ -368,8 +368,107 @@ Public Sub ResizeTo(ByVal newSize As Long)
     
 End Sub
 
-Public Sub Sort()
-    Call Skynet.Sort(myClass.Internal)
+Public Sub Heap()
+    
+    Dim i As Long
+    Dim temp As IGeneric
+    
+    Dim hi As Long
+    hi = UBound(myClass.Internal)
+    
+    Dim lo As Long
+    lo = LBound(myClass.Internal)
+    
+    Dim n As Long
+    n = hi - lo + 1
+    
+    Dim start As Long
+    start = (n - 2) \ 2
+    
+    Dim eend As Long
+    eend = n - 1
+ 
+    For i = (n / 2) - 1 To 1 Step -1
+    
+        SiftDown list:=myClass.Internal, root:=i, eend:=n - 1, lo:=lo
+    Next
+    
+    For i = n - 1 To 1 Step -1
+        Set temp = myClass.Internal(lo + i)
+        Set myClass.Internal(lo + i) = myClass.Internal(lo)
+        Set myClass.Internal(lo) = temp
+        SiftDown list:=myClass.Internal, root:=0, eend:=i - 1, lo:=lo
+    Next
+    
+    
+'    While start >= 0
+'        SiftDown myClass.Internal, start, eend
+'        start = start - 1
+'    Wend
+
+ 
+'    While eend > 0
+'        Set temp = myClass.Internal(lo + eend)
+'        Set myClass.Internal(lo + eend) = myClass.Internal(lo)
+'        Set myClass.Internal(lo) = temp
+'
+'        eend = eend - 1
+'
+'        SiftDown myClass.Internal, 0, eend
+'    Wend
+'
+    For i = 1 To 100
+        If Not myClass.Internal(i) Is Nothing Then
+            Debug.Print i & "//" & myClass.Internal(i)
+        End If
+    Next
+    
+'    Dim n As Long: n = hi - lo + 1
+'    Dim i As Long
+'
+'    For i = n / 2 To 1 Step -1
+'        Call DownHeap(Keys, i, n, lo)
+'    Next
+'    For i = n To 2 Step -1
+'        Call Swap(Keys, lo, lo + i - 1)
+'        Call DownHeap(Keys, 1, i - 1, lo)
+'    Next
+    
+End Sub
+
+Sub SiftDown(ByRef list() As IGeneric, ByVal root As Long, eend As Long, ByVal lo As Long)
+    
+    Dim temp As IGeneric
+    Dim child As Long
+    
+    Dim d As IGeneric: Set d = list(lo + root)
+     
+    Do While root * 2 + 1 <= eend
+        child = root * 2 + 1
+        If child + 1 <= eend Then
+            If Not list(lo + child) Is Nothing Then
+                If list(lo + child).CompareTo(list(lo + child + 1)) = IsGreater Then
+                    child = child + 1
+                End If
+            End If
+        End If
+    
+        If Not list(lo + root) Is Nothing Then
+            If list(lo + root).CompareTo(list(lo + child)) = IsGreater Then
+                Set temp = list(lo + root)
+                Set list(lo + root) = list(lo + child)
+                Set list(lo + child) = temp
+            End If
+        Else
+            Exit Sub
+        End If
+        root = child
+    Loop
+    
+End Sub
+
+Public Sub Sort(Optional ByVal Order As SortOrder)
+    Call Skynet.Sort(myClass.Internal, Order)
 End Sub
 
 Public Sub Refresh()
@@ -421,7 +520,7 @@ End Function
 Public Function IndexOf( _
                             ByVal Value As IGeneric, _
                             Optional ByVal StartIndex As Long = MIN_INDEX, _
-                            Optional ByVal Count As Long, _
+                            Optional ByVal count As Long, _
                             Optional ByVal CheckArguments As Boolean = True) As Long
     
     Dim i As Long
@@ -436,15 +535,15 @@ Public Function IndexOf( _
         If (StartIndex < lb) Or (StartIndex > Me.LengthOf(1) + lb) Then _
             Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(StartIndex < lb) Or (StartIndex > Me.Count() + lb)")
     
-        If (Count = 0) Then
-            Count = (Me.LengthOf(1) - StartIndex) + lb
+        If (count = 0) Then
+            count = (Me.LengthOf(1) - StartIndex) + lb
         Else
-            If (Count < 0) Or (Count > Me.LengthOf(1) - StartIndex + lb) Then _
+            If (count < 0) Or (count > Me.LengthOf(1) - StartIndex + lb) Then _
                 Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(Count < 0) Or (Count > Me.elements - StartIndex + lb)")
         End If
     End If
     
-    EndIndex = StartIndex + Count - MIN_INDEX
+    EndIndex = StartIndex + count - MIN_INDEX
     
     If Not (Value Is Nothing) Then
         For i = StartIndex To EndIndex
@@ -618,7 +717,7 @@ End Function
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = Me(Index): End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=Me.Length, CheckArguments:=True): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, count:=Me.Length, CheckArguments:=True): End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericArray: End Function

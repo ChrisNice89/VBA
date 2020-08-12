@@ -33,9 +33,9 @@ Private Sub Heapify(Keys, Index() As Long, ByVal i1 As Long, ByVal n As Long)
 
 Private Sub Exchange(a() As Long, ByVal i As Long, ByVal j As Long)
    Dim Base As Long: Base = LBound(a)
-   Dim Temp As Long: Temp = a(Base + i)
+   Dim temp As Long: temp = a(Base + i)
    a(Base + i) = a(Base + j)
-   a(Base + j) = Temp
+   a(Base + j) = temp
    End Sub
 
 Public Sub TestHeapSort()

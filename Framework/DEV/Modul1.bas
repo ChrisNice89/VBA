@@ -2,8 +2,62 @@ Attribute VB_Name = "Modul1"
 '@Folder "Entwicklung"
 
 Option Explicit
-Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 
+Sub Heap()
+
+   Dim i As Long
+    Dim ga As GenericArray
+    Set ga = GenericArray.Build(100)
+    
+    Call ga.SetValue(GString("b"), 13)
+    Call ga.SetValue(GString("c"), 14)
+    Call ga.SetValue(GString("a"), 15)
+    Call ga.SetValue(GString("h"), 16)
+    Call ga.SetValue(GString("s"), 17)
+    Call ga.SetValue(GString("d"), 18)
+    Call ga.SetValue(GString("zz"), 19)
+    Call ga.SetValue(GString("c"), 20)
+    Call ga.SetValue(GString("x"), 21)
+    Call ga.SetValue(GString("e"), 22)
+    Call ga.SetValue(GString("t"), 23)
+    Call ga.SetValue(GString("a"), 24)
+
+    Call ga.SetValue(GString("a"), 50)
+    Call ga.SetValue(GString("c"), 51)
+    Call ga.SetValue(GString("a"), 52)
+    Call ga.SetValue(GString("j"), 53)
+    Call ga.SetValue(GString("s"), 54)
+    Call ga.SetValue(GString("ö"), 55)
+    Call ga.SetValue(GString("q"), 56)
+    Call ga.SetValue(GString("k"), 57)
+    Call ga.SetValue(GString("x"), 58)
+    Call ga.SetValue(GString("h"), 59)
+    Call ga.SetValue(GString("t"), 60)
+    Call ga.SetValue(GString("a"), 61)
+
+    Call ga.SetValue(GString("z"), 70)
+    Call ga.SetValue(GString("h"), 71)
+    Call ga.SetValue(GString("t"), 72)
+    Call ga.SetValue(GString("ä"), 73)
+
+    Call ga.SetValue(GString("c"), 80)
+    Call ga.SetValue(GString(""), 81)
+    Call ga.SetValue(GString("e"), 82)
+    Call ga.SetValue(GString("f"), 83)
+    Call ga.SetValue(GString("d"), 84)
+    Call ga.SetValue(GString("zz"), 85)
+    Call ga.SetValue(GString("c"), 86)
+    Call ga.SetValue(GString("x"), 87)
+    Call ga.SetValue(GString("e"), 88)
+    Call ga.SetValue(GString("f"), 89)
+    Call ga.SetValue(GString("a"), 90)
+    Call ga.SetValue(GString("a"), 100)
+    
+    Call ga.Heap
+    
+
+
+End Sub
 
 Sub assdsd()
     
@@ -71,16 +125,16 @@ Public Sub Redim1()
     For i = 1 To 50000
         Set a(i) = GString("test" & i)
     Next
-    Dim T As Timer
-    Set T = New Timer
-    T.StartCounter
+    Dim t As Timer
+    Set t = New Timer
+    t.StartCounter
     ReDim Preserve a(1 To 100000)
-    Debug.Print T.TimeElapsed
+    Debug.Print t.TimeElapsed
 
 End Sub
 
 Public Sub Redim2()
-    Dim T As Timer
+    Dim t As Timer
     Dim i As Long
 '    Dim a(1 To 250) As IGeneric
 '
@@ -98,13 +152,13 @@ Public Sub Redim2()
 '    Next
 '    Debug.Print t.TimeElapsed
 
-    Dim List As GenericList
-    Set List = GenericList.Build()
+    Dim list As GenericList
+    Set list = GenericList.Build()
     For i = 1 To 5
-        List.Add GString("testX" & i)
+        list.Add GString("testX" & i)
     Next
 
-    Call List.InsertAll(3, a)
+    Call list.InsertAll(3, a)
 
 End Sub
 
@@ -113,9 +167,9 @@ Public Sub normalArraytest()
     Dim i As Long
     ReDim a(10000) As IGeneric
     
-    Dim T As Timer
-    Set T = New Timer
-    T.StartCounter
+    Dim t As Timer
+    Set t = New Timer
+    t.StartCounter
     
     For i = 1 To 10000
 '        If i > UBound(a) Then _
@@ -123,7 +177,7 @@ Public Sub normalArraytest()
 '
         Set a(i) = GString("Test1" & i)
     Next
-    Debug.Print T.TimeElapsed
+    Debug.Print t.TimeElapsed
 
 End Sub
 
@@ -147,13 +201,13 @@ Public Sub Arraytest()
 '
 '    Call sa.Transpose
     
-    Dim T As Timer
-    Set T = New Timer
+    Dim t As Timer
+    Set t = New Timer
     
     Dim a(1 To 10000) As IGeneric
     Set ga = GenericArray.Build(10000)
     
-    T.StartCounter
+    t.StartCounter
     For i = 1 To ga.Length
         Set ga(i) = GString("Test" & i)
         'GA(i).ToString
@@ -162,7 +216,7 @@ Public Sub Arraytest()
 '        Set GA(i) = GString("Test" & i)
 '        'GA(i).ToString
 '    Next
-    Debug.Print T.TimeElapsed
+    Debug.Print t.TimeElapsed
      
 '    t.StartCounter
 '    For i = 1 To UBound(a)
@@ -180,16 +234,16 @@ End Sub
 Public Sub ListTest()
 
     Dim i As Long
-    Dim List As GenericList
-    Set List = GenericList.Build()
+    Dim list As GenericList
+    Set list = GenericList.Build()
     
-    Dim T As Timer
-    Set T = New Timer
-    T.StartCounter
+    Dim t As Timer
+    Set t = New Timer
+    t.StartCounter
     For i = 1 To 10000
-        Call List.Add(GString("test" & i))
+        Call list.Add(GString("test" & i))
     Next
-    Debug.Print T.TimeElapsed
+    Debug.Print t.TimeElapsed
 '
 '    Debug.Print List.IndexOf(GString("test" & 999), 1, 999)
 '    Call List.Insert(500, GString("eingefügt an 500"))
@@ -218,8 +272,8 @@ End Sub
 Public Sub Sometest()
     Dim i As Long
     
-    Dim T As Timer
-    Set T = New Timer
+    Dim t As Timer
+    Set t = New Timer
     
     Dim z(1 To 1000) As IGeneric
 
@@ -229,11 +283,11 @@ Public Sub Sometest()
     
     Dim x(1 To 1000) As IGeneric
 
-    T.StartCounter
+    t.StartCounter
     For i = 1 To 1000
         Set x(i) = z(i)
     Next
-    Debug.Print T.TimeElapsed
+    Debug.Print t.TimeElapsed
 End Sub
 
 
