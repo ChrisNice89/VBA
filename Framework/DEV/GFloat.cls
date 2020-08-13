@@ -99,7 +99,7 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
         Set f = Other
         Select Case True
             Case myClass.Value > f.Value: IGeneric_CompareTo = IsGreater
-            Case myClass.Value < f.Value: IGeneric_CompareTo = islower
+            Case myClass.Value < f.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If

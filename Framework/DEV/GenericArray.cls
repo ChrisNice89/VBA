@@ -102,6 +102,7 @@ Private Type Member
    Internal() As IGeneric
    pOld As Long
    IsReadOnly As Boolean
+   SortOrder As SortOrder
 End Type
 Private myClass As Member
 
@@ -468,8 +469,29 @@ Sub SiftDown(ByRef list() As IGeneric, ByVal root As Long, eend As Long, ByVal l
 End Sub
 
 Public Sub Sort(Optional ByVal Order As SortOrder)
+    myClass.SortOrder = Order
     Call Skynet.Sort(myClass.Internal, Order)
 End Sub
+
+Public Function BinarySearch( _
+                                ByVal Value As IGeneric, _
+                                Optional ByVal Index As Long = MIN_INDEX, _
+                                Optional ByVal Length As Long) As Long
+    
+    If Length = 0 Then _
+        Length = Me.Length
+        
+    If (Index < MIN_INDEX Or Length < 0) Then _
+        Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Index < MIN_INDEX Or Length < 0")
+    
+    If (myClass.Elements - (Index - MIN_INDEX) < Length) Then _
+        Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Argument_InvalidOffLen")
+    
+    If Not Me.Rank = 1 Then _
+        Call Skynet.Push(Me, "Public Function BinarySearch").NotSupported.Raise("Me.Rank != 1")
+    
+    BinarySearch = Skynet.BinarySearch(Objects:=myClass.Internal, Value:=Value, Index:=Index, Length:=Length, Order:=myClass.SortOrder)
+End Function
 
 Public Sub Refresh()
     Call SwitchTo(myClass.Descriptor, myClass.Struct)
@@ -520,7 +542,7 @@ End Function
 Public Function IndexOf( _
                             ByVal Value As IGeneric, _
                             Optional ByVal StartIndex As Long = MIN_INDEX, _
-                            Optional ByVal count As Long, _
+                            Optional ByVal Count As Long, _
                             Optional ByVal CheckArguments As Boolean = True) As Long
     
     Dim i As Long
@@ -535,15 +557,15 @@ Public Function IndexOf( _
         If (StartIndex < lb) Or (StartIndex > Me.LengthOf(1) + lb) Then _
             Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(StartIndex < lb) Or (StartIndex > Me.Count() + lb)")
     
-        If (count = 0) Then
-            count = (Me.LengthOf(1) - StartIndex) + lb
+        If (Count = 0) Then
+            Count = (Me.LengthOf(1) - StartIndex) + lb
         Else
-            If (count < 0) Or (count > Me.LengthOf(1) - StartIndex + lb) Then _
+            If (Count < 0) Or (Count > Me.LengthOf(1) - StartIndex + lb) Then _
                 Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(Count < 0) Or (Count > Me.elements - StartIndex + lb)")
         End If
     End If
     
-    EndIndex = StartIndex + count - MIN_INDEX
+    EndIndex = StartIndex + Count - MIN_INDEX
     
     If Not (Value Is Nothing) Then
         For i = StartIndex To EndIndex
@@ -717,7 +739,7 @@ End Function
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = Me(Index): End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, count:=Me.Length, CheckArguments:=True): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=Me.Length, CheckArguments:=True): End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericArray: End Function

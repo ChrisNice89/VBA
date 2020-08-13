@@ -144,11 +144,11 @@ Public Function SequenceCompare(ByVal a As IGenericList, ByVal b As IGenericList
         If Not (Me.Generic(a).IsRelatedTo(b)) Then _
             Me.Push(Me, "CompareLists").InvalidInput.Raise ("Type(a) != Type(b)")
     
-        If Not (a.Elements.count = b.Elements.count) Then _
+        If Not (a.Elements.Count = b.Elements.Count) Then _
             Me.Push(Me, "CompareLists").InvalidInput.Raise ("a.Elements.Count != b.Elements.Count")
         
         Dim i As Long, c As ComparerEnum
-        Do While (InterlockedIncrement(i) < a.Elements.count And c = IsEqual)
+        Do While (InterlockedIncrement(i) < a.Elements.Count And c = IsEqual)
             If Not a(i) Is Nothing Then _
                 c = a(i).Equals(b(i))
         Loop
@@ -165,12 +165,26 @@ Public Function GetRefCount(ByRef obj As IUnknown) As Long
     GetRefCount = GetRefCount - 2
 End Function
 
-'https://referencesource.microsoft.com/#mscorlib/system/array.cs,c9d30a83673759f0
-Private Function BinarySearch( _
+'Searches a section of the list for a given element using a binary search
+'algorithm. Elements of the list are compared to the search value using the IGeneric
+'comparer, which in that case must be implemented by all elements of the
+'list and the given search value. This method assumes that the given
+'section of the list is already sorted; if this is not the case, the
+'result will be incorrect.
+'
+'The method returns the index of the given value in the list. If the
+'list does not contain the given value, the method returns a negative
+'integer. The bitwise complement operator (~) can be applied to a
+'negative result to produce the index of the first element (if any) that
+'is larger than the given search value. This is also the index at which
+'the search value should be inserted into the list in order for the list
+'to remain sorted.
+Public Function BinarySearch( _
                                 ByRef Objects() As IGeneric, _
-                                ByRef Value As IGeneric, _
+                                ByVal Value As IGeneric, _
                                 ByVal Index As Long, _
-                                ByVal Length As Long) As Long
+                                ByVal Length As Long, _
+                                ByVal Order As SortOrder) As Long
                                                 
 
     Dim i As Long
@@ -179,34 +193,46 @@ Private Function BinarySearch( _
     Dim hi As Long: hi = Index + Length - 1
     
     Do While (lo <= hi)
-        i = Me.Median(lo, hi)
-        c = Objects(i).CompareTo(Value)
-        Select Case c
-            Case IsGreater: hi = i - 1
-            Case islower: lo = i + 1
-            Case Else: BinarySearch = i: Exit Function
-        End Select
     
+        i = lo + ((hi - lo) / 2)
+      
+        If (Objects(i) Is Nothing) Then
+            c = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
+        Else
+            c = Objects(i).CompareTo(Value) * Order
+        End If
+        
+        If (c = IsEqual) Then _
+            BinarySearch = i: Exit Function
+        
+        If (c = IsLower) Then
+            lo = i + 1
+        Else
+            hi = i - 1
+        End If
+
     Loop
     
     BinarySearch = Not lo
     
 End Function
 
-Public Function Median(ByVal Low As Long, ByVal hi As Long) As Single
-     If (hi - Low) >= 0 Then
-        '"Length overflow!"
-     End If
-     Median = Low + (Me.RightShift(hi - Low, 1))
+Public Function Median(ByVal lo As Long, ByVal hi As Long) As Single
+    If (lo >= hi) Then _
+        Call Me.Push(Me, "Public Function Median").ArgOutOfRange.Raise("lo <= hi")
+    
+    Median = lo + (Me.RightShift(hi - lo, 1))
 End Function
 
 '@Ignore ProcedureCanBeWrittenAsFunction
 Public Sub Sort(ByRef Objects() As IGeneric, Optional ByVal Order As SortOrder = SortOrder.Descending)
     
+    Const QuickSortDepthThreshold As Long = 32
+    
     If Order = Ascending Then
-        Call DepthLimitedQuicksort_Asc(Objects, LBound(Objects, 1), UBound(Objects, 1), 5)
+        Call DepthLimitedQuicksort_Asc(Objects, LBound(Objects, 1), UBound(Objects, 1), QuickSortDepthThreshold)
     Else
-        Call DepthLimitedQuicksort_Desc(Objects, LBound(Objects, 1), UBound(Objects, 1), 5)
+        Call DepthLimitedQuicksort_Desc(Objects, LBound(Objects, 1), UBound(Objects, 1), QuickSortDepthThreshold)
     End If
    
 End Sub
@@ -246,7 +272,7 @@ Private Sub DepthLimitedQuicksort_Asc( _
                 Do While Not (Element(j) Is Nothing): j = j - 1: Loop
             Else
                 Do While (pivot.CompareTo(Element(i)) = IsGreater): i = i + 1: Loop
-                Do While (pivot.CompareTo(Element(j)) = islower): j = j - 1: Loop
+                Do While (pivot.CompareTo(Element(j)) = IsLower): j = j - 1: Loop
             End If
 
             If (i > j) Then _
@@ -311,7 +337,7 @@ Private Sub DepthLimitedQuicksort_Desc( _
             If (pivot Is Nothing) Then
                 Do While Not (Element(i) Is Nothing): i = i + 1: Loop
             Else
-                Do While (pivot.CompareTo(Element(i)) = islower): i = i + 1: Loop
+                Do While (pivot.CompareTo(Element(i)) = IsLower): i = i + 1: Loop
                 Do While (pivot.CompareTo(Element(j)) = IsGreater): j = j - 1: Loop
             End If
 
@@ -370,7 +396,7 @@ Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, 
         If (child < n) Then
             If (Keys(lo + child - 1) Is Nothing) Then
                 child = child + 1
-            ElseIf (Keys(lo + child - 1).CompareTo(Keys(lo + child)) = islower) Then
+            ElseIf (Keys(lo + child - 1).CompareTo(Keys(lo + child)) = IsLower) Then
                 child = child + 1
             End If
         End If
@@ -378,7 +404,7 @@ Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, 
         If (Keys(lo + child - 1) Is Nothing) Then _
             Exit Do
 
-        If (Keys(lo + child - 1).CompareTo(d) = islower) Then _
+        If (Keys(lo + child - 1).CompareTo(d) = IsLower) Then _
             Exit Do
 
         Set Keys(lo + i - 1) = Keys(lo + child - 1)

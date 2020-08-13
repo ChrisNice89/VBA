@@ -3,67 +3,11 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
-Sub Heap()
-
-   Dim i As Long
-    Dim ga As GenericArray
-    Set ga = GenericArray.Build(100)
-    
-    Call ga.SetValue(GString("b"), 13)
-    Call ga.SetValue(GString("c"), 14)
-    Call ga.SetValue(GString("a"), 15)
-    Call ga.SetValue(GString("h"), 16)
-    Call ga.SetValue(GString("s"), 17)
-    Call ga.SetValue(GString("d"), 18)
-    Call ga.SetValue(GString("zz"), 19)
-    Call ga.SetValue(GString("c"), 20)
-    Call ga.SetValue(GString("x"), 21)
-    Call ga.SetValue(GString("e"), 22)
-    Call ga.SetValue(GString("t"), 23)
-    Call ga.SetValue(GString("a"), 24)
-
-    Call ga.SetValue(GString("a"), 50)
-    Call ga.SetValue(GString("c"), 51)
-    Call ga.SetValue(GString("a"), 52)
-    Call ga.SetValue(GString("j"), 53)
-    Call ga.SetValue(GString("s"), 54)
-    Call ga.SetValue(GString("ö"), 55)
-    Call ga.SetValue(GString("q"), 56)
-    Call ga.SetValue(GString("k"), 57)
-    Call ga.SetValue(GString("x"), 58)
-    Call ga.SetValue(GString("h"), 59)
-    Call ga.SetValue(GString("t"), 60)
-    Call ga.SetValue(GString("a"), 61)
-
-    Call ga.SetValue(GString("z"), 70)
-    Call ga.SetValue(GString("h"), 71)
-    Call ga.SetValue(GString("t"), 72)
-    Call ga.SetValue(GString("ä"), 73)
-
-    Call ga.SetValue(GString("c"), 80)
-    Call ga.SetValue(GString(""), 81)
-    Call ga.SetValue(GString("e"), 82)
-    Call ga.SetValue(GString("f"), 83)
-    Call ga.SetValue(GString("d"), 84)
-    Call ga.SetValue(GString("zz"), 85)
-    Call ga.SetValue(GString("c"), 86)
-    Call ga.SetValue(GString("x"), 87)
-    Call ga.SetValue(GString("e"), 88)
-    Call ga.SetValue(GString("f"), 89)
-    Call ga.SetValue(GString("a"), 90)
-    Call ga.SetValue(GString("a"), 100)
-    
-    Call ga.Heap
-    
-
-
-End Sub
-
 Sub assdsd()
     
     Dim i As Long
     Dim ga As GenericArray
-    Set ga = GenericArray.Build(100)
+    Set ga = GenericArray.Build(10000)
     
     Call ga.SetValue(GString("b"), 13)
     Call ga.SetValue(GString("c"), 14)
@@ -108,12 +52,14 @@ Sub assdsd()
     Call ga.SetValue(GString("f"), 89)
     Call ga.SetValue(GString("a"), 90)
     Call ga.SetValue(GString("a"), 100)
-    Call ga.Sort
+    Call ga.Sort(Descending)
 
     For i = 1 To ga.Length
         If Not ga(i) Is Nothing Then _
             Debug.Print "i: " & i & "  " & ga(i)
     Next
+    
+    Debug.Print ga.BinarySearch(GString("a"))
 
 End Sub
 

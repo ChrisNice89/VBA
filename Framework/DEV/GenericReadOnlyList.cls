@@ -40,7 +40,7 @@ Public Function Build(ByVal list As IGenericReadOnlyList) As IGenericReadOnlyLis
 End Function
 'Class
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myClass.list(Index): End Property
-Public Property Get count() As Long: count = myClass.list.Elements.count: End Property
+Public Property Get Count() As Long: Count = myClass.list.Elements.Count: End Property
 Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.list.Elements.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
 Public Sub Clear(): Skynet.Generic(Me).Dispose: End Sub
 Public Function Contains(ByVal Item As IGeneric) As Boolean: Contains = Me.IndexOf(Item:=Item) >= 0: End Function
@@ -75,7 +75,7 @@ Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Elements: " & .list.Elements.count
+                            "Elements: " & .list.Elements.Count
     End With
 End Function
 
@@ -86,7 +86,7 @@ Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: I
 
 'IGenericCollection
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = True: End Property
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = myClass.list.Elements.count: End Property
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = myClass.list.Elements.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = myClass.list.Elements.IsFixedSize: End Property
 Private Sub IGenericCollection_Clear(): Call myClass.list.Elements.Clear: End Sub
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.list.Elements.CopyTo(GArray, ArrayIndex:=ArrayIndex): End Sub
