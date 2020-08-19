@@ -717,7 +717,7 @@ Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Coun
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Skynet.Generic(Me).Clone: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Skynet.IndexOf(Objects:=myClass.Internal, Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements): End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements) >= 0: End Function
 
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
 
