@@ -100,9 +100,7 @@ Private Type Member
    Indices() As Long
    ptrIndices As LongPtr
    Internal() As IGeneric
-   pOld As Long
    IsReadOnly As Boolean
-   SortOrder As SortOrder
 End Type
 Private myClass As Member
 
@@ -124,7 +122,6 @@ Public Property Get Rank() As Long: Rank = SafeArrayGetDim(ByVal myClass.Descrip
 Public Property Set ElementAt(ByVal Index As Long, ByVal Value As IGeneric): Set myClass.Internal(Index) = Value: End Property
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myClass.Internal(Index): End Property
 Attribute ElementAt.VB_UserMemId = 0
-
 Public Function SetValue(ByVal Value As IGeneric, ParamArray Indices() As Variant)
     Dim i As Long
 
@@ -211,8 +208,8 @@ Public Function Build(ByVal Rows As Long, Optional ByVal Columns As Long = MIN_I
         If (.Descriptor = 0) Then _
             Call Skynet.Push(Me, "Build").InvalidOperation.Raise("myClass.Descriptor = 0")
         
-        .pOld = Skynet.PointerOf(.Internal): Call SafeArrayDestroyDescriptor(ByVal .pOld)
-        Call Skynet.CopyData(ByVal VarPtrArray(myClass.Internal), VarPtr(.Descriptor), 4&)
+        Call SafeArrayDestroyDescriptor(ByVal Skynet.PointerOf(.Internal))
+        Call Skynet.CopyData(ByVal VarPtrArray(.Internal), VarPtr(.Descriptor), 4&)
         .Struct = GetArrayStructure(.Descriptor)
 
         ReDim .Indices(1)
@@ -237,7 +234,7 @@ End Sub
 
 Private Sub Class_Terminate()
     If Not (Me.IsEmpty) Then
-        Call Skynet.Generic(Me).Dispose
+        Call Skynet.Dispose(Me)
     End If
 End Sub
 
@@ -285,15 +282,15 @@ Public Sub Copy( _
  
     If (SrcArray Is Nothing) Or (DstArray Is Nothing) Then _
         Call Skynet.Push(Me, "Copy").InvalidInput.Raise("SrcArray Is Nothing) Or (DstArray Is Nothing)")
+        
+    If (Elements < 1) Then _
+        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("Elements to copy  <  1")
     
     If (SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX) Then _
         Call Skynet.Push(Me, "Copy").InvalidInput.Raise("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX)")
         
     If (DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX) Then _
         Call Skynet.Push(Me, "Copy").InvalidInput.Raise("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX)")
-        
-    If (Elements < 1) Then _
-        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("Elements to copy  <  1")
     
     With Overlay
         .cDims = 1
@@ -308,7 +305,7 @@ Public Sub Copy( _
         Overlay.pvData = .AdressOf(Element:=SrcIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
-   
+    
     With DstArray
         Overlay.pvData = .AdressOf(Element:=DstIndex)
         Call SwitchTo(.Descriptor, Overlay)
@@ -335,15 +332,16 @@ End Sub
 
 Public Sub ResizeTo(ByVal newSize As Long)
     
-    Dim newDescriptor As Long
-    Dim newStruct As SAFEARRAYSTRUCT
     Dim bound As SAFEARRAYBOUND
     
     If Not (Me.Rank = 1) Then _
         Call Skynet.Push(Me, "Copy").NotSupported.Raise("Me.Rank != 1")
+
 ''The hard way ;)
 '    With myClass.struct
 '        .Bounds(1).cElements = newSize
+'        Dim newStruct As SAFEARRAYSTRUCT
+'        Dim newDescriptor As Long
 '        newDescriptor = SafeArrayCreateEx(VbVarType.vbObject, .cDims, .Bounds(1), ByVal 0&)
 '        newStruct = GetArrayStructure(newDescriptor)
 '        Call Skynet.CopyData(Dst:=newStruct.pvData, src:=.pvData, Bytes:=myClass.Size, ClearSource:=True)
@@ -369,129 +367,173 @@ Public Sub ResizeTo(ByVal newSize As Long)
     
 End Sub
 
-Public Sub Heap()
-    
-    Dim i As Long
-    Dim temp As IGeneric
-    
-    Dim hi As Long
-    hi = UBound(myClass.Internal)
-    
-    Dim lo As Long
-    lo = LBound(myClass.Internal)
-    
-    Dim n As Long
-    n = hi - lo + 1
-    
-    Dim start As Long
-    start = (n - 2) \ 2
-    
-    Dim eend As Long
-    eend = n - 1
- 
-    For i = (n / 2) - 1 To 1 Step -1
-    
-        SiftDown list:=myClass.Internal, root:=i, eend:=n - 1, lo:=lo
-    Next
-    
-    For i = n - 1 To 1 Step -1
-        Set temp = myClass.Internal(lo + i)
-        Set myClass.Internal(lo + i) = myClass.Internal(lo)
-        Set myClass.Internal(lo) = temp
-        SiftDown list:=myClass.Internal, root:=0, eend:=i - 1, lo:=lo
-    Next
-    
-    
-'    While start >= 0
-'        SiftDown myClass.Internal, start, eend
-'        start = start - 1
-'    Wend
-
- 
-'    While eend > 0
-'        Set temp = myClass.Internal(lo + eend)
-'        Set myClass.Internal(lo + eend) = myClass.Internal(lo)
-'        Set myClass.Internal(lo) = temp
+'Public Sub Heap()
 '
-'        eend = eend - 1
-'
-'        SiftDown myClass.Internal, 0, eend
-'    Wend
-'
-    For i = 1 To 100
-        If Not myClass.Internal(i) Is Nothing Then
-            Debug.Print i & "//" & myClass.Internal(i)
-        End If
-    Next
-    
-'    Dim n As Long: n = hi - lo + 1
 '    Dim i As Long
+'    Dim temp As IGeneric
 '
-'    For i = n / 2 To 1 Step -1
-'        Call DownHeap(Keys, i, n, lo)
+'    Dim hi As Long
+'    hi = UBound(myClass.Internal)
+'
+'    Dim lo As Long
+'    lo = LBound(myClass.Internal)
+'
+'    Dim n As Long
+'    n = hi - lo + 1
+'
+'    Dim start As Long
+'    start = (n - 2) \ 2
+'
+'    Dim eend As Long
+'    eend = n - 1
+'
+'    For i = (n / 2) - 1 To 1 Step -1
+'
+'        SiftDown List:=myClass.Internal, root:=i, eend:=n - 1, lo:=lo
 '    Next
-'    For i = n To 2 Step -1
-'        Call Swap(Keys, lo, lo + i - 1)
-'        Call DownHeap(Keys, 1, i - 1, lo)
+'
+'    For i = n - 1 To 1 Step -1
+'        Set temp = myClass.Internal(lo + i)
+'        Set myClass.Internal(lo + i) = myClass.Internal(lo)
+'        Set myClass.Internal(lo) = temp
+'        SiftDown List:=myClass.Internal, root:=0, eend:=i - 1, lo:=lo
 '    Next
-    
-End Sub
+'
+'
+''    While start >= 0
+''        SiftDown myClass.Internal, start, eend
+''        start = start - 1
+''    Wend
+'
+'
+''    While eend > 0
+''        Set temp = myClass.Internal(lo + eend)
+''        Set myClass.Internal(lo + eend) = myClass.Internal(lo)
+''        Set myClass.Internal(lo) = temp
+''
+''        eend = eend - 1
+''
+''        SiftDown myClass.Internal, 0, eend
+''    Wend
+''
+'    For i = 1 To 100
+'        If Not myClass.Internal(i) Is Nothing Then
+'            Debug.Print i & "//" & myClass.Internal(i)
+'        End If
+'    Next
+'
+''    Dim n As Long: n = hi - lo + 1
+''    Dim i As Long
+''
+''    For i = n / 2 To 1 Step -1
+''        Call DownHeap(Keys, i, n, lo)
+''    Next
+''    For i = n To 2 Step -1
+''        Call Swap(Keys, lo, lo + i - 1)
+''        Call DownHeap(Keys, 1, i - 1, lo)
+''    Next
+'
+'End Sub
 
-Sub SiftDown(ByRef list() As IGeneric, ByVal root As Long, eend As Long, ByVal lo As Long)
-    
-    Dim temp As IGeneric
-    Dim child As Long
-    
-    Dim d As IGeneric: Set d = list(lo + root)
-     
-    Do While root * 2 + 1 <= eend
-        child = root * 2 + 1
-        If child + 1 <= eend Then
-            If Not list(lo + child) Is Nothing Then
-                If list(lo + child).CompareTo(list(lo + child + 1)) = IsGreater Then
-                    child = child + 1
-                End If
-            End If
-        End If
-    
-        If Not list(lo + root) Is Nothing Then
-            If list(lo + root).CompareTo(list(lo + child)) = IsGreater Then
-                Set temp = list(lo + root)
-                Set list(lo + root) = list(lo + child)
-                Set list(lo + child) = temp
-            End If
-        Else
-            Exit Sub
-        End If
-        root = child
-    Loop
-    
-End Sub
-
-Public Sub Sort(Optional ByVal Order As SortOrder)
-    myClass.SortOrder = Order
-    Call Skynet.Sort(myClass.Internal, Order)
-End Sub
+'Sub SiftDown(ByRef List() As IGeneric, ByVal root As Long, eend As Long, ByVal lo As Long)
+'
+'    Dim temp As IGeneric
+'    Dim child As Long
+'
+'    Dim d As IGeneric: Set d = List(lo + root)
+'
+'    Do While root * 2 + 1 <= eend
+'        child = root * 2 + 1
+'        If child + 1 <= eend Then
+'            If Not List(lo + child) Is Nothing Then
+'                If List(lo + child).CompareTo(List(lo + child + 1)) = IsGreater Then
+'                    child = child + 1
+'                End If
+'            End If
+'        End If
+'
+'        If Not List(lo + root) Is Nothing Then
+'            If List(lo + root).CompareTo(List(lo + child)) = IsGreater Then
+'                Set temp = List(lo + root)
+'                Set List(lo + root) = List(lo + child)
+'                Set List(lo + child) = temp
+'            End If
+'        Else
+'            Exit Sub
+'        End If
+'        root = child
+'    Loop
+'
+'End Sub
 
 Public Function BinarySearch( _
                                 ByVal Value As IGeneric, _
                                 Optional ByVal Index As Long = MIN_INDEX, _
-                                Optional ByVal Length As Long) As Long
-    
+                                Optional ByVal Length As Long, _
+                                Optional ByVal Order As SortOrder) As Long
+
     If Length = 0 Then _
         Length = Me.Length
-        
-    If (Index < MIN_INDEX Or Length < 0) Then _
-        Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Index < MIN_INDEX Or Length < 0")
-    
-    If (myClass.Elements - (Index - MIN_INDEX) < Length) Then _
-        Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Argument_InvalidOffLen")
     
     If Not Me.Rank = 1 Then _
         Call Skynet.Push(Me, "Public Function BinarySearch").NotSupported.Raise("Me.Rank != 1")
-    
-    BinarySearch = Skynet.BinarySearch(Objects:=myClass.Internal, Value:=Value, Index:=Index, Length:=Length, Order:=myClass.SortOrder)
+
+    If (Index < MIN_INDEX Or Length < 0) Then _
+        Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Index < MIN_INDEX Or Length < 0")
+
+    If (myClass.Elements - (Index - MIN_INDEX) < Length) Then _
+        Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Argument_InvalidOffLen")
+
+    BinarySearch = Skynet.BinarySearch(Objects:=myClass.Internal, Value:=Value, Index:=Index, Length:=Length, Order:=Order)
+   
 End Function
+
+Public Function IndexOf( _
+                            ByVal Value As IGeneric, _
+                            Optional ByVal StartIndex As Long = MIN_INDEX, _
+                            Optional ByVal Count As Long, _
+                            Optional ByVal CheckArguments As Boolean = True) As Long
+ 
+    If CheckArguments Then
+        If Not (Me.Rank = 1) Then _
+            Call Skynet.Push(Me, "IndexOf").NotSupported.Raise("Me.Rank != 1")
+            
+        If (StartIndex < MIN_INDEX) Or (StartIndex > Me.LengthOf(1) + MIN_INDEX) Then _
+            Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(StartIndex < MIN_INDEX) Or (StartIndex > Me.Count() + MIN_INDEX)")
+    
+        If (Count = 0) Then
+            Count = (Me.LengthOf(1) - StartIndex) + MIN_INDEX
+        Else
+            If (Count < 0) Or (Count > Me.LengthOf(1) - StartIndex + MIN_INDEX) Then _
+                Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(Count < 0) Or (Count > Me.elements - StartIndex + MIN_INDEX)")
+        End If
+    End If
+   
+    IndexOf = Skynet.IndexOf(Objects:=myClass.Internal, Value:=Value, StartIndex:=StartIndex, Count:=Count)
+    
+End Function
+
+Public Sub Reverse(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Length As Long)
+    
+    If Length = 0 Then _
+        Length = Me.Length
+    
+    If Not Me.Rank = 1 Then _
+        Call Skynet.Push(Me, "Public Sub Reverse").NotSupported.Raise("Me.Rank != 1")
+        
+    If (Index < MIN_INDEX Or Length < 0) Then _
+        Call Skynet.Push(Me, "Public Sub Reverse").ArgOutOfRange.Raise("Index < MIN_INDEX Or Length < 0")
+    
+    If (myClass.Elements - (Index - MIN_INDEX) < Length) Then _
+        Call Skynet.Push(Me, "Public Sub Reverse").ArgOutOfRange.Raise("Argument_InvalidOffLen")
+
+    Call Skynet.Reverse(Objects:=myClass.Internal, Index:=Index, Length:=Length)
+    
+End Sub
+
+Public Sub Sort(Optional ByVal Order As SortOrder)
+    Call Skynet.Sort(myClass.Internal, Order)
+End Sub
 
 Public Sub Refresh()
     Call SwitchTo(myClass.Descriptor, myClass.Struct)
@@ -531,60 +573,6 @@ Private Function GetArrayStructure(ByVal SafeArrayPointer As LongPtr) As SAFEARR
         Call Skynet.CopyData(VarPtr(.Bounds(1)), ByVal (SafeArrayPointer + 16&), .cDims * 8&)
     End With
 
-End Function
-
-'Returns the index of the first occurrence of a given value in a range of
-'this list. It does a linear, O(n) search. The list is searched forwards, starting at index
-'and upto count number of elements. The
-'elements of the list are compared to the given value using the
-'Object.Equals method.
-
-Public Function IndexOf( _
-                            ByVal Value As IGeneric, _
-                            Optional ByVal StartIndex As Long = MIN_INDEX, _
-                            Optional ByVal Count As Long, _
-                            Optional ByVal CheckArguments As Boolean = True) As Long
-    
-    Dim i As Long
-    Dim EndIndex As Long
-    Dim Candidate As IGeneric
-
-    If CheckArguments Then
-        If Not (Me.Rank = 1) Then _
-            Call Skynet.Push(Me, "IndexOf").NotSupported.Raise("Me.Rank != 1")
-            
-        Dim lb As Long: lb = MIN_INDEX
-        If (StartIndex < lb) Or (StartIndex > Me.LengthOf(1) + lb) Then _
-            Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(StartIndex < lb) Or (StartIndex > Me.Count() + lb)")
-    
-        If (Count = 0) Then
-            Count = (Me.LengthOf(1) - StartIndex) + lb
-        Else
-            If (Count < 0) Or (Count > Me.LengthOf(1) - StartIndex + lb) Then _
-                Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(Count < 0) Or (Count > Me.elements - StartIndex + lb)")
-        End If
-    End If
-    
-    EndIndex = StartIndex + Count - MIN_INDEX
-    
-    If Not (Value Is Nothing) Then
-        For i = StartIndex To EndIndex
-            myClass.Indices(0) = i
-            Call SafeArrayGetElement(ByVal myClass.Descriptor, ByVal myClass.ptrIndices, Candidate)
-            If Not Candidate Is Nothing Then _
-                If Candidate.Equals(Value) Then IndexOf = i: Exit Function
-        Next
-    Else
-        For i = StartIndex To EndIndex
-            myClass.Indices(0) = i
-            Call SafeArrayGetElement(ByVal myClass.Descriptor, ByVal myClass.ptrIndices, Candidate)
-            If Candidate Is Nothing Then _
-                IndexOf = i: Exit Function
-        Next
-    End If
-    
-    IndexOf = -1
-    
 End Function
 
 Public Sub Transpose()
@@ -692,16 +680,14 @@ Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member
     
-'    With GetArrayStructure(Skynet.PointerOf(c.List))
-'
-'    End With
-'    c.Descriptor = Skynet.PointerOf(c.List)
-    
     With c
         Call Catch(SafeArrayCopy(ByVal myClass.Descriptor, .Descriptor))
+        Call SafeArrayDestroyDescriptor(ByVal Skynet.PointerOf(.Internal))
+        Call Skynet.CopyData(ByVal VarPtrArray(.Internal), VarPtr(.Descriptor), 4&)
+        .Struct = GetArrayStructure(.Descriptor) '! pv.data
+        
         ReDim .Indices(1) '!
         .ptrIndices = VarPtr(.Indices(0)) '!
-        .Struct = GetArrayStructure(.Descriptor) '! pv.data
         .Elements = myClass.Elements
         .Size = myClass.Size
     End With
@@ -731,6 +717,7 @@ Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Coun
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Skynet.Generic(Me).Clone: End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Skynet.IndexOf(Objects:=myClass.Internal, Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements): End Function
 
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
 
@@ -739,12 +726,14 @@ End Function
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = Me(Index): End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=Me.Length, CheckArguments:=True): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements): End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericArray: End Function
 Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GenericArray: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
+
+
 
 

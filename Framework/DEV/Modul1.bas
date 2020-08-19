@@ -3,6 +3,28 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
+Sub TestGenericPair()
+    
+    Dim c As New VBA.Collection
+        
+    Dim pair1 As IGeneric
+    Set pair1 = GenericPair(GString("A"), Nothing)
+    
+    
+    Dim pair2 As IGeneric
+    Set pair2 = GenericPair(GString("A"), c)
+    
+    Debug.Print pair1.Equals(pair2)
+End Sub
+
+Sub asadsfsd()
+
+Dim x(1 To 10) As IGeneric
+Debug.Print Skynet.BinarySearch(x, Nothing, 1, 1, Ascending)
+
+
+End Sub
+
 Sub assdsd()
     
     Dim i As Long
@@ -52,7 +74,7 @@ Sub assdsd()
     Call ga.SetValue(GString("f"), 89)
     Call ga.SetValue(GString("a"), 90)
     Call ga.SetValue(GString("a"), 100)
-    Call ga.Sort(Descending)
+    Call ga.Sort
 
     For i = 1 To ga.Length
         If Not ga(i) Is Nothing Then _
@@ -60,6 +82,7 @@ Sub assdsd()
     Next
     
     Debug.Print ga.BinarySearch(GString("a"))
+    Call ga.Reverse
 
 End Sub
 
@@ -98,14 +121,15 @@ Public Sub Redim2()
 '    Next
 '    Debug.Print t.TimeElapsed
 
-    Dim list As GenericList
-    Set list = GenericList.Build()
+    Dim List As GenericList
+    Set List = GenericList.Build()
     For i = 1 To 5
-        list.Add GString("testX" & i)
+        List.Add GString("testX" & i)
     Next
 
-    Call list.InsertAll(3, a)
-
+    Call List.InsertAll(3, a)
+    
+    Call List.Reverse
 End Sub
 
 Public Sub normalArraytest()
@@ -180,14 +204,14 @@ End Sub
 Public Sub ListTest()
 
     Dim i As Long
-    Dim list As GenericList
-    Set list = GenericList.Build()
+    Dim List As GenericList
+    Set List = GenericList.Build()
     
     Dim t As Timer
     Set t = New Timer
     t.StartCounter
     For i = 1 To 10000
-        Call list.Add(GString("test" & i))
+        Call List.Add(GString("test" & i))
     Next
     Debug.Print t.TimeElapsed
 '
@@ -195,12 +219,12 @@ Public Sub ListTest()
 '    Call List.Insert(500, GString("eingefügt an 500"))
 '    Debug.Print List.IndexOf(GString("eingefügt an 500"))
 '
-'    Dim List2 As GenericList
-'    Set List2 = Skynet.Generic(List).Clone
-'    Debug.Print List2.Count
-'    Call List.Insert(1, GString("eingefügt an 1"))
-'    Debug.Print List(1)
-'    Debug.Print List2(1)
+    Dim List2 As GenericList
+    Set List2 = Skynet.Generic(List).Clone
+    Debug.Print List2.Count
+    Call List.Insert(500, GString("eingefügt an 500"))
+    Debug.Print List(500)
+    Debug.Print List2(500)
 '
 '    Dim List3 As GenericList
 '    Set List3 = List.GetRange(1, 100)

@@ -14,13 +14,14 @@ Option Explicit
 
 Implements IPrototype
 Implements IGeneric
+Implements IGenericDictionary
 Implements IGenericCollection
 
 'Implements IGenericEnumerator
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
-Private Const DEFAULTCAPACITY As Long = 32
+Private Const DEFAULT_CAPACITY As Long = 32
 
 'Bucketstate
 Private Const ZERO As Byte = 0
@@ -98,8 +99,9 @@ Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
 End Sub
 
+
 Public Function Build( _
-                        Optional ByVal Capacity As Long = DEFAULTCAPACITY, _
+                        Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
                         Optional ByVal LoadFactor As Double = 0.72) As GenericMap
     
     With myClass
@@ -192,17 +194,6 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
   
 End Function
 
-Public Function GetValueOrDefault(ByVal Key As IGeneric) As IGeneric
-    
-    Dim i As Long: i = FindEntry(Key)
-    
-    If (i) >= 0 Then _
-        Set GetValueOrDefault = myClass.Buckets(i).Value: Exit Function
-    
-    Set GetValueOrDefault = Nothing 'Default
-    
-End Function
-
 Private Function FindEntry(ByVal Key As IGeneric) As Long
 
     Dim Try As Long
@@ -234,7 +225,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
    
 End Function
 
-Public Function Remove(ByVal Key As IGeneric) As Boolean
+Public Sub Remove(ByVal Key As IGeneric)
     
     Dim S As Byte
     Dim i As Long: i = FindEntry(Key)
@@ -246,10 +237,10 @@ Public Function Remove(ByVal Key As IGeneric) As Boolean
             Call InterlockedDecrement(.Count)
         End With
     End If
-End Function
+End Sub
 
 Public Sub Clear()
-     Call Skynet.Generic(Me).Dispose
+     Call Skynet.Dispose(Me)
 End Sub
 
 Private Function getPrime(ByVal Min As Long) As Long
@@ -412,23 +403,8 @@ Public Sub Add(ByRef Key As IGeneric, ByRef Value As IGeneric)
 
 End Sub
 
-Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-
-    If (GArray Is Nothing) Then _
-        Call Skynet.Push(Me, "CopyTo").NullPointer.Raise("GArray Is Nothing")
-    
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Push(Me, "CopyTo").IndexOutofRange.Raise("(Index < 0) Or (Index > GArray.Length)")
-
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
-        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("(GArray.Length - Index < Me.Count)")
-    
-    Call LoadValues(Values:=GArray, ArrayIndex:=ArrayIndex)
-
-End Sub
-
 Private Sub Class_Terminate()
-    Call Skynet.Generic(Me).Dispose
+    Call Skynet.Dispose(Me)
 End Sub
 
 Private Property Get IGenericEnumerator_Current() As IGeneric
@@ -495,17 +471,54 @@ Private Function IGeneric_ToString() As String
     End With
 End Function
 
+'IGenericDictionary
+Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
+Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
+Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myClass.Buckets(FindEntry(Key)).Value: End Property
+Private Property Get IGenericDictionary_Values() As IGenericCollection: IGenericDictionary_Values = Me.GetValues: End Property
+Private Property Get IGenericDictionary_Keys() As IGenericCollection: IGenericDictionary_Keys = Me.GetKeys: End Property
+Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
+Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
+Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
+Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
+
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+
+    If (GArray Is Nothing) Then _
+        Call Skynet.Push(Me, "CopyTo").NullPointer.Raise("GArray Is Nothing")
+    
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+        Call Skynet.Push(Me, "CopyTo").IndexOutofRange.Raise("(Index < 0) Or (Index > GArray.Length)")
+
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
+        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("(GArray.Length - Index < Me.Count)")
+    
+    Call LoadValues(Values:=GArray, ArrayIndex:=ArrayIndex)
+
+End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = LoadValues(GenericArray.Build(Me.Count), GenericArray.LowerBound): End Function
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
 
 End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean
+    
+    Dim i As Long
+    
+    For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+        If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+            If (Item.Equals(myClass.Buckets(i).Value)) Then _
+                IGenericCollection_Contains = True: Exit Function
+                
+    Next
+    
+End Function
 
+'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericMap: End Function
 Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GenericMap: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property

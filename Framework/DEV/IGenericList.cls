@@ -17,6 +17,8 @@ Public Property Set Item(ByVal Index As Long, ByVal Object As IGeneric): End Pro
 Public Property Get Elements() As IGenericCollection: End Property
 
 Public Function IndexOf(ByVal Item As IGeneric) As Long: End Function
+Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric): End Sub
+Public Sub RemoveAt(ByVal Index As Long): End Sub
 
 'Private Sub Class_Initialize()
 '    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise

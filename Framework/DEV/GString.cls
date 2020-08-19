@@ -78,6 +78,7 @@ Public Function ToCharArray() As String()
     ToCharArray = chars
 End Function
 
+
 Public Function Build( _
                         ByVal Value As String, _
                         Optional ByVal Hashfunction As Hashing = Hashing.Function1, _
@@ -126,11 +127,9 @@ Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
-    If Not TypeOf Other Is GString Then IGeneric_Equals = False: Exit Function
-
     Dim S As GString: Set S = Other
+    
+    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not (myClass.Length = Me.Length) Then IGeneric_Equals = False: Exit Function
 
     IGeneric_Equals = (StrComp(myClass.Value, S.Value, vbBinaryCompare) = 0)
@@ -138,12 +137,11 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim S As GString
+    Dim S As GString: Set S = Other
     
     If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    Set S = Other
     IGeneric_CompareTo = StrComp(myClass.Value, S.Value, vbBinaryCompare)
 
 End Function

@@ -12,6 +12,7 @@ Attribute VB_Exposed = True
 '@Folder "Base"
 Option Explicit
 
+Private Const DEFAULT_SORTORDER As Integer = 1 'SortOrder.Ascending
 Private Const MAXVALUE As Double = 2 ^ 31
 Private Const MAX_INT32 As Long = &H7FFFFFFF
 Private Const NullPointer As Long = 0
@@ -73,10 +74,9 @@ End Type
 Private myClass As Member
 '@MemberAttribute VB_VarHelpID, -1
 
-
-Public Property Get MaxLong() As Long
-    MaxLong = MAX_INT32
-End Property
+Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End Property
+Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
+Public Property Get MaxLong() As Long: MaxLong = MAX_INT32: End Property
 
 Public Sub Assert(ByVal t As Task)
    Call Err.Raise(t.ErrorNumber, TypeName$(t.Source), Me.Generic(t).ToString)
@@ -85,8 +85,6 @@ End Sub
 Public Function Push(ByVal Source As Object, ByVal Method As String) As Task
     Set Push = Task.Build(Source, Method)
 End Function
-
-Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
 
 Public Sub ClearData(ByVal Dst As LongPtr, ByVal Bytes As Long)
     Call FillMemory(ByVal Dst, Bytes, 0) 'Call ZeroMemory(ByVal dst, Bytes)
@@ -165,6 +163,7 @@ Public Function GetRefCount(ByRef obj As IUnknown) As Long
     GetRefCount = GetRefCount - 2
 End Function
 
+
 'Searches a section of the list for a given element using a binary search
 'algorithm. Elements of the list are compared to the search value using the IGeneric
 'comparer, which in that case must be implemented by all elements of the
@@ -185,10 +184,10 @@ Public Function BinarySearch( _
                                 ByVal Index As Long, _
                                 ByVal Length As Long, _
                                 ByVal Order As SortOrder) As Long
-                                                
 
     Dim i As Long
     Dim c As ComparerEnum
+   
     Dim lo As Long: lo = Index
     Dim hi As Long: hi = Index + Length - 1
     
@@ -217,6 +216,58 @@ Public Function BinarySearch( _
     
 End Function
 
+'Returns the index of the first occurrence of a given value in a range of
+'this list. It does a linear, O(n) search. The list is searched forwards, starting at index
+'and upto count number of elements. The
+'elements of the list are compared to the given value using the
+'Object.Equals method.
+
+Public Function IndexOf( _
+                            ByRef Objects() As IGeneric, _
+                            ByVal Value As IGeneric, _
+                            ByVal StartIndex As Long, _
+                            ByVal Count As Long)
+    Dim i As Long
+    Dim EndIndex As Long
+
+    EndIndex = StartIndex + Count - LBound(Objects)
+    
+    If (Value Is Nothing) Then
+        For i = StartIndex To EndIndex
+            If (Objects(i) Is Nothing) Then _
+                IndexOf = i: Exit Function
+        Next
+    Else
+        For i = StartIndex To EndIndex
+            If Value.Equals(Objects(i)) Then _
+                IndexOf = i: Exit Function
+        Next
+    End If
+    
+    IndexOf = -1
+    
+End Function
+'Reverses the elements in a range of this list. Following a call to this
+'method, an element in the range given by index and count
+'which was previously located at index i will now be located at
+'index index + (index + count - i - 1).
+Public Sub Reverse( _
+                        ByRef Objects() As IGeneric, _
+                        ByVal Index As Long, _
+                        ByVal Length As Long)
+
+    Dim i As Long: i = Index
+    Dim j As Long: j = Index + Length - 1
+    Dim temp As IGeneric
+    
+    Do
+        Set temp = Objects(i)
+        Set Objects(i) = Objects(j)
+        Set Objects(j) = temp
+    Loop While InterlockedIncrement(i) < InterlockedDecrement(j)
+
+End Sub
+
 Public Function Median(ByVal lo As Long, ByVal hi As Long) As Single
     If (lo >= hi) Then _
         Call Me.Push(Me, "Public Function Median").ArgOutOfRange.Raise("lo <= hi")
@@ -225,7 +276,7 @@ Public Function Median(ByVal lo As Long, ByVal hi As Long) As Single
 End Function
 
 '@Ignore ProcedureCanBeWrittenAsFunction
-Public Sub Sort(ByRef Objects() As IGeneric, Optional ByVal Order As SortOrder = SortOrder.Descending)
+Public Sub Sort(ByRef Objects() As IGeneric, Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
     
     Const QuickSortDepthThreshold As Long = 32
     
@@ -539,8 +590,8 @@ Private Sub Class_Initialize()
 End Sub
 
 Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function
+Public Sub Dispose(ByVal Instance As IGeneric): Call Instance.Dispose: End Sub
 Public Function Generic(ByRef Instance As IGeneric) As IGeneric: Set Generic = Instance: End Function
-Attribute Generic.VB_UserMemId = 0
 Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
@@ -548,5 +599,7 @@ Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightS
 Public Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
 Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
+
+
 
 
