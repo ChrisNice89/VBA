@@ -57,15 +57,13 @@ Public Property Let Capacity(ByVal Value As Long)
     
     If Not (Value = myClass.Items.Length) Then
         If (Value > 0) Then
-'            Dim newItems As GenericArray
-'            Set newItems = GenericArray.Build(Value)
-'            If (myClass.Size > 0) Then _
-'                Call Skynet.CopyData(Dst:=newItems.AdressOf(Element:=1), src:=myClass.Items.AdressOf(Element:=1), Bytes:=myClass.Items.TotalSize, ClearSource:=True)
-'
-'            Set myClass.Items = newItems
-                
-            Call myClass.Items.ResizeTo(Value)
-       
+            Dim newItems As GenericArray
+            Set newItems = GenericArray.Build(Value)
+            If (myClass.Size > 0) Then _
+                Call Skynet.CopyData(Dst:=newItems.AdressOf(Element:=1), src:=myClass.Items.AdressOf(Element:=1), Bytes:=myClass.Items.TotalSize, ClearSource:=True)
+
+            Set myClass.Items = newItems
+'            Call myClass.Items.ResizeTo(Value)
         Else
             Call myClass.Items.Clear
         End If
@@ -135,70 +133,63 @@ Public Function Add(ByVal Item As IGeneric) As Long
 
 End Function
 
-Public Sub AddAll(ByVal Collection As IGenericCollection)
-    Call Me.InsertAll(Index:=myClass.Size + myClass.Items.LowerBound, Collection:=Collection)
+Public Sub AddAll(ByVal Collection As IGenericEnumerator)
+    Call Me.InsertAll(Index:=myClass.Size + myClass.Items.LowerBound, Enumerable:=Collection)
 End Sub
 
 Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
-
-    If (Index > myClass.Size) Then _
-        Call Skynet.Push(Me, "Insert").IndexOutofRange.Raise("Index > myClass.Size")
     
-    If (myClass.Size = myClass.Items.Length) Then _
-        Call EnsureCapacity(myClass.Size + 1)
-
     With myClass.Items
+        If (Index > myClass.Size + .LowerBound) Then _
+            Call Skynet.Push(Me, "Insert").IndexOutofRange.Raise("Index > myClass.Size")
+        
+        If (myClass.Size = .Length) Then _
+            Call EnsureCapacity(myClass.Size + 1)
+
         If (Index < myClass.Size) Then _
             Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index)): _
             Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(1))
 
+         Set .ElementAt(Index) = Item: Call InterlockedIncrement(myClass.Size)
     End With
 
-    Set myClass.Items(Index) = Item: Call InterlockedIncrement(myClass.Size)
-    
 End Sub
 
-Public Sub InsertAll(ByVal Index As Long, ByVal Collection As IGenericCollection)
+Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericEnumerator)
     
     Dim c As IGenericCollection
-    Dim en As IGenericEnumerator
-    
-    If (Collection Is Nothing) Then _
+   
+    If (Enumerable Is Nothing) Then _
         Call Skynet.Push(Me, "InsertAll").NullPointer.Raise("Collection Is Nothing")
     
     If (Index > myClass.Size + myClass.Items.LowerBound) Then _
         Call Skynet.Push(Me, "InsertAll").IndexOutofRange.Raise("Index > myClass.Size")
     
-    Set c = Collection
-    If (c.Count > 0) Then
-        Call EnsureCapacity(myClass.Size + c.Count)
+    If TypeOf Enumerable Is IGenericCollection Then
+        Set c = Enumerable
+        If (c.Count > 0) Then
+            Call EnsureCapacity(myClass.Size + c.Count)
+        
+            With myClass.Items
+                If (Index < myClass.Size) Then _
+                    Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + c.Count), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+                    Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(c.Count))
     
-        With myClass.Items
-            If (Index < myClass.Size) Then _
-                Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + c.Count), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
-                Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(c.Count))
-
-        End With
-        Dim t As Timer
-        Set t = New Timer
-        t.StartCounter
-        Call c.CopyTo(GArray:=myClass.Items, ArrayIndex:=Index)
-        myClass.Size = myClass.Size + c.Count
-        Debug.Print t.TimeElapsed
-    
+            End With
+          
+            Call c.CopyTo(GArray:=myClass.Items, ArrayIndex:=Index)
+            myClass.Size = myClass.Size + c.Count
+            Exit Sub
+        End If
     Else
-        Set en = Collection
-        Do While en.MoveNext
-            Call Me.Insert(Index, en.Current): Call InterlockedIncrement(Index)
-        Loop
+        With Enumerable
+            Do While .MoveNext
+                Call Me.Insert(Index, .Current): Call InterlockedIncrement(Index)
+            Loop
+            Call .Reset
+        End With
     End If
-'    Else
-'
-'        Dim e As IGenericEnumerator: Set e = Collection.NewEnumerator
-'        Do While e.MoveNext
-'            Call Me.Insert(InterlockedIncrement(Index), e.Current)
-'        Loop
-'    End If
+    
 End Sub
 
 Public Function GetRange(ByVal Index As Long, ByVal Count As Long) As GenericList
@@ -250,7 +241,6 @@ Public Function ToArray() As GenericArray
     Set ga = GenericArray.Build(Me.Count)
 
     Call Me.CopyTo(Index:=myClass.Items.LowerBound, GArray:=ga, ArrayIndex:=ga.LowerBound)
-
     Set ToArray = ga
 
 End Function
@@ -407,7 +397,7 @@ Private Function IGeneric_ToString() As String
 End Function
 
 'IGenericList
-Private Property Set IGenericList_Item(ByVal Index As Long, ByVal Item As IGeneric): Set Me(Index) = Item: End Property
+Private Property Set IGenericList_Item(ByVal Index As Long, ByVal Item As IGeneric): Set myClass.Items(Index) = Item: End Property
 Private Property Get IGenericList_Item(ByVal Index As Long) As IGeneric: Set IGenericList_Item = myClass.Items(Index): End Property
 Private Property Get IGenericList_Elements() As IGenericCollection: Set IGenericList_Elements = Me: End Property
 Private Function IGenericList_IndexOf(ByVal Item As IGeneric) As Long: IGenericList_IndexOf = Me.IndexOf(Item:=Item): End Function

@@ -17,9 +17,10 @@ Implements IPrototype
 Implements IGeneric
 Implements IGenericReadOnlyList
 Implements IGenericCollection
+Implements IGenericEnumerator
 
 Private Type Member
-    List As IGenericReadOnlyList
+    list As IGenericReadOnlyList
 End Type
 Private myClass As Member
 
@@ -29,22 +30,22 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Function Build(ByVal List As IGenericReadOnlyList) As IGenericReadOnlyList
+Public Function Build(ByVal list As IGenericReadOnlyList) As IGenericReadOnlyList
 
-    If (List Is Nothing) Then _
+    If (list Is Nothing) Then _
         Call Skynet.Push(Me, "Build").NullPointer.Raise("List is nothing")
 
-    Set myClass.List = List
-    Set Build = Skynet.Create(Me)
+    Set myClass.list = list
+    Set Build = Skynet.Create(GenericReadOnlyList)
 
 End Function
 'Class
-Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myClass.List(Index): End Property
-Public Property Get Count() As Long: Count = myClass.List.Elements.Count: End Property
-Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.List.Elements.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
+Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myClass.list(Index): End Property
+Public Property Get Count() As Long: Count = myClass.list.Elements.Count: End Property
+Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.list.Elements.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
 Public Sub Clear(): Skynet.Dispose (Me): End Sub
-Public Function Contains(ByVal Item As IGeneric) As Boolean: Contains = myClass.List.IndexOf(Item:=Item) >= 0: End Function
-Public Function IndexOf(ByVal Item As IGeneric) As Long: IndexOf = myClass.List.IndexOf(Item:=Item): End Function
+Public Function Contains(ByVal Item As IGeneric) As Boolean: Contains = myClass.list.IndexOf(Item:=Item) >= 0: End Function
+Public Function IndexOf(ByVal Item As IGeneric) As Long: IndexOf = myClass.list.IndexOf(Item:=Item): End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
@@ -59,7 +60,7 @@ Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = ObjPtr(M
 Private Function IGeneric_Clone() As IGeneric
 
     Dim c As Member
-    Set c.List = Skynet.Generic(c.List).Clone
+    Set c.list = Skynet.Generic(myClass.list).Clone
 
     Virtual.Pointer = VarPtr(c)
     Set IGeneric_Clone = Skynet.Create(Me)
@@ -75,24 +76,36 @@ Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Elements: " & .List.Elements.Count
+                            "Elements: " & .list.Elements.Count
     End With
 End Function
 
+Private Property Get IGenericEnumerator_Current() As IGeneric
+
+End Property
+
+Private Function IGenericEnumerator_MoveNext() As Boolean
+
+End Function
+
+Private Sub IGenericEnumerator_Reset()
+
+End Sub
+
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
-Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.List(Index): End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myClass.List.IndexOf(Item): End Function
+Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.list(Index): End Property
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myClass.list.IndexOf(Item): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = True: End Property
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = myClass.List.Elements.Count: End Property
-Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = myClass.List.Elements.IsFixedSize: End Property
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = myClass.List.IndexOf(Item) >= 0: End Function
-Private Sub IGenericCollection_Clear(): Call myClass.List.Elements.Clear: End Sub
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.List.Elements.CopyTo(GArray, ArrayIndex:=ArrayIndex): End Sub
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = myClass.list.Elements.Count: End Property
+Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = myClass.list.Elements.IsFixedSize: End Property
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = myClass.list.IndexOf(Item) >= 0: End Function
+Private Sub IGenericCollection_Clear(): Call myClass.list.Elements.Clear: End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.list.Elements.CopyTo(GArray, ArrayIndex:=ArrayIndex): End Sub
 
-Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator: Set IGenericCollection_NewEnumerator = myClass.List.Elements.NewEnumerator: End Function
+Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator: Set IGenericCollection_NewEnumerator = myClass.list.Elements.NewEnumerator: End Function
 
 Private Function IGenericCollection_ToArray() As GenericArray
 

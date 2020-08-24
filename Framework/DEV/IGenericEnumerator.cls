@@ -10,6 +10,7 @@ Attribute VB_Exposed = True
 '@Exposed
 Option Explicit
 '@Folder "<T>Enumerable"
+
 Public Property Get Current() As IGeneric: End Property
 Public Function MoveNext() As Boolean: End Function
 Attribute MoveNext.VB_UserMemId = 0

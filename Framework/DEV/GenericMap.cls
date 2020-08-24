@@ -14,7 +14,7 @@ Option Explicit
 
 Implements IPrototype
 Implements IGeneric
-Implements IGenericDictionary
+Implements IGenericHashTable
 Implements IGenericCollection
 
 'Implements IGenericEnumerator
@@ -98,7 +98,6 @@ Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment =
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
 End Sub
-
 
 Public Function Build( _
                         Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
@@ -435,9 +434,8 @@ Private Function IGeneric_Clone() As IGeneric
     
     Dim b As Bucket
     Dim c As Member
-    c = myClass
-    'ReDim c.Buckets(myClass.HashSize)
-    'Call Skynet.CopyData(ByVal VarPtr(c.Buckets(0)), ByVal VarPtr(myClass.Buckets(0)), LenB(b) * myClass.HashSize, False)
+    c = myClass 'hardcopy
+
     Virtual.Pointer = VarPtr(c)
     Set IGeneric_Clone = Skynet.Create(Me)
     Virtual.Pointer = VarPtr(myClass)
@@ -471,16 +469,16 @@ Private Function IGeneric_ToString() As String
     End With
 End Function
 
-'IGenericDictionary
-Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
-Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
-Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myClass.Buckets(FindEntry(Key)).Value: End Property
-Private Property Get IGenericDictionary_Values() As IGenericCollection: IGenericDictionary_Values = Me.GetValues: End Property
-Private Property Get IGenericDictionary_Keys() As IGenericCollection: IGenericDictionary_Keys = Me.GetKeys: End Property
-Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
-Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
-Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
-Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
+'IGenericHashTable
+Private Property Get IGenericHashTable_Elements() As IGenericCollection: Set IGenericHashTable_Elements = Me: End Property
+Private Property Set IGenericHashTable_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
+Private Property Get IGenericHashTable_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericHashTable_Item = myClass.Buckets(FindEntry(Key)).Value: End Property
+Private Property Get IGenericHashTable_Values() As IGenericCollection: IGenericHashTable_Values = Me.GetValues: End Property
+Private Property Get IGenericHashTable_Keys() As IGenericCollection: IGenericHashTable_Keys = Me.GetKeys: End Property
+Private Function IGenericHashTable_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericHashTable_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
+Private Function IGenericHashTable_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericHashTable_TryGetValue = Me.TryGetValue(Key, Value): End Function
+Private Sub IGenericHashTable_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
+Private Sub IGenericHashTable_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property

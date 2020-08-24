@@ -13,7 +13,7 @@ Option Explicit
 
 Implements IGeneric
 Implements IGenericReadOnlyList
-Implements IGenericDictionary
+Implements IGenericHashTable
 Implements IGenericCollection
 Implements IPrototype
 
@@ -24,7 +24,7 @@ Private Const DEFAULT_CAPACITY As Long = 32
 
 Private Type Member
     KeyList As IGenericList
-    Dictionary As IGenericDictionary
+    Dictionary As IGenericHashTable
 End Type
 Private myClass As Member
 
@@ -49,7 +49,7 @@ Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
 End Sub
 
-Public Property Get Count() As Long: Count = myClass.Dictionary.Elements.Count: End Property
+Public Property Get Count() As Long: Count = myClass.KeyList.Elements.Count: End Property
 Public Property Get GetKeys() As IGenericCollection: Set GetKeys = GenericReadOnlyList.Build(myClass.KeyList): End Property
 Public Property Get GetValues() As IGenericCollection: Set GetValues = GenericReadOnlyList.Build(Me): End Property
 
@@ -73,6 +73,9 @@ End Property
 
 Public Property Set ElementBy(ByVal Key As IGeneric, ByVal Item As IGeneric)
     With myClass
+        If (.Dictionary.ContainsKey(Key)) Then _
+            Set .KeyList(Me.IndexOfKey(Key)) = Key
+
         Set .Dictionary(Key) = Item
     End With
 End Property
@@ -80,7 +83,7 @@ End Property
 Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
     With myClass
         Call .Dictionary.Add(Key, Value)
-        Call .KeyList.Insert(.KeyList.Elements.Count, Key)
+        Call .KeyList.Insert(.KeyList.Elements.Count + 1, Key)
     End With
 End Sub
 
@@ -91,7 +94,7 @@ Public Function IndexOfValue(ByVal Item As IGeneric) As Long
     Dim i As Long
     With myClass
         For i = 1 To .KeyList.Elements.Count
-            If (.Dictionary(.KeyList(i)).Equals(Item)) Then _
+            If (Item.Equals(.Dictionary(.KeyList(i)))) Then _
                 IndexOfValue = i: Exit Function
         Next
     End With
@@ -179,21 +182,21 @@ Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set 
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Item): End Function
 Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = Me.ElementAt(Index): End Property
 
-'IGenericDictionary
-Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
-Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set Me.ElementBy(Key) = Item: End Property
-Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myClass.Dictionary(Key): End Property
-Private Property Get IGenericDictionary_Keys() As IGenericCollection: Set IGenericDictionary_Keys = Me.GetKeys: End Property
-Private Property Get IGenericDictionary_Values() As IGenericCollection: Set IGenericDictionary_Values = myClass.Dictionary.Values: End Property
-Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
+'IGenericHashTable
+Private Property Get IGenericHashTable_Elements() As IGenericCollection: Set IGenericHashTable_Elements = Me: End Property
+Private Property Set IGenericHashTable_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set Me.ElementBy(Key) = Item: End Property
+Private Property Get IGenericHashTable_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericHashTable_Item = myClass.Dictionary(Key): End Property
+Private Property Get IGenericHashTable_Keys() As IGenericCollection: Set IGenericHashTable_Keys = Me.GetKeys: End Property
+Private Property Get IGenericHashTable_Values() As IGenericCollection: Set IGenericHashTable_Values = myClass.Dictionary.Values: End Property
+Private Sub IGenericHashTable_Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
     With myClass
         Call .Dictionary.Add(Key, Value)
         Call .KeyList.Insert(.KeyList.Elements.Count, Key)
     End With
 End Sub
-Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
-Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean:  IGenericDictionary_TryGetValue = myClass.Dictionary.TryGetValue(Key, Value): End Function
-Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = myClass.Dictionary.ContainsKey(Key): End Function
+Private Sub IGenericHashTable_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
+Private Function IGenericHashTable_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean:  IGenericHashTable_TryGetValue = myClass.Dictionary.TryGetValue(Key, Value): End Function
+Private Function IGenericHashTable_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericHashTable_ContainsKey = myClass.Dictionary.ContainsKey(Key): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property

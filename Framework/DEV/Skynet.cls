@@ -589,6 +589,7 @@ Private Sub Class_Initialize()
    
 End Sub
 
+Public Function EnumeratorOf(ByVal c As IGenericCollection) As IGenericEnumerator: Set EnumeratorOf = c.NewEnumerator: End Function
 Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function
 Public Sub Dispose(ByVal Instance As IGeneric): Call Instance.Dispose: End Sub
 Public Function Generic(ByRef Instance As IGeneric) As IGeneric: Set Generic = Instance: End Function
