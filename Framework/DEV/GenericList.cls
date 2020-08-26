@@ -7,6 +7,27 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  GenericList
+'*
+'* <OWNER>/OWNER>
+'*
+'* Purpose: GeneriList is a resizable array implementation of the IGenericList interface
+'*          i.e. GenericList grows dynamically as the elements are added to it.
+'*          If the size of the current elements (including the new element to be added to the GenericList)
+'*          is greater than the maximum size of the array then increase the size of array.
+'*          But the size of the array can not be increased dynamically.
+'*          So, what happens internally is, a new Array is created and
+'*          the old array is copied into the new array.
+'*
+'*
+'*======================================================================================================================
+
 '@Folder("<T>Enumerable")
 Option Compare Database
 
@@ -50,10 +71,10 @@ Public Property Get Capacity() As Long: Capacity = myClass.Items.Length: End Pro
 Public Property Let Capacity(ByVal Value As Long)
     
     If (Value < myClass.Size) Then _
-        Call Skynet.Push(Me, "Let Capacity").ArgOutOfRange.Raise("Value < myClass.Size")
+        Call Skynet.Throw(Me, "Public Property Let Capacity").ArgOutOfRange("Value < myClass.Size")
     
     If (myClass.Items Is Nothing) Then _
-        Call Skynet.Push(Me, "Let Capacity").NullPointer.Raise("myClass.Items Is Nothing")
+        Call Skynet.Throw(Me, "Public Property Let Capacity").NullPointer("myClass.Items Is Nothing")
     
     If Not (Value = myClass.Items.Length) Then
         If (Value > 0) Then
@@ -63,7 +84,6 @@ Public Property Let Capacity(ByVal Value As Long)
                 Call Skynet.CopyData(Dst:=newItems.AdressOf(Element:=1), src:=myClass.Items.AdressOf(Element:=1), Bytes:=myClass.Items.TotalSize, ClearSource:=True)
 
             Set myClass.Items = newItems
-'            Call myClass.Items.ResizeTo(Value)
         Else
             Call myClass.Items.Clear
         End If
@@ -94,7 +114,7 @@ Public Function Build( _
                         Optional ByVal Collection As IGenericCollection) As GenericList
     
     If (Capacity < 0) Then _
-           Call Skynet.Push(Me, "Build").ArgOutOfRange.Raise("Capacity < 0")
+           Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     If Not (Collection Is Nothing) Then
         With Collection
@@ -141,13 +161,13 @@ Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
     
     With myClass.Items
         If (Index > myClass.Size + .LowerBound) Then _
-            Call Skynet.Push(Me, "Insert").IndexOutofRange.Raise("Index > myClass.Size")
+            Call Skynet.Throw(Me, "Public Sub Insert").IndexOutofRange("Index > myClass.Size")
         
         If (myClass.Size = .Length) Then _
             Call EnsureCapacity(myClass.Size + 1)
 
-        If (Index < myClass.Size) Then _
-            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index)): _
+        If (Index < myClass.Size + .LowerBound) Then _
+            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
             Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(1))
 
          Set .ElementAt(Index) = Item: Call InterlockedIncrement(myClass.Size)
@@ -160,10 +180,10 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericEnumerator
     Dim c As IGenericCollection
    
     If (Enumerable Is Nothing) Then _
-        Call Skynet.Push(Me, "InsertAll").NullPointer.Raise("Collection Is Nothing")
+        Call Skynet.Throw(Me, "Public Sub InsertAll").NullPointer("Collection Is Nothing")
     
     If (Index > myClass.Size + myClass.Items.LowerBound) Then _
-        Call Skynet.Push(Me, "InsertAll").IndexOutofRange.Raise("Index > myClass.Size")
+        Call Skynet.Throw(Me, "InsertAll").IndexOutofRange("Index > myClass.Size")
     
     If TypeOf Enumerable Is IGenericCollection Then
         Set c = Enumerable
@@ -171,7 +191,7 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericEnumerator
             Call EnsureCapacity(myClass.Size + c.Count)
         
             With myClass.Items
-                If (Index < myClass.Size) Then _
+                If (Index < myClass.Size + .LowerBound) Then _
                     Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + c.Count), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
                     Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(c.Count))
     
@@ -192,6 +212,41 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericEnumerator
     
 End Sub
 
+Public Function Remove(ByVal Item As IGeneric) As Boolean
+    Dim i As Long
+    i = Me.IndexOf(Item:=Item)
+    
+    If (i >= 0) Then _
+        Call Me.RemoveAt(i): Remove = True: Exit Function
+    
+End Function
+
+Public Sub RemoveAt(ByVal Index As Long)
+
+    If (Index > myClass.Size) Then _
+        Call Skynet.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("Index > myClass.Size")
+    
+    InterlockedDecrement myClass.Size
+    
+    With myClass.Items
+        Set .ElementAt(Index) = Nothing
+        
+        If (Index < myClass.Size + .LowerBound) Then _
+            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=myClass.Size), Bytes:=.SizeOf(1))
+            
+    End With
+    
+End Sub
+
+Public Sub RemoveRange(ByVal Index As Long, ByVal Count As Long)
+
+    If (Index > myClass.Size) Then _
+        Call Skynet.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("Index > myClass.Size")
+  
+    
+End Sub
+
 Public Function GetRange(ByVal Index As Long, ByVal Count As Long) As GenericList
     
     Dim c As Member
@@ -200,13 +255,13 @@ Public Function GetRange(ByVal Index As Long, ByVal Count As Long) As GenericLis
     lb = GenericArray.LowerBound
     
     If (Index < lb) Then _
-        Call Skynet.Push(Me, "GetRange").IndexOutofRange.Raise("Index < 0")
+        Call Skynet.Throw(Me, "GetRange").IndexOutofRange("Index < 0")
     
     If (Count < lb) Then _
-        Call Skynet.Push(Me, "GetRange").ArgOutOfRange.Raise("Index < 0")
+        Call Skynet.Throw(Me, "GetRange").ArgOutOfRange("Index < 0")
     
     If (myClass.Size - Index + lb < Count) Then _
-        Call Skynet.Push(Me, "GetRange").InvalidInput.Raise("myClass.Size - Index < Count")
+        Call Skynet.Throw(Me, "GetRange").InvalidInput("myClass.Size - Index < Count")
 
     Set c.Items = GenericArray.Build(Count)
     Call Me.CopyTo(Index:=Index, GArray:=c.Items, ArrayIndex:=lb, Elements:=Count)
@@ -228,7 +283,7 @@ Public Sub CopyTo( _
         Elements = myClass.Size
         
     If (myClass.Size - Index + myClass.Items.LowerBound < Elements) Then _
-        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("myClass.Size - Index < Elements")
+        Call Skynet.Throw(Me, "CopyTo").InvalidInput("myClass.Size - Index < Elements")
     
     'Call myClass.Items.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, SourceIndex:=Index, Elements:=Elements)
     Call GenericArray.Copy(SrcArray:=myClass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Elements)
@@ -268,23 +323,19 @@ Public Function IndexOf( _
         Index = myClass.Items.LowerBound
     Else
         If (Index > myClass.Size) Or (Index < myClass.Items.LowerBound) Then _
-            Call Skynet.Push(Me, "Public Function IndexOf").IndexOutofRange.Raise("(Index > myClass.Size) Or (Index < myClass.Items.LowerBound)")
+            Call Skynet.Throw(Me, "Public Function IndexOf").IndexOutofRange("(Index > myClass.Size) Or (Index < myClass.Items.LowerBound)")
     End If
     
     If (Count = 0) Then
         Count = myClass.Size - Index + myClass.Items.LowerBound
     Else
         If (Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound) Then _
-            Call Skynet.Push(Me, "Public Function IndexOf").InvalidInput.Raise("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
+            Call Skynet.Throw(Me, "Public Function IndexOf").InvalidInput("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
     End If
     
     IndexOf = myClass.Items.IndexOf(Value:=Item, StartIndex:=Index, Count:=Count, CheckArguments:=False)
     
 End Function
-
-Public Sub RemoveAt(ByVal Index As Long)
-
-End Sub
 
 Public Sub Reverse( _
                     Optional ByVal Index As Long, _
@@ -294,14 +345,14 @@ Public Sub Reverse( _
         Index = myClass.Items.LowerBound
     Else
         If (Index > myClass.Size) Or (Index < myClass.Items.LowerBound) Then _
-            Call Skynet.Push(Me, "Public Sub Reverse").IndexOutofRange.Raise("(Index > myClass.Size) Or (Index < myClass.Items.LowerBound)")
+            Call Skynet.Throw(Me, "Public Sub Reverse").IndexOutofRange("(Index > myClass.Size) Or (Index < myClass.Items.LowerBound)")
     End If
     
     If (Count = 0) Then
         Count = myClass.Size - Index + myClass.Items.LowerBound
     Else
         If (Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound) Then _
-            Call Skynet.Push(Me, "Public Sub Reverse").InvalidInput.Raise("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
+            Call Skynet.Throw(Me, "Public Sub Reverse").InvalidInput("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
     End If
     
     Call myClass.Items.Reverse(Index:=Index, Length:=Count)
@@ -327,18 +378,18 @@ Public Function BinarySearch( _
         Index = myClass.Items.LowerBound
     Else
         If (Index < 0) Then _
-            Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Index < 0")
+            Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Index < 0")
     End If
     
     If (Count = 0) Then
         Count = Me.Count
     Else
         If (Count < 0) Then _
-            Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Count < 0")
+            Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Count < 0")
     End If
     
     If (myClass.Size - Index + myClass.Items.LowerBound < Count) Then _
-        Call Skynet.Push(Me, "Public Function BinarySearch").InvalidInput.Raise("myClass.Size - Index < Count")
+        Call Skynet.Throw(Me, "Public Function BinarySearch").InvalidInput("myClass.Size - Index < Count")
     
     BinarySearch = myClass.Items.BinarySearch(Value:=Item, Index:=Index, Length:=Count, Order:=myClass.SortOrder)
     
@@ -384,7 +435,7 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Call Skynet.Push(Me, "IObject_CompareTo").NotSupported.Raise
+    Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericList): End Function
 Private Function IGeneric_ToString() As String

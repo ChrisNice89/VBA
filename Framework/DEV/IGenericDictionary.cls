@@ -25,6 +25,6 @@ Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric): End Sub
 Public Sub Remove(ByVal Key As IGeneric): End Sub
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise
+'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub
 

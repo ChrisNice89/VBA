@@ -26,5 +26,5 @@ Public Function Clone() As IGeneric: End Function
 Public Sub Dispose(): End Sub
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise
+'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub

@@ -78,12 +78,8 @@ Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End
 Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
 Public Property Get MaxLong() As Long: MaxLong = MAX_INT32: End Property
 
-Public Sub Assert(ByVal t As Task)
-   Call Err.Raise(t.ErrorNumber, TypeName$(t.Source), Me.Generic(t).ToString)
-End Sub
-
-Public Function Push(ByVal Source As Object, ByVal Method As String) As Task
-    Set Push = Task.Build(Source, Method)
+Public Function Throw(ByVal Source As Object, ByVal Method As String) As Throwhelper
+    Set Throw = Throwhelper.Build(Source, Method)
 End Function
 
 Public Sub ClearData(ByVal Dst As LongPtr, ByVal Bytes As Long)
@@ -120,7 +116,7 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
     
     With Me
         If Not (VarType(SomeArray) And VbVarType.vbArray) = VbVarType.vbArray Then _
-            .Push(Me, "ArrayPointer").InvalidInput.Raise ("Not (IsArray(SomeArray))")
+            .Throw(Me, "ArrayPointer").InvalidInput ("Not (IsArray(SomeArray))")
     
         Call .CopyData(Dst:=ByVal VarPtr(vType), src:=ByVal VarPtr(SomeArray), Bytes:=2&)
         Call .CopyData(Dst:=ByVal VarPtr(PointerOf), src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSIZE)
@@ -133,17 +129,17 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
 End Function
 
 'SequenceCompare
-Public Function SequenceCompare(ByVal a As IGenericList, ByVal b As IGenericList) As ComparerEnum
+Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGenericReadOnlyList) As ComparerEnum
     
     If (a Is b) Then SequenceCompare = IsEqual: Exit Function
     
     If Not (a Is Nothing) And (b Is Nothing) Then
         
         If Not (Me.Generic(a).IsRelatedTo(b)) Then _
-            Me.Push(Me, "CompareLists").InvalidInput.Raise ("Type(a) != Type(b)")
+            Me.Throw(Me, "CompareLists").InvalidInput ("Type(a) != Type(b)")
     
         If Not (a.Elements.Count = b.Elements.Count) Then _
-            Me.Push(Me, "CompareLists").InvalidInput.Raise ("a.Elements.Count != b.Elements.Count")
+            Me.Throw(Me, "CompareLists").InvalidInput ("a.Elements.Count != b.Elements.Count")
         
         Dim i As Long, c As ComparerEnum
         Do While (InterlockedIncrement(i) < a.Elements.Count And c = IsEqual)
@@ -270,7 +266,7 @@ End Sub
 
 Public Function Median(ByVal lo As Long, ByVal hi As Long) As Single
     If (lo >= hi) Then _
-        Call Me.Push(Me, "Public Function Median").ArgOutOfRange.Raise("lo <= hi")
+        Call Me.Throw(Me, "Public Function Median").ArgOutOfRange("lo <= hi")
     
     Median = lo + (Me.RightShift(hi - lo, 1))
 End Function
@@ -440,26 +436,26 @@ End Sub
 Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
-    Dim child As Long
+    Dim Child As Long
 
     Do While (i <= n / 2)
-        child = 2 * i
-        If (child < n) Then
-            If (Keys(lo + child - 1) Is Nothing) Then
-                child = child + 1
-            ElseIf (Keys(lo + child - 1).CompareTo(Keys(lo + child)) = IsLower) Then
-                child = child + 1
+        Child = 2 * i
+        If (Child < n) Then
+            If (Keys(lo + Child - 1) Is Nothing) Then
+                Child = Child + 1
+            ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
+                Child = Child + 1
             End If
         End If
 
-        If (Keys(lo + child - 1) Is Nothing) Then _
+        If (Keys(lo + Child - 1) Is Nothing) Then _
             Exit Do
 
-        If (Keys(lo + child - 1).CompareTo(d) = IsLower) Then _
+        If (Keys(lo + Child - 1).CompareTo(d) = IsLower) Then _
             Exit Do
 
-        Set Keys(lo + i - 1) = Keys(lo + child - 1)
-        i = child
+        Set Keys(lo + i - 1) = Keys(lo + Child - 1)
+        i = Child
     Loop
 
     Set Keys(lo + i - 1) = d
@@ -486,26 +482,26 @@ End Sub
 Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
-    Dim child As Long
+    Dim Child As Long
 
     Do While (i <= n / 2)
-        child = 2 * i
-        If (child < n) Then
-            If Not (Keys(lo + child - 1) Is Nothing) Then
-                If (Keys(lo + child - 1).CompareTo(Keys(lo + child)) = IsGreater) Then _
-                    child = child + 1
+        Child = 2 * i
+        If (Child < n) Then
+            If Not (Keys(lo + Child - 1) Is Nothing) Then
+                If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
+                    Child = Child + 1
     
             End If
         End If
 
-        If Not (Keys(lo + child - 1) Is Nothing) Then
-            If (Keys(lo + child - 1).CompareTo(d) = IsGreater) Then _
+        If Not (Keys(lo + Child - 1) Is Nothing) Then
+            If (Keys(lo + Child - 1).CompareTo(d) = IsGreater) Then _
                 Exit Do
         
         End If
         
-        Set Keys(lo + i - 1) = Keys(lo + child - 1)
-        i = child
+        Set Keys(lo + i - 1) = Keys(lo + Child - 1)
+        i = Child
     Loop
 
     Set Keys(lo + i - 1) = d
@@ -585,7 +581,7 @@ End Function
 
 Private Sub Class_Initialize()
     If Not (Me Is Skynet) Then _
-        Call Me.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise("System class must not be instantiated")
+        Call Me.Throw(Me, "Private Sub Class_Initialize()").Instantiation("System class must not be instantiated")
    
 End Sub
 
@@ -600,7 +596,7 @@ Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightS
 Public Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
 Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
-
-
-
+Public Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long
+    Logn = Log(Value) / Log(Base)
+End Function
 

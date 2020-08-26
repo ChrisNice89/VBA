@@ -148,7 +148,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     ReDim SAB(lb To ub)
     For i = lb To ub
         If (Indices(i) < 0) Then _
-            Call Skynet.Push(Me, "Build").ArgOutOfRange.Raise("A zero(one)-based array indexed array has its first item indexed as 0(1)")
+            Call Skynet.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1)")
         
         With SAB(i)
             .cElements = Indices(i)
@@ -171,7 +171,7 @@ Public Function CalculateInternal() As GenericArray
     
     With myClass
         If (.Descriptor = 0) Then _
-            Call Skynet.Push(Me, "Build").InvalidOperation.Raise("myClass.Descriptor = 0")
+            Call Skynet.Throw(Me, "Build").InvalidOperation("myClass.Descriptor = 0")
        
         .Struct = GetArrayStructure(.Descriptor)
         ReDim .Indices(.Struct.cDims - 1)
@@ -200,7 +200,7 @@ Public Function SetValue(ByVal Value As IGeneric, ParamArray Indices() As Varian
     Next
     
     If (SafeArrayPutElement(ByVal myClass.Descriptor, myClass.Indices(0), ByVal ObjPtr(Value)) = DISP_E_BADINDEX) Then _
-        Call Skynet.Push(Me, "Set Object").InvalidInput.Raise("Invalid Index")
+        Call Skynet.Throw(Me, "Set Object").InvalidInput("Invalid Index")
 
 End Function
 
@@ -212,7 +212,7 @@ Public Function GetValue(ParamArray Indices() As Variant) As IGeneric
     Next
 
     If (SafeArrayGetElement(ByVal myClass.Descriptor, myClass.Indices(0), GetValue) = DISP_E_BADINDEX) Then _
-        Call Skynet.Push(Me, "Get Object").InvalidInput.Raise("Invalid Index")
+        Call Skynet.Throw(Me, "Get Object").InvalidInput("Invalid Index")
         
 End Function
 
@@ -267,13 +267,13 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     Dim Column As GenericArray
     
     If (Me.Rank <> 2) Then _
-        Call Skynet.Push(Me, "IndexOf").NotSupported.Raise("Me.Rank != 2")
+        Call Skynet.Throw(Me, "IndexOf").NotSupported("Me.Rank != 2")
             
     If (Index < 1) Or (Index > Me.LengthOf(2)) Then _
-        Call Skynet.Push(Me, "SlizeColumn").IndexOutofRange.Raise("Index not valid")
+        Call Skynet.Throw(Me, "SlizeColumn").IndexOutofRange("Index not valid")
     
     If (Me.IsEmpty) Then _
-        Call Skynet.Push(Me, "SlizeColumn").NullPointer.Raise("Me.IsEmpty")
+        Call Skynet.Throw(Me, "SlizeColumn").NullPointer("Me.IsEmpty")
         
     Set Column = GenericArray.Build(Me.LengthOf(1))
   
@@ -300,16 +300,16 @@ Public Sub Copy( _
     Dim Overlay As SAFEARRAYSTRUCT
  
     If (SrcArray Is Nothing) Or (DstArray Is Nothing) Then _
-        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("SrcArray Is Nothing) Or (DstArray Is Nothing)")
+        Call Skynet.Throw(Me, "Copy").InvalidInput("SrcArray Is Nothing) Or (DstArray Is Nothing)")
         
     If (Elements < 1) Then _
-        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("Elements to copy  <  1")
+        Call Skynet.Throw(Me, "Copy").InvalidInput("Elements to copy  <  1")
     
     If (SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX) Then _
-        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX)")
+        Call Skynet.Throw(Me, "Copy").InvalidInput("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX)")
         
     If (DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX) Then _
-        Call Skynet.Push(Me, "Copy").InvalidInput.Raise("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX)")
+        Call Skynet.Throw(Me, "Copy").InvalidInput("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX)")
     
     With Overlay
         .cDims = 1
@@ -354,7 +354,7 @@ Public Sub ResizeTo(ByVal newSize As Long)
     Dim bound As SAFEARRAYBOUND
     
     If Not (Me.Rank = 1) Then _
-        Call Skynet.Push(Me, "Copy").NotSupported.Raise("Me.Rank != 1")
+        Call Skynet.Throw(Me, "Copy").NotSupported("Me.Rank != 1")
 
 ''The hard way ;)
 '    With myClass.struct
@@ -487,21 +487,18 @@ End Sub
 
 Public Function BinarySearch( _
                                 ByVal Value As IGeneric, _
-                                Optional ByVal Index As Long = MIN_INDEX, _
-                                Optional ByVal Length As Long, _
-                                Optional ByVal Order As SortOrder) As Long
+                                ByVal Index As Long, _
+                                ByVal Length As Long, _
+                                ByVal Order As SortOrder) As Long
 
-    If Length = 0 Then _
-        Length = Me.Length
-    
     If Not Me.Rank = 1 Then _
-        Call Skynet.Push(Me, "Public Function BinarySearch").NotSupported.Raise("Me.Rank != 1")
+        Call Skynet.Throw(Me, "Public Function BinarySearch").NotSupported("Me.Rank != 1")
 
     If (Index < MIN_INDEX Or Length < 0) Then _
-        Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Index < MIN_INDEX Or Length < 0")
+        Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
 
     If (myClass.Elements - (Index - MIN_INDEX) < Length) Then _
-        Call Skynet.Push(Me, "Public Function BinarySearch").ArgOutOfRange.Raise("Argument_InvalidOffLen")
+        Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Argument_InvalidOffLen")
 
     BinarySearch = Skynet.BinarySearch(Objects:=myClass.Internal, Value:=Value, Index:=Index, Length:=Length, Order:=Order)
    
@@ -515,16 +512,16 @@ Public Function IndexOf( _
  
     If CheckArguments Then
         If Not (Me.Rank = 1) Then _
-            Call Skynet.Push(Me, "IndexOf").NotSupported.Raise("Me.Rank != 1")
+            Call Skynet.Throw(Me, "Public Function IndexOf").NotSupported("Me.Rank != 1")
             
         If (StartIndex < MIN_INDEX) Or (StartIndex > Me.LengthOf(1) + MIN_INDEX) Then _
-            Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(StartIndex < MIN_INDEX) Or (StartIndex > Me.Count() + MIN_INDEX)")
+            Call Skynet.Throw(Me, "Public Function IndexOf").IndexOutofRange("(StartIndex < MIN_INDEX) Or (StartIndex > Me.Count() + MIN_INDEX)")
     
         If (Count = 0) Then
             Count = (Me.LengthOf(1) - StartIndex) + MIN_INDEX
         Else
             If (Count < 0) Or (Count > Me.LengthOf(1) - StartIndex + MIN_INDEX) Then _
-                Call Skynet.Push(Me, "IndexOf").IndexOutofRange.Raise("(Count < 0) Or (Count > Me.elements - StartIndex + MIN_INDEX)")
+                Call Skynet.Throw(Me, "Public Function IndexOf").IndexOutofRange("(Count < 0) Or (Count > Me.elements - StartIndex + MIN_INDEX)")
         End If
     End If
    
@@ -538,13 +535,13 @@ Public Sub Reverse(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Leng
         Length = Me.Length
     
     If Not Me.Rank = 1 Then _
-        Call Skynet.Push(Me, "Public Sub Reverse").NotSupported.Raise("Me.Rank != 1")
+        Call Skynet.Throw(Me, "Public Sub Reverse").NotSupported("Me.Rank != 1")
         
     If (Index < MIN_INDEX Or Length < 0) Then _
-        Call Skynet.Push(Me, "Public Sub Reverse").ArgOutOfRange.Raise("Index < MIN_INDEX Or Length < 0")
+        Call Skynet.Throw(Me, "Public Sub Reverse").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
     
     If (myClass.Elements - (Index - MIN_INDEX) < Length) Then _
-        Call Skynet.Push(Me, "Public Sub Reverse").ArgOutOfRange.Raise("Argument_InvalidOffLen")
+        Call Skynet.Throw(Me, "Public Sub Reverse").ArgOutOfRange("Argument_InvalidOffLen")
 
     Call Skynet.Reverse(Objects:=myClass.Internal, Index:=Index, Length:=Length)
     
@@ -561,13 +558,13 @@ End Sub
 Private Function GetArrayStructure(ByVal SafeArrayPointer As LongPtr) As SAFEARRAYSTRUCT
     
     If (SafeArrayPointer = 0) Then _
-        Skynet.Push(Me, "GetArrayStructure").NullPointer.Raise ("SafeArrayPointer")
+        Skynet.Throw(Me, "GetArrayStructure").NullPointer ("SafeArrayPointer")
 
     Call Skynet.CopyData(VarPtr(GetArrayStructure), SafeArrayPointer, 16&)
     
     With GetArrayStructure
         If (.cDims <= 0) Then _
-            Call Skynet.Push(Me, "Private Function GetArrayStructure").Overflow.Raise(".cDims <= 0")
+            Call Skynet.Throw(Me, "Private Function GetArrayStructure").Overflow(".cDims <= 0")
         
         ReDim .Bounds(1 To .cDims)
         Call Skynet.CopyData(VarPtr(.Bounds(1)), ByVal (SafeArrayPointer + 16&), .cDims * 8&)
@@ -583,10 +580,10 @@ Public Sub Transpose()
     Dim i As Long, j As Long, m As Long, n As Long
     
     If (Me.IsEmpty) Then _
-        Call Skynet.Push(Me, "Public Sub Transpose").NullPointer.Raise("SafeArray not allocated")
+        Call Skynet.Throw(Me, "Public Sub Transpose").NullPointer("SafeArray not allocated")
         
     If (Me.Rank <> 2) Then _
-        Call Skynet.Push(Me, "Public Sub Transpose").InvalidOperation.Raise("Rank <> 2")
+        Call Skynet.Throw(Me, "Public Sub Transpose").InvalidOperation("Rank <> 2")
         
     With myClass.Struct
         m = .Bounds(2).cElements
@@ -750,10 +747,10 @@ End Function
 Private Property Get IGenericEnumerator_Current() As IGeneric
     With myClass.Enumerator
 '        If (.Index < .StartIndex) Then _
-'            Call Skynet.Push(Me, "Private Property Get IGenericEnumerator_Current").InvalidOperation.Raise(".Index < .StartIndex")
+'            Call Skynet.Throw(Me, "Private Property Get IGenericEnumerator_Current").InvalidOperation(".Index < .StartIndex")
 '
         If (.Complete) Then _
-            Call Skynet.Push(Me, "Private Property Get IGenericEnumerator_Current").InvalidOperation.Raise("Enumeration End")
+            Call Skynet.Throw(Me, "Private Property Get IGenericEnumerator_Current").InvalidOperation("Enumeration End")
         
         Set IGenericEnumerator_Current = myClass.Enumerator.Current
     End With
@@ -775,7 +772,7 @@ Private Function IGenericEnumerator_MoveNext() As Boolean
         End If
       
         If (SafeArrayGetElement(ByVal myClass.Descriptor, myClass.Indices(0), myClass.Enumerator.Current) = DISP_E_BADINDEX) Then _
-            Call Skynet.Push(Me, "Get Object").InvalidInput.Raise("Invalid Index")
+            Call Skynet.Throw(Me, "Get Object").InvalidInput("Invalid Index")
         
         If Not (myClass.Enumerator.Current Is Nothing) Then _
             Exit Do

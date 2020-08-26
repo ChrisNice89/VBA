@@ -27,13 +27,6 @@ Private Virtual As Internal
 Public Property Get Key() As IGeneric: Set Key = myClass.Key: End Property
 Public Property Get Value() As Object: Set Value = myClass.Value: End Property
 
-Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myClass)
-    With GenericPair
-        Set myClass.Key = .Key: Set myClass.Value = .Value
-    End With
-End Sub
-
 Public Function Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPair
 Attribute Build.VB_UserMemId = 0
     
@@ -44,6 +37,13 @@ Attribute Build.VB_UserMemId = 0
     Set Build = New GenericPair
     
 End Function
+
+Private Sub Class_Initialize()
+    Virtual.Pointer = VarPtr(myClass)
+    With GenericPair
+        Set myClass.Key = .Key: Set myClass.Value = .Value
+    End With
+End Sub
 
 Private Function IGeneric_Clone() As IGeneric
     

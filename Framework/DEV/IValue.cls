@@ -24,5 +24,5 @@ Public Property Get DatabaseType() As AdoDataType: End Property
 Public Property Get Object() As IGeneric: End Property
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise
+'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub

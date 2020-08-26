@@ -22,5 +22,5 @@ Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End S
 Public Sub Clear(): End Sub
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise
+'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub

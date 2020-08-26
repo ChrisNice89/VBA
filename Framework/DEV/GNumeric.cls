@@ -129,16 +129,18 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim n As GNumeric
     
-    If Other.IsRelatedTo(Me) Then
-        Set n = Other
-        Select Case True
-            Case myClass.Value > n.Value: IGeneric_CompareTo = IsGreater
-            Case myClass.Value < n.Value: IGeneric_CompareTo = IsLower
-            Case Else: IGeneric_CompareTo = IsEqual
-        End Select
-    End If
+    If Other Is Nothing Then _
+        IGeneric_CompareTo = IsGreater: Exit Function
+    
+    Dim n As GNumeric:  Set n = Other
+    
+    Select Case True
+        Case myClass.Value > n.Value: IGeneric_CompareTo = IsGreater
+        Case myClass.Value < n.Value: IGeneric_CompareTo = IsLower
+        Case Else: IGeneric_CompareTo = IsEqual
+    End Select
+
 End Function
 
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.LimitDouble(myClass.Value): End Property

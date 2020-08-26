@@ -16,5 +16,5 @@ Public Property Get Size() As Long: End Property
 Public Function CreateDefault() As IPrototype: End Function
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise
+'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub

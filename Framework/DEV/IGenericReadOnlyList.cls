@@ -17,5 +17,5 @@ Public Property Get Elements() As IGenericCollection: End Property
 Public Function IndexOf(ByVal Item As IGeneric) As Long: End Function
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Push(Me, "Private Sub Class_Initialize()").Instantiation.Raise
+'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub

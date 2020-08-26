@@ -14,7 +14,7 @@ Option Explicit
 
 Implements IPrototype
 Implements IGeneric
-Implements IGenericHashTable
+Implements IGenericDictionary
 Implements IGenericCollection
 
 'Implements IGenericEnumerator
@@ -88,6 +88,7 @@ Attribute Item.VB_UserMemId = 0
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
 Public Function GetKeys() As IGenericReadOnlyList: Set GetKeys = LoadKeys(GenericArray.Build(Me.Count), GenericArray.LowerBound).AsReadOnly: End Function
 Public Function GetValues() As IGenericReadOnlyList: Set GetValues = LoadValues(GenericArray.Build(Me.Count), GenericArray.LowerBound).AsReadOnly: End Function
+Public Function ToArray() As IGenericReadOnlyList: Set ToArray = LoadPairs(GenericArray.Build(Me.Count), GenericArray.LowerBound).AsReadOnly: End Function
 
 Private Function getMinPrime() As Long: getMinPrime = myClass.Const.Primes(LBound(myClass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
@@ -118,27 +119,39 @@ Public Function Build( _
         End With
         
         If (Capacity < 0) Then _
-           Call Skynet.Push(Me, "Build").ArgOutOfRange.Raise("Capacity < 0")
+           Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
         
         If Not (LoadFactor >= 0.1 And LoadFactor <= 1#) Then _
-           Call Skynet.Push(Me, "Build").ArgOutOfRange.Raise("Not (LoadFactor >= 0.1 And LoadFactor <= 1#")
+           Call Skynet.Throw(Me, "Build").ArgOutOfRange("Not (LoadFactor >= 0.1 And LoadFactor <= 1#")
     
         .LoadFactor = LoadFactor
         .RawSize = Capacity / .LoadFactor
         
         If (.RawSize > Skynet.MaxLong) Then _
-           Call Skynet.Push(Me, "Build").Overflow.Raise(".RawSize > Skynet.MaxArraySize")
+           Call Skynet.Throw(Me, "Build").Overflow(".RawSize > Skynet.MaxArraySize")
         
         .HashSize = IIf(.RawSize > .Const.InitialSize, getPrime(.RawSize), .Const.InitialSize)
         ReDim .Buckets(.HashSize - 1)
         
         .LoadSize = Int(.LoadFactor * .HashSize)
         If Not (.LoadSize < .HashSize) Then _
-            Call Skynet.Push(Me, "Build").InvalidInput.Raise("Based on the current algorithm, loadsize must be less than hashsize.")
+            Call Skynet.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadsize must be less than hashsize.")
             
     End With
     
     Set Build = Skynet.Create(Me)
+    
+End Function
+
+Private Function LoadPairs(ByVal Pairs As GenericArray, ByVal ArrayIndex As Long) As GenericArray
+    Dim i As Long
+    
+    For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+        If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+            Set Pairs(ArrayIndex) = GenericPair.Build(myClass.Buckets(i).Key, myClass.Buckets(i).Value): Call InterlockedIncrement(ArrayIndex)
+    Next
+    
+    Set LoadPairs = Pairs
     
 End Function
 
@@ -171,7 +184,7 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
     Dim Try As Long
     
     If (Key Is Nothing) Then _
-        Call Skynet.Push(Me, "TryGetValue").NullPointer.Raise("Key is nothing")
+        Call Skynet.Throw(Me, "Public Function TryGetValue").KeyIsNothing
     
     With InitialHashing(Key.HashValue, myClass.HashSize)
         Do
@@ -199,7 +212,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     Dim h As HashItem
     
     If (Key Is Nothing) Then _
-        Call Skynet.Push(Me, "FindEntry").NullPointer.Raise("Key is nothing")
+        Call Skynet.Throw(Me, "FindEntry").KeyIsNothing
     
     h = InitialHashing(Key.HashValue, myClass.HashSize)
     Do
@@ -247,7 +260,7 @@ Private Function getPrime(ByVal Min As Long) As Long
     Dim p As Long
     
     If Min < 0 Then _
-        Call Skynet.Push(Me, "getPrime").InvalidInput.Raise("Min < 0")
+        Call Skynet.Throw(Me, "getPrime").InvalidInput("Min < 0")
     
     With myClass.Const
         For p = LBound(.Primes) To UBound(.Primes)
@@ -299,15 +312,15 @@ End Sub
 
 Private Function InitialHashing(ByVal HashValue As Long, ByVal HashSize As Long) As HashItem
 
-    Dim hash As HashItem
+    Dim Hash As HashItem
     
-    With hash
+    With Hash
         .Size = HashSize
         .Index = Modulo(HashValue, .Size)
         .Incr = 1 + Modulo((CDbl(HashValue) * myClass.Const.HashPrime), (.Size - 1))
     End With
     
-    LSet InitialHashing = hash
+    LSet InitialHashing = Hash
 
 End Function
 
@@ -340,11 +353,11 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     
 End Sub
 
-Private Sub PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef hash As HashItem)
+Private Sub PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef Hash As HashItem)
 
     Entry.State = HAS_ENTRY
     
-    With hash
+    With Hash
         Do
             If (Buckets(.Index).Key Is Nothing) Then _
                 Buckets(.Index) = Entry: Exit Sub
@@ -358,13 +371,13 @@ Private Sub PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef has
 
 End Sub
 
-Public Sub Add(ByRef Key As IGeneric, ByRef Value As IGeneric)
+Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
 
     Dim Try As Long
     Dim HashValue As Long
     
     If (Key Is Nothing) Then _
-        Call Skynet.Push(Me, "Insert").NullPointer.Raise("Key is nothing")
+        Call Skynet.Throw(Me, "Public Function Add").KeyIsNothing
         
     With myClass
         If (.Count >= .LoadSize) Then
@@ -453,7 +466,7 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Call Skynet.Push(Me, "IObject_CompareTo").NotSupported.Raise
+    Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
 
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericMap): End Function
@@ -469,16 +482,16 @@ Private Function IGeneric_ToString() As String
     End With
 End Function
 
-'IGenericHashTable
-Private Property Get IGenericHashTable_Elements() As IGenericCollection: Set IGenericHashTable_Elements = Me: End Property
-Private Property Set IGenericHashTable_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
-Private Property Get IGenericHashTable_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericHashTable_Item = myClass.Buckets(FindEntry(Key)).Value: End Property
-Private Property Get IGenericHashTable_Values() As IGenericCollection: IGenericHashTable_Values = Me.GetValues: End Property
-Private Property Get IGenericHashTable_Keys() As IGenericCollection: IGenericHashTable_Keys = Me.GetKeys: End Property
-Private Function IGenericHashTable_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericHashTable_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
-Private Function IGenericHashTable_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericHashTable_TryGetValue = Me.TryGetValue(Key, Value): End Function
-Private Sub IGenericHashTable_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
-Private Sub IGenericHashTable_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
+'IGenericDictionary
+Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
+Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
+Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myClass.Buckets(FindEntry(Key)).Value: End Property
+Private Property Get IGenericDictionary_Values() As IGenericCollection: IGenericDictionary_Values = Me.GetValues: End Property
+Private Property Get IGenericDictionary_Keys() As IGenericCollection: IGenericDictionary_Keys = Me.GetKeys: End Property
+Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
+Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
+Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
+Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
@@ -487,19 +500,19 @@ Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollect
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
 
     If (GArray Is Nothing) Then _
-        Call Skynet.Push(Me, "CopyTo").NullPointer.Raise("GArray Is Nothing")
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").NullPointer("GArray Is Nothing")
     
     If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Push(Me, "CopyTo").IndexOutofRange.Raise("(Index < 0) Or (Index > GArray.Length)")
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
     If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
-        Call Skynet.Push(Me, "CopyTo").InvalidInput.Raise("(GArray.Length - Index < Me.Count)")
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Me.Count)")
     
-    Call LoadValues(Values:=GArray, ArrayIndex:=ArrayIndex)
+    Call LoadPairs(Pairs:=GArray, ArrayIndex:=ArrayIndex)
 
 End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = LoadValues(GenericArray.Build(Me.Count), GenericArray.LowerBound): End Function
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = LoadPairs(GenericArray.Build(Me.Count), GenericArray.LowerBound): End Function
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
 
 End Function

@@ -7,6 +7,79 @@ Attribute VB_Name = "Modul1"
 Option Explicit
 
 
+Sub TestTree2()
+    
+    Dim map As IGenericDictionary
+    Set map = GenericTree.Build
+    
+    Dim i As Long, n As Long
+    n = 1000
+    For i = 1 To n
+        Call map.Add(GNumeric(i), GNumeric(i))
+    Next
+   
+    Dim ga As IGenericReadOnlyList
+    
+    Set ga = map.Keys
+    Debug.Print ga(1)
+'    For i = 1 To ga.Elements.Count
+'        Debug.Print ga(i)
+'    Next
+'
+End Sub
+
+Sub TestTree()
+    
+    Dim Tree As GenericTree
+    Set Tree = GenericTree.Build
+
+    Call Tree.Add(GString("c"), GString("c"))
+    Call Tree.Add(GString("z"), GString("z"))
+    Call Tree.Add(GString("a"), GString("a"))
+    Call Tree.Add(GString("v"), GString("v"))
+    Call Tree.Add(GString("f"), GString("f"))
+    Call Tree.Add(GString("l"), GString("l"))
+    Call Tree.Add(GString("d"), GString("d"))
+    Call Tree.Add(GString("b"), GString("b"))
+    Call Tree.Add(GString("e"), GString("e"))
+    Call Tree.Add(GString("x"), GString("x"))
+    Call Tree.Add(GString("h"), GString("h"))
+    Call Tree.Add(GString("g"), GString("g"))
+    Call Tree.Add(GString("zz"), GString("zz"))
+    'Debug.Print Tree.MaxHeight
+        
+    Dim ga As IGenericReadOnlyList
+    
+    Set ga = Tree.GetKeys
+    
+    Dim i As Long
+    For i = 1 To ga.Elements.Count
+        Debug.Print ga(i)
+    Next
+    
+End Sub
+Sub TestSortedList()
+
+    Dim sl As GenericSortedList
+    Set sl = GenericSortedList.Build
+    
+    Dim i As Long
+    
+    Call sl.Add(GString("c"), GString("c"))
+    Call sl.Add(GString("z"), GString("z"))
+    Call sl.Add(GString("a"), GString("a"))
+    Call sl.Add(GString("f"), GString("f"))
+    Call sl.Add(GString("aa"), GString("aa"))
+    Call sl.Add(GString("d"), GString("d"))
+    Call sl.Add(GString("b"), GString("b"))
+    Call sl.Add(GString("e"), GString("e"))
+    
+    For i = 1 To sl.Count
+        If Not sl.ElementAt(i) Is Nothing Then _
+            Debug.Print i & " / " & sl.ElementAt(i)
+    Next
+    
+End Sub
 Sub TestArrayEnumerator()
 
     Dim i As Long
@@ -22,21 +95,21 @@ End Sub
 
 Sub TestGenericCollection()
     
-    Dim c As GenericCollection2
-    Set c = GenericCollection2.Build
+    Dim c As GenericOrderedMap
+    Set c = GenericOrderedMap.Build
     
     Dim i As Long
     For i = 1 To 10
         Call c.Add(GString("Key: " & i), GString("Value: " & i))
     Next
 
-    Dim list As GenericList
-    Set list = GenericList.Build
+    Dim List As GenericList
+    Set List = GenericList.Build
     
-    Call list.AddAll(c.GetKeys)
+    Call List.AddAll(c.GetKeys)
    
     Dim Clone As IGenericReadOnlyList
-    Set Clone = Skynet.Generic(list.AsReadOnly).Clone
+    Set Clone = Skynet.Generic(List.AsReadOnly).Clone
         
     Dim ga As GenericArray
     Set ga = GenericArray.Build(Clone.Elements.Count)
@@ -48,7 +121,9 @@ Sub TestGenericCollection()
         Debug.Print ga(i)
     Next
 
-    Debug.Print ga.IndexOf(list(10))
+    Debug.Print ga.IndexOf(List(10))
+    
+    Call c.Remove(c.GetKeys(9))
     
 End Sub
 Sub TestGenericPair()
@@ -129,7 +204,7 @@ Sub assdsd()
             Debug.Print "i: " & i & "  " & ga(i)
     Next
     
-    Debug.Print ga.BinarySearch(GString("a"))
+    Debug.Print ga.BinarySearch(GString("a"), 1, ga.Length, Descending)
     Call ga.Reverse
 
 End Sub
@@ -169,15 +244,15 @@ Public Sub Redim2()
 '    Next
 '    Debug.Print t.TimeElapsed
 
-    Dim list As GenericList
-    Set list = GenericList.Build()
+    Dim List As GenericList
+    Set List = GenericList.Build()
     For i = 1 To 5
-        list.Add GString("testX" & i)
+        List.Add GString("testX" & i)
     Next
 
-    Call list.InsertAll(3, a)
+    Call List.InsertAll(3, a)
     
-    Call list.Reverse
+    Call List.Reverse
 End Sub
 
 Public Sub normalArraytest()
@@ -252,14 +327,14 @@ End Sub
 Public Sub ListTest()
 
     Dim i As Long
-    Dim list As GenericList
-    Set list = GenericList.Build()
+    Dim List As GenericList
+    Set List = GenericList.Build()
     
     Dim t As Timer
     Set t = New Timer
     t.StartCounter
     For i = 1 To 10000
-        Call list.Add(GString("test" & i))
+        Call List.Add(GString("test" & i))
     Next
     Debug.Print t.TimeElapsed
 '
@@ -268,10 +343,10 @@ Public Sub ListTest()
 '    Debug.Print List.IndexOf(GString("eingefügt an 500"))
 '
     Dim List2 As GenericList
-    Set List2 = Skynet.Generic(list).Clone
+    Set List2 = Skynet.Generic(List).Clone
     Debug.Print List2.Count
-    Call list.Insert(500, GString("eingefügt an 500"))
-    Debug.Print list(500)
+    Call List.Insert(500, GString("eingefügt an 500"))
+    Debug.Print List(500)
     Debug.Print List2(500)
 '
 '    Dim List3 As GenericList
