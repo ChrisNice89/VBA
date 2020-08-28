@@ -23,6 +23,10 @@ Attribute Value.VB_UserMemId = 0
 Public Property Get DatabaseType() As AdoDataType: End Property
 Public Property Get Object() As IGeneric: End Property
 
+'Public Function Convert(ByVal Value As Variant)
+'
+'End Function
+
 'Private Sub Class_Initialize()
 '    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub

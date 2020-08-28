@@ -22,16 +22,25 @@ Implements IGenericDictionary
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
+Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (ByRef Var() As Any) As Long
+
+Private Const MAX_CALLSTACK_SIZE As Long = 1000
+
+Private Enum QueryType
+    Keys_
+    Values_
+    Nodes_
+End Enum
+
 Private Type Member
     Root As GenericTreeNode
     Count As Long
 End Type
 Private myClass As Member
 
-Private Type StackMember
+Private Type InternalStack
     Size As Long
-    Data As GenericArray
-    Count As Long
+    Items() As GenericTreeNode
 End Type
 
 Private Type Internal
@@ -40,34 +49,35 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get MaxHeight() As Long: MaxHeight = 2 * Skynet.Logn(myClass.Count + 1, 2): End Property
+Public Property Get MaxHeight() As Long: MaxHeight = 2 * Skynet.Logn(myClass.Count + 2, 2): End Property
 Public Property Get Count() As Long: Count = myClass.Count: End Property
-Public Property Get Root() As GenericTreeNode: Set Root = myClass.Root: End Property
+
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
 
-    Dim Node As GenericTreeNode: Set Node = Me.FindNode(Key)
+    Dim Node As GenericTreeNode: Set Node = FindNode(Key)
     
     If (Node Is Nothing) Then
          Call Me.Add(Key, Value)
     Else
-        'set Node.key=key
-        'set node.value =value
+        Set Node.Key = Key
+        Set Node.Value = Value
     End If
    
 End Property
 
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric
+Attribute Item.VB_UserMemId = 0
 
-    Dim Node As GenericTreeNode: Set Node = Me.FindNode(Key)
+    Dim Node As GenericTreeNode: Set Node = FindNode(Key)
     
     If (Node Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Property Get Item").KeyNotFound
+        Call Skynet.Throw(Me, "Public Property Get Item").NoSuchElement
        
     Set Item = Node.Value
 
 End Property
 
-Public Function GetMin() As GenericTreeNode
+Public Function GetMax() As IGeneric
     
     Dim Node As GenericTreeNode: Set Node = myClass.Root
     
@@ -77,48 +87,11 @@ Public Function GetMin() As GenericTreeNode
         Loop
     End If
     
-    Set GetMin = Node
+    Set GetMax = GenericPair(Node.Key, Node.Value)
 
 End Function
 
-Public Function GetValues() As IGenericReadOnlyList
-   
-   Dim ga As GenericArray
-   Set ga = GenericArray.Build(Me.Count)
-   
-   Call AddValuesToArray(myClass.Root, ga, ga.LowerBound)
-   
-   Set GetValues = ga.AsReadOnly
-
-End Function
-
-Public Function ToArray() As GenericArray
-
-End Function
-
-Public Function GetKeys() As IGenericReadOnlyList
-   
-   Dim ga As GenericArray
-   Set ga = GenericArray.Build(Me.Count)
-   
-   Call AddKeysToArray(myClass.Root, ga, ga.LowerBound)
-   
-   Set GetKeys = ga.AsReadOnly
-
-End Function
-
-Public Function GetNodes() As IGenericReadOnlyList
-   
-   Dim ga As GenericArray
-   Set ga = GenericArray.Build(Me.Count)
-   
-   Call InOrderTreeWalk(myClass.Root, ga, ga.LowerBound)
-   
-   Set GetNodes = ga.AsReadOnly
-
-End Function
-
-Public Function GetMax() As GenericTreeNode
+Public Function GetMin() As GenericPair
     
     Dim Node As GenericTreeNode: Set Node = myClass.Root
     
@@ -128,40 +101,82 @@ Public Function GetMax() As GenericTreeNode
         Loop
     End If
     
-    Set GetMax = Node
+    Set GetMin = GenericPair(Node.Key, Node.Value)
 
 End Function
 
-Public Function Successor(ByVal Node As GenericTreeNode) As GenericTreeNode
+Public Function GetValues(Optional ByVal Reverse As Boolean) As IGenericReadOnlyList
+   
+   Dim ga As GenericArray
+   Set ga = GenericArray.Build(Me.Count)
+   
+   'Call AddValuesToArray(myClass.Root, ga, ga.LowerBound)
+   Call InOrderTreeWalk(ga, ga.LowerBound, False, "AddValueToArray")
+   Set GetValues = ga.AsReadOnly
 
-    Dim Parent As GenericTreeNode, Child As GenericTreeNode
+End Function
+
+Public Function GetKeys(Optional ByVal Reverse As Boolean) As IGenericReadOnlyList
+   
+    Dim GArray As GenericArray
+    Set GArray = GenericArray.Build(myClass.Count)
     
-    If (Node Is Nothing) Then _
-        Exit Function
-        
-    If Not (Node.Right Is Nothing) Then
-        Set Parent = Node.Right
-        
-        Do While Not (Parent.Left Is Nothing)
-            Set Parent = Parent.Left
+    Dim Index As Long: Index = GArray.LowerBound
+    
+    Dim Stack As InternalStack
+    ReDim Stack.Items(Me.MaxHeight)
+
+    Dim Node As GenericTreeNode
+    Dim Current As GenericTreeNode
+    
+    Set Current = myClass.Root
+    If Reverse Then
+        Do While Not (Current Is Nothing)
+            Call Push(Stack, Current)
+            Set Current = Current.Right
         Loop
-        Set Successor = Parent: Exit Function
+        Do While Not Stack.Size = 0
+            Set Current = Pop(Stack)
+            Set GArray(Index) = Current.Key
+            Index = Index + 1
+            Set Node = Current.Left
+            Do While Not (Node Is Nothing)
+                Call Push(Stack, Node)
+                Set Node = Node.Right
+            Loop
+        Loop
     Else
-        Set Parent = Node.Parent
-        Set Child = Node
-        Do While (Not (Parent Is Nothing) And Child Is Parent.Right)
-            Set Child = Parent
-            Set Parent = Parent.Parent
+        Do While Not (Current Is Nothing)
+            Call Push(Stack, Current)
+            Set Current = Current.Left
+        Loop
+        Do While Not Stack.Size = 0
+            Set Current = Pop(Stack)
+            Set GArray(Index) = Current.Key
+            Index = Index + 1
+            Set Node = Current.Right
+            Do While Not (Node Is Nothing)
+                Call Push(Stack, Node)
+                Set Node = Node.Left
+            Loop
         Loop
     End If
+    
+    Set GetKeys = GenericReadOnlyList.Build(Internal:=GArray, Size:=myClass.Count, Order:=IIf(Reverse, -1, 1))
+    
+End Function
 
+Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray
+    Dim ga As GenericArray
+    Set ga = GenericArray.Build(Me.Count)
+
+    Call InOrderTreeWalk(ga, ga.LowerBound, Reverse, "AddPairToArray")
+    Set ToArray = ga
+    
 End Function
 
 Private Sub AddValuesToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
 
-'    If (Node Is Nothing) Then _
-'        Exit Sub
-'
     If Not (Node.Left Is Nothing) Then _
         Call AddValuesToArray(Node.Left, GArray, Index)
     
@@ -172,10 +187,7 @@ Private Sub AddValuesToArray(ByVal Node As GenericTreeNode, ByVal GArray As Gene
     
 End Sub
 
-Private Sub AddKeysToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
-
-    If (Node Is Nothing) Then _
-        Exit Sub
+Private Sub AddKeysToArray(ByRef Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
     
     If Not (Node.Left Is Nothing) Then _
         Call AddKeysToArray(Node.Left, GArray, Index)
@@ -187,19 +199,65 @@ Private Sub AddKeysToArray(ByVal Node As GenericTreeNode, ByVal GArray As Generi
     
 End Sub
 
-Private Sub InOrderTreeWalk(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
+Private Sub AddNodeToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
+    Set GArray(Index) = Node
+End Sub
 
-'    If (Node Is Nothing) Then _
-'        Exit Sub
-'
-    If Not (Node.Left Is Nothing) Then _
-        Call InOrderTreeWalk(Node.Left, GArray, Index)
+Private Sub AddKeyToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
+    Set GArray(Index) = Node.Key
+End Sub
+
+Private Sub AddValueToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
+    Set GArray(Index) = Node.Value
+End Sub
+
+Private Sub AddPairToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
+    Set GArray(Index) = GenericPair(Node.Key, Node.Value)
+End Sub
+Private Sub InOrderTreeWalk( _
+                                ByVal GArray As GenericArray, _
+                                ByVal Index As Long, _
+                                ByVal Reverse As Boolean, _
+                                ByVal Action As String)
     
-    Set GArray(Index) = Node: Index = Index + 1
+    Dim Stack As InternalStack
+    ReDim Stack.Items(Me.MaxHeight)
+
+    Dim Node As GenericTreeNode
+    Dim Current As GenericTreeNode
     
-    If Not (Node.Right Is Nothing) Then _
-        Call InOrderTreeWalk(Node.Right, GArray, Index)
-    
+    Set Current = myClass.Root
+    If Reverse Then
+        Do While Not (Current Is Nothing)
+            Call Push(Stack, Current)
+            Set Current = Current.Right
+        Loop
+        Do While Not Stack.Size = 0
+            Set Current = Pop(Stack)
+            Call CallByName(Me, Action, VbMethod, Current, GArray, Index)
+            Index = Index + 1
+            Set Node = Current.Left
+            Do While Not (Node Is Nothing)
+                Call Push(Stack, Node)
+                Set Node = Node.Right
+            Loop
+        Loop
+    Else
+        Do While Not (Current Is Nothing)
+            Call Push(Stack, Current)
+            Set Current = Current.Left
+        Loop
+        Do While Not Stack.Size = 0
+            Set Current = Pop(Stack)
+            Call CallByName(Me, Action, VbMethod, Current, GArray, Index)
+            Index = Index + 1
+            Set Node = Current.Right
+            Do While Not (Node Is Nothing)
+                Call Push(Stack, Node)
+                Set Node = Node.Left
+            Loop
+        Loop
+    End If
 End Sub
 
 Public Function Build() As GenericTree
@@ -219,12 +277,12 @@ Public Sub Clear()
 End Sub
 
 Public Function Contains(ByVal Key As IGeneric) As Boolean
-    Contains = Not Me.FindNode(Key) Is Nothing
+    Contains = Not FindNode(Key) Is Nothing
 End Function
 
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
 
-    Dim Node As GenericTreeNode: Set Node = Me.FindNode(Key)
+    Dim Node As GenericTreeNode: Set Node = FindNode(Key)
     
     If (Node Is Nothing) Then _
         Exit Function
@@ -234,9 +292,9 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
 
 End Function
 
-Public Function FindNode(ByVal Key As IGeneric) As GenericTreeNode
+Private Function FindNode(ByVal Key As IGeneric) As GenericTreeNode
     
-    Dim Current As GenericTreeNode: Set Current = Root
+    Dim Current As GenericTreeNode: Set Current = myClass.Root
     Dim Order As Long
     
     If (Key Is Nothing) Then _
@@ -252,21 +310,54 @@ Public Function FindNode(ByVal Key As IGeneric) As GenericTreeNode
     
 End Function
 
+Private Sub ReplaceNode( _
+                            ByVal Match As GenericTreeNode, _
+                            ByVal ParentOfMatch As GenericTreeNode, _
+                            ByVal Succesor As GenericTreeNode, _
+                            ByVal ParentOfSuccesor As GenericTreeNode)
+
+    If (Succesor Is Match) Then
+        If Not (Match.Right Is Nothing) Then _
+            Call Skynet.Throw(Me, "Private Sub ReplaceNode").NullPointer("Right child must be null!")
+
+        Set Succesor = Match.Left
+    Else
+    
+        If Not (Succesor.Right Is Nothing) Then _
+            Succesor.Right.IsRed = True
+        
+        If Not (ParentOfSuccesor Is Match) Then _
+            Set ParentOfSuccesor.Left = Succesor.Right: _
+            Set Succesor.Right = Match.Right
+            
+        Set Succesor.Left = Match.Left
+
+    End If
+        
+    If Not (Succesor Is Nothing) Then _
+        Succesor.IsRed = Match.IsRed
+                
+    Call ReplaceChildOfNodeOrRoot(ParentOfMatch, Match, Succesor)
+                   
+End Sub
+
 Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Boolean
- 
+    
+    Dim Node As GenericTreeNode: Set Node = GenericTreeNode(Key, Value, False)
+  
+    Dim Current As GenericTreeNode
+    Dim Parent  As GenericTreeNode
+    Dim GrandParent As GenericTreeNode
+    Dim GreatGrandParent As GenericTreeNode
+    Dim Order As Long
+    
     If (myClass.Root Is Nothing) Then
-        Set myClass.Root = GenericTreeNode.Build(Key, Value, False)
+        Set myClass.Root = Node
         Call InterlockedIncrement(myClass.Count)
         Add = True: Exit Function
     End If
     
-    Dim Current As GenericTreeNode: Set Current = Root
-    Dim Parent  As GenericTreeNode
-    Dim GrandParent As GenericTreeNode
-    Dim GreatGrandParent As GenericTreeNode
-    
-    Dim Order As Long
-    
+    Set Current = myClass.Root
     Do While Not (Current Is Nothing)
         Order = Current.Key.CompareTo(Key)
         If (Order = 0) Then
@@ -292,16 +383,14 @@ Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Boolean
         Set GreatGrandParent = GrandParent
         Set GrandParent = Parent
         Set Parent = Current
-        Set Current = IIf(Order < 0, Current.Left, Current.Right)
+        Set Current = IIf(Order > 0, Current.Left, Current.Right)
 
    Loop
    
-    If (Parent Is Nothing) Then _
-        Call Skynet.Throw(Me, "Private Sub InsertionBalance").NullPointer("Parent cannot be null here!")
-    
-    Dim Node As GenericTreeNode: Set Node = GenericTreeNode.Build(Key, Value)
-  
-    If (Order > 0) Then
+'    If (Parent Is Nothing) Then _
+'        Call Skynet.Throw(Me, "Private Sub InsertionBalance").NullPointer("Parent cannot be null here!")
+'
+    If (Order < 0) Then
         Set Parent.Right = Node
     Else
         Set Parent.Left = Node
@@ -310,7 +399,7 @@ Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Boolean
     If (Parent.IsRed) Then _
         Call InsertionBalance(Node, Parent, GrandParent, GreatGrandParent)
     
-    Root.IsRed = False
+    myClass.Root.IsRed = False
     InterlockedIncrement myClass.Count
     
     Add = True
@@ -324,12 +413,11 @@ Private Sub InsertionBalance( _
                                 ByVal GreatGrandParent As GenericTreeNode)
 
             
-    If (GrandParent Is Nothing) Then _
-        Call Skynet.Throw(Me, "Private Sub InsertionBalance").NullPointer("Grand parent cannot be null here!")
-    
+'    If (GrandParent Is Nothing) Then _
+'        Call Skynet.Throw(Me, "Private Sub InsertionBalance").NullPointer("Grand parent cannot be null here!")
+'
     Dim ParentIsOnRight As Boolean: ParentIsOnRight = GrandParent.Right Is Parent
     Dim CurrentIsOnRight As Boolean: CurrentIsOnRight = Parent.Right Is Current
-    
     Dim NewChildOfGreatGrandParent As GenericTreeNode
     
     If (ParentIsOnRight = CurrentIsOnRight) Then
@@ -393,7 +481,7 @@ Private Function IsNothingOrBlack(ByVal Node As GenericTreeNode) As Boolean
     IsNothingOrBlack = Not Node.IsRed
 End Function
 
- Private Sub Split4Node(ByVal Node As GenericTreeNode)
+Private Sub Split4Node(ByVal Node As GenericTreeNode)
     
     With Node
         .IsRed = True
@@ -464,6 +552,21 @@ Private Function RotateRightLeft(ByVal Node As GenericTreeNode) As GenericTreeNo
    
     Set RotateRightLeft = GrandChild
     
+End Function
+
+Private Sub Push(ByRef Stack As InternalStack, ByVal Node As GenericTreeNode)
+    With Stack
+        Set .Items(.Size) = Node
+        .Size = .Size + 1
+    End With
+End Sub
+
+Private Function Pop(ByRef Stack As InternalStack) As GenericTreeNode
+    With Stack
+        .Size = .Size - 1
+        Set Pop = .Items(.Size)
+        Set .Items(.Size) = Nothing
+    End With
 End Function
 
 'IGeneric

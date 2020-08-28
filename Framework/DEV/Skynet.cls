@@ -55,6 +55,7 @@ End Enum
 
 Public Enum SortOrder
     Descending = -1
+    Random = 0
     Ascending = 1
 End Enum
 

@@ -21,7 +21,7 @@ Implements IGenericCollection
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
-Private Const DEFAULT_CAPACITY As Long = 32
+Private Const DEFAULT_CAPACITY As Long = 16
 
 'Bucketstate
 Private Const ZERO As Byte = 0
@@ -29,9 +29,10 @@ Private Const IS_EMPTY As Byte = 0
 Private Const HAS_ENTRY As Byte = 2 ^ 0
 Private Const HAS_COLLISION As Byte = 2 ^ 1
 
-Private Enum Data
-    Values
-    Keys
+Private Enum SealedClass
+    SealedClass = 2 ^ 0
+    Values = 2 ^ 1
+    Keys = 2 ^ 2
 End Enum
 
 Private Type Constant
@@ -68,6 +69,8 @@ Private Type Member
     LoadFactor As Double
     Buckets() As Bucket
     IsReadOnly As Boolean
+    SealedClass As SealedClass
+    isSealed As Boolean
 End Type
 
 '
@@ -86,9 +89,9 @@ Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call M
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myClass.Buckets(FindEntry(Key)).Value: End Property
 Attribute Item.VB_UserMemId = 0
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
-Public Function GetKeys() As IGenericReadOnlyList: Set GetKeys = LoadKeys(GenericArray.Build(Me.Count), GenericArray.LowerBound).AsReadOnly: End Function
-Public Function GetValues() As IGenericReadOnlyList: Set GetValues = LoadValues(GenericArray.Build(Me.Count), GenericArray.LowerBound).AsReadOnly: End Function
-Public Function ToArray() As IGenericReadOnlyList: Set ToArray = LoadPairs(GenericArray.Build(Me.Count), GenericArray.LowerBound).AsReadOnly: End Function
+Public Function GetKeys() As IGenericReadOnlyList: Set GetKeys = GenericReadOnlyList.Build(Internal:=AddKeysToArray(GenericArray.Build(myClass.Count), GenericArray.LowerBound), Size:=myClass.Count): End Function
+Public Function GetValues() As IGenericReadOnlyList: Set GetValues = GenericReadOnlyList.Build(Internal:=AddValuesToArray(GenericArray.Build(myClass.Count), GenericArray.LowerBound), Size:=myClass.Count): End Function
+Public Function ToArray() As IGenericReadOnlyList: Set ToArray = GenericReadOnlyList.Build(Internal:=AddPairsToArray(GenericArray.Build(myClass.Count), GenericArray.LowerBound), Size:=myClass.Count): End Function
 
 Private Function getMinPrime() As Long: getMinPrime = myClass.Const.Primes(LBound(myClass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
@@ -143,39 +146,39 @@ Public Function Build( _
     
 End Function
 
-Private Function LoadPairs(ByVal Pairs As GenericArray, ByVal ArrayIndex As Long) As GenericArray
+Private Function AddPairsToArray(ByVal GArray As GenericArray, ByVal ArrayIndex As Long) As GenericArray
     Dim i As Long
     
     For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
         If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Pairs(ArrayIndex) = GenericPair.Build(myClass.Buckets(i).Key, myClass.Buckets(i).Value): Call InterlockedIncrement(ArrayIndex)
+            Set GArray(ArrayIndex) = GenericPair(myClass.Buckets(i).Key, myClass.Buckets(i).Value): Call InterlockedIncrement(ArrayIndex)
     Next
     
-    Set LoadPairs = Pairs
+    Set AddPairsToArray = GArray
     
 End Function
 
-Private Function LoadKeys(ByVal Keys As GenericArray, ByVal ArrayIndex As Long) As GenericArray
+Private Function AddKeysToArray(ByVal GArray As GenericArray, ByVal ArrayIndex As Long) As GenericArray
     Dim i As Long
     
     For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
         If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Keys(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
+            Set GArray(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
     Next
     
-    Set LoadKeys = Keys
+    Set AddKeysToArray = GArray
     
 End Function
 
-Private Function LoadValues(ByVal Values As GenericArray, ByVal ArrayIndex As Long) As GenericArray
+Private Function AddValuesToArray(ByVal GArray As GenericArray, ByVal ArrayIndex As Long) As GenericArray
     Dim i As Long
     
     For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
         If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Values(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
+            Set GArray(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
     Next
     
-    Set LoadValues = Values
+    Set AddValuesToArray = GArray
     
 End Function
 
@@ -203,7 +206,7 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
             .Index = Modulo(.Index + .Incr, .Size)
         Loop
     End With
-  
+    
 End Function
 
 Private Function FindEntry(ByVal Key As IGeneric) As Long
@@ -311,17 +314,13 @@ Private Sub Expand()
 End Sub
 
 Private Function InitialHashing(ByVal HashValue As Long, ByVal HashSize As Long) As HashItem
-
-    Dim Hash As HashItem
     
-    With Hash
+    With InitialHashing
         .Size = HashSize
         .Index = Modulo(HashValue, .Size)
         .Incr = 1 + Modulo((CDbl(HashValue) * myClass.Const.HashPrime), (.Size - 1))
     End With
     
-    LSet InitialHashing = Hash
-
 End Function
 
 Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
@@ -371,7 +370,9 @@ Private Sub PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef Has
 
 End Sub
 
-Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
+Public Sub Add( _
+                    ByVal Key As IGeneric, _
+                    ByVal Value As IGeneric)
 
     Dim Try As Long
     Dim HashValue As Long
@@ -456,7 +457,11 @@ Private Function IGeneric_Clone() As IGeneric
 End Function
 
 Private Sub IGeneric_Dispose()
-   myClass = EmptyStructure
+    If myClass.isSealed Then
+    
+    Else
+        myClass = EmptyStructure
+    End If
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
@@ -486,8 +491,20 @@ End Function
 Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
 Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
 Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myClass.Buckets(FindEntry(Key)).Value: End Property
-Private Property Get IGenericDictionary_Values() As IGenericCollection: IGenericDictionary_Values = Me.GetValues: End Property
-Private Property Get IGenericDictionary_Keys() As IGenericCollection: IGenericDictionary_Keys = Me.GetKeys: End Property
+Private Property Get IGenericDictionary_Values() As IGenericCollection
+    
+    myClass.isSealed = True
+    myClass.SealedClass = Values
+    IGenericDictionary_Values = Me
+
+End Property
+Private Property Get IGenericDictionary_Keys() As IGenericCollection
+    
+    myClass.isSealed = True
+    myClass.SealedClass = Keys
+    IGenericDictionary_Keys = Me
+
+End Property
 Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
@@ -508,11 +525,26 @@ Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayI
     If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Me.Count)")
     
-    Call LoadPairs(Pairs:=GArray, ArrayIndex:=ArrayIndex)
-
+    Select Case myClass.SealedClass
+        Case Keys
+            Call AddKeysToArray(GArray:=GArray, ArrayIndex:=ArrayIndex)
+        Case Values
+            Call AddValuesToArray(GArray:=GArray, ArrayIndex:=ArrayIndex)
+        Case Else
+            Call AddPairsToArray(GArray:=GArray, ArrayIndex:=ArrayIndex)
+    End Select
+    
 End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = LoadPairs(GenericArray.Build(Me.Count), GenericArray.LowerBound): End Function
+Private Function IGenericCollection_ToArray() As GenericArray
+    
+    Dim GArray As GenericArray
+    Set GArray = GenericArray.Build(myClass.Count)
+    
+    Call IGenericCollection_CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
+    Set IGenericCollection_ToArray = GArray
+    
+End Function
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
 
 End Function
@@ -520,12 +552,16 @@ Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean
     
     Dim i As Long
     
-    For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
-        If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            If (Item.Equals(myClass.Buckets(i).Value)) Then _
-                IGenericCollection_Contains = True: Exit Function
-                
-    Next
+    If myClass.SealedClass = Keys Then
+        IGenericCollection_Contains = Me.Contains(Key:=Item)
+    Else
+        For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+            If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                If (Item.Equals(myClass.Buckets(i).Value)) Then _
+                    IGenericCollection_Contains = True: Exit Function
+            
+        Next
+    End If
     
 End Function
 

@@ -45,26 +45,38 @@ Public Property Get Parent() As GenericTreeNode: Set Parent = myClass.Parent: En
 Public Property Set Parent(ByVal Node As GenericTreeNode): Set myClass.Parent = Node: End Property
 
 Public Property Get Key() As IGeneric: Set Key = myClass.Key: End Property
+Public Property Set Key(ByVal k As IGeneric): Set myClass.Key = k: End Property
+
 Public Property Get Value() As Object: Set Value = myClass.Value: End Property
+Public Property Set Value(ByVal V As IGeneric): Set myClass.Value = V: End Property
 
 Public Function Build( _
                         ByVal Key As IGeneric, _
                         ByVal Value As Object, _
                         Optional ByVal IsRed As Boolean = False) As GenericTreeNode
+Attribute Build.VB_UserMemId = 0
+
+'    With myClass
+'        Set .Key = Key: Set .Value = Value: .IsRed = IsRed
+'    End With
     
-    With myClass
-        Set .Key = Key: Set .Value = Value: .IsRed = IsRed
+    Dim n As GenericTreeNode: Set n = New GenericTreeNode
+    
+    With n
+        Set .Key = Key
+        Set .Value = Value
+        .IsRed = IsRed
     End With
     
-    Set Build = New GenericTreeNode
+    Set Build = n
     
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    With GenericTreeNode
-        Set myClass.Key = .Key: Set myClass.Value = .Value: myClass.IsRed = .IsRed
-    End With
+'    With GenericTreeNode
+'        Set myClass.Key = .Key: Set myClass.Value = .Value: myClass.IsRed = .IsRed
+'    End With
 End Sub
 
 Private Function IGeneric_Clone() As IGeneric

@@ -20,7 +20,9 @@ Implements IGenericCollection
 Implements IGenericEnumerator
 
 Private Type Member
-    List As IGenericReadOnlyList
+    Internal As GenericArray
+    SortOrder As SortOrder
+    Size As Long
 End Type
 Private myClass As Member
 
@@ -30,23 +32,62 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Function Build(ByVal List As IGenericReadOnlyList) As IGenericReadOnlyList
+Public Function Build(ByVal Internal As GenericArray, ByVal Size As Long, Optional ByVal Order As SortOrder = Random) As IGenericReadOnlyList
 
-    If (List Is Nothing) Then _
-        Call Skynet.Throw(Me, "Build").NullPointer("List is nothing")
+    If (Internal Is Nothing) Then _
+        Call Skynet.Throw(Me, "Public Function Build").NullPointer("Internal is nothing")
+    
+    If Not (Internal.Rank = 1) Then _
+        Call Skynet.Throw(Me, "Copy").NotSupported("Internal.Rank != 1")
 
-    Set myClass.List = List
+    Set myClass.Internal = Internal
+    myClass.Size = Size
+    myClass.SortOrder = Order
+    
     Set Build = Skynet.Create(Me)
 
 End Function
-'Class
-Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myClass.List(Index): End Property
+
+Public Property Get ElementAt(ByVal Index As Long) As IGeneric
 Attribute ElementAt.VB_UserMemId = 0
-Public Property Get Count() As Long: Count = myClass.List.Elements.Count: End Property
-Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.List.Elements.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
+
+    If (Index > myClass.Size) Then _
+        Call Skynet.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("Index not valid")
+    
+    Set ElementAt = myClass.Internal(Index)
+    
+End Property
+
+Public Property Get Count() As Long: Count = myClass.Size: End Property
+
+Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+  
+    If (GArray Is Nothing) Then _
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").NullPointer("GArray Is Nothing")
+    
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
+
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Me.Count)")
+    
+    'Call myClass.Internal.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, SourceIndex:=myClass.Internal.LowerBound, Elements:=myClass.Size)
+    Call GenericArray.Copy(SrcArray:=myClass.Internal, SrcIndex:=myClass.Internal.LowerBound, DstArray:=GArray, DstIndex:=GArray.LowerBound, Elements:=myClass.Size)
+   
+End Sub
 Public Sub Clear(): Call Skynet.Dispose(Me): End Sub
-Public Function Contains(ByVal Item As IGeneric) As Boolean: Contains = myClass.List.IndexOf(Item:=Item) >= 0: End Function
-Public Function IndexOf(ByVal Item As IGeneric) As Long: IndexOf = myClass.List.IndexOf(Item:=Item): End Function
+Public Function Contains(ByVal Item As IGeneric) As Boolean: Contains = Me.IndexOf(Item:=Item) >= 0: End Function
+Public Function IndexOf(ByVal Item As IGeneric) As Long
+
+    With myClass.Internal
+        If (myClass.SortOrder = Random) Then
+            IndexOf = .IndexOf(Value:=Item, StartIndex:=.LowerBound, Count:=myClass.Size, CheckArguments:=False)
+        Else
+            IndexOf = .BinarySearch(Value:=Item, Index:=.LowerBound, Length:=myClass.Size, Order:=myClass.SortOrder)
+        End If
+    End With
+    
+End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
@@ -61,7 +102,7 @@ Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = ObjPtr(M
 Private Function IGeneric_Clone() As IGeneric
 
     Dim c As Member
-    Set c.List = Skynet.Generic(myClass.List).Clone
+    Set c.Internal = Skynet.Generic(myClass.Internal).Clone
 
     Virtual.Pointer = VarPtr(c)
     Set IGeneric_Clone = Skynet.Create(Me)
@@ -77,7 +118,7 @@ Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Elements: " & .List.Elements.Count
+                            "Elements: " & .Size
     End With
 End Function
 
@@ -95,18 +136,38 @@ End Sub
 
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
-Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.List(Index): End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myClass.List.IndexOf(Item): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Item:=Item): End Function
+Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
+
+    If (Index > myClass.Size) Then _
+        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_Item").IndexOutofRange("Index not valid")
+    
+    Set IGenericReadOnlyList_Item = myClass.Internal(Index)
+
+End Property
 
 'IGenericCollection
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = True: End Property
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = myClass.List.Elements.Count: End Property
-Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = myClass.List.Elements.IsFixedSize: End Property
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = myClass.List.IndexOf(Item) >= 0: End Function
-Private Sub IGenericCollection_Clear(): Call myClass.List.Elements.Clear: End Sub
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.List.Elements.CopyTo(GArray, ArrayIndex:=ArrayIndex): End Sub
-Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator: Set IGenericCollection_NewEnumerator = myClass.List.Elements.NewEnumerator: End Function
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myClass.List.Elements.ToArray: End Function
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
+Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = True: End Property
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Item) >= 0: End Function
+Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
+Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
+
+    'Set IGenericCollection_NewEnumerator = myClass.Internal.Elements.NewEnumerator
+
+End Function
+
+Private Function IGenericCollection_ToArray() As GenericArray
+
+    Dim GArray As GenericArray
+    Set GArray = GenericArray.Build(Me.Count)
+    
+    Call Me.CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
+    Set IGenericCollection_ToArray = GArray
+
+End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericReadOnlyList: End Function

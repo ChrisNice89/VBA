@@ -46,7 +46,7 @@ Sub TestTree()
     Call Tree.Add(GString("h"), GString("h"))
     Call Tree.Add(GString("g"), GString("g"))
     Call Tree.Add(GString("zz"), GString("zz"))
-    'Debug.Print Tree.MaxHeight
+    Debug.Print Tree.GetMax
         
     Dim ga As IGenericReadOnlyList
     
@@ -57,6 +57,8 @@ Sub TestTree()
         Debug.Print ga(i)
     Next
     
+    Debug.Print ga.IndexOf(GString("zz"))
+   
 End Sub
 Sub TestSortedList()
 

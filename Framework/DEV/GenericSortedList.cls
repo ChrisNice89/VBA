@@ -53,7 +53,8 @@ Implements IGenericEnumerator
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
-Private Const DEFAULT_CAPACITY As Long = 32
+
+Private Const DEFAULT_CAPACITY As Long = 16
 
 Private Type Member
     Keys As GenericArray
@@ -72,8 +73,27 @@ Private Virtual As Internal
 
 Public Property Get SortOrder() As SortOrder: SortOrder = myClass.SortOrder: End Property
 Public Property Get Last() As IGeneric: Set Last = myClass.Values(myClass.Size): End Property
-Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric): Set myClass.Values(Index) = Item: End Property
-Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myClass.Values(Index): End Property
+Public Property Get GetKeys() As IGenericReadOnlyList: Set GetKeys = GenericReadOnlyList.Build(Internal:=myClass.Keys, Size:=myClass.Size, Order:=myClass.SortOrder): End Property
+Public Property Get GetValues() As IGenericReadOnlyList: Set GetValues = GenericReadOnlyList.Build(Internal:=myClass.Values, Size:=myClass.Size): End Property
+Public Property Get Count() As Long: Count = myClass.Size: End Property
+
+Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
+    
+    If (Index > myClass.Size) Then _
+        Call Skynet.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("Index not valid")
+    
+    Set myClass.Values(Index) = Item
+    
+End Property
+
+Public Property Get ElementAt(ByVal Index As Long) As IGeneric
+
+    If (Index > myClass.Size) Then _
+        Call Skynet.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("Index not valid")
+    
+    Set ElementAt = myClass.Values(Index)
+    
+End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
 
@@ -91,20 +111,19 @@ Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
  End Property
  
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric
-    
+Attribute Item.VB_UserMemId = 0
+
     Dim i As Long
     i = Me.IndexOfKey(Key)
     
     If (i >= 0) Then _
         Set Item = myClass.Values(i): Exit Function
         
-    Call Skynet.Throw(Me, "Public Property Get Item").KeyNotFound
+    Call Skynet.Throw(Me, "Public Property Get Item").NoSuchElement
         
 End Property
 
-Public Property Get Count() As Long: Count = myClass.Size: End Property
 Public Property Get Capacity() As Long: Capacity = myClass.Keys.Length: End Property
-
 Public Property Let Capacity(ByVal Value As Long)
     
     If (Value < myClass.Size) Then _
@@ -183,10 +202,6 @@ Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
 
-Public Function AsReadOnly() As IGenericReadOnlyList
-    Set AsReadOnly = GenericReadOnlyList.Build(Me)
-End Function
-
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
 
     Dim i As Long
@@ -200,8 +215,6 @@ End Function
 Public Function ContainsKey(ByVal Key As IGeneric) As Long: ContainsKey = Me.IndexOfKey(Key) > -1: End Function
 Public Function ContainsValue(ByVal Value As IGeneric) As Long: ContainsValue = Me.IndexOfValue(Value) > -1: End Function
 Public Function ToArray() As GenericArray: Set ToArray = LoadPairs(Pairs:=GenericArray.Build(myClass.Size), ArrayIndex:=GenericArray.LowerBound): End Function
-Public Property Get GetKeys() As IGenericReadOnlyList: Set GetKeys = myClass.Keys.AsReadOnly: End Property
-Public Property Get GetValues() As IGenericReadOnlyList: Set GetValues = myClass.Values.AsReadOnly: End Property
 
 Public Function Remove(ByVal Key As IGeneric) As Boolean
     Dim i As Long
@@ -276,7 +289,7 @@ Private Function LoadPairs(ByVal Pairs As GenericArray, ByVal ArrayIndex As Long
     Dim i As Long
     
     For i = myClass.Keys.LowerBound To myClass.Size
-        Set Pairs(i) = GenericPair.Build(myClass.Keys(i), myClass.Values(i))
+        Set Pairs(i) = GenericPair(myClass.Keys(i), myClass.Values(i))
     Next
     
     Set LoadPairs = Pairs
@@ -368,7 +381,14 @@ Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneri
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Value:=Item): End Function
-Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.Values(Index): End Property
+Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
+    
+     If (Index > myClass.Size) Then _
+        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_Item").IndexOutofRange("Index not valid")
+    
+    Set IGenericReadOnlyList_Item = GenericPair.Build(myClass.Keys(Index), myClass.Values(Index))
+    
+End Property
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property

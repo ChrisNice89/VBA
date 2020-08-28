@@ -239,7 +239,7 @@ Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
 End Function
 
 Public Function AsReadOnly() As IGenericReadOnlyList
-    Set AsReadOnly = GenericReadOnlyList.Build(Me)
+    Set AsReadOnly = GenericReadOnlyList.Build(Internal:=Me, Size:=Me.Length)
 End Function
 
 Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef S As SAFEARRAYSTRUCT)

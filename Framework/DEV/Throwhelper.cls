@@ -30,7 +30,8 @@ Public Enum ErrorNumber
     NoNegativ_
     NullPointer_
     KeyIsNothing_
-    KeyNotFound_
+    DuplicateNotAllowed_
+    NoSuchElement_
     InvalidIndex_
     
 End Enum
@@ -82,11 +83,18 @@ Public Sub Complete()
     RaiseEvent Assert
 End Sub
 
-Public Function KeyNotFound(Optional ByVal Message As String = "Key not found in Collection") As Throwhelper
-    myClass.Number = KeyNotFound_
-    myClass.Type = "Key not found"
+Public Function NoSuchElement(Optional ByVal Message As String = "Element not found in Collection") As Throwhelper
+    myClass.Number = NoSuchElement_
+    myClass.Type = "NoSuchElement"
     Call Me.Raise(Message)
-    Set KeyNotFound = Me
+    Set NoSuchElement = Me
+End Function
+
+Public Function DuplicateNotAllowed(Optional ByVal Message As String = "Element is already in Collection") As Throwhelper
+    myClass.Number = DuplicateNotAllowed_
+    myClass.Type = "DuplicateNotAllowed"
+    Call Me.Raise(Message)
+    Set DuplicateNotAllowed = Me
 End Function
 
 Public Function KeyIsNothing(Optional ByVal Message As String = "Key is nothing") As Throwhelper

@@ -21,7 +21,7 @@ Implements IPrototype
 'OrderedHashTable offers IHashTable syntax with ordering.  Objects
 'added or inserted in an IOrderedHashTable must have both a key and an index, and
 'can be retrieved by either.
-Private Const DEFAULT_CAPACITY As Long = 32
+Private Const DEFAULT_CAPACITY As Long = 16
 
 Private Type Member
     Internal As IGenericList
@@ -88,14 +88,14 @@ Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
     Set Key = Me.Entry(Index).Key
     
     Set myClass.HashTable(Key) = Item
-    Set myClass.Internal(Index) = GenericPair.Build(Key, Item)
+    Set myClass.Internal(Index) = GenericPair(Key, Item)
     
 End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Item As IGeneric)
     With myClass
         If (.HashTable.ContainsKey(Key)) Then _
-            Set .Internal(IndexOfKey(Key)) = GenericPair.Build(Key, Item)
+            Set .Internal(IndexOfKey(Key)) = GenericPair(Key, Item)
 
         Set .HashTable(Key) = Item
     End With
@@ -104,7 +104,7 @@ End Property
 Public Sub Add(ByVal Key As IGeneric, ByVal Item As IGeneric)
     With myClass
         Call .HashTable.Add(Key, Item)
-        Call .Internal.Insert(.Internal.Elements.Count + 1, GenericPair.Build(Key, Item))
+        Call .Internal.Insert(.Internal.Elements.Count + 1, GenericPair(Key, Item))
     End With
 End Sub
 
@@ -225,7 +225,7 @@ End Sub
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Item): End Function
-Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = Me.Entry(Index).Value: End Property
+Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.Internal(Index): End Property
 
 'IGenericDictionary
 Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
@@ -244,7 +244,7 @@ Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollec
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.Internal.Elements.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myClass.HashTable.Values: End Function
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myClass.Internal.Elements.ToArray: End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOfValue(Item) >= 0: End Function
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
 
