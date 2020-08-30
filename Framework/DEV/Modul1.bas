@@ -13,18 +13,17 @@ Sub TestTree2()
     Set map = GenericTree.Build
     
     Dim i As Long, n As Long
-    n = 1000
+    n = 10
     For i = 1 To n
         Call map.Add(GNumeric(i), GNumeric(i))
     Next
    
-    Dim ga As IGenericReadOnlyList
+    Dim ga As GenericArray
     
-    Set ga = map.Keys
-    Debug.Print ga(1)
-'    For i = 1 To ga.Elements.Count
-'        Debug.Print ga(i)
-'    Next
+    Set ga = map.Elements.ToArray
+    For i = 1 To ga.Length
+        Debug.Print ga(i)
+    Next
 '
 End Sub
 
@@ -50,7 +49,7 @@ Sub TestTree()
         
     Dim ga As IGenericReadOnlyList
     
-    Set ga = Tree.GetKeys
+    Set ga = Tree.GetKeys(True)
     
     Dim i As Long
     For i = 1 To ga.Elements.Count
@@ -93,7 +92,6 @@ Sub TestArrayEnumerator()
     Call ga.SetValue(GString("b"), 2)
    Debug.Print ga.GetValue(2)
 End Sub
-
 
 Sub TestGenericCollection()
     

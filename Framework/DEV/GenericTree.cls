@@ -16,8 +16,7 @@ Option Explicit
 'Implements IPrototype
 'Implements IGeneric
 Implements IGenericDictionary
-'Implements IGenericReadOnlyList
-'Implements IGenericCollection
+Implements IGenericCollection
 'Implements IGenericEnumerator
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
@@ -91,7 +90,7 @@ Public Function GetMax() As IGeneric
 
 End Function
 
-Public Function GetMin() As GenericPair
+Public Function GetMin() As IGeneric
     
     Dim Node As GenericTreeNode: Set Node = myClass.Root
     
@@ -166,15 +165,6 @@ Public Function GetKeys(Optional ByVal Reverse As Boolean) As IGenericReadOnlyLi
     
 End Function
 
-Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray
-    Dim ga As GenericArray
-    Set ga = GenericArray.Build(Me.Count)
-
-    Call InOrderTreeWalk(ga, ga.LowerBound, Reverse, "AddPairToArray")
-    Set ToArray = ga
-    
-End Function
-
 Private Sub AddValuesToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
 
     If Not (Node.Left Is Nothing) Then _
@@ -199,21 +189,6 @@ Private Sub AddKeysToArray(ByRef Node As GenericTreeNode, ByVal GArray As Generi
     
 End Sub
 
-Private Sub AddNodeToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
-    Set GArray(Index) = Node
-End Sub
-
-Private Sub AddKeyToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
-    Set GArray(Index) = Node.Key
-End Sub
-
-Private Sub AddValueToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
-    Set GArray(Index) = Node.Value
-End Sub
-
-Private Sub AddPairToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
-    Set GArray(Index) = GenericPair(Node.Key, Node.Value)
-End Sub
 Private Sub InOrderTreeWalk( _
                                 ByVal GArray As GenericArray, _
                                 ByVal Index As Long, _
@@ -594,6 +569,7 @@ End Function
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
+
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedList): End Function
 Private Function IGeneric_ToString() As String
     With myClass
@@ -614,12 +590,29 @@ Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As 
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric):: End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 
+Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+
+End Sub
+
+Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+
+End Sub
+
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.ToArray: End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
+Private Function IGenericCollection_ToArray() As GenericArray
+
+    Dim GArray As GenericArray
+    Set GArray = GenericArray.Build(myClass.Count)
+   
+    Call IGenericCollection_CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
+    
+    Set IGenericCollection_ToArray = GArray
+
+End Function
 
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
 
@@ -631,6 +624,28 @@ Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayI
 
     If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Me.Count)")
+        
+    Dim Stack As InternalStack
+    ReDim Stack.Items(Me.MaxHeight)
+
+    Dim Node As GenericTreeNode
+    Dim Current As GenericTreeNode
+    
+    Set Current = myClass.Root
+    Do While Not (Current Is Nothing)
+        Call Push(Stack, Current)
+        Set Current = Current.Left
+    Loop
+    Do While Not Stack.Size = 0
+        Set Current = Pop(Stack)
+        Set GArray(ArrayIndex) = GenericPair(Current.Key, Current.Value)
+        ArrayIndex = ArrayIndex + 1
+        Set Node = Current.Right
+        Do While Not (Node Is Nothing)
+            Call Push(Stack, Node)
+            Set Node = Node.Left
+        Loop
+    Loop
     
 End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub

@@ -214,7 +214,6 @@ End Function
 
 Public Function ContainsKey(ByVal Key As IGeneric) As Long: ContainsKey = Me.IndexOfKey(Key) > -1: End Function
 Public Function ContainsValue(ByVal Value As IGeneric) As Long: ContainsValue = Me.IndexOfValue(Value) > -1: End Function
-Public Function ToArray() As GenericArray: Set ToArray = LoadPairs(Pairs:=GenericArray.Build(myClass.Size), ArrayIndex:=GenericArray.LowerBound): End Function
 
 Public Function Remove(ByVal Key As IGeneric) As Boolean
     Dim i As Long
@@ -285,16 +284,6 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
 
 End Sub
 
-Private Function LoadPairs(ByVal Pairs As GenericArray, ByVal ArrayIndex As Long) As GenericArray
-    Dim i As Long
-    
-    For i = myClass.Keys.LowerBound To myClass.Size
-        Set Pairs(i) = GenericPair(myClass.Keys(i), myClass.Values(i))
-    Next
-    
-    Set LoadPairs = Pairs
-    
-End Function
 'Returns the index of the entry with a given key in this sorted list. The
 'key is located through a binary search, and thus the average execution
 'time of this method is proportional to Log2(size), where
@@ -378,6 +367,14 @@ Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As 
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 
+Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+
+End Sub
+
+Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+
+End Sub
+
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Value:=Item): End Function
@@ -386,7 +383,7 @@ Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
      If (Index > myClass.Size) Then _
         Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_Item").IndexOutofRange("Index not valid")
     
-    Set IGenericReadOnlyList_Item = GenericPair.Build(myClass.Keys(Index), myClass.Values(Index))
+    Set IGenericReadOnlyList_Item = GenericPair(myClass.Keys(Index), myClass.Values(Index))
     
 End Property
 
@@ -394,7 +391,16 @@ End Property
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.ToArray: End Function
+Private Function IGenericCollection_ToArray() As GenericArray
+
+    Dim GArray As GenericArray
+    Set GArray = GenericArray.Build(myClass.Size)
+    
+    Call IGenericCollection_CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
+    
+    Set IGenericCollection_ToArray = GArray
+    
+End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOfKey(Key:=Item): End Function
 
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
@@ -405,10 +411,13 @@ Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayI
     If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Me.Count)")
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Size) Then _
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < myClass.Size)")
     
-    Call LoadPairs(Pairs:=GArray, ArrayIndex:=ArrayIndex)
+    Dim i As Long
+    For i = myClass.Keys.LowerBound To myClass.Size
+        Set GArray(ArrayIndex) = GenericPair(myClass.Keys(i), myClass.Values(i)): Call InterlockedIncrement(ArrayIndex)
+    Next
 
 End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub

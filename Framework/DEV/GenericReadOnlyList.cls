@@ -32,7 +32,10 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Function Build(ByVal Internal As GenericArray, ByVal Size As Long, Optional ByVal Order As SortOrder = Random) As IGenericReadOnlyList
+Public Function Build( _
+                        ByVal Internal As GenericArray, _
+                        ByVal Size As Long, _
+                        Optional ByVal Order As SortOrder = Random) As IGenericReadOnlyList
 
     If (Internal Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Build").NullPointer("Internal is nothing")
@@ -101,9 +104,9 @@ End Sub
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = ObjPtr(Me): End Property
 Private Function IGeneric_Clone() As IGeneric
 
-    Dim c As Member
-    Set c.Internal = Skynet.Generic(myClass.Internal).Clone
-
+    Dim c As Member: c = myClass
+    Set c.Internal = Skynet.Generic(c.Internal).Clone 'ShallowCopy
+    
     Virtual.Pointer = VarPtr(c)
     Set IGeneric_Clone = Skynet.Create(Me)
     Virtual.Pointer = VarPtr(myClass)
@@ -152,13 +155,6 @@ Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Coun
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = True: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Item) >= 0: End Function
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
-Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
-
-    'Set IGenericCollection_NewEnumerator = myClass.Internal.Elements.NewEnumerator
-
-End Function
-
 Private Function IGenericCollection_ToArray() As GenericArray
 
     Dim GArray As GenericArray
@@ -166,6 +162,13 @@ Private Function IGenericCollection_ToArray() As GenericArray
     
     Call Me.CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
     Set IGenericCollection_ToArray = GArray
+
+End Function
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
+
+Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
+
+    'Set IGenericCollection_NewEnumerator = myClass.Internal.Elements.NewEnumerator
 
 End Function
 

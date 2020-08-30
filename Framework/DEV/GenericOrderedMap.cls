@@ -18,13 +18,16 @@ Implements IGenericCollection
 Implements IGenericEnumerator
 Implements IPrototype
 
+Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
+Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
+
 'OrderedHashTable offers IHashTable syntax with ordering.  Objects
 'added or inserted in an IOrderedHashTable must have both a key and an index, and
 'can be retrieved by either.
 Private Const DEFAULT_CAPACITY As Long = 16
 
 Private Type Member
-    Internal As IGenericList
+    Internal As GenericList
     HashTable As IGenericDictionary
 End Type
 Private myClass As Member
@@ -50,32 +53,32 @@ Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
 End Sub
 Public Property Get Entry(ByVal Index As Long) As GenericPair: Set Entry = myClass.Internal(Index): End Property
-Public Property Get Count() As Long: Count = myClass.Internal.Elements.Count: End Property
-Public Function GetKeys() As IGenericReadOnlyList
+Public Property Get Count() As Long: Count = myClass.Internal.Count: End Property
+Public Function GetKeys() As IGenericReadOnlyList: Set GetKeys = GenericReadOnlyList.Build(Internal:=AddKeysToArray(GenericArray.Build(Me.Count), GenericArray.LowerBound), Size:=Me.Count): End Function
+Public Function GetValues() As IGenericReadOnlyList: Set GetValues = GenericReadOnlyList.Build(Internal:=AddValuesToArray(GenericArray.Build(Me.Count), GenericArray.LowerBound), Size:=Me.Count): End Function
 
-    Dim ga As GenericArray
-    Set ga = GenericArray.Build(Me.Count)
+Private Function AddKeysToArray(ByVal GArray As GenericArray, ByVal ArrayIndex As Long) As GenericArray
     
     Dim i As Long
-    For i = ga.LowerBound To ga.Length
-        Set ga(i) = Me.Entry(i).Key
+    
+    For i = 1 To myClass.Internal.Count
+        Set GArray(ArrayIndex) = Me.Entry(i).Key: Call InterlockedIncrement(ArrayIndex)
     Next
     
-    Set GetKeys = ga.AsReadOnly
+    Set AddKeysToArray = GArray
     
 End Function
 
-Public Function GetValues() As IGenericReadOnlyList
-    
-    Dim ga As GenericArray
-    Set ga = GenericArray.Build(Me.Count)
+Private Function AddValuesToArray(ByVal GArray As GenericArray, ByVal ArrayIndex As Long) As GenericArray
     
     Dim i As Long
-    For i = ga.LowerBound To ga.Length
-        Set ga(i) = Me.Entry(i).Value
+    
+    For i = 1 To myClass.Internal.Count
+        Set GArray(ArrayIndex) = Me.Entry(i).Value: Call InterlockedIncrement(ArrayIndex)
     Next
     
-    Set GetValues = ga.AsReadOnly
+    
+    Set AddValuesToArray = GArray
     
 End Function
 
@@ -104,7 +107,7 @@ End Property
 Public Sub Add(ByVal Key As IGeneric, ByVal Item As IGeneric)
     With myClass
         Call .HashTable.Add(Key, Item)
-        Call .Internal.Insert(.Internal.Elements.Count + 1, GenericPair(Key, Item))
+        Call .Internal.Add(GenericPair(Key, Item))
     End With
 End Sub
 
@@ -114,7 +117,7 @@ Private Function IndexOfKey(ByVal Key As IGeneric) As Long
     
     Dim i As Long
     With myClass
-        For i = 1 To .Internal.Elements.Count
+        For i = 1 To .Internal.Count
             If (Key.Equals(Me.Entry(i).Key)) Then _
                 IndexOfKey = i: Exit Function
         Next
@@ -128,7 +131,7 @@ Public Function IndexOfValue(ByVal Value As IGeneric) As Long
     
     Dim i As Long
     With myClass
-        For i = 1 To .Internal.Elements.Count
+        For i = 1 To .Internal.Count
             If (Value.Equals(Me.Entry(i).Value)) Then _
                 IndexOfValue = i: Exit Function
         Next
@@ -140,8 +143,8 @@ End Function
 
 Public Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IGeneric)
     
-    If (Index > myClass.Internal.Elements.Count) Or (Index < 0) Then _
-        Call Skynet.Throw(Me, "Public Sub Insert").IndexOutofRange("(Index > myClass.Internal.Elements.Count) Or (Index < 0)")
+    If (Index > myClass.Internal.Count) Or (Index < 0) Then _
+        Call Skynet.Throw(Me, "Public Sub Insert").IndexOutofRange("(Index > myClass.Internal.Count) Or (Index < 0)")
         
     With myClass
         Call .HashTable.Add(Key, Value)
@@ -210,6 +213,39 @@ Private Function IGeneric_ToString() As String
     End With
 End Function
 
+'IGenericReadOnlyList
+Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
+Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.Internal(Index): End Property
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Item): End Function
+
+'IGenericDictionary
+Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
+Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set Me.Item(Key) = Item: End Property
+Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myClass.HashTable(Key): End Property
+Private Property Get IGenericDictionary_Keys() As IGenericCollection: Set IGenericDictionary_Keys = Me.GetKeys: End Property
+Private Property Get IGenericDictionary_Values() As IGenericCollection: Set IGenericDictionary_Values = Me.GetValues: End Property
+
+Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean:  IGenericDictionary_TryGetValue = myClass.HashTable.TryGetValue(Key, Value): End Function
+Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = myClass.HashTable.ContainsKey(Key): End Function
+
+Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
+Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
+Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddKeysToArray(GenericArray.Build(Me.Count), ArrayIndex): End Sub
+Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddValuesToArray(GenericArray.Build(Me.Count), ArrayIndex): End Sub
+
+'IGenericCollection
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
+Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
+Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Internal.Count): End Sub
+Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myClass.Internal.ToArray: End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOfValue(Item) >= 0: End Function
+Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
+
+End Function
+
+'IGenericEnumerator
 Private Property Get IGenericEnumerator_Current() As IGeneric
 
 End Property
@@ -221,34 +257,6 @@ End Function
 Private Sub IGenericEnumerator_Reset()
 
 End Sub
-
-'IGenericReadOnlyList
-Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Item): End Function
-Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.Internal(Index): End Property
-
-'IGenericDictionary
-Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
-Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set Me.Item(Key) = Item: End Property
-Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myClass.HashTable(Key): End Property
-Private Property Get IGenericDictionary_Keys() As IGenericCollection: Set IGenericDictionary_Keys = Me.GetKeys: End Property
-Private Property Get IGenericDictionary_Values() As IGenericCollection: Set IGenericDictionary_Values = Me.GetValues: End Property
-Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
-Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
-Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean:  IGenericDictionary_TryGetValue = myClass.HashTable.TryGetValue(Key, Value): End Function
-Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = myClass.HashTable.ContainsKey(Key): End Function
-
-'IGenericCollection
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
-Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
-Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.Internal.Elements.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
-Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myClass.Internal.Elements.ToArray: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOfValue(Item) >= 0: End Function
-Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
-
-End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericOrderedMap: End Function

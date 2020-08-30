@@ -36,7 +36,6 @@ Option Explicit
 
 Implements IPrototype
 Implements IGeneric
-Implements IGenericList
 Implements IGenericReadOnlyList
 Implements IGenericCollection
 Implements IGenericEnumerator

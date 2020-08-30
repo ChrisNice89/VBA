@@ -19,10 +19,12 @@ Public Property Get Keys() As IGenericCollection: End Property
 Public Property Get Values() As IGenericCollection: End Property
 
 Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: End Function
-'Public Function ContainsValue(ByVal Value As IGeneric) As Boolean: End Function
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean: End Function
 Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric): End Sub
 Public Sub Remove(ByVal Key As IGeneric): End Sub
+
+Public Sub CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
+Public Sub CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
 
 'Private Sub Class_Initialize()
 '    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
