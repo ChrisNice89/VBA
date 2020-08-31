@@ -73,9 +73,34 @@ Private Virtual As Internal
 
 Public Property Get SortOrder() As SortOrder: SortOrder = myClass.SortOrder: End Property
 Public Property Get Last() As IGeneric: Set Last = myClass.Values(myClass.Size): End Property
-Public Property Get GetKeys() As IGenericReadOnlyList: Set GetKeys = GenericReadOnlyList.Build(Internal:=myClass.Keys, Size:=myClass.Size, Order:=myClass.SortOrder): End Property
-Public Property Get GetValues() As IGenericReadOnlyList: Set GetValues = GenericReadOnlyList.Build(Internal:=myClass.Values, Size:=myClass.Size): End Property
-Public Property Get Count() As Long: Count = myClass.Size: End Property
+Public Property Get GetKeys() As GenericArray
+    Set GetKeys = GetCopyOf(myClass.Keys, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetKeys")
+End Property
+Public Property Get GetValues() As GenericArray
+    Set GetValues = GetCopyOf(myClass.Values, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetValues")
+End Property
+
+Private Function GetCopyOf( _
+                            ByVal Source As GenericArray, _
+                            ByVal GArray As GenericArray, _
+                            ByVal ArrayIndex As Long, _
+                            ByVal Caller As String) As GenericArray
+    
+    If (GArray Is Nothing) Then _
+        Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
+    
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+        Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
+
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Size) Then _
+        Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Size)")
+    
+    Call GenericArray.Copy(SrcArray:=Source, SrcIndex:=Source.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
+    Set GetCopyOf = GArray
+    
+End Function
+
+Public Property Get count() As Long: count = myClass.Size: End Property
 
 Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
     
@@ -307,7 +332,7 @@ End Function
 'size of this sorted list. The elements of the list are compared to the
 'given value using the IGeneric.Equals method.
 Public Function IndexOfValue(ByVal Value As IGeneric) As Long
-    IndexOfValue = myClass.Values.IndexOf(Value:=Value, StartIndex:=myClass.Values.LowerBound, Count:=myClass.Size)
+    IndexOfValue = myClass.Values.IndexOf(Value:=Value, StartIndex:=myClass.Values.LowerBound, count:=myClass.Size)
 End Function
 
 Public Sub Clear():
@@ -337,15 +362,15 @@ Private Sub IGeneric_Dispose()
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
-    IGeneric_Equals = (Me Is Other)
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
+    If other Is Nothing Then IGeneric_Equals = False: Exit Function
+    IGeneric_Equals = (Me Is other)
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedList): End Function
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericSortedList): End Function
 Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
@@ -368,11 +393,11 @@ Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 
 Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-
+    Call GetCopyOf(myClass.Keys, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyKeysTo")
 End Sub
 
 Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-
+    Call GetCopyOf(myClass.Values, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyValuesTo")
 End Sub
 
 'IGenericReadOnlyList
@@ -388,7 +413,7 @@ Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
 End Property
 
 'IGenericCollection
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
 Private Function IGenericCollection_ToArray() As GenericArray

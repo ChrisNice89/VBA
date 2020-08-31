@@ -214,14 +214,14 @@ Private Function IGeneric_Clone() As IGeneric
     
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
 
 End Function
 
 Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
 
 End Function
 
@@ -229,7 +229,7 @@ Private Property Get IGeneric_HashValue() As Long
 
 End Property
 
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean
 
 End Function
 

@@ -75,6 +75,13 @@ End Type
 Private myClass As Member
 '@MemberAttribute VB_VarHelpID, -1
 
+Private WithEvents StringEnumerable As GenericEnumerable
+Attribute StringEnumerable.VB_VarHelpID = -1
+Private WithEvents IntEnumerable As GenericEnumerable
+Attribute IntEnumerable.VB_VarHelpID = -1
+Private WithEvents ContainsEnumerable As GenericEnumerable
+Attribute ContainsEnumerable.VB_VarHelpID = -1
+
 Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End Property
 Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
 Public Property Get MaxLong() As Long: MaxLong = MAX_INT32: End Property
@@ -139,11 +146,11 @@ Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGen
         If Not (Me.Generic(a).IsRelatedTo(b)) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("Type(a) != Type(b)")
     
-        If Not (a.Elements.Count = b.Elements.Count) Then _
+        If Not (a.Elements.count = b.Elements.count) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("a.Elements.Count != b.Elements.Count")
         
         Dim i As Long, c As ComparerEnum
-        Do While (InterlockedIncrement(i) < a.Elements.Count And c = IsEqual)
+        Do While (InterlockedIncrement(i) < a.Elements.count And c = IsEqual)
             If Not a(i) Is Nothing Then _
                 c = a(i).Equals(b(i))
         Loop
@@ -223,11 +230,11 @@ Public Function IndexOf( _
                             ByRef Objects() As IGeneric, _
                             ByVal Value As IGeneric, _
                             ByVal StartIndex As Long, _
-                            ByVal Count As Long)
+                            ByVal count As Long)
     Dim i As Long
     Dim EndIndex As Long
 
-    EndIndex = StartIndex + Count - LBound(Objects)
+    EndIndex = StartIndex + count - LBound(Objects)
     
     If (Value Is Nothing) Then
         For i = StartIndex To EndIndex
@@ -601,3 +608,78 @@ Public Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long
     Logn = Log(Value) / Log(Base)
 End Function
 
+Public Sub TestInteger2(ByVal n As Long)
+    
+    Dim i As Long
+    
+    Dim ints As GenericArray
+    Set ints = GenericArray.Build(n)
+    
+    For i = ints.LowerBound To n
+        Set ints(i) = GNumeric(i)
+    Next
+    
+    Set IntEnumerable = GenericEnumerable.Build(ints)
+    
+    Debug.Print "The number of even integers is: " & IntEnumerable.Aggregate(GNumeric, IgnoreNull:=True)
+    
+End Sub
+
+Public Sub TestContains()
+    
+    Dim i As Long
+    
+    Dim fruits As GenericArray
+    Set fruits = GenericArray.BuildWithStrings("apple", "banana", "mango", "orange", "passionfruit", "grape")
+    
+    Debug.Print "Fruits: " & GString.Join(fruits, ";").Value
+    
+    Dim fruit As GString
+    Set fruit = GString("mango")
+
+    Debug.Print "Has mango: " & GenericEnumerable.Build(fruits).Contains(fruit)
+    Debug.Print "Has kiwi: " & GenericEnumerable.Build(fruits).Contains(GString("kiwi"))
+    
+End Sub
+
+Public Sub TestString()
+    
+    Dim sentence As GString
+    Set sentence = GString("the quick brown fox jumps over the lazy dog")
+    
+    Debug.Print "Before: " & sentence.Value
+    Set StringEnumerable = GenericEnumerable.Build(sentence.Split(" "))
+    
+    Debug.Print "After: " & StringEnumerable.Aggregate(GString, IgnoreNull:=True)
+    
+End Sub
+
+Public Sub TestInteger()
+    
+    Dim ints As GenericArray
+    Set ints = GenericArray.BuildWithIntegers(4, 8, 8, 3, 9, 0, 7, 8, 2)
+    
+    Set IntEnumerable = GenericEnumerable.Build(ints)
+    Debug.Print "Integers: " & GString.Join(ints, ";").Value
+    
+    Debug.Print "The number of even integers is: " & IntEnumerable.Aggregate(GNumeric, IgnoreNull:=True)
+    
+End Sub
+
+Private Sub IntEnumerable_Aggregate(Result As IGeneric, ByVal Current As IGeneric, ByVal NullsIgnored As Boolean)
+    Dim i As GNumeric
+    Set i = Current
+    
+    Dim total As GNumeric
+    Set total = Result
+    
+    'If (i.Modulo(2).IsZero) Then Set Result = total.Add(1)
+    If (i.IsEven) Then Set Result = total.Add(1)
+    
+End Sub
+
+Private Sub StringEnumerable_Aggregate(Result As IGeneric, ByVal Current As IGeneric, ByVal NullsIgnored As Boolean)
+    Dim s As GString
+    Set s = Current
+    Set Result = s.Concat(Result, " ")
+End Sub

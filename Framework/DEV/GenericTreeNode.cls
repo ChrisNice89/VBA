@@ -48,7 +48,7 @@ Public Property Get Key() As IGeneric: Set Key = myClass.Key: End Property
 Public Property Set Key(ByVal k As IGeneric): Set myClass.Key = k: End Property
 
 Public Property Get Value() As Object: Set Value = myClass.Value: End Property
-Public Property Set Value(ByVal V As IGeneric): Set myClass.Value = V: End Property
+Public Property Set Value(ByVal v As IGeneric): Set myClass.Value = v: End Property
 
 Public Function Build( _
                         ByVal Key As IGeneric, _
@@ -56,9 +56,8 @@ Public Function Build( _
                         Optional ByVal IsRed As Boolean = False) As GenericTreeNode
 Attribute Build.VB_UserMemId = 0
 
-'    With myClass
-'        Set .Key = Key: Set .Value = Value: .IsRed = IsRed
-'    End With
+    If (Key Is Nothing) Then _
+        Call Skynet.Throw(Me, "Public Function Build").NullPointer("Key is nothing")
     
     Dim n As GenericTreeNode: Set n = New GenericTreeNode
     
@@ -92,11 +91,11 @@ End Function
 Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
     
-    Dim Node As GenericTreeNode: Set Node = Other
+    Dim Node As GenericTreeNode: Set Node = other
 
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If other Is Nothing Then IGeneric_Equals = False: Exit Function
     
     If Not myClass.Value Is Nothing Then _
         If TypeOf myClass.Value Is IGeneric Then _
@@ -106,18 +105,18 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
     
-    Dim Node As GenericTreeNode: Set Node = Other
+    Dim Node As GenericTreeNode: Set Node = other
     
-    If Other Is Nothing Then _
+    If other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
     IGeneric_CompareTo = myClass.Key.CompareTo(Node.Key)
     
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = myClass.Key.HashValue: End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPair): End Function
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericPair): End Function
 Private Function IGeneric_ToString() As String
     
     IGeneric_ToString = "Class: " & TypeName$(Me) & vbNewLine & _

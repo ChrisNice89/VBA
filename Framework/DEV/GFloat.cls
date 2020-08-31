@@ -81,22 +81,22 @@ Private Sub IGeneric_Dispose()
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
 
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
-    If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
+    If other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Not other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim f As GFloat: Set f = Other
+    Dim f As GFloat: Set f = other
     
     IGeneric_Equals = (myClass.Value = f.Value)
      
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
     Dim f As GFloat
     
-    If Other.IsRelatedTo(Me) Then
-        Set f = Other
+    If other.IsRelatedTo(Me) Then
+        Set f = other
         Select Case True
             Case myClass.Value > f.Value: IGeneric_CompareTo = IsGreater
             Case myClass.Value < f.Value: IGeneric_CompareTo = IsLower
@@ -106,7 +106,7 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
 End Function
 
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = 0: End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GFloat): End Function
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GFloat): End Function
 Private Function IGeneric_ToString() As String
 
     Select Case myClass.Format

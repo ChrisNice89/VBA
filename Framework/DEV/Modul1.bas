@@ -6,7 +6,12 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
-
+Sub testEnumerable()
+    Call Skynet.TestString
+    Call Skynet.TestInteger
+    Call Skynet.TestContains
+    
+End Sub
 Sub TestTree2()
     
     Dim map As IGenericDictionary
@@ -52,7 +57,7 @@ Sub TestTree()
     Set ga = Tree.GetKeys(True)
     
     Dim i As Long
-    For i = 1 To ga.Elements.Count
+    For i = 1 To ga.Elements.count
         Debug.Print ga(i)
     Next
     
@@ -75,7 +80,7 @@ Sub TestSortedList()
     Call sl.Add(GString("b"), GString("b"))
     Call sl.Add(GString("e"), GString("e"))
     
-    For i = 1 To sl.Count
+    For i = 1 To sl.count
         If Not sl.ElementAt(i) Is Nothing Then _
             Debug.Print i & " / " & sl.ElementAt(i)
     Next
@@ -112,7 +117,7 @@ Sub TestGenericCollection()
     Set Clone = Skynet.Generic(List.AsReadOnly).Clone
         
     Dim ga As GenericArray
-    Set ga = GenericArray.Build(Clone.Elements.Count)
+    Set ga = GenericArray.Build(Clone.Elements.count)
     
     Call Clone.Elements.CopyTo(ga, ga.LowerBound)
     Call Skynet.Dispose(Clone)
@@ -344,7 +349,7 @@ Public Sub ListTest()
 '
     Dim List2 As GenericList
     Set List2 = Skynet.Generic(List).Clone
-    Debug.Print List2.Count
+    Debug.Print List2.count
     Call List.Insert(500, GString("eingefügt an 500"))
     Debug.Print List(500)
     Debug.Print List2(500)
@@ -388,7 +393,7 @@ Sub TMaptest()
 
     Dim i As Long
     Dim k As GString
-    Dim V As GString
+    Dim v As GString
     
     Dim hm As GenericMap
     Set hm = GenericMap.Build(50000)

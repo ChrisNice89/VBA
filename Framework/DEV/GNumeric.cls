@@ -56,30 +56,33 @@ Public Function ToLong() As Long
     End If
 End Function
 
-Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myClass.Value - Other.Value): End Function
-Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myClass.Value + Other.Value): End Function
+Public Function Minus(ByVal other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myClass.Value - other.Value): End Function
+Public Function Plus(ByVal other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myClass.Value + other.Value): End Function
+Public Function Modulo(ByVal m As Double) As GNumeric: Set Modulo = GNumeric((myClass.Value - (Int(myClass.Value / m) * m))): End Function
+Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(myClass.Value + Factor): End Function
+
 Public Property Get Format() As TNumericFormat: Format = myClass.Format: End Property
 Public Property Get Value() As Currency: Value = myClass.Value: End Property
-
-Public Function Add(ByVal Factor As Currency) As GNumeric
-    Set Add = GNumeric(myClass.Value + Factor)
-End Function
+Public Property Get IsZero() As Boolean: IsZero = myClass.Value = 0: End Property
+Public Property Get IsEven() As Boolean: IsEven = (myClass.Value - (Int(myClass.Value / 2) * 2)) = 0: End Property
 
 Public Function Build(ByVal Value As Currency, Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As GNumeric
 Attribute Build.VB_UserMemId = 0
+    
     With myClass
         .Value = Value
         .Format = Format
     End With
     
     Set Build = Skynet.Create(Me)
+    
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    ReDim Formats(TNumericFormat.[_First] To TNumericFormat.[_Last])
-    Formats(TNumericFormat.DefaultNumber) = "General Number"
-      
+'    ReDim Formats(TNumericFormat.[_First] To TNumericFormat.[_Last])
+'    Formats(TNumericFormat.DefaultNumber) = "General Number"
+'
 ' TNumericFormat.TwoDecimals VBA.Format(myClass.Value, "0.00"): Exit Function
 '        Case TNumericFormat.Thousands
 '            IObject_ToString = VBA.Format(myClass.Value, "#,##0.00"): Exit Function
@@ -117,23 +120,23 @@ Private Sub IGeneric_Dispose()
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
 
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
-    If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
+    If other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Not other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim n As GNumeric: Set n = Other
+    Dim n As GNumeric: Set n = other
 
     IGeneric_Equals = (myClass.Value = n.Value)
      
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
     
-    If Other Is Nothing Then _
+    If other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    Dim n As GNumeric:  Set n = Other
+    Dim n As GNumeric:  Set n = other
     
     Select Case True
         Case myClass.Value > n.Value: IGeneric_CompareTo = IsGreater
@@ -144,10 +147,13 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
 End Function
 
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.LimitDouble(myClass.Value): End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GNumeric): End Function
-Private Function IGeneric_ToString() As String: IGeneric_ToString = VBA.Format$(myClass.Value, Formats(Me.Format)): End Function
-    
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GNumeric): End Function
+Private Function IGeneric_ToString() As String
 
+    IGeneric_ToString = myClass.Value
+    
+End Function
+    
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GNumeric: End Function
 Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GNumeric: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property

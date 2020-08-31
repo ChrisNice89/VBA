@@ -53,15 +53,15 @@ Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
 End Sub
 Public Property Get Entry(ByVal Index As Long) As GenericPair: Set Entry = myClass.Internal(Index): End Property
-Public Property Get Count() As Long: Count = myClass.Internal.Count: End Property
-Public Function GetKeys() As IGenericReadOnlyList: Set GetKeys = GenericReadOnlyList.Build(Internal:=AddKeysToArray(GenericArray.Build(Me.Count), GenericArray.LowerBound), Size:=Me.Count): End Function
-Public Function GetValues() As IGenericReadOnlyList: Set GetValues = GenericReadOnlyList.Build(Internal:=AddValuesToArray(GenericArray.Build(Me.Count), GenericArray.LowerBound), Size:=Me.Count): End Function
+Public Property Get count() As Long: count = myClass.Internal.count: End Property
+Public Function GetKeys() As GenericArray: Set GetKeys = AddKeysToArray(GenericArray.Build(Me.count), GenericArray.LowerBound): End Function
+Public Function GetValues() As GenericArray: Set GetValues = AddValuesToArray(GenericArray.Build(Me.count), GenericArray.LowerBound): End Function
 
 Private Function AddKeysToArray(ByVal GArray As GenericArray, ByVal ArrayIndex As Long) As GenericArray
     
     Dim i As Long
     
-    For i = 1 To myClass.Internal.Count
+    For i = 1 To myClass.Internal.count
         Set GArray(ArrayIndex) = Me.Entry(i).Key: Call InterlockedIncrement(ArrayIndex)
     Next
     
@@ -73,7 +73,7 @@ Private Function AddValuesToArray(ByVal GArray As GenericArray, ByVal ArrayIndex
     
     Dim i As Long
     
-    For i = 1 To myClass.Internal.Count
+    For i = 1 To myClass.Internal.count
         Set GArray(ArrayIndex) = Me.Entry(i).Value: Call InterlockedIncrement(ArrayIndex)
     Next
     
@@ -117,7 +117,7 @@ Private Function IndexOfKey(ByVal Key As IGeneric) As Long
     
     Dim i As Long
     With myClass
-        For i = 1 To .Internal.Count
+        For i = 1 To .Internal.count
             If (Key.Equals(Me.Entry(i).Key)) Then _
                 IndexOfKey = i: Exit Function
         Next
@@ -131,7 +131,7 @@ Public Function IndexOfValue(ByVal Value As IGeneric) As Long
     
     Dim i As Long
     With myClass
-        For i = 1 To .Internal.Count
+        For i = 1 To .Internal.count
             If (Value.Equals(Me.Entry(i).Value)) Then _
                 IndexOfValue = i: Exit Function
         Next
@@ -143,7 +143,7 @@ End Function
 
 Public Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IGeneric)
     
-    If (Index > myClass.Internal.Count) Or (Index < 0) Then _
+    If (Index > myClass.Internal.count) Or (Index < 0) Then _
         Call Skynet.Throw(Me, "Public Sub Insert").IndexOutofRange("(Index > myClass.Internal.Count) Or (Index < 0)")
         
     With myClass
@@ -196,20 +196,20 @@ Private Sub IGeneric_Dispose()
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
-    IGeneric_Equals = (Me Is Other)
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
+    If other Is Nothing Then IGeneric_Equals = False: Exit Function
+    IGeneric_Equals = (Me Is other)
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericOrderedMap): End Function
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericOrderedMap): End Function
 Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Elements: " & Me.Count
+                            "Elements: " & Me.count
     End With
 End Function
 
@@ -230,14 +230,14 @@ Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolea
 
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
-Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddKeysToArray(GenericArray.Build(Me.Count), ArrayIndex): End Sub
-Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddValuesToArray(GenericArray.Build(Me.Count), ArrayIndex): End Sub
+Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddKeysToArray(GenericArray.Build(Me.count), ArrayIndex): End Sub
+Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddValuesToArray(GenericArray.Build(Me.count), ArrayIndex): End Sub
 
 'IGenericCollection
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Internal.Count): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Internal.count): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myClass.Internal.ToArray: End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOfValue(Item) >= 0: End Function

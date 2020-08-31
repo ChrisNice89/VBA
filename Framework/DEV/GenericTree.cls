@@ -33,7 +33,7 @@ End Enum
 
 Private Type Member
     Root As GenericTreeNode
-    Count As Long
+    count As Long
 End Type
 Private myClass As Member
 
@@ -48,8 +48,8 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get MaxHeight() As Long: MaxHeight = 2 * Skynet.Logn(myClass.Count + 2, 2): End Property
-Public Property Get Count() As Long: Count = myClass.Count: End Property
+Public Property Get MaxHeight() As Long: MaxHeight = 2 * Skynet.Logn(myClass.count + 2, 2): End Property
+Public Property Get count() As Long: count = myClass.count: End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
 
@@ -104,21 +104,60 @@ Public Function GetMin() As IGeneric
 
 End Function
 
-Public Function GetValues(Optional ByVal Reverse As Boolean) As IGenericReadOnlyList
+Public Function GetValues(Optional ByVal Reverse As Boolean) As GenericArray
    
-   Dim ga As GenericArray
-   Set ga = GenericArray.Build(Me.Count)
-   
-   'Call AddValuesToArray(myClass.Root, ga, ga.LowerBound)
-   Call InOrderTreeWalk(ga, ga.LowerBound, False, "AddValueToArray")
-   Set GetValues = ga.AsReadOnly
+    Dim GArray As GenericArray
+    Set GArray = GenericArray.Build(myClass.count)
+    
+    Dim Index As Long: Index = GArray.LowerBound
+    
+    Dim Stack As InternalStack
+    ReDim Stack.Items(Me.MaxHeight)
+
+    Dim Node As GenericTreeNode
+    Dim Current As GenericTreeNode
+    
+    Set Current = myClass.Root
+    If Reverse Then
+        Do While Not (Current Is Nothing)
+            Call Push(Stack, Current)
+            Set Current = Current.Right
+        Loop
+        Do While Not Stack.Size = 0
+            Set Current = Pop(Stack)
+            Set GArray(Index) = Current.Value
+            Index = Index + 1
+            Set Node = Current.Left
+            Do While Not (Node Is Nothing)
+                Call Push(Stack, Node)
+                Set Node = Node.Right
+            Loop
+        Loop
+    Else
+        Do While Not (Current Is Nothing)
+            Call Push(Stack, Current)
+            Set Current = Current.Left
+        Loop
+        Do While Not Stack.Size = 0
+            Set Current = Pop(Stack)
+            Set GArray(Index) = Current.Value
+            Index = Index + 1
+            Set Node = Current.Right
+            Do While Not (Node Is Nothing)
+                Call Push(Stack, Node)
+                Set Node = Node.Left
+            Loop
+        Loop
+    End If
+    
+    Set GetValues = GArray
 
 End Function
 
-Public Function GetKeys(Optional ByVal Reverse As Boolean) As IGenericReadOnlyList
+Public Function GetKeys(Optional ByVal Reverse As Boolean) As GenericArray
    
     Dim GArray As GenericArray
-    Set GArray = GenericArray.Build(myClass.Count)
+    Set GArray = GenericArray.Build(myClass.count)
     
     Dim Index As Long: Index = GArray.LowerBound
     
@@ -161,7 +200,7 @@ Public Function GetKeys(Optional ByVal Reverse As Boolean) As IGenericReadOnlyLi
         Loop
     End If
     
-    Set GetKeys = GenericReadOnlyList.Build(Internal:=GArray, Size:=myClass.Count, Order:=IIf(Reverse, -1, 1))
+    Set GetKeys = GArray
     
 End Function
 
@@ -248,7 +287,7 @@ End Sub
 
 Public Sub Clear()
     Set myClass.Root = Nothing
-    myClass.Count = 0
+    myClass.count = 0
 End Sub
 
 Public Function Contains(ByVal Key As IGeneric) As Boolean
@@ -328,7 +367,7 @@ Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Boolean
     
     If (myClass.Root Is Nothing) Then
         Set myClass.Root = Node
-        Call InterlockedIncrement(myClass.Count)
+        Call InterlockedIncrement(myClass.count)
         Add = True: Exit Function
     End If
     
@@ -375,7 +414,7 @@ Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Boolean
         Call InsertionBalance(Node, Parent, GrandParent, GreatGrandParent)
     
     myClass.Root.IsRed = False
-    InterlockedIncrement myClass.Count
+    InterlockedIncrement myClass.count
     
     Add = True
             
@@ -561,21 +600,21 @@ Private Sub IGeneric_Dispose()
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
-    IGeneric_Equals = (Me Is Other)
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
+    If other Is Nothing Then IGeneric_Equals = False: Exit Function
+    IGeneric_Equals = (Me Is other)
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
 
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedList): End Function
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericSortedList): End Function
 Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Elements: " & .Count
+                            "Elements: " & .count
     End With
 End Function
 
@@ -599,14 +638,14 @@ Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal 
 End Sub
 
 'IGenericCollection
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
 Private Function IGenericCollection_ToArray() As GenericArray
 
     Dim GArray As GenericArray
-    Set GArray = GenericArray.Build(myClass.Count)
+    Set GArray = GenericArray.Build(myClass.count)
    
     Call IGenericCollection_CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
     
@@ -622,7 +661,7 @@ Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayI
     If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.count) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Me.Count)")
         
     Dim Stack As InternalStack

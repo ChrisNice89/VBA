@@ -14,9 +14,11 @@ Implements IGeneric
 Implements IPrototype
 Implements IValue
 
+Private Const DEFAULT_DELIMITER As String = ","
+
 Public Enum TStringFormat
-    [_First]
-    DefaultString
+    [_First] = -1
+    DefaultString = 0
     Trim
     LTrim
     RTrim
@@ -43,7 +45,17 @@ Public Property Get Length() As Long: Length = myClass.Length: End Property
 Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myClass.Value, 1, 1): End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myClass.Value, Len(myClass.Value), 1): End Property
 Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myClass.Value, Index, 1): End Property
-Public Function Concat(ByVal text As GString, Optional ByVal Delimiter = " ") As GString: Set Concat = GString(myClass.Value & Delimiter & text.Value, myClass.Hashfunction, myClass.Format): End Function
+Public Function Concat(ByVal text As GString, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
+    If text Is Nothing Then _
+        Set Concat = Me: Exit Function
+        
+    If Not Me Is GString Then
+        Set Concat = GString(myClass.Value & Delimiter & text.Value, myClass.Hashfunction, myClass.Format)
+    Else
+        Set Concat = GString(text.Value, myClass.Hashfunction, myClass.Format)
+    End If
+
+End Function
 Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myClass.Value, Find, ReplaceWith), myClass.Hashfunction, myClass.Format): End Function
 Public Property Get Format() As TStringFormat: Format = myClass.Format: End Property
 Public Property Get Value() As String: Value = myClass.Value: End Property
@@ -54,14 +66,44 @@ Public Function StartsWith(ByVal text As String) As Boolean: StartsWith = (myCla
 Public Function EndsWith(ByVal text As String) As Boolean: EndsWith = (myClass.Value Like (text & "%")): End Function
 Public Function Contains(ByVal text As String) As Boolean: Contains = Not (InStr(1, myClass.Value, text) = 0): End Function
 
-Public Function Split(ByVal Delimiter As String) As GString()
-
+Public Function Split(ByVal Delimiter As String) As GenericArray
+    
+    Dim Strings As Variant
+    Strings = VBA.Split(myClass.Value, Delimiter)
+    
+    Dim Result As GenericArray
+    Set Result = GenericArray.Build(UBound(Strings) + GenericArray.LowerBound)
+    
+    Dim i As Long, lb As Long: lb = Result.LowerBound
+    For i = LBound(Strings) To UBound(Strings)
+        Set Result(i + lb) = GString(Strings(i))
+    Next
+    
+    Set Split = Result
+    
 End Function
 
-Public Function Join(ByRef Strings() As GString, Optional ByVal Delimiter) As GString
+Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
+    Dim longString As GString
+    Set longString = Me
     
-   
+    Dim s As IGeneric
+    Dim i As Long
+    
+    For i = Values.LowerBound To Values.Length
+        Set s = Values(i)
+        If Not s Is Nothing Then
+            If TypeOf s Is GString Then
+                Set longString = longString.Concat(s, Delimiter)
+            Else
+                Set longString = longString.Concat(GString(s.ToString), Delimiter)
+            End If
+        End If
+    Next
+    
+    Set Join = longString
+    
 End Function
 
 Public Function ToCharArray() As String()
@@ -92,20 +134,20 @@ Attribute Build.VB_UserMemId = 0
     End With
     
     Set Build = New GString
-    Call Skynet.Generic(GString)
-    
+
+    Call Skynet.Generic(GString).Dispose
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    If Not Me Is GString Then
-         With GString
-            myClass.Value = .Value
-            myClass.Length = .Length
-            myClass.Format = .Format
-            myClass.Hashfunction = .Hashfunction
-        End With
-    End If
+   
+     With GString
+        myClass.Value = .Value
+        myClass.Length = .Length
+        myClass.Format = .Format
+        myClass.Hashfunction = .Hashfunction
+    End With
+    
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
 
@@ -126,27 +168,27 @@ End Function
 Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    Dim S As GString: Set S = Other
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
+    Dim s As GString: Set s = other
     
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If s Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not (myClass.Length = Me.Length) Then IGeneric_Equals = False: Exit Function
 
-    IGeneric_Equals = (StrComp(myClass.Value, S.Value, vbBinaryCompare) = 0)
+    IGeneric_Equals = (StrComp(myClass.Value, s.Value, vbBinaryCompare) = 0)
      
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim S As GString: Set S = Other
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
+    Dim s As GString: Set s = other
     
-    If Other Is Nothing Then _
+    If s Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    IGeneric_CompareTo = StrComp(myClass.Value, S.Value, vbBinaryCompare)
+    IGeneric_CompareTo = StrComp(myClass.Value, s.Value, vbBinaryCompare)
 
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.Hashfunction): End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GString): End Function
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GString): End Function
 Private Function IGeneric_ToString() As String
 
     Select Case myClass.Format
@@ -157,7 +199,6 @@ Private Function IGeneric_ToString() As String
     End Select
     
 End Function
-
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GString: End Function
 Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GString: End Property

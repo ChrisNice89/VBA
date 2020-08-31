@@ -192,6 +192,34 @@ Public Function CalculateInternal() As GenericArray
     
 End Function
 
+Public Function BuildWithIntegers(ParamArray Values() As Variant) As GenericArray
+    
+    Dim i As Long
+    Dim ga As GenericArray
+    Set ga = GenericArray.Build(UBound(Values) + MIN_INDEX)
+        
+    For i = LBound(Values) To UBound(Values)
+        Set ga(i + MIN_INDEX) = GNumeric(Values(i))
+    Next
+    
+    Set BuildWithIntegers = ga
+    
+End Function
+
+Public Function BuildWithStrings(ParamArray Values() As Variant) As GenericArray
+    
+    Dim i As Long
+    Dim ga As GenericArray
+    Set ga = GenericArray.Build(UBound(Values) + MIN_INDEX)
+        
+    For i = LBound(Values) To UBound(Values)
+        Set ga(i + MIN_INDEX) = GString(Values(i))
+    Next
+    
+    Set BuildWithStrings = ga
+    
+End Function
+
 Public Function SetValue(ByVal Value As IGeneric, ParamArray Indices() As Variant)
     Dim i As Long
 
@@ -242,10 +270,10 @@ Public Function AsReadOnly() As IGenericReadOnlyList
     Set AsReadOnly = GenericReadOnlyList.Build(Internal:=Me, Size:=Me.Length)
 End Function
 
-Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef S As SAFEARRAYSTRUCT)
+Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef s As SAFEARRAYSTRUCT)
     With Skynet
-        Call .CopyData(ByVal Descriptor, VarPtr(S), 16&): _
-        Call .CopyData(ByVal Descriptor + 16&, VarPtr(S.Bounds(LBound(S.Bounds))), S.cDims * 8&)
+        Call .CopyData(ByVal Descriptor, VarPtr(s), 16&): _
+        Call .CopyData(ByVal Descriptor + 16&, VarPtr(s.Bounds(LBound(s.Bounds))), s.cDims * 8&)
     End With
 End Sub
 
@@ -507,7 +535,7 @@ End Function
 Public Function IndexOf( _
                             ByVal Value As IGeneric, _
                             Optional ByVal StartIndex As Long = MIN_INDEX, _
-                            Optional ByVal Count As Long, _
+                            Optional ByVal count As Long, _
                             Optional ByVal CheckArguments As Boolean = True) As Long
  
     If CheckArguments Then
@@ -517,15 +545,15 @@ Public Function IndexOf( _
         If (StartIndex < MIN_INDEX) Or (StartIndex > Me.LengthOf(1) + MIN_INDEX) Then _
             Call Skynet.Throw(Me, "Public Function IndexOf").IndexOutofRange("(StartIndex < MIN_INDEX) Or (StartIndex > Me.Count() + MIN_INDEX)")
     
-        If (Count = 0) Then
-            Count = (Me.LengthOf(1) - StartIndex) + MIN_INDEX
+        If (count = 0) Then
+            count = (Me.LengthOf(1) - StartIndex) + MIN_INDEX
         Else
-            If (Count < 0) Or (Count > Me.LengthOf(1) - StartIndex + MIN_INDEX) Then _
+            If (count < 0) Or (count > Me.LengthOf(1) - StartIndex + MIN_INDEX) Then _
                 Call Skynet.Throw(Me, "Public Function IndexOf").IndexOutofRange("(Count < 0) Or (Count > Me.elements - StartIndex + MIN_INDEX)")
         End If
     End If
    
-    IndexOf = Skynet.IndexOf(Objects:=myClass.Internal, Value:=Value, StartIndex:=StartIndex, Count:=Count)
+    IndexOf = Skynet.IndexOf(Objects:=myClass.Internal, Value:=Value, StartIndex:=StartIndex, count:=count)
     
 End Function
 
@@ -699,9 +727,9 @@ Private Function IGeneric_Clone() As IGeneric
 End Function
 
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_Equals = Skynet.SequenceCompare(Me, Other) = IsEqual: End Function
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum: IGeneric_CompareTo = Skynet.SequenceCompare(Me, Other): End Function
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericArray): End Function
+Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean: IGeneric_Equals = Skynet.SequenceCompare(Me, other) = IsEqual: End Function
+Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum: IGeneric_CompareTo = Skynet.SequenceCompare(Me, other): End Function
+Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericArray): End Function
 Private Function IGeneric_ToString() As String
     IGeneric_ToString = _
                         "Class: " & TypeName$(Me) & vbNewLine & _
@@ -713,7 +741,7 @@ End Function
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = Me(Index): End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, count:=myClass.Elements): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = True: End Property
@@ -721,8 +749,8 @@ Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollect
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Length: End Property
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Skynet.Generic(Me).Clone: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements) >= 0: End Function
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me: End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, count:=myClass.Elements) >= 0: End Function
 '// GetEnumerator returns an IEnumerator over this Array.
 '//
 '// Currently, only one dimensional arrays are supported.
@@ -758,23 +786,18 @@ End Property
 
 Private Function IGenericEnumerator_MoveNext() As Boolean
     
-    If (myClass.Enumerator.Complete) Then _
-        IGenericEnumerator_MoveNext = False: Exit Function
-        
-    Set myClass.Enumerator.Current = Nothing
+    If (myClass.Indices(0) = myClass.Enumerator.EndIndex) Then
+        Set myClass.Enumerator.Current = Nothing
+        myClass.Enumerator.Complete = True
+        Exit Function
+    End If
+    
     If (myClass.Enumerator.Rank = 1) Then
         Do While InterlockedIncrement(myClass.Indices(0)) <= myClass.Enumerator.EndIndex
-        
-        If (myClass.Indices(0) > myClass.Enumerator.EndIndex) Then
-            Set myClass.Enumerator.Current = Nothing
-            myClass.Enumerator.Complete = True
-            Exit Function
-        End If
       
         If (SafeArrayGetElement(ByVal myClass.Descriptor, myClass.Indices(0), myClass.Enumerator.Current) = DISP_E_BADINDEX) Then _
             Call Skynet.Throw(Me, "Get Object").InvalidInput("Invalid Index")
         
-        If Not (myClass.Enumerator.Current Is Nothing) Then _
             Exit Do
             
         Loop
@@ -783,7 +806,6 @@ Private Function IGenericEnumerator_MoveNext() As Boolean
     
     End If
         
-    Call IncrementEnumerator(myClass.Enumerator)
     IGenericEnumerator_MoveNext = Not myClass.Enumerator.Complete
     
 End Function
@@ -795,7 +817,8 @@ End Sub
 Private Sub IGenericEnumerator_Reset()
     With myClass.Enumerator
         .Index = .StartIndex - 1
-
+        .Rank = Me.Rank
+        .EndIndex = Me.Length
     End With
 End Sub
 
