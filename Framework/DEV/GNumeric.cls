@@ -6,7 +6,7 @@ Attribute VB_Name = "GNumeric"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 '@Folder "<T>Class"
 Option Explicit
 
@@ -56,8 +56,8 @@ Public Function ToLong() As Long
     End If
 End Function
 
-Public Function Minus(ByVal other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myClass.Value - other.Value): End Function
-Public Function Plus(ByVal other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myClass.Value + other.Value): End Function
+Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myClass.Value - Other.Value): End Function
+Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myClass.Value + Other.Value): End Function
 Public Function Modulo(ByVal m As Double) As GNumeric: Set Modulo = GNumeric((myClass.Value - (Int(myClass.Value / m) * m))): End Function
 Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(myClass.Value + Factor): End Function
 
@@ -74,12 +74,14 @@ Attribute Build.VB_UserMemId = 0
         .Format = Format
     End With
     
-    Set Build = Skynet.Create(Me)
-    
+    'Set Build = Skynet.Create(GNumeric)
+    Set Build = Skynet.CreateInstance(New GNumeric, Virtual.Pointer, Virtual.Size)
+
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
+    Virtual.Size = LenB(myClass)
 '    ReDim Formats(TNumericFormat.[_First] To TNumericFormat.[_Last])
 '    Formats(TNumericFormat.DefaultNumber) = "General Number"
 '
@@ -107,11 +109,9 @@ Private Property Get IValue_Value() As Variant: IValue_Value = myClass.Value: En
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass
+    Dim C As Member: C = myClass 'hardcopy
 
-    Virtual.Pointer = VarPtr(c)
-    Set IGeneric_Clone = Skynet.Create(Me)
-    Virtual.Pointer = VarPtr(myClass)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GNumeric, VarPtr(C), Virtual.Size)
    
 End Function
 
@@ -120,23 +120,23 @@ Private Sub IGeneric_Dispose()
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
-    If other Is Nothing Then IGeneric_Equals = False: Exit Function
-    If Not other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
+    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim n As GNumeric: Set n = other
+    Dim n As GNumeric: Set n = Other
 
     IGeneric_Equals = (myClass.Value = n.Value)
      
 End Function
 
-Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     
-    If other Is Nothing Then _
+    If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    Dim n As GNumeric:  Set n = other
+    Dim n As GNumeric:  Set n = Other
     
     Select Case True
         Case myClass.Value > n.Value: IGeneric_CompareTo = IsGreater
@@ -147,7 +147,7 @@ Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
 End Function
 
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.LimitDouble(myClass.Value): End Property
-Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GNumeric): End Function
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GNumeric): End Function
 Private Function IGeneric_ToString() As String
 
     IGeneric_ToString = myClass.Value
@@ -155,6 +155,7 @@ Private Function IGeneric_ToString() As String
 End Function
     
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GNumeric: End Function
-Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GNumeric: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GNumeric: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
+

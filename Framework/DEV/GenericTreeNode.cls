@@ -14,6 +14,7 @@ Option Explicit
 '@PredeclaredId
 
 Implements IGeneric
+'Implements GenericPairXY 'Bug!
 Implements IPrototype
 
 Private Type Member
@@ -21,7 +22,6 @@ Private Type Member
     Value As Object
     Left As GenericTreeNode
     Right As GenericTreeNode
-    Parent As GenericTreeNode
     IsRed As Boolean
 End Type
 Private myClass As Member
@@ -41,19 +41,21 @@ Public Property Set Left(ByVal Node As GenericTreeNode): Set myClass.Left = Node
 Public Property Get Right() As GenericTreeNode: Set Right = myClass.Right: End Property
 Public Property Set Right(ByVal Node As GenericTreeNode): Set myClass.Right = Node: End Property
 
-Public Property Get Parent() As GenericTreeNode: Set Parent = myClass.Parent: End Property
-Public Property Set Parent(ByVal Node As GenericTreeNode): Set myClass.Parent = Node: End Property
-
 Public Property Get Key() As IGeneric: Set Key = myClass.Key: End Property
 Public Property Set Key(ByVal k As IGeneric): Set myClass.Key = k: End Property
 
 Public Property Get Value() As Object: Set Value = myClass.Value: End Property
 Public Property Set Value(ByVal v As IGeneric): Set myClass.Value = v: End Property
 
+'GenericPairXY
+Private Function GenericPairXY_Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPairXY: Set GenericPairXY_Build = GenericPairXY(Key, Value): End Function
+Private Property Get GenericPairXY_Key() As IGeneric: Set GenericPairXY_Key = myClass.Key: End Property
+Private Property Get GenericPairXY_Value() As Object: Set GenericPairXY_Value = myClass.Value: End Property
+
 Public Function Build( _
                         ByVal Key As IGeneric, _
                         ByVal Value As Object, _
-                        Optional ByVal IsRed As Boolean = False) As GenericTreeNode
+                        Optional ByVal IsRed As Boolean = True) As GenericTreeNode
 Attribute Build.VB_UserMemId = 0
 
     If (Key Is Nothing) Then _
@@ -73,50 +75,56 @@ End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-'    With GenericTreeNode
-'        Set myClass.Key = .Key: Set myClass.Value = .Value: myClass.IsRed = .IsRed
-'    End With
+    Virtual.Size = LenB(myClass)
 End Sub
 
+Public Function CopyToPair() As GenericPairXY: Set CopyToPair = GenericPairXY.Build(myClass.Key, myClass.Value): End Function
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass
+    Dim C As Member: C = myClass 'Hardcopy
 
-    Virtual.Pointer = VarPtr(c)
-    Set IGeneric_Clone = Skynet.Create(Me)
-    Virtual.Pointer = VarPtr(myClass)
-   
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTreeNode, VarPtr(C), Virtual.Size)
+    
 End Function
 
 Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
-    Dim Node As GenericTreeNode: Set Node = other
-
-    If other Is Nothing Then IGeneric_Equals = False: Exit Function
+    Dim Pair As GenericPairXY
+    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
-    If Not myClass.Value Is Nothing Then _
-        If TypeOf myClass.Value Is IGeneric Then _
-            IGeneric_Equals = myClass.Key.Equals(Node.Key) And myClass.Value.Equals(Node.Value): Exit Function
- 
-    IGeneric_Equals = myClass.Key.Equals(Node.Key) And myClass.Value Is Node.Value
+    If TypeOf Other Is GenericPairXY Then
+        Set Pair = Other
+        If Not myClass.Value Is Nothing Then
+            IGeneric_Equals = myClass.Key.Equals(Pair.Key) And myClass.Value.Equals(Pair.Value): Exit Function
+        Else
+            IGeneric_Equals = myClass.Key.Equals(Pair.Key) And Pair.Value Is Nothing: Exit Function
+        End If
+    End If
+    
+    IGeneric_Equals = myClass.Key.Equals(Other)
     
 End Function
 
-Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     
-    Dim Node As GenericTreeNode: Set Node = other
+    Dim Pair As GenericPairXY
     
-    If other Is Nothing Then _
+    If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    IGeneric_CompareTo = myClass.Key.CompareTo(Node.Key)
+    If TypeOf Other Is GenericPairXY Then
+        Set Pair = Other
+        IGeneric_CompareTo = myClass.Key.CompareTo(Pair.Key): Exit Function
+    End If
+    
+    IGeneric_CompareTo = myClass.Key.CompareTo(Other)
     
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = myClass.Key.HashValue: End Property
-Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericPair): End Function
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPairXY): End Function
 Private Function IGeneric_ToString() As String
     
     IGeneric_ToString = "Class: " & TypeName$(Me) & vbNewLine & _
@@ -128,11 +136,7 @@ Private Function IGeneric_ToString() As String
  
 End Function
 
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericPair: End Function
-Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GenericPair: End Property
+Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericPairXY: End Function
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericPairXY: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
-
-
-
-

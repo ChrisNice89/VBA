@@ -13,7 +13,7 @@ Option Explicit
 
 Public Property Get IsFixedSize() As Boolean: End Property
 Public Property Get IsReadOnly() As Boolean: End Property
-Public Property Get count() As Long: End Property
+Public Property Get Count() As Long: End Property
 
 Public Function NewEnumerator() As IGenericEnumerator: End Function
 Public Function ToArray() As GenericArray: End Function

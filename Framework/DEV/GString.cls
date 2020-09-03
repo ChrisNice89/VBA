@@ -6,7 +6,7 @@ Attribute VB_Name = "GString"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 '@Folder "<T>Class"
 Option Explicit
 
@@ -45,64 +45,92 @@ Public Property Get Length() As Long: Length = myClass.Length: End Property
 Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myClass.Value, 1, 1): End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myClass.Value, Len(myClass.Value), 1): End Property
 Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myClass.Value, Index, 1): End Property
-Public Function Concat(ByVal text As GString, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
-    If text Is Nothing Then _
-        Set Concat = Me: Exit Function
-        
-    If Not Me Is GString Then
-        Set Concat = GString(myClass.Value & Delimiter & text.Value, myClass.Hashfunction, myClass.Format)
-    Else
-        Set Concat = GString(text.Value, myClass.Hashfunction, myClass.Format)
-    End If
-
-End Function
-Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myClass.Value, Find, ReplaceWith), myClass.Hashfunction, myClass.Format): End Function
 Public Property Get Format() As TStringFormat: Format = myClass.Format: End Property
 Public Property Get Value() As String: Value = myClass.Value: End Property
-Public Function ToByteArray() As Byte(): ToByteArray = StrConv(myClass.Value, vbFromUnicode): End Function
 
+Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myClass.Value, Find, ReplaceWith), myClass.Hashfunction, myClass.Format): End Function
+Public Function ToByteArray() As Byte(): ToByteArray = StrConv(myClass.Value, vbFromUnicode): End Function
 Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myClass.Value Like Pattern): End Function
 Public Function StartsWith(ByVal text As String) As Boolean: StartsWith = (myClass.Value Like ("%" & text)): End Function
 Public Function EndsWith(ByVal text As String) As Boolean: EndsWith = (myClass.Value Like (text & "%")): End Function
 Public Function Contains(ByVal text As String) As Boolean: Contains = Not (InStr(1, myClass.Value, text) = 0): End Function
 
-Public Function Split(ByVal Delimiter As String) As GenericArray
+Public Function CountChar(ByVal C As String) As Long
     
-    Dim Strings As Variant
-    Strings = VBA.Split(myClass.Value, Delimiter)
+    Dim i As Long
+    Dim ascii As Integer
     
-    Dim Result As GenericArray
-    Set Result = GenericArray.Build(UBound(Strings) + GenericArray.LowerBound)
+    If Len(C) > 1 Then _
+        Skynet.Throw(Me, "Private Function GetArrayStructure").NotSupported ("Len(C) > 1")
+
+    ascii = AscW(C)
     
-    Dim i As Long, lb As Long: lb = Result.LowerBound
-    For i = LBound(Strings) To UBound(Strings)
-        Set Result(i + lb) = GString(Strings(i))
+    For i = 1 To Me.Length
+        If AscW(Mid$(myClass.Value, i, 1)) = ascii Then _
+            CountChar = CountChar + 1
     Next
     
-    Set Split = Result
+End Function
+
+Public Function Concat(ByVal Item As IGeneric, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
+    
+    Dim Other As GString
+    
+    If Item Is Nothing Then _
+        Set Concat = Me: Exit Function
+    
+    If TypeOf Item Is GString Then _
+        Set Other = Item
+            
+    If Not Me Is GString Then
+        If Not Other Is Nothing Then
+            Set Concat = GString(myClass.Value & Delimiter & Other.Value, myClass.Hashfunction, myClass.Format)
+        Else
+            Set Concat = GString(myClass.Value & Delimiter & Item.ToString, myClass.Hashfunction, myClass.Format)
+        End If
+    Else 'Static default call
+        If Not Other Is Nothing Then
+            Set Concat = Item.Clone ' must be a Gstring ;)
+        Else
+            Set Concat = GString(Item.ToString, myClass.Hashfunction, myClass.Format)
+        End If
+    End If
+    
+End Function
+
+Public Function Split(ByVal Delimiter As String) As GenericArray
+    
+    Dim chars As Variant
+    chars = VBA.Split(myClass.Value, Delimiter)
+    
+    Dim i As Long, lb As Long: lb = GenericArray.LowerBound
+    ReDim Strings(lb To UBound(chars) + lb) As IGeneric
+    
+    For i = LBound(chars) To UBound(chars)
+        Set Strings(i + lb) = GString(chars(i))
+    Next
+    
+    Set Split = GenericArray.BuildFrom(Strings)
     
 End Function
 
 Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
-    Dim longString As GString
-    Set longString = Me
-    
     Dim s As IGeneric
     Dim i As Long
     
+    If (Values Is Nothing) Then _
+        Call Skynet.Throw(Me, "Public Function Join").NullPointer("Values is nothing")
+    
+    ReDim Strings(Values.LowerBound To Values.Length) As String
+    
     For i = Values.LowerBound To Values.Length
-        Set s = Values(i)
-        If Not s Is Nothing Then
-            If TypeOf s Is GString Then
-                Set longString = longString.Concat(s, Delimiter)
-            Else
-                Set longString = longString.Concat(GString(s.ToString), Delimiter)
-            End If
-        End If
+        Set s = Values(i) 'Should use enumerable.Select(IgnoreNulls:=true)
+        If Not s Is Nothing Then _
+            Strings(i) = s.ToString
     Next
     
-    Set Join = longString
+    Set Join = Me.Concat(GString(VBA.Join$(Strings, Delimiter), myClass.Hashfunction, myClass.Format))
     
 End Function
 
@@ -120,7 +148,6 @@ Public Function ToCharArray() As String()
     ToCharArray = chars
 End Function
 
-
 Public Function Build( _
                         ByVal Value As String, _
                         Optional ByVal Hashfunction As Hashing = Hashing.Function1, _
@@ -133,20 +160,20 @@ Attribute Build.VB_UserMemId = 0
         .Hashfunction = Hashfunction
     End With
     
-    Set Build = New GString
+    'Set Build = Skynet.Create(GString)
+    Set Build = Skynet.CreateInstance(New GString, Virtual.Pointer, Virtual.Size)
 
-    Call Skynet.Generic(GString).Dispose
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-   
-     With GString
-        myClass.Value = .Value
-        myClass.Length = .Length
-        myClass.Format = .Format
-        myClass.Hashfunction = .Hashfunction
-    End With
+    Virtual.Size = LenB(myClass)
+'    With GString
+'        myClass.Value = .Value
+'        myClass.Length = .Length
+'        myClass.Format = .Format
+'        myClass.Hashfunction = .Hashfunction
+'    End With
     
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
@@ -157,19 +184,17 @@ Private Property Get IValue_Value() As Variant: IValue_Value = myClass.Value: En
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass
+    Dim C As Member: C = myClass 'hardcopy
 
-    Virtual.Pointer = VarPtr(c)
-    Set IGeneric_Clone = Skynet.Create(Me)
-    Virtual.Pointer = VarPtr(myClass)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GString, VarPtr(C), Virtual.Size)
    
 End Function
 
 Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
-    Dim s As GString: Set s = other
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
+    Dim s As GString: Set s = Other
     
     If s Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not (myClass.Length = Me.Length) Then IGeneric_Equals = False: Exit Function
@@ -178,17 +203,17 @@ Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
      
 End Function
 
-Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
-    Dim s As GString: Set s = other
+Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     
-    If s Is Nothing Then _
+    If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
+    Dim s As GString: Set s = Other
     IGeneric_CompareTo = StrComp(myClass.Value, s.Value, vbBinaryCompare)
 
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.Hashfunction): End Property
-Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GString): End Function
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GString): End Function
 Private Function IGeneric_ToString() As String
 
     Select Case myClass.Format
@@ -201,7 +226,7 @@ Private Function IGeneric_ToString() As String
 End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GString: End Function
-Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GString: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GString: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

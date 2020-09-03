@@ -21,7 +21,9 @@ Implements IGenericCollection
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
-Private Const DEFAULT_CAPACITY As Long = 16
+
+Private Const DEFAULT_LOADFACTOR As Double = 0.7
+Private Const DEFAULT_CAPACITY As Long = 23 ' 23*LoadFactor(0.7) =16
 
 'Bucketstate
 Private Const ZERO As Byte = 0
@@ -56,7 +58,7 @@ End Type
 Private Type Member
     Const As Constant
     Occupancy As Long
-    count As Long
+    Count As Long
     RawSize As Long
     HashSize As Long
     LoadSize As Long
@@ -75,14 +77,14 @@ Private Virtual As Internal
 
 Public Property Get LoadSize() As Long: LoadSize = myClass.LoadSize: End Property
 Public Property Get LoadFactor() As Double: LoadFactor = myClass.LoadFactor: End Property
-Public Property Get count() As Long: count = myClass.count: End Property
+Public Property Get Count() As Long: Count = myClass.Count: End Property
 Public Property Let Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myClass.Buckets(FindEntry(Key)).Value: End Property
 Attribute Item.VB_UserMemId = 0
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
-Public Function GetKeys() As GenericArray: Set GetKeys = AddKeysToArray(GenericArray.Build(myClass.count), GenericArray.LowerBound): End Function
-Public Function GetValues() As GenericArray: Set GetValues = AddValuesToArray(GenericArray.Build(myClass.count), GenericArray.LowerBound): End Function
+Public Function GetKeys() As GenericArray: Set GetKeys = AddKeysToArray(GenericArray.Build(myClass.Count), GenericArray.LowerBound): End Function
+Public Function GetValues() As GenericArray: Set GetValues = AddValuesToArray(GenericArray.Build(myClass.Count), GenericArray.LowerBound): End Function
 
 Private Function getMinPrime() As Long: getMinPrime = myClass.Const.Primes(LBound(myClass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
@@ -92,11 +94,12 @@ Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment =
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
+    Virtual.Size = LenB(myClass)
 End Sub
 
 Public Function Build( _
                         Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
-                        Optional ByVal LoadFactor As Double = 0.72) As GenericMap
+                        Optional ByVal LoadFactor As Double = DEFAULT_LOADFACTOR) As GenericMap
     
     With myClass
         With .Const
@@ -133,7 +136,7 @@ Public Function Build( _
             
     End With
     
-    Set Build = Skynet.Create(Me)
+    Set Build = Skynet.CreateInstance(New GenericMap, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -142,7 +145,7 @@ Private Function AddKeysToArray(ByVal GArray As GenericArray, ByVal ArrayIndex A
     
     For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
         If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set GArray(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
+            Set GArray(ArrayIndex) = myClass.Buckets(i).Key: Call InterlockedIncrement(ArrayIndex)
     Next
     
     Set AddKeysToArray = GArray
@@ -228,7 +231,7 @@ Public Sub Remove(ByVal Key As IGeneric)
         With myClass
             s = (.Buckets(i).State And Not HAS_ENTRY)
             .Buckets(i) = EmptyBucket: .Buckets(i).State = s
-            Call InterlockedDecrement(.count)
+            Call InterlockedDecrement(.Count)
         End With
     End If
 End Sub
@@ -360,9 +363,9 @@ Public Sub Add( _
         Call Skynet.Throw(Me, "Public Function Add").KeyIsNothing
         
     With myClass
-        If (.count >= .LoadSize) Then
+        If (.Count >= .LoadSize) Then
             Call Rehash(Expandprime(.HashSize), False)
-        ElseIf ((.Occupancy > .LoadSize) And (.count > .Const.RehashBarrier)) Then
+        ElseIf ((.Occupancy > .LoadSize) And (.Count > .Const.RehashBarrier)) Then
             Call Rehash(.HashSize, False)
         End If
         
@@ -377,7 +380,7 @@ Public Sub Add( _
                     .State = HAS_ENTRY
                     .HashCode = HashValue
                     Set .Key = Key: Set .Value = Value
-                    Call InterlockedIncrement(myClass.count)
+                    Call InterlockedIncrement(myClass.Count)
                     Exit Sub
                 End If
                 
@@ -423,15 +426,14 @@ Private Sub IGenericEnumerator_Reset()
 End Sub
 'IGeneric
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
+
 Private Function IGeneric_Clone() As IGeneric
     
     Dim b As Bucket
-    Dim c As Member
-    c = myClass 'hardcopy
-
-    Virtual.Pointer = VarPtr(c)
-    Set IGeneric_Clone = Skynet.Create(Me)
-    Virtual.Pointer = VarPtr(myClass)
+    Dim C As Member
+    C = myClass 'hardcopy
+    
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericMap, VarPtr(C), LenB(C))
    
 End Function
 
@@ -440,16 +442,16 @@ Private Sub IGeneric_Dispose()
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
-    If other Is Nothing Then IGeneric_Equals = False: Exit Function
-    IGeneric_Equals = (Me Is other)
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
+    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    IGeneric_Equals = (Me Is Other)
 End Function
 
-Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
 
-Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericMap): End Function
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericMap): End Function
 Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
@@ -457,7 +459,7 @@ Private Function IGeneric_ToString() As String
                             "HashSize: " & .HashSize & vbNewLine & _
                             "LoadFactor: " & .LoadFactor & vbNewLine & _
                             "LoadSize: " & .LoadSize & vbNewLine & _
-                            "Elements: " & .count & vbNewLine & _
+                            "Elements: " & .Count & vbNewLine & _
                             "Occupancy: " & .Occupancy
     End With
 End Function
@@ -474,11 +476,11 @@ Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As 
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 
-Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddKeysToArray(GenericArray.Build(Me.count), ArrayIndex): End Sub
-Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddValuesToArray(GenericArray.Build(Me.count), ArrayIndex): End Sub
+Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddKeysToArray(GenericArray.Build(Me.Count), ArrayIndex): End Sub
+Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call AddValuesToArray(GenericArray.Build(Me.Count), ArrayIndex): End Sub
 
 'IGenericCollection
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.count: End Property
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
@@ -491,13 +493,13 @@ Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayI
     If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.count) Then _
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Count) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < myClass.Count)")
     
     Dim i As Long
     For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
         If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set GArray(ArrayIndex) = GenericPair(myClass.Buckets(i).Key, myClass.Buckets(i).Value): Call InterlockedIncrement(ArrayIndex)
+            Set GArray(ArrayIndex) = GenericPairXY(myClass.Buckets(i).Key, myClass.Buckets(i).Value): Call InterlockedIncrement(ArrayIndex)
     Next
     
 End Sub
@@ -505,7 +507,7 @@ Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray
     
     Dim GArray As GenericArray
-    Set GArray = GenericArray.Build(myClass.count)
+    Set GArray = GenericArray.Build(myClass.Count)
     
     Call IGenericCollection_CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
     Set IGenericCollection_ToArray = GArray
@@ -517,8 +519,7 @@ End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericMap: End Function
-Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GenericMap: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericMap: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
-
 

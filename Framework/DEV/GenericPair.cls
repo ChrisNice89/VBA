@@ -7,6 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'@Folder("<T>Class")
+
+Option Explicit
+'@PredeclaredId
+
 Option Compare Database
 
 Implements IGeneric
@@ -29,7 +34,6 @@ Public Property Get Value() As Object: Set Value = myClass.Value: End Property
 
 Public Function Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPair
 Attribute Build.VB_UserMemId = 0
-    
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Build").NullPointer("Key is nothing")
     
@@ -37,80 +41,80 @@ Attribute Build.VB_UserMemId = 0
         Set .Key = Key: Set .Value = Value
     End With
     
-    Set Build = New GenericPair
+    Set Build = Skynet.CreateInstance(New GenericPair, Virtual.Pointer, Virtual.Size)
     
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    With GenericPair
-        Set myClass.Key = .Key: Set myClass.Value = .Value
-    End With
+    Virtual.Size = LenB(myClass)
 End Sub
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass
+    Dim C As Member: C = myClass 'hardcopy
 
-    Virtual.Pointer = VarPtr(c)
-    Set IGeneric_Clone = Skynet.Create(Me)
-    Virtual.Pointer = VarPtr(myClass)
-   
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericMap, VarPtr(C), Virtual.Size)
+  
 End Function
 
 Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
-    Dim pair As GenericPair
+    Dim Pair As GenericPair
     
-    If other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
-    If TypeOf other Is GenericPair Then
-        Set pair = other
+    If TypeOf Other Is GenericPair Then
+        Set Pair = Other
         If Not myClass.Value Is Nothing Then
-            IGeneric_Equals = myClass.Key.Equals(pair.Key) And myClass.Value.Equals(pair.Value): Exit Function
+            IGeneric_Equals = myClass.Key.Equals(Pair.Key) And myClass.Value.Equals(Pair.Value): Exit Function
         Else
-            IGeneric_Equals = myClass.Key.Equals(pair.Key) And pair.Value Is Nothing: Exit Function
+            IGeneric_Equals = myClass.Key.Equals(Pair.Key) And Pair.Value Is Nothing: Exit Function
         End If
     End If
     
-    IGeneric_Equals = myClass.Key.Equals(other)
+    IGeneric_Equals = myClass.Key.Equals(Other)
     
 End Function
 
-Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     
-    Dim pair As GenericPair
+    Dim Pair As GenericPair
     
-    If other Is Nothing Then _
+    If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    If TypeOf other Is GenericPair Then
-        Set pair = other
-        IGeneric_CompareTo = myClass.Key.CompareTo(pair.Key): Exit Function
+    If TypeOf Other Is GenericPair Then
+        Set Pair = Other
+        IGeneric_CompareTo = myClass.Key.CompareTo(Pair.Key): Exit Function
     End If
     
-    IGeneric_CompareTo = myClass.Key.CompareTo(other)
+    IGeneric_CompareTo = myClass.Key.CompareTo(Other)
      
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = myClass.Key.HashValue: End Property
-Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericPair): End Function
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPair): End Function
 Private Function IGeneric_ToString() As String
     
     IGeneric_ToString = "Class: " & TypeName$(Me) & vbNewLine & _
                         "[" & _
                             myClass.Key.ToString & _
-                            ", " & _
-                            myClass.Value.ToString & _
-                         "]"
+                            ", "
+                         
+                        If Not myClass.Value Is Nothing Then
+                            IGeneric_ToString = IGeneric_ToString & myClass.Value.ToString & "]"
+                        Else
+                            IGeneric_ToString = IGeneric_ToString & " Nothing]"
+                        End If
  
 End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericPair: End Function
-Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GenericPair: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericPair: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 

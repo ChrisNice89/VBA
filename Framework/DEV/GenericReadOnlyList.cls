@@ -47,7 +47,7 @@ Public Function Build( _
     myClass.Size = Size
     myClass.SortOrder = Order
     
-    Set Build = Skynet.Create(Me)
+    Set Build = Skynet.CreateInstance(New GenericReadOnlyList, Virtual.Pointer, Virtual.Size)
 
 End Function
 
@@ -61,7 +61,7 @@ Attribute ElementAt.VB_UserMemId = 0
     
 End Property
 
-Public Property Get count() As Long: count = myClass.Size: End Property
+Public Property Get Count() As Long: Count = myClass.Size: End Property
 
 Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
   
@@ -71,7 +71,7 @@ Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
     If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.count) Then _
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Me.Count)")
     
     'Call myClass.Internal.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, SourceIndex:=myClass.Internal.LowerBound, Elements:=myClass.Size)
@@ -84,7 +84,7 @@ Public Function IndexOf(ByVal Item As IGeneric) As Long
 
     With myClass.Internal
         If (myClass.SortOrder = Random) Then
-            IndexOf = .IndexOf(Value:=Item, StartIndex:=.LowerBound, count:=myClass.Size, CheckArguments:=False)
+            IndexOf = .IndexOf(Value:=Item, StartIndex:=.LowerBound, Count:=myClass.Size, CheckArguments:=False)
         Else
             IndexOf = .BinarySearch(Value:=Item, Index:=.LowerBound, Length:=myClass.Size, Order:=myClass.SortOrder)
         End If
@@ -94,6 +94,7 @@ End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
+    Virtual.Size = LenB(myClass)
 End Sub
 
 Private Sub Class_Terminate()
@@ -104,19 +105,17 @@ End Sub
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = ObjPtr(Me): End Property
 Private Function IGeneric_Clone() As IGeneric
 
-    Dim c As Member: c = myClass
-    Set c.Internal = Skynet.Generic(c.Internal).Clone 'ShallowCopy
+    Dim C As Member: C = myClass 'hardcopy
+    Set C.Internal = Skynet.Clone(C.Internal) 'ShallowCopy
     
-    Virtual.Pointer = VarPtr(c)
-    Set IGeneric_Clone = Skynet.Create(Me)
-    Virtual.Pointer = VarPtr(myClass)
-
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericReadOnlyList, VarPtr(C), Virtual.Size)
+    
 End Function
 Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
-Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean: IGeneric_Equals = Skynet.SequenceCompare(Me, other) = IsEqual: End Function
-Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum: IGeneric_CompareTo = Skynet.SequenceCompare(Me, other): End Function
-Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericReadOnlyList): End Function
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_Equals = Skynet.SequenceCompare(Me, Other) = IsEqual: End Function
+Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum: IGeneric_CompareTo = Skynet.SequenceCompare(Me, Other): End Function
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericReadOnlyList): End Function
 Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
@@ -151,14 +150,14 @@ End Property
 
 'IGenericCollection
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = True: End Property
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.count: End Property
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = True: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Item) >= 0: End Function
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray
 
     Dim GArray As GenericArray
-    Set GArray = GenericArray.Build(Me.count)
+    Set GArray = GenericArray.Build(Me.Count)
     
     Call Me.CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
     Set IGenericCollection_ToArray = GArray
@@ -174,8 +173,8 @@ End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericReadOnlyList: End Function
-Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GenericReadOnlyList: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericReadOnlyList: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 

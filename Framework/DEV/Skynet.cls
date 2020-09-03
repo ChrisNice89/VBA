@@ -75,10 +75,10 @@ End Type
 Private myClass As Member
 '@MemberAttribute VB_VarHelpID, -1
 
-Private WithEvents StringEnumerable As GenericEnumerable
-Attribute StringEnumerable.VB_VarHelpID = -1
-Private WithEvents IntEnumerable As GenericEnumerable
-Attribute IntEnumerable.VB_VarHelpID = -1
+Private WithEvents WordSequence As GenericEnumerable
+Attribute WordSequence.VB_VarHelpID = -1
+Private WithEvents IntegerSequence As GenericEnumerable
+Attribute IntegerSequence.VB_VarHelpID = -1
 Private WithEvents ContainsEnumerable As GenericEnumerable
 Attribute ContainsEnumerable.VB_VarHelpID = -1
 
@@ -102,18 +102,16 @@ Public Sub CopyData(ByVal Dst As LongPtr, ByVal src As LongPtr, ByVal Bytes As L
         Call ZeroMemory(ByVal src, Bytes) 'FillMemory(ByVal Src, Bytes, 0)
 End Sub
 
-Public Function Create(ByRef Prototype As IPrototype) As Object
-    
-    Dim Clone As IPrototype
-
+Public Function CreateInstance(ByVal Prototype As IPrototype, ByVal Source As LongPtr, ByVal Size As Long) As Object
+        
     With Prototype
-        Set Clone = .CreateDefault
+        If (Prototype Is .StaticInstance) Then _
+            Set Prototype = .CreateDefault
         'Call CopyBytes(.Size, ByVal Clone.VirtualPointer, ByVal .VirtualPointer) 'works
-        Call CopyMemory_byVar(ByVal Clone.VirtualPointer, ByVal .VirtualPointer, .Size): _
-        Call ZeroMemory(ByVal .VirtualPointer, .Size)
+        Call CopyMemory_byVar(ByVal .VirtualPointer, ByVal Source, Size): Call ZeroMemory(ByVal Source, Size)
     End With
 
-    Set Create = Clone
+    Set CreateInstance = Prototype
 
 End Function
 
@@ -146,17 +144,17 @@ Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGen
         If Not (Me.Generic(a).IsRelatedTo(b)) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("Type(a) != Type(b)")
     
-        If Not (a.Elements.count = b.Elements.count) Then _
+        If Not (a.Elements.Count = b.Elements.Count) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("a.Elements.Count != b.Elements.Count")
         
-        Dim i As Long, c As ComparerEnum
-        Do While (InterlockedIncrement(i) < a.Elements.count And c = IsEqual)
+        Dim i As Long, C As ComparerEnum
+        Do While (InterlockedIncrement(i) < a.Elements.Count And C = IsEqual)
             If Not a(i) Is Nothing Then _
-                c = a(i).Equals(b(i))
+                C = a(i).Equals(b(i))
         Loop
     End If
     
-    SequenceCompare = c
+    SequenceCompare = C
     
 End Function
 
@@ -190,7 +188,7 @@ Public Function BinarySearch( _
                                 ByVal Order As SortOrder) As Long
 
     Dim i As Long
-    Dim c As ComparerEnum
+    Dim C As ComparerEnum
    
     Dim lo As Long: lo = Index
     Dim hi As Long: hi = Index + Length - 1
@@ -200,15 +198,15 @@ Public Function BinarySearch( _
         i = lo + ((hi - lo) / 2)
       
         If (Objects(i) Is Nothing) Then
-            c = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
+            C = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
         Else
-            c = Objects(i).CompareTo(Value) * Order
+            C = Objects(i).CompareTo(Value) * Order
         End If
         
-        If (c = IsEqual) Then _
+        If (C = IsEqual) Then _
             BinarySearch = i: Exit Function
         
-        If (c = IsLower) Then
+        If (C = IsLower) Then
             lo = i + 1
         Else
             hi = i - 1
@@ -230,11 +228,11 @@ Public Function IndexOf( _
                             ByRef Objects() As IGeneric, _
                             ByVal Value As IGeneric, _
                             ByVal StartIndex As Long, _
-                            ByVal count As Long)
+                            ByVal Count As Long)
     Dim i As Long
     Dim EndIndex As Long
 
-    EndIndex = StartIndex + count - LBound(Objects)
+    EndIndex = StartIndex + Count - LBound(Objects)
     
     If (Value Is Nothing) Then
         For i = StartIndex To EndIndex
@@ -280,16 +278,29 @@ Public Function Median(ByVal lo As Long, ByVal hi As Long) As Single
 End Function
 
 '@Ignore ProcedureCanBeWrittenAsFunction
-Public Sub Sort(ByRef Objects() As IGeneric, Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
+Public Sub Sort(ByRef Objects() As IGeneric, ByVal Index As Long, ByVal Length As Long, Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
     
     Const QuickSortDepthThreshold As Long = 32
     
-    If Order = Ascending Then
-        Call DepthLimitedQuicksort_Asc(Objects, LBound(Objects, 1), UBound(Objects, 1), QuickSortDepthThreshold)
+    If Order = Random Then
+        Call Shuffle(Objects)
+    ElseIf Order = Ascending Then
+        Call DepthLimitedQuicksort_Asc(Objects, Index, Length, QuickSortDepthThreshold)
     Else
-        Call DepthLimitedQuicksort_Desc(Objects, LBound(Objects, 1), UBound(Objects, 1), QuickSortDepthThreshold)
+        Call DepthLimitedQuicksort_Desc(Objects, Index, Length, QuickSortDepthThreshold)
     End If
    
+End Sub
+
+Private Sub Shuffle(ByRef Element() As IGeneric)
+
+    Dim i As Long
+    Randomize VBA.Timer
+    
+    For i = UBound(Element) To LBound(Element) Step -1
+        Call Swap(Element, i, (i * Rnd + 0.5))
+    Next
+
 End Sub
 
 Private Sub DepthLimitedQuicksort_Asc( _
@@ -307,7 +318,7 @@ Private Sub DepthLimitedQuicksort_Asc( _
 
     If (Left > Right) Then _
         Exit Sub
-
+   
     Do
         If (DepthLimit = 0) Then _
             Call HeapSort_Asc(Element, Left, Right): Exit Sub
@@ -322,7 +333,7 @@ Private Sub DepthLimitedQuicksort_Asc( _
         Set pivot = Element(middle)
 
         Do
-        
+    
             If (pivot Is Nothing) Then
                 Do While Not (Element(j) Is Nothing): j = j - 1: Loop
             Else
@@ -373,7 +384,7 @@ Private Sub DepthLimitedQuicksort_Desc( _
 
     If (Left > Right) Then _
         Exit Sub
-
+    
     Do
         If (DepthLimit = 0) Then _
             Call HeapSort_Desc(Element, Left, Right): Exit Sub
@@ -398,14 +409,14 @@ Private Sub DepthLimitedQuicksort_Desc( _
 
             If (i > j) Then _
                 Exit Do
-
+        
             If (i < j) Then _
                 Set tmp = Element(i): _
                 Set Element(i) = Element(j): _
                 Set Element(j) = tmp
 
             i = i + 1: j = j - 1
-
+            
         Loop While (i <= j)
 
         DepthLimit = DepthLimit - 1
@@ -518,7 +529,7 @@ End Sub
 Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As Long)
     
     Dim t As IGeneric
-    
+   
     If Not (a = b) Then
         If Not (Keys(a) Is Nothing) Then
             If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
@@ -528,19 +539,20 @@ Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As 
             End If
         End If
     End If
+    
 End Sub
+
 Private Sub Swap(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
     Dim t As IGeneric
     
-    If Not (i = j) Then
-        Set t = a(i)
-        Set a(i) = a(j)
-        Set a(j) = t
-    End If
+    Set t = a(i)
+    Set a(i) = a(j)
+    Set a(j) = t
+
 End Sub
 
 Public Function HashValue( _
-                            ByRef Ascii() As Byte, _
+                            ByRef ascii() As Byte, _
                             Optional ByVal Hashfunction As Hashing = Hashing.Function1) As Long
     
     Dim h As Double
@@ -553,8 +565,8 @@ Public Function HashValue( _
             Dim h1 As Double: h1 = 352654597# 'LeftShift(5381,16))+5381
             Dim h2 As Double: h2 = h1
             With Me
-                For i = LBound(Ascii) To UBound(Ascii) - 1
-                    h1 = .X0R((h1 * Shift) + h1, Ascii(i)): h2 = .X0R((h2 * Shift) + h2, Ascii(i + 1))
+                For i = LBound(ascii) To UBound(ascii) - 1
+                    h1 = .X0R((h1 * Shift) + h1, ascii(i)): h2 = .X0R((h2 * Shift) + h2, ascii(i + 1))
                 Next
             End With
             
@@ -562,18 +574,18 @@ Public Function HashValue( _
         
         Case Hashing.Function2
             
-             Dim Length As Long: Length = UBound(Ascii) + 1
+             Dim Length As Long: Length = UBound(ascii) + 1
              Dim n As Long
              
              For n = (Length / 2) To 1 Step -1
-                h = h + Ascii(i)
-                h = Me.X0R(Me.X0R(LeftShift(h, 16), Me.LeftShift(Ascii(i + 1), 11)), h)
+                h = h + ascii(i)
+                h = Me.X0R(Me.X0R(LeftShift(h, 16), Me.LeftShift(ascii(i + 1), 11)), h)
                 h = h + Me.RightShift(h, 11)
                 i = i + 2
             Next
             
             If ((Length Mod 2) = 1) Then
-                h = h + Ascii(i) + 1566083941
+                h = h + ascii(i) + 1566083941
                 h = Me.X0R(h, LeftShift(h, 10))
                 h = h + Me.RightShift(h, 1)
             End If
@@ -588,14 +600,15 @@ Public Function HashValue( _
 End Function
 
 Private Sub Class_Initialize()
-    If Not (Me Is Skynet) Then _
+'    If Not (Me Is Skynet) Then _
         Call Me.Throw(Me, "Private Sub Class_Initialize()").Instantiation("System class must not be instantiated")
    
 End Sub
 
-Public Function EnumeratorOf(ByVal c As IGenericCollection) As IGenericEnumerator: Set EnumeratorOf = c.NewEnumerator: End Function
+Public Function EnumeratorOf(ByVal C As IGenericCollection) As IGenericEnumerator: Set EnumeratorOf = C.NewEnumerator: End Function
 Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function
 Public Sub Dispose(ByVal Instance As IGeneric): Call Instance.Dispose: End Sub
+Public Function Clone(ByVal Instance As IGeneric) As IGeneric: Set Clone = Instance.Clone: End Function
 Public Function Generic(ByRef Instance As IGeneric) As IGeneric: Set Generic = Instance: End Function
 Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
@@ -604,10 +617,24 @@ Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightS
 Public Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
 Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
-Public Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long
-    Logn = Log(Value) / Log(Base)
-End Function
+Public Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: Logn = Log(Value) / Log(Base): End Function
 
+Public Sub TestRange()
+
+    Dim Range As IGenericEnumerator
+    Set Range = GenericEnumerable.Range(-5, 5)
+    
+    With GenericEnumerable.Range(-5, 5)
+        Do While .MoveNext
+            Debug.Print .Current
+        Loop
+    End With
+    
+    Set IntegerSequence = GenericEnumerable.Build(Range)
+    Debug.Print "The number of even integers is: " & IntegerSequence.Aggregate(GNumeric)
+    
+End Sub
+    
 Public Sub TestInteger2(ByVal n As Long)
     
     Dim i As Long
@@ -619,9 +646,9 @@ Public Sub TestInteger2(ByVal n As Long)
         Set ints(i) = GNumeric(i)
     Next
     
-    Set IntEnumerable = GenericEnumerable.Build(ints)
+    Set IntegerSequence = GenericEnumerable.Build(ints)
     
-    Debug.Print "The number of even integers is: " & IntEnumerable.Aggregate(GNumeric, IgnoreNull:=True)
+    Debug.Print "The number of even integers is: " & IntegerSequence.Aggregate(GNumeric, IgnoreNull:=True)
     
 End Sub
 
@@ -634,11 +661,20 @@ Public Sub TestContains()
     
     Debug.Print "Fruits: " & GString.Join(fruits, ";").Value
     
-    Dim fruit As GString
-    Set fruit = GString("mango")
+    Dim grape As GString
+    Set grape = GString("grape")
+    
+    Dim kiwi As GString
+    Set kiwi = GString("kiwi")
 
-    Debug.Print "Has mango: " & GenericEnumerable.Build(fruits).Contains(fruit)
-    Debug.Print "Has kiwi: " & GenericEnumerable.Build(fruits).Contains(GString("kiwi"))
+    Debug.Print "Has grape: " & GenericEnumerable(fruits).Contains(grape)
+    Debug.Print "Has kiwi: " & GenericEnumerable(fruits).Contains(kiwi)
+    
+    Dim list As GenericList
+    Set list = GenericList.Build(Capacity:=fruits.Length - 1)
+    Call list.AddAll(fruits)
+    
+    Debug.Print "fruit list contains grape: " & Cast.ToCollection(list).Contains(grape)
     
 End Sub
 
@@ -648,9 +684,10 @@ Public Sub TestString()
     Set sentence = GString("the quick brown fox jumps over the lazy dog")
     
     Debug.Print "Before: " & sentence.Value
-    Set StringEnumerable = GenericEnumerable.Build(sentence.Split(" "))
     
-    Debug.Print "After: " & StringEnumerable.Aggregate(GString, IgnoreNull:=True)
+    Set WordSequence = GenericEnumerable(sentence.Split(" ").Enumerator(1, sentence.CountChar(" ") + 1))
+    
+    Debug.Print "After: " & WordSequence.Aggregate(GString, IgnoreNull:=True)
     
 End Sub
 
@@ -659,27 +696,17 @@ Public Sub TestInteger()
     Dim ints As GenericArray
     Set ints = GenericArray.BuildWithIntegers(4, 8, 8, 3, 9, 0, 7, 8, 2)
     
-    Set IntEnumerable = GenericEnumerable.Build(ints)
+    Set IntegerSequence = GenericEnumerable(ints.Enumerator(1, 9))
     Debug.Print "Integers: " & GString.Join(ints, ";").Value
     
-    Debug.Print "The number of even integers is: " & IntEnumerable.Aggregate(GNumeric, IgnoreNull:=True)
+    Debug.Print "The number of even integers is: " & IntegerSequence.Aggregate(GNumeric, IgnoreNull:=True)
     
 End Sub
 
-Private Sub IntEnumerable_Aggregate(Result As IGeneric, ByVal Current As IGeneric, ByVal NullsIgnored As Boolean)
-    Dim i As GNumeric
-    Set i = Current
-    
-    Dim total As GNumeric
-    Set total = Result
-    
-    'If (i.Modulo(2).IsZero) Then Set Result = total.Add(1)
-    If (i.IsEven) Then Set Result = total.Add(1)
-    
+Private Sub IntegerSequence_Aggregate(Result As IGeneric, ByVal Current As IGeneric, ByVal NullsIgnored As Boolean)
+    If (Cast.ToNumeric(Current).IsEven) Then Set Result = Cast.ToNumeric(Result).Add(1)
 End Sub
 
-Private Sub StringEnumerable_Aggregate(Result As IGeneric, ByVal Current As IGeneric, ByVal NullsIgnored As Boolean)
-    Dim s As GString
-    Set s = Current
-    Set Result = s.Concat(Result, " ")
+Private Sub WordSequence_Aggregate(Result As IGeneric, ByVal Current As IGeneric, ByVal NullsIgnored As Boolean)
+    Set Result = Cast.ToString(Current).Concat(Result, " ")
 End Sub

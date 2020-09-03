@@ -80,27 +80,7 @@ Public Property Get GetValues() As GenericArray
     Set GetValues = GetCopyOf(myClass.Values, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetValues")
 End Property
 
-Private Function GetCopyOf( _
-                            ByVal Source As GenericArray, _
-                            ByVal GArray As GenericArray, _
-                            ByVal ArrayIndex As Long, _
-                            ByVal Caller As String) As GenericArray
-    
-    If (GArray Is Nothing) Then _
-        Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
-    
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
-
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Size) Then _
-        Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Size)")
-    
-    Call GenericArray.Copy(SrcArray:=Source, SrcIndex:=Source.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
-    Set GetCopyOf = GArray
-    
-End Function
-
-Public Property Get count() As Long: count = myClass.Size: End Property
+Public Property Get Count() As Long: Count = myClass.Size: End Property
 
 Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
     
@@ -215,12 +195,13 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     End With
     
     myClass.SortOrder = Skynet.SortOrder
-    Set Build = Skynet.Create(Me)
+    Set Build = Skynet.CreateInstance(New GenericSortedList, Virtual.Pointer, Virtual.Size)
     
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
+    Virtual.Size = LenB(myClass)
 End Sub
 
 Private Sub Class_Terminate()
@@ -332,7 +313,7 @@ End Function
 'size of this sorted list. The elements of the list are compared to the
 'given value using the IGeneric.Equals method.
 Public Function IndexOfValue(ByVal Value As IGeneric) As Long
-    IndexOfValue = myClass.Values.IndexOf(Value:=Value, StartIndex:=myClass.Values.LowerBound, count:=myClass.Size)
+    IndexOfValue = myClass.Values.IndexOf(Value:=Value, StartIndex:=myClass.Values.LowerBound, Count:=myClass.Size)
 End Function
 
 Public Sub Clear():
@@ -341,20 +322,39 @@ Public Sub Clear():
     myClass.Size = 0
 End Sub
 
+Private Function GetCopyOf( _
+                            ByVal Source As GenericArray, _
+                            ByVal GArray As GenericArray, _
+                            ByVal ArrayIndex As Long, _
+                            ByVal Caller As String) As GenericArray
+    
+    If (GArray Is Nothing) Then _
+        Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
+    
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+        Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
+
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Size) Then _
+        Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Size)")
+    
+    Call GenericArray.Copy(SrcArray:=Source, SrcIndex:=Source.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
+    
+    Set GetCopyOf = GArray
+    
+End Function
+
 'IGeneric
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member
-    Set c.Keys = Skynet.Generic(myClass.Keys).Clone
-    Set c.Values = Skynet.Generic(myClass.Values).Clone
-    c.Size = myClass.Size
-    c.SortOrder = myClass.SortOrder
-    
-    Virtual.Pointer = VarPtr(c)
-    Set IGeneric_Clone = Skynet.Create(Me)
-    Virtual.Pointer = VarPtr(myClass)
+    Dim C As Member
+    Set C.Keys = Skynet.Clone(myClass.Keys)
+    Set C.Values = Skynet.Clone(myClass.Values)
+    C.Size = myClass.Size
+    C.SortOrder = myClass.SortOrder
    
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericSortedList, VarPtr(C), LenB(C))
+  
 End Function
 
 Private Sub IGeneric_Dispose()
@@ -362,15 +362,15 @@ Private Sub IGeneric_Dispose()
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
-    If other Is Nothing Then IGeneric_Equals = False: Exit Function
-    IGeneric_Equals = (Me Is other)
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
+    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    IGeneric_Equals = (Me Is Other)
 End Function
 
-Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
-Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf other Is GenericSortedList): End Function
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedList): End Function
 Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
@@ -408,12 +408,12 @@ Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
      If (Index > myClass.Size) Then _
         Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_Item").IndexOutofRange("Index not valid")
     
-    Set IGenericReadOnlyList_Item = GenericPair(myClass.Keys(Index), myClass.Values(Index))
+    Set IGenericReadOnlyList_Item = GenericPairXY(myClass.Keys(Index), myClass.Values(Index))
     
 End Property
 
 'IGenericCollection
-Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.count: End Property
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
 Private Function IGenericCollection_ToArray() As GenericArray
@@ -441,7 +441,7 @@ Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayI
     
     Dim i As Long
     For i = myClass.Keys.LowerBound To myClass.Size
-        Set GArray(ArrayIndex) = GenericPair(myClass.Keys(i), myClass.Values(i)): Call InterlockedIncrement(ArrayIndex)
+        Set GArray(ArrayIndex) = GenericPairXY(myClass.Keys(i), myClass.Values(i)): Call InterlockedIncrement(ArrayIndex)
     Next
 
 End Sub
@@ -469,10 +469,9 @@ End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericSortedList: End Function
-Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = GenericSortedList: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericSortedList: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
-
 
 
 

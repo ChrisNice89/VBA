@@ -10,7 +10,7 @@ Attribute VB_Exposed = True
 '@Exposed
 Option Explicit
 '@Folder "Base"
-Public Property Get Default() As Object: End Property
+Public Property Get StaticInstance() As Object: End Property
 Public Property Get VirtualPointer() As LongPtr: End Property
 Public Property Get Size() As Long: End Property
 Public Function CreateDefault() As IPrototype: End Function

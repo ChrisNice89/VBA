@@ -65,18 +65,13 @@ Public Function Build(ByVal Source As Object, ByVal Method As String) As Throwhe
         myClass.Method = Method
     End With
    
-    Set Build = New Throwhelper
-    Call Skynet.Generic(Throwhelper).Dispose
+    Set Build = Skynet.CreateInstance(New Throwhelper, Virtual.Pointer, Virtual.Size)
+    
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    If Not Me Is Throwhelper Then
-        With myClass
-            Set .Source = Throwhelper.Source
-            .Method = Throwhelper.MethodName
-        End With
-    End If
+    Virtual.Size = LenB(myClass)
 End Sub
 
 Public Sub Complete()
@@ -206,22 +201,20 @@ CleanFail:
 End Sub
 
 Private Function IGeneric_Clone() As IGeneric
-    Dim c As Member: c = myClass
-
-    Virtual.Pointer = VarPtr(c)
-    Set IGeneric_Clone = Skynet.Create(Me)
-    Virtual.Pointer = VarPtr(myClass)
     
+    Dim C As Member: C = myClass 'hardcopy
+    Set IGeneric_Clone = Skynet.CreateInstance(New Throwhelper, VarPtr(C), Virtual.Size)
+
 End Function
 
-Private Function IGeneric_CompareTo(ByVal other As IGeneric) As ComparerEnum
+Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
 
 End Function
 
 Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Equals(ByVal other As IGeneric) As Boolean
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
 End Function
 
@@ -229,7 +222,7 @@ Private Property Get IGeneric_HashValue() As Long
 
 End Property
 
-Private Function IGeneric_IsRelatedTo(ByVal other As IGeneric) As Boolean
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean
 
 End Function
 
@@ -242,7 +235,7 @@ Private Function IGeneric_ToString() As String
 End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New Throwhelper: End Function
-Private Property Get IPrototype_Default() As Object: Set IPrototype_Default = Throwhelper: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = Throwhelper: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
