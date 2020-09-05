@@ -77,21 +77,19 @@ Sub TestTree()
     Dim e As IGenericEnumerator
     Set e = tree
     
-    Do While e.MoveNext
-        Debug.Print e.Current
-    Loop
+'    Do While e.MoveNext
+'        Debug.Print e.Current
+'    Loop
 
-
-    Dim ga As GenericArray
-    
-    Set ga = tree.GetKeys(True)
+    Dim ga As IGenericReadOnlyList
+    Set ga = tree.GetKeys()
     
     Dim i As Long
-    For i = 1 To ga.Length
-        Debug.Print ga(i)
+    For i = 1 To ga.Elements.Count
+        Debug.Print "i: " & i & "  " & ga(i)
     Next
     
-    Debug.Print ga.IndexOf(GString("zz"))
+    Debug.Print tree.IndexOf(GString("a"))
    
 End Sub
 Sub TestSortedList()

@@ -28,6 +28,7 @@ Private Const MAX_CALLSTACK_SIZE As Long = 1000
 Private Type InternalStack
     Size As Long
     Items() As GenericTreeNode
+    Reverse As Boolean
 End Type
 
 Private Type Enumerator
@@ -51,7 +52,7 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get MaxHeight() As Long: MaxHeight = 2 * Skynet.Logn(myClass.Count + 2, 2): End Property
+Public Property Get MaxHeight() As Long: MaxHeight = 2 * Skynet.Logn(myClass.Count + 1, 2): End Property
 Public Property Get Count() As Long: Count = myClass.Count: End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
@@ -108,63 +109,67 @@ Public Function GetMin() As IGeneric
 
 End Function
 
+Public Sub AddAll(ByVal Collection As IGenericEnumerator)
+    
+'    Dim p As GenericPairXY
+'    Dim i As IGeneric
+'
+'    With Collection
+'        Do While Collection.MoveNext
+'            Set i = .Current
+'            If TypeOf i Is GenericPairXY Then
+'                Set p = .Current
+'                If Not Me.Contains(p.Key) Then _
+'                    Call Me.Add(p.Key, p.Value)
+'            Else
+'                 If Not Me.Contains(.Current) Then _
+'                    Call Me.Add(p.Key, p.Value)
+'
+'            End If
+'
+'        Loop
+'    End With
+'
+End Sub
+
 Public Function GetValues(Optional ByVal Reverse As Boolean) As GenericArray
    
-    Dim GArray As GenericArray
-    Set GArray = GenericArray.Build(myClass.Count)
-    
-    Dim Index As Long: Index = GArray.LowerBound
-    
-    Dim Node As GenericTreeNode
-    Dim Current As GenericTreeNode
-    
+    ReDim Values(GenericArray.LowerBound To myClass.Count) As IGeneric
+    Dim Index As Long: Index = GenericArray.LowerBound
+
     Dim Stack As InternalStack
+    Dim Current As GenericTreeNode
+
     Call LoadStack(Stack, Reverse)
+
+    Do While InOrderTreeWalk(Current, Stack)
+        Set Values(Index) = Current.Key
+        Index = Index + 1
+    Loop
     
-     If Not Reverse Then
-         Do While InOrderTreeWalk(Current, Stack)
-            Set GArray(Index) = Current.Value
-            Index = Index + 1
-        Loop
-    Else
-        Do While ReverseOrderTreeWalk(Current, Stack)
-            Set GArray(Index) = Current.Value
-            Index = Index + 1
-        Loop
-    End If
-    
-    Set GetValues = GArray
+    Set GetValues = GenericArray.BuildFrom(Values)
     
 End Function
 
 Public Function GetKeys(Optional ByVal Reverse As Boolean) As GenericArray
    
-    Dim GArray As GenericArray
-    Set GArray = GenericArray.Build(myClass.Count)
-    
-    Dim Index As Long: Index = GArray.LowerBound
+    ReDim Keys(GenericArray.LowerBound To myClass.Count) As IGeneric
+    Dim Index As Long: Index = GenericArray.LowerBound
 
     Dim Stack As InternalStack
     Dim Current As GenericTreeNode
 
     Call LoadStack(Stack, Reverse)
 
-    If Not Reverse Then
-        Do While InOrderTreeWalk(Current, Stack)
-            Set GArray(Index) = Current.Key
-            Index = Index + 1
-        Loop
-    Else
-        Do While ReverseOrderTreeWalk(Current, Stack)
-            Set GArray(Index) = Current.Key
-            Index = Index + 1
-        Loop
-    End If
-   
-    Set GetKeys = GArray
+    Do While InOrderTreeWalk(Current, Stack)
+        Set Keys(Index) = Current.Key
+        Index = Index + 1
+    Loop
+    
+    Set GetKeys = GenericArray.BuildFrom(Keys)
     
 End Function
-
+'recursive solution is limited in depth and quickly leads to a stack overflow
 Private Sub AddValuesToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
 
     If Not (Node.Left Is Nothing) Then _
@@ -176,7 +181,7 @@ Private Sub AddValuesToArray(ByVal Node As GenericTreeNode, ByVal GArray As Gene
         Call AddValuesToArray(Node.Right, GArray, Index)
     
 End Sub
-
+'recursive solution is limited in depth and quickly leads to a stack overflow
 Private Sub AddKeysToArray(ByRef Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
     
     If Not (Node.Left Is Nothing) Then _
@@ -189,31 +194,28 @@ Private Sub AddKeysToArray(ByRef Node As GenericTreeNode, ByVal GArray As Generi
     
 End Sub
 
-Private Sub Push(ByRef Stack As InternalStack, ByVal Node As GenericTreeNode)
-    With Stack
-        Set .Items(.Size) = Node
-         .Size = .Size + 1
-    End With
-End Sub
-
-Private Function Pop(ByRef Stack As InternalStack) As GenericTreeNode
-    With Stack
-        .Size = .Size - 1
-        Set Pop = .Items(.Size)
-        Set .Items(.Size) = Nothing
-    End With
-End Function
-
 'Private Sub InOrderTreeWalk2( _
 '                                ByVal GArray As GenericArray, _
 '                                ByVal Index As Long, _
 '                                ByVal Reverse As Boolean)
 '
 '    Dim Stack As InternalStack
-'    Call LoadStack(Stack, False)
-'
+'    ReDim Stack.Items(Me.MaxHeight)
 '    Dim Node As GenericTreeNode
 '    Dim Current As GenericTreeNode
+'    Set Node = myClass.Root
+'
+'    If Reverse Then
+'        Do While Not (Node Is Nothing)
+'            Call Push(Stack, Node)
+'            Set Node = Node.Right
+'        Loop
+'    Else
+'        Do While Not (Node Is Nothing)
+'            Call Push(Stack, Node)
+'            Set Node = Node.Left
+'        Loop
+'    End If
 '
 '    If Reverse Then
 '        Do While Not Stack.Size = 0
@@ -252,11 +254,11 @@ Private Sub Class_Initialize()
     Virtual.Size = LenB(myClass)
 End Sub
 
-Public Function Enumerator() As IGenericEnumerator
+Public Function Enumerator(Optional ByVal Reverse As Boolean) As IGenericEnumerator
     
     Dim C As Member
      
-    Call LoadEnumerator(C.Enumerator)
+    Call LoadEnumerator(C.Enumerator, Reverse)
     Set C.Enumerator.Parent = Me
     
     Set Enumerator = Skynet.CreateInstance(New GenericTree, VarPtr(C), Virtual.Size)
@@ -268,10 +270,7 @@ Public Sub Clear()
     myClass.Count = 0
 End Sub
 
-Public Function Contains(ByVal Key As IGeneric) As Boolean
-    Contains = Not FindNode(Key) Is Nothing
-End Function
-
+Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = Not FindNode(Key) Is Nothing: End Function
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
 
     Dim Node As GenericTreeNode: Set Node = FindNode(Key)
@@ -297,8 +296,35 @@ Private Function FindNode(ByVal Key As IGeneric) As GenericTreeNode
        If (Order = 0) Then _
            Set FindNode = Current: Exit Function
     
-        Set Current = IIf(Order < 0, Current.Left, Current.Right)
+        Set Current = IIf(Order < 0, Current.Right, Current.Left)
     Loop
+    
+End Function
+
+Public Function IndexOf(ByVal Key As IGeneric) As Long
+    
+    Dim Node As GenericTreeNode: Set Node = myClass.Root
+    
+    Dim Count As Long: Count = 1
+    Dim Order As Long
+    
+    Do While Not (Node Is Nothing)
+        Order = Node.Key.CompareTo(Key)
+        If (Order = 0) Then
+           IndexOf = Count: Exit Function
+        End If
+        
+        If (Order > 0) Then
+            Set Node = Node.Left
+            Count = 2 * Count
+        Else
+            Set Node = Node.Right
+            Count = 2 * Count + 1
+        End If
+      
+    Loop
+    
+    IndexOf = -1
     
 End Function
 
@@ -354,7 +380,6 @@ Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Boolean
     Set Current = myClass.Root
     Do While Not (Current Is Nothing)
         Order = Current.Key.CompareTo(Key)
-        'Order = Key.CompareTo(Current.Key)
         If (Order = 0) Then
             myClass.Root.IsRed = False
             Add = False
@@ -557,42 +582,31 @@ Private Function InOrderTreeWalk( _
     
     Dim Node As GenericTreeNode
 
-    If Not Stack.Size = 0 Then
-        Set Current = Pop(Stack) 'Performance?
-        Set Node = Current.Right
-        
-        Do While Not (Node Is Nothing)
-            Call Push(Stack, Node) 'Performance?
-            Set Node = Node.Left
-        Loop
-        
-        InOrderTreeWalk = True: Exit Function
-        
-    End If
+    If Stack.Size = 0 Then _
+        Set Current = Nothing: Exit Function
     
-    Set Current = Nothing
-
-End Function
-
-Private Function ReverseOrderTreeWalk( _
-                                        ByRef Current As GenericTreeNode, _
-                                        ByRef Stack As InternalStack) As Boolean
-        
-    Dim Node As GenericTreeNode
-
-    If Not Stack.Size = 0 Then
-        Set Current = Pop(Stack)
-        Set Node = Current.Left
-        Do While Not (Node Is Nothing)
-            Call Push(Stack, Node)
-            Set Node = Node.Right
-        Loop
-        
-        ReverseOrderTreeWalk = True: Exit Function
-        
-    End If
+    With Stack
+        Set Current = .Items(.Size)
+        Set .Items(.Size) = Nothing
+        .Size = .Size - 1
+        If .Reverse = False Then
+            Set Node = Current.Right
     
-    Set Current = Nothing
+            Do While Not (Node Is Nothing)
+                Set .Items(InterlockedIncrement(.Size)) = Node
+                Set Node = Node.Left
+            Loop
+        Else
+            Set Node = Current.Left
+    
+            Do While Not (Node Is Nothing)
+                Set .Items(InterlockedIncrement(.Size)) = Node
+                Set Node = Node.Right
+            Loop
+        End If
+    End With
+    
+    InOrderTreeWalk = True
 
 End Function
 
@@ -601,28 +615,30 @@ Private Sub LoadStack(ByRef Stack As InternalStack, ByVal Reverse As Boolean)
     Dim Node As GenericTreeNode
     Set Node = myClass.Root
     
-    Stack.Size = 0
-    ReDim Stack.Items(Me.MaxHeight)
-    
-    If Reverse Then
-        Do While Not (Node Is Nothing)
-            Call Push(Stack, Node)
-            Set Node = Node.Right
-        Loop
-    Else
-        Do While Not (Node Is Nothing)
-            Call Push(Stack, Node)
-            Set Node = Node.Left
-        Loop
-    End If
+    With Stack
+        .Reverse = Reverse
+        .Size = 0
+        ReDim .Items(1 To Me.MaxHeight)
+        
+        If .Reverse = False Then
+            Do While Not (Node Is Nothing)
+                Set .Items(InterlockedIncrement(.Size)) = Node
+                Set Node = Node.Left
+            Loop
+        Else
+            Do While Not (Node Is Nothing)
+                Set .Items(InterlockedIncrement(.Size)) = Node
+                Set Node = Node.Right
+            Loop
+        End If
+    End With
     
 End Sub
 
-Private Sub LoadEnumerator(ByRef e As Enumerator)
-   
-    Call LoadStack(e.Stack, False)
+Private Sub LoadEnumerator(ByRef e As Enumerator, ByVal Reverse As Boolean)
     
     With e
+        Call LoadStack(.Stack, Reverse)
         Set .Current = Nothing
         .HasLoaded = True
     End With
@@ -770,24 +786,18 @@ Private Function IGenericEnumerator_MoveNext() As Boolean
     
     Dim Node As GenericTreeNode
     
-    With myClass.Enumerator
-        If (.Stack.Size = 0) Then
-            If Not .HasLoaded Then
-                Call LoadEnumerator(myClass.Enumerator)
-            Else
-                Set .Current = Nothing: IGenericEnumerator_MoveNext = False: Exit Function
-            End If
-        End If
-        
-        If InOrderTreeWalk(Node, .Stack) Then _
-            Set .Current = Node.CopyToPair: IGenericEnumerator_MoveNext = True
-
-    End With
-      
+    If InOrderTreeWalk(Node, myClass.Enumerator.Stack) Then _
+        Set myClass.Enumerator.Current = Node.CopyToPair: IGenericEnumerator_MoveNext = True
+    'case Enumerator is  GenericTree
+    If myClass.Enumerator.HasLoaded = False Then _
+        Call LoadEnumerator(myClass.Enumerator, myClass.Enumerator.Stack.Reverse): _
+        If InOrderTreeWalk(Node, myClass.Enumerator.Stack) Then _
+            Set myClass.Enumerator.Current = Node.CopyToPair: IGenericEnumerator_MoveNext = True
+ 
 End Function
 
 Private Sub IGenericEnumerator_Reset()
-    Call LoadEnumerator(myClass.Enumerator)
+    Call LoadEnumerator(myClass.Enumerator, myClass.Enumerator.Stack.Reverse)
 End Sub
 
 'IPrototype
