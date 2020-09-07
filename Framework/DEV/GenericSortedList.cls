@@ -56,12 +56,27 @@ Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend A
 
 Private Const DEFAULT_CAPACITY As Long = 16
 
+Private Enum InternalData
+    Keys_ = 0
+    Values_
+    pairs_
+End Enum
+
+Private Type Enumerator
+    Index As Long
+    StartIndex As Long
+    EndIndex As Long
+    Current As IGeneric
+    Parent As IGeneric
+End Type
+
 Private Type Member
     Keys As GenericArray
     Values As GenericArray
     Size As Long
     IsReadOnly As Boolean
     SortOrder As SortOrder
+    Enumerator As Enumerator
 End Type
 Private myClass As Member
 
@@ -73,13 +88,8 @@ Private Virtual As Internal
 
 Public Property Get SortOrder() As SortOrder: SortOrder = myClass.SortOrder: End Property
 Public Property Get Last() As IGeneric: Set Last = myClass.Values(myClass.Size): End Property
-Public Property Get GetKeys() As GenericArray
-    Set GetKeys = GetCopyOf(myClass.Keys, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetKeys")
-End Property
-Public Property Get GetValues() As GenericArray
-    Set GetValues = GetCopyOf(myClass.Values, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetValues")
-End Property
-
+Public Property Get GetKeys() As GenericArray: Set GetKeys = CopyOf(Keys_, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetKeys"): End Property
+Public Property Get GetValues() As GenericArray: Set GetValues = CopyOf(Values_, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetValues"): End Property
 Public Property Get Count() As Long: Count = myClass.Size: End Property
 
 Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
@@ -143,8 +153,8 @@ Public Property Let Capacity(ByVal Value As Long)
             Dim newValues As GenericArray: Set newValues = GenericArray.Build(Value)
             
             If (myClass.Size > 0) Then _
-                Call Skynet.CopyData(Dst:=newKeys.AdressOf(Element:=1), src:=myClass.Keys.AdressOf(Element:=1), Bytes:=myClass.Keys.TotalSize, ClearSource:=True): _
-                Call Skynet.CopyData(Dst:=newValues.AdressOf(Element:=1), src:=myClass.Values.AdressOf(Element:=1), Bytes:=myClass.Values.TotalSize, ClearSource:=True)
+                Call Skynet.CopyData(Dst:=newKeys.AdressOf(Element:=1), Src:=myClass.Keys.AdressOf(Element:=1), Bytes:=myClass.Keys.TotalSize, ClearSource:=True): _
+                Call Skynet.CopyData(Dst:=newValues.AdressOf(Element:=1), Src:=myClass.Values.AdressOf(Element:=1), Bytes:=myClass.Values.TotalSize, ClearSource:=True)
 
             Set myClass.Keys = newKeys
             Set myClass.Values = newValues
@@ -208,6 +218,16 @@ Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
 
+Public Function Enumerator(Optional ByVal StartIndex, Optional ByVal Count As Long) As IGenericEnumerator
+    
+    Dim C As Member
+    Call LoadEnumerator(C.Enumerator, StartIndex, Count)
+    Set C.Enumerator.Parent = Me 'make sure that parent cant go out of scope
+    
+    Set Enumerator = Skynet.CreateInstance(New GenericSortedList, VarPtr(C), LenB(C))
+
+End Function
+
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
 
     Dim i As Long
@@ -242,11 +262,11 @@ Public Sub RemoveAt(ByVal Index As Long)
     
     If (Index < myClass.Size + myClass.Keys.LowerBound) Then
         With myClass.Keys
-            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
             Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=myClass.Size), Bytes:=.SizeOf(1))
         End With
         With myClass.Values
-            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
             Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=myClass.Size), Bytes:=.SizeOf(1))
         End With
     End If
@@ -275,11 +295,11 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
 
     If (Index < myClass.Size + myClass.Keys.LowerBound) Then
         With myClass.Keys
-            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
             Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(1))
         End With
         With myClass.Values
-            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
             Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(1))
         End With
     End If
@@ -322,11 +342,24 @@ Public Sub Clear():
     myClass.Size = 0
 End Sub
 
-Private Function GetCopyOf( _
-                            ByVal Source As GenericArray, _
-                            ByVal GArray As GenericArray, _
-                            ByVal ArrayIndex As Long, _
-                            ByVal Caller As String) As GenericArray
+Private Sub LoadEnumerator(ByRef e As Enumerator, ByVal StartIndex As Long, ByVal EndIndex As Long)
+    
+    If (StartIndex < myClass.Keys.LowerBound) Or (StartIndex > myClass.Size + myClass.Keys.LowerBound) Then _
+        Call Skynet.Throw(Me, "Private Sub LoadEnumerator").IndexOutofRange("(StartIndex < myClass.Keys.LowerBound) Or (StartIndex > myClass.Size + myClass.Keys.LowerBound)")
+
+    If (Count < 0) Or (Count > myClass.Size - StartIndex + myClass.Keys.LowerBound) Then _
+        Call Skynet.Throw(Me, "Private Sub LoadEnumerator").IndexOutofRange("(Count < 0) Or (Count > myClass.Size - StartIndex + myClass.Keys.LowerBound)")
+
+    With e
+        Set .Parent = e.Parent '! default is nothing, should only be set with newEnumerator
+        .StartIndex = StartIndex
+        .EndIndex = EndIndex
+        .Index = StartIndex - 1
+    End With
+
+End Sub
+
+Private Function CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
     
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
@@ -337,9 +370,20 @@ Private Function GetCopyOf( _
     If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Size) Then _
         Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Size)")
     
-    Call GenericArray.Copy(SrcArray:=Source, SrcIndex:=Source.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
+    Dim i As Long
+     
+    Select Case True
+        Case Internal = Keys_
+            Call GenericArray.Copy(SrcArray:=myClass.Keys, SrcIndex:=myClass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
+        Case Internal = Values_
+            Call GenericArray.Copy(SrcArray:=myClass.Values, SrcIndex:=myClass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
+        Case Else
+            For i = myClass.Keys.LowerBound To myClass.Size
+                Set GArray(ArrayIndex) = GenericPairXY(myClass.Keys(i), myClass.Values(i)): Call InterlockedIncrement(ArrayIndex)
+            Next
+    End Select
     
-    Set GetCopyOf = GArray
+    Set CopyOf = GArray
     
 End Function
 
@@ -385,20 +429,12 @@ End Function
 Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
 Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Set Me.Item(Key) = Value: End Property
 Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = Me.Item(Key): End Property
-Private Property Get IGenericDictionary_Values() As IGenericCollection: Set IGenericDictionary_Values = Me.GetValues: End Property
-Private Property Get IGenericDictionary_Keys() As IGenericCollection: Set IGenericDictionary_Keys = Me.GetKeys: End Property
 Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.IndexOfKey(Key) >= 0: End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
-
-Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-    Call GetCopyOf(myClass.Keys, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyKeysTo")
-End Sub
-
-Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-    Call GetCopyOf(myClass.Values, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyValuesTo")
-End Sub
+Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Keys_, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyKeysTo"): End Sub
+Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Values_, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyValuesTo"): End Sub
 
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
@@ -416,56 +452,33 @@ End Property
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
-Private Function IGenericCollection_ToArray() As GenericArray
-
-    Dim GArray As GenericArray
-    Set GArray = GenericArray.Build(myClass.Size)
-    
-    Call IGenericCollection_CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
-    
-    Set IGenericCollection_ToArray = GArray
-    
-End Function
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(pairs_, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Private Function IGenericCollection_ToArray"): End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOfKey(Key:=Item): End Function
-
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-
-    If (GArray Is Nothing) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").NullPointer("GArray Is Nothing")
-    
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
-
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Size) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < myClass.Size)")
-    
-    Dim i As Long
-    For i = myClass.Keys.LowerBound To myClass.Size
-        Set GArray(ArrayIndex) = GenericPairXY(myClass.Keys(i), myClass.Values(i)): Call InterlockedIncrement(ArrayIndex)
-    Next
-
-End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
-
-End Function
+Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator: Set IGenericCollection_NewEnumerator = Me.Enumerator: End Function
+Private Function IGenericList_NewEnumerator() As IGenericEnumerator: Set IGenericList_NewEnumerator = Me.Enumerator: End Function
 
 'IGenericEnumerator
-Private Property Get IGenericEnumerator_Current() As IGeneric
-
-End Property
-
+Private Property Get IGenericEnumerator_Current() As IGeneric: Set IGenericEnumerator_Current = myClass.Enumerator.Current: End Property
 Private Function IGenericEnumerator_MoveNext() As Boolean
+    
+    With myClass.Enumerator
+        If .Index > .EndIndex Then _
+            Set .Current = Nothing: Exit Function
+        
+        Call InterlockedIncrement(.Index)
+        Set .Current = GenericPairXY(myClass.Keys(.Index), myClass.Values(.Index))
+      
+    End With
+    
+    IGenericEnumerator_MoveNext = True
 
 End Function
 
 Private Sub IGenericEnumerator_Reset()
-
+    Call LoadEnumerator(myClass.Enumerator, myClass.Enumerator.StartIndex, myClass.Enumerator.EndIndex)
 End Sub
-
-Private Function IGenericList_NewEnumerator() As IGenericEnumerator
-
-End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericSortedList: End Function

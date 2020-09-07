@@ -33,6 +33,7 @@ Public Property Get Key() As IGeneric: Set Key = myClass.Key: End Property
 Public Property Get Value() As Object: Set Value = myClass.Value: End Property
 
 Public Function Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPairXY
+Attribute Build.VB_UserMemId = 0
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Build").NullPointer("Key is nothing")
     

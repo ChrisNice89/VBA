@@ -25,6 +25,12 @@ Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (ByRef Va
 
 Private Const MAX_CALLSTACK_SIZE As Long = 1000
 
+Private Enum InternalData
+    Keys_ = 0
+    Values_
+    pairs_
+End Enum
+
 Private Type InternalStack
     Size As Long
     Items() As GenericTreeNode
@@ -645,6 +651,43 @@ Private Sub LoadEnumerator(ByRef e As Enumerator, ByVal Reverse As Boolean)
     
 End Sub
 
+Private Function CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
+    
+    If (GArray Is Nothing) Then _
+        Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
+    
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+        Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
+
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Count) Then _
+        Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Count)")
+    
+    Dim Stack As InternalStack
+    Dim Current As GenericTreeNode
+    
+    Call LoadStack(Stack, False)
+
+    Select Case True
+        Case Internal = Keys_
+            Do While InOrderTreeWalk(Current, Stack)
+                Set GArray(ArrayIndex) = Current.Key
+                ArrayIndex = ArrayIndex + 1
+            Loop
+        Case Internal = Values_
+            Do While InOrderTreeWalk(Current, Stack)
+                Set GArray(ArrayIndex) = Current.Value
+                ArrayIndex = ArrayIndex + 1
+            Loop
+        Case Else
+            Do While InOrderTreeWalk(Current, Stack)
+                Set GArray(ArrayIndex) = Current.CopyToPair
+                ArrayIndex = ArrayIndex + 1
+            Loop
+    End Select
+    
+    Set CopyOf = GArray
+    
+End Function
 'IGeneric
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
 Private Function IGeneric_Clone() As IGeneric
@@ -685,97 +728,20 @@ End Sub
 Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
 Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Set Me.Item(Key) = Value: End Property
 Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = Me.Item(Key): End Property
-Private Property Get IGenericDictionary_Values() As IGenericCollection: Set IGenericDictionary_Values = Me.GetValues: End Property
-Private Property Get IGenericDictionary_Keys() As IGenericCollection: Set IGenericDictionary_Keys = Me.GetKeys: End Property
 Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.Contains(Key): End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric):: End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
-
-Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-    
-    If (GArray Is Nothing) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericDictionary_CopyKeysTo").NullPointer("GArray Is Nothing")
-    
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericDictionary_CopyKeysTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
-
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericDictionary_CopyKeysTo").InvalidInput("(GArray.Length - Index < Me.Count)")
-    
-    Dim Stack As InternalStack
-    Dim Current As GenericTreeNode
-    
-    Call LoadStack(Stack, False)
-
-    Do While InOrderTreeWalk(Current, Stack)
-        Set GArray(ArrayIndex) = Current.Key
-        ArrayIndex = ArrayIndex + 1
-    Loop
-  
-End Sub
-
-Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-    
-    If (GArray Is Nothing) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericDictionary_CopyValuesTo").NullPointer("GArray Is Nothing")
-    
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericDictionary_CopyValuesTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
-
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericDictionary_CopyValuesTo").InvalidInput("(GArray.Length - Index < Me.Count)")
-    
-    Dim Stack As InternalStack
-    Dim Current As GenericTreeNode
-    
-    Call LoadStack(Stack, False)
-
-    Do While InOrderTreeWalk(Current, Stack)
-        Set GArray(ArrayIndex) = Current.Value
-        ArrayIndex = ArrayIndex + 1
-    Loop
-    
-End Sub
+Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Keys_, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyKeysTo"): End Sub
+Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Values_, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyValuesTo"): End Sub
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
-Private Function IGenericCollection_ToArray() As GenericArray
-
-    Dim GArray As GenericArray
-    Set GArray = GenericArray.Build(myClass.Count)
-   
-    Call IGenericCollection_CopyTo(GArray:=GArray, ArrayIndex:=GArray.LowerBound)
-    
-    Set IGenericCollection_ToArray = GArray
-
-End Function
-
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-
-    If (GArray Is Nothing) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").NullPointer("GArray Is Nothing")
-    
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
-
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Count) Then _
-        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Me.Count)")
-    
-    Dim Current As GenericTreeNode
-    Dim Stack As InternalStack
-    
-    Call LoadStack(Stack, False)
-    
-    Do While InOrderTreeWalk(Current, Stack)
-        Set GArray(ArrayIndex) = Current.CopyToPair
-        ArrayIndex = ArrayIndex + 1
-    Loop
-    
-End Sub
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(pairs_, GenericArray.Build(myClass.Count), GenericArray.LowerBound, "Private Function IGenericCollection_ToArray() As GenericArray"): End Function
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator: Set IGenericCollection_NewEnumerator = Me.Enumerator: End Function
 

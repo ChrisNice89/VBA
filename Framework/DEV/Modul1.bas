@@ -75,11 +75,11 @@ Sub TestTree()
     Debug.Print tree.GetMin
         
     Dim e As IGenericEnumerator
-    Set e = tree
+    Set e = tree.Enumerator
     
-'    Do While e.MoveNext
-'        Debug.Print e.Current
-'    Loop
+    Do While e.MoveNext
+        Debug.Print e.Current
+    Loop
 
     Dim ga As IGenericReadOnlyList
     Set ga = tree.GetKeys()
@@ -139,7 +139,7 @@ Sub TestGenericCollection()
     Dim list As GenericList
     Set list = GenericList.Build
     
-    Call list.AddAll(C.GetKeys)
+    Call list.AddAll(C.GetValues)
    
     Dim Clone As IGenericReadOnlyList
     Set Clone = Skynet.Clone(list.AsReadOnly)

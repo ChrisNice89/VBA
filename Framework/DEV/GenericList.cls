@@ -102,7 +102,7 @@ Public Property Let Capacity(ByVal Value As Long)
             Dim newItems As GenericArray
             Set newItems = GenericArray.Build(Value)
             If (myClass.Size > 0) Then _
-                Call Skynet.CopyData(Dst:=newItems.AdressOf(Element:=1), src:=myClass.Items.AdressOf(Element:=1), Bytes:=myClass.Items.TotalSize, ClearSource:=True)
+                Call Skynet.CopyData(Dst:=newItems.AdressOf(Element:=1), Src:=myClass.Items.AdressOf(Element:=1), Bytes:=myClass.Items.TotalSize, ClearSource:=True)
 
             Set myClass.Items = newItems
         Else
@@ -167,8 +167,16 @@ Public Function AsReadOnly() As IGenericReadOnlyList
     Set AsReadOnly = GenericReadOnlyList.Build(Internal:=myClass.Items, Size:=myClass.Size)
 End Function
 
-Public Function Enumerator() As IGenericEnumerator
-    Set Enumerator = myClass.Items.Enumerator(myClass.Items.LowerBound, myClass.Size)
+Public Function Enumerator(Optional ByVal StartIndex, Optional ByVal Count As Long) As IGenericEnumerator
+    
+    If StartIndex = 0 Then _
+        StartIndex = myClass.Items.LowerBound
+        
+    If Count = 0 Then _
+        Count = myClass.Size
+        
+    Set Enumerator = myClass.Items.Enumerator(StartIndex, Count)
+     
 End Function
 
 Public Function Add(ByVal Item As IGeneric) As Long
@@ -195,7 +203,7 @@ Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
             Call EnsureCapacity(myClass.Size + 1)
 
         If (Index < myClass.Size + .LowerBound) Then _
-            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
             Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(1))
 
          Set .ElementAt(Index) = Item: Call InterlockedIncrement(myClass.Size)
@@ -220,7 +228,7 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericEnumerator
         
             With myClass.Items
                 If (Index < myClass.Size + .LowerBound) Then _
-                    Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + C.Count), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+                    Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index + C.Count), Src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
                     Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(C.Count))
     
             End With
@@ -260,7 +268,7 @@ Public Sub RemoveAt(ByVal Index As Long)
         Set .ElementAt(Index) = Nothing
         
         If (Index < myClass.Size + .LowerBound) Then _
-            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.CopyData(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
             Call Skynet.ClearData(Dst:=ByVal .AdressOf(Element:=myClass.Size), Bytes:=.SizeOf(1))
             
     End With
@@ -325,6 +333,7 @@ End Sub
 'ToArray returns a new Object array containing the contents of the List.
 'This requires copying the List, which is an O(n) operation.
 Public Function ToArray() As GenericArray
+
     Dim ga As GenericArray
     Set ga = GenericArray.Build(myClass.Size)
 
@@ -500,18 +509,14 @@ Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayI
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 
 'IGenericEnumerator
-Private Property Get IGenericEnumerator_Current() As IGeneric
-    Set IGenericEnumerator_Current = myClass.Items(myClass.Enumerator.Index)
-End Property
-
+Private Property Get IGenericEnumerator_Current() As IGeneric: Set IGenericEnumerator_Current = myClass.Enumerator.Current: End Property
 Private Function IGenericEnumerator_MoveNext() As Boolean
     
     With myClass.Enumerator
         If .Index > myClass.Size Then _
-            Set .Current = Nothing: Exit Function
+            Exit Function
             
         Set .Current = myClass.Items(InterlockedIncrement(.Index))
-      
     End With
     
     IGenericEnumerator_MoveNext = True
@@ -519,6 +524,7 @@ Private Function IGenericEnumerator_MoveNext() As Boolean
 End Function
 
 Private Sub IGenericEnumerator_Reset()
+    Set myClass.Enumerator.Current = Nothing
     myClass.Enumerator.Index = myClass.Items.LowerBound - 1
 End Sub
 

@@ -21,8 +21,8 @@ Private Const NullPointer As Long = 0
     Private Const POINTERSIZE As LongPtr = 8
     Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As LongPtr)
     Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal src As LongPtr) As Long
-    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
     Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Size As LongPtr)
 #Else
@@ -30,8 +30,8 @@ Private Const NullPointer As Long = 0
     Private Const POINTERSIZE As Long = 4
     Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As Long)
     Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal src As Long) As Long
-    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As Long, ByVal src As Long) As Long
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As LongPtr, ByVal Src As Long) As Long
+    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef Dst As Long, ByVal Src As Long) As Long
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Size As Long)
 #End If
@@ -94,12 +94,12 @@ Public Sub ClearData(ByVal Dst As LongPtr, ByVal Bytes As Long)
     Call FillMemory(ByVal Dst, Bytes, 0) 'Call ZeroMemory(ByVal dst, Bytes)
 End Sub
 
-Public Sub CopyData(ByVal Dst As LongPtr, ByVal src As LongPtr, ByVal Bytes As Long, Optional ByVal ClearSource As Boolean = False)
+Public Sub CopyData(ByVal Dst As LongPtr, ByVal Src As LongPtr, ByVal Bytes As Long, Optional ByVal ClearSource As Boolean = False)
     
-    Call CopyMemory_byVar(ByVal Dst, ByVal src, Bytes) 'Works
+    Call CopyMemory_byVar(ByVal Dst, ByVal Src, Bytes) 'Works
     'Call CopyBytes(Bytes, ByVal Dst, ByVal Src) 'works
     If ClearSource Then _
-        Call ZeroMemory(ByVal src, Bytes) 'FillMemory(ByVal Src, Bytes, 0)
+        Call ZeroMemory(ByVal Src, Bytes) 'FillMemory(ByVal Src, Bytes, 0)
 End Sub
 
 Public Function CreateInstance(ByVal Prototype As IPrototype, ByVal Source As LongPtr, ByVal Size As Long) As Object
@@ -124,12 +124,12 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
         If Not (VarType(SomeArray) And VbVarType.vbArray) = VbVarType.vbArray Then _
             .Throw(Me, "ArrayPointer").InvalidInput ("Not (IsArray(SomeArray))")
     
-        Call .CopyData(Dst:=ByVal VarPtr(vType), src:=ByVal VarPtr(SomeArray), Bytes:=2&)
-        Call .CopyData(Dst:=ByVal VarPtr(PointerOf), src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSIZE)
+        Call .CopyData(Dst:=ByVal VarPtr(vType), Src:=ByVal VarPtr(SomeArray), Bytes:=2&)
+        Call .CopyData(Dst:=ByVal VarPtr(PointerOf), Src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSIZE)
         
         'if SomeArray is defined x() as ...
         If (vType And VT_BYREF) = VT_BYREF Then _
-            Call .CopyData(Dst:=ByVal VarPtr(PointerOf), src:=ByVal PointerOf, Bytes:=POINTERSIZE)
+            Call .CopyData(Dst:=ByVal VarPtr(PointerOf), Src:=ByVal PointerOf, Bytes:=POINTERSIZE)
     End With
     
 End Function
