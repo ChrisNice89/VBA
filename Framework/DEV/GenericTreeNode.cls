@@ -19,7 +19,7 @@ Implements IPrototype
 
 Private Type Member
     Key As IGeneric
-    Value As Object
+    Value As IGeneric
     Left As GenericTreeNode
     Right As GenericTreeNode
     IsRed As Boolean
@@ -44,7 +44,7 @@ Public Property Set Right(ByVal Node As GenericTreeNode): Set myClass.Right = No
 Public Property Get Key() As IGeneric: Set Key = myClass.Key: End Property
 Public Property Set Key(ByVal k As IGeneric): Set myClass.Key = k: End Property
 
-Public Property Get Value() As Object: Set Value = myClass.Value: End Property
+Public Property Get Value() As IGeneric: Set Value = myClass.Value: End Property
 Public Property Set Value(ByVal v As IGeneric): Set myClass.Value = v: End Property
 
 'GenericPairXY

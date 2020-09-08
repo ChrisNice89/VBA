@@ -194,9 +194,11 @@ Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    Dim s As GString: Set s = Other
+    Dim s As GString
     
-    If s Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    
+    Set s = Other
     If Not (myClass.Length = Me.Length) Then IGeneric_Equals = False: Exit Function
 
     IGeneric_Equals = (StrComp(myClass.Value, s.Value, vbBinaryCompare) = 0)
@@ -212,6 +214,7 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     IGeneric_CompareTo = StrComp(myClass.Value, s.Value, vbBinaryCompare)
 
 End Function
+
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.Hashfunction): End Property
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GString): End Function
 Private Function IGeneric_ToString() As String

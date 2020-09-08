@@ -63,17 +63,20 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
-    Dim Pair As GenericPairXY
+
+    Dim otherPair As GenericPairXY
     
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
     If TypeOf Other Is GenericPairXY Then
-        Set Pair = Other
-        If Not myClass.Value Is Nothing Then
-            IGeneric_Equals = myClass.Key.Equals(Pair.Key) And myClass.Value.Equals(Pair.Value): Exit Function
-        Else
-            IGeneric_Equals = myClass.Key.Equals(Pair.Key) And Pair.Value Is Nothing: Exit Function
+        If Not myClass.Key Is Nothing Then
+            If Not myClass.Value Is Nothing Then
+                IGeneric_Equals = myClass.Key.Equals(otherPair.Key) And myClass.Value.Equals(otherPair.Value): Exit Function
+            Else
+                IGeneric_Equals = myClass.Key.Equals(otherPair.Key) And otherPair.Value Is Nothing: Exit Function
+            End If
         End If
+        
     End If
     
     IGeneric_Equals = myClass.Key.Equals(Other)

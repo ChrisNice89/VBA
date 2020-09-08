@@ -25,12 +25,6 @@ Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (ByRef Va
 
 Private Const MAX_CALLSTACK_SIZE As Long = 1000
 
-Private Enum InternalData
-    Keys_ = 0
-    Values_
-    pairs_
-End Enum
-
 Private Type InternalStack
     Size As Long
     Items() As GenericTreeNode
@@ -58,7 +52,7 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get MaxHeight() As Long: MaxHeight = 2 * Skynet.Logn(myClass.Count + 1, 2): End Property
+Private Property Get MaxHeight() As Long: MaxHeight = 2 * Skynet.Logn(myClass.Count + 1, Base:=2): End Property
 Public Property Get Count() As Long: Count = myClass.Count: End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
@@ -276,7 +270,27 @@ Public Sub Clear()
     myClass.Count = 0
 End Sub
 
-Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = Not FindNode(Key) Is Nothing: End Function
+Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: ContainsKey = Not FindNode(Key) Is Nothing: End Function
+Public Function ContainsValue(ByVal Value As IGeneric) As Boolean
+    
+    Dim Stack As InternalStack
+    Dim Current As GenericTreeNode
+
+    Call LoadStack(Stack, False)
+    
+    If Not (Value Is Nothing) Then
+        Do While InOrderTreeWalk(Current, Stack)
+            If (Current.Value.Equals(Value)) Then _
+                ContainsValue = True: Exit Function
+        Loop
+    Else
+        Do While InOrderTreeWalk(Current, Stack)
+            If (Current.Value Is Nothing) Then _
+                ContainsValue = True: Exit Function
+        Loop
+    End If
+    
+End Function
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
 
     Dim Node As GenericTreeNode: Set Node = FindNode(Key)
@@ -624,7 +638,7 @@ Private Sub LoadStack(ByRef Stack As InternalStack, ByVal Reverse As Boolean)
     With Stack
         .Reverse = Reverse
         .Size = 0
-        ReDim .Items(1 To Me.MaxHeight)
+        ReDim .Items(1 To MaxHeight)
         
         If .Reverse = False Then
             Do While Not (Node Is Nothing)
@@ -725,23 +739,24 @@ Private Sub Class_Terminate()
 End Sub
 
 'IGenericDictionary
-Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
 Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Set Me.Item(Key) = Value: End Property
 Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = Me.Item(Key): End Property
-Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.Contains(Key): End Function
+Private Property Get IGenericDictionary_Count() As Long: IGenericDictionary_Count = myClass.Count: End Property
+
+Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.ContainsKey(Key:=Key): End Function
+Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Boolean: IGenericDictionary_ContainsValue = Me.ContainsValue(Value:=Value): End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric):: End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
-Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Keys_, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyKeysTo"): End Sub
-Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Values_, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyValuesTo"): End Sub
+Private Sub IGenericDictionary_CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Internal, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyOf"): End Sub
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(pairs_, GenericArray.Build(myClass.Count), GenericArray.LowerBound, "Private Function IGenericCollection_ToArray() As GenericArray"): End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.ContainsKey(Key:=Item): End Function
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(Pairs_, GenericArray.Build(myClass.Count), GenericArray.LowerBound, "Private Function IGenericCollection_ToArray() As GenericArray"): End Function
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator: Set IGenericCollection_NewEnumerator = Me.Enumerator: End Function
 

@@ -66,6 +66,7 @@ End Type
 Private Virtual As Internal
 
 Public Property Get Count() As Long: Count = myClass.Size: End Property
+Public Property Get BaseIndex() As Long: BaseIndex = myClass.Items.LowerBound: End Property
 Public Property Get SortOrder() As SortOrder: SortOrder = myClass.SortOrder: End Property
 Public Property Let SortOrder(ByVal Order As SortOrder):    myClass.SortOrder = Order: End Property
 Public Property Get Last() As IGeneric: Set Last = myClass.Items(myClass.Size): End Property
@@ -164,7 +165,7 @@ Private Sub Class_Terminate()
 End Sub
 
 Public Function AsReadOnly() As IGenericReadOnlyList
-    Set AsReadOnly = GenericReadOnlyList.Build(Internal:=myClass.Items, Size:=myClass.Size)
+    Set AsReadOnly = Me 'GenericReadOnlyList.Build(Internal:=myClass.Items, Size:=myClass.Size)
 End Function
 
 Public Function Enumerator(Optional ByVal StartIndex, Optional ByVal Count As Long) As IGenericEnumerator
@@ -478,16 +479,9 @@ Private Function IGeneric_ToString() As String
     End With
 End Function
 
-'IGenericList
-Private Property Set IGenericList_Item(ByVal Index As Long, ByVal Item As IGeneric): Set myClass.Items(Index) = Item: End Property
-Private Property Get IGenericList_Item(ByVal Index As Long) As IGeneric: Set IGenericList_Item = myClass.Items(Index): End Property
-Private Property Get IGenericList_Elements() As IGenericCollection: Set IGenericList_Elements = Me: End Property
-Private Function IGenericList_IndexOf(ByVal Item As IGeneric) As Long: IGenericList_IndexOf = Me.IndexOf(Item:=Item): End Function
-Private Sub IGenericList_Insert(ByVal Index As Long, ByVal Item As IGeneric): Call Me.Insert(Index, Item): End Sub
-Private Sub IGenericList_RemoveAt(ByVal Index As Long): Call Me.RemoveAt(Index): End Sub
-
 'IGenericReadOnlyList
-Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
+Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = myClass.Items.LowerBound: End Property
+Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myClass.Size: End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myClass.Items.IndexOf(Value:=Item, Count:=myClass.Size): End Function
 Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
     
@@ -498,6 +492,10 @@ Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
     
 End Property
 
+Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myClass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Size): End Sub
+Private Function IGenericReadOnlyList_NewEnumerator() As IGenericEnumerator: Set IGenericReadOnlyList_NewEnumerator = Me.Enumerator: End Function
+
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
@@ -505,7 +503,7 @@ Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollect
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.ToArray: End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Item:=Item): End Function
 Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator: Set IGenericCollection_NewEnumerator = Me.Enumerator: End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=1, GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myClass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Size): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 
 'IGenericEnumerator

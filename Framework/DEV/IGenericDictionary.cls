@@ -11,20 +11,28 @@ Attribute VB_Exposed = True
 Option Explicit
 '@Folder "<T>Enumerable"
 
+Public Enum InternalData
+    Keys_ = 0
+    Values_
+    Pairs_
+End Enum
+
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: End Property
 Attribute Item.VB_UserMemId = 0
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): End Property
-Public Property Get Elements() As IGenericCollection: End Property
+Public Property Get Count() As Long: End Property
+
 'Public Property Get Keys() As IGenericCollection: End Property
 'Public Property Get Values() As IGenericCollection: End Property
 
+Public Function ContainsValue(ByVal Value As IGeneric) As Boolean: End Function
 Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: End Function
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean: End Function
 Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric): End Sub
 Public Sub Remove(ByVal Key As IGeneric): End Sub
 
-Public Sub CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
-Public Sub CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
+Public Sub CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
+
 
 'Private Sub Class_Initialize()
 '    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation

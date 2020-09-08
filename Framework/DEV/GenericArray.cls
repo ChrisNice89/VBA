@@ -281,7 +281,7 @@ Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
 End Function
 
 Public Function AsReadOnly() As IGenericReadOnlyList
-    Set AsReadOnly = GenericReadOnlyList.Build(Internal:=Me, Size:=Me.Length)
+    Set AsReadOnly = Me 'GenericReadOnlyList.Build(Internal:=Me, Size:=Me.Length)
 End Function
 
 Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef s As SAFEARRAYSTRUCT)
@@ -386,18 +386,6 @@ Public Sub Copy( _
 '    Call SrcArray.Refresh
 '    Call DstArray.Refresh
     
-End Sub
-
-Public Sub CopyTo( _
-                    ByVal GArray As GenericArray, _
-                    ByVal ArrayIndex As Long, _
-                    ByVal SourceIndex As Long, _
-                    Optional ByVal Elements As Long = 0)
-
-    If (Elements = 0) Then _
-        Elements = Me.Length
-
-    Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=SourceIndex, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Elements)
 End Sub
 
 Public Sub ResizeTo(ByVal newSize As Long)
@@ -789,9 +777,14 @@ Private Function IGeneric_ToString() As String
 End Function
 
 'IGenericReadOnlyList
-Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
+Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = MIN_INDEX: End Property
+Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myClass.Elements: End Property
 Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.Internal(Index): End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements): End Function
+
+Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Elements): End Sub
+Private Function IGenericReadOnlyList_NewEnumerator() As IGenericEnumerator: Set IGenericReadOnlyList_NewEnumerator = Me.Enumerator: End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = True: End Property

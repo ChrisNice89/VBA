@@ -144,11 +144,11 @@ Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGen
         If Not (Me.Generic(a).IsRelatedTo(b)) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("Type(a) != Type(b)")
     
-        If Not (a.Elements.Count = b.Elements.Count) Then _
-            Me.Throw(Me, "CompareLists").InvalidInput ("a.Elements.Count != b.Elements.Count")
+        If Not (a.Count = b.Count) Then _
+            Me.Throw(Me, "CompareLists").InvalidInput ("a.Count != b.Count")
         
         Dim i As Long, C As ComparerEnum
-        Do While (InterlockedIncrement(i) < a.Elements.Count And C = IsEqual)
+        Do While (InterlockedIncrement(i) < a.Count And C = IsEqual)
             If Not a(i) Is Nothing Then _
                 C = a(i).Equals(b(i))
         Loop
@@ -228,20 +228,20 @@ Public Function IndexOf( _
                             ByRef Objects() As IGeneric, _
                             ByVal Value As IGeneric, _
                             ByVal StartIndex As Long, _
-                            ByVal Count As Long)
+                            ByVal Count As Long) As Long
     Dim i As Long
     Dim EndIndex As Long
 
     EndIndex = StartIndex + Count - LBound(Objects)
     
-    If (Value Is Nothing) Then
+    If Not (Value Is Nothing) Then
         For i = StartIndex To EndIndex
-            If (Objects(i) Is Nothing) Then _
+            If Value.Equals(Objects(i)) Then _
                 IndexOf = i: Exit Function
         Next
     Else
         For i = StartIndex To EndIndex
-            If Value.Equals(Objects(i)) Then _
+            If (Objects(i) Is Nothing) Then _
                 IndexOf = i: Exit Function
         Next
     End If
@@ -555,7 +555,7 @@ Public Function HashValue( _
                             ByRef ascii() As Byte, _
                             Optional ByVal Hashfunction As Hashing = Hashing.Function1) As Long
     
-    Dim h As Double
+    Dim H As Double
     Dim i As Long
     
     Select Case Hashfunction
@@ -570,7 +570,7 @@ Public Function HashValue( _
                 Next
             End With
             
-            h = h1 + (h2 * 1566083941#)
+            H = h1 + (h2 * 1566083941#)
         
         Case Hashing.Function2
             
@@ -578,24 +578,24 @@ Public Function HashValue( _
              Dim n As Long
              
              For n = (Length / 2) To 1 Step -1
-                h = h + ascii(i)
-                h = Me.X0R(Me.X0R(LeftShift(h, 16), Me.LeftShift(ascii(i + 1), 11)), h)
-                h = h + Me.RightShift(h, 11)
+                H = H + ascii(i)
+                H = Me.X0R(Me.X0R(LeftShift(H, 16), Me.LeftShift(ascii(i + 1), 11)), H)
+                H = H + Me.RightShift(H, 11)
                 i = i + 2
             Next
             
             If ((Length Mod 2) = 1) Then
-                h = h + ascii(i) + 1566083941
-                h = Me.X0R(h, LeftShift(h, 10))
-                h = h + Me.RightShift(h, 1)
+                H = H + ascii(i) + 1566083941
+                H = Me.X0R(H, LeftShift(H, 10))
+                H = H + Me.RightShift(H, 1)
             End If
             
-            h = Me.X0R(h, Me.LeftShift(h, 3)): h = h + Me.RightShift(h, 5)
-            h = Me.X0R(h, Me.LeftShift(h, 4)): h = h + Me.RightShift(h, 17)
-            h = Me.X0R(h, Me.LeftShift(h, 25)): h = h + Me.RightShift(h, 6)
+            H = Me.X0R(H, Me.LeftShift(H, 3)): H = H + Me.RightShift(H, 5)
+            H = Me.X0R(H, Me.LeftShift(H, 4)): H = H + Me.RightShift(H, 17)
+            H = Me.X0R(H, Me.LeftShift(H, 25)): H = H + Me.RightShift(H, 6)
     End Select
     
-    HashValue = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
+    HashValue = CLng(H - (Fix(H / MAXVALUE) * MAXVALUE))
 
 End Function
 
@@ -685,7 +685,7 @@ Public Sub TestString()
     
     Debug.Print "Before: " & sentence.Value
     
-    Set WordSequence = GenericEnumerable(sentence.Split(" ").Enumerator(1, sentence.CountChar(" ") + 1))
+    Set WordSequence = GenericEnumerable(sentence.Split(" ").Enumerator(1, 9))
     
     Debug.Print "After: " & WordSequence.Aggregate(GString, IgnoreNull:=True)
     

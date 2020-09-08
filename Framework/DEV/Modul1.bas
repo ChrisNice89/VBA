@@ -31,7 +31,7 @@ Sub TestTree2()
     Dim t As Timer
     Set t = New Timer
     t.StartCounter
-    n = 50000
+    n = 10000
     For i = n To 1 Step -1
         Call tree.Add(GNumeric(i), GNumeric(i))
     Next
@@ -85,7 +85,7 @@ Sub TestTree()
     Set ga = tree.GetKeys()
     
     Dim i As Long
-    For i = 1 To ga.Elements.Count
+    For i = 1 To ga.Count
         Debug.Print "i: " & i & "  " & ga(i)
     Next
     
@@ -145,9 +145,9 @@ Sub TestGenericCollection()
     Set Clone = Skynet.Clone(list.AsReadOnly)
         
     Dim ga As GenericArray
-    Set ga = GenericArray.Build(Clone.Elements.Count)
+    Set ga = GenericArray.Build(Clone.Count)
     
-    Call Clone.Elements.CopyTo(ga, ga.LowerBound)
+    Call Clone.CopyTo(ga, ga.LowerBound)
     Call Skynet.Dispose(Clone)
        
     For i = ga.LowerBound To ga.Length
@@ -416,7 +416,6 @@ Public Sub Sometest()
     Debug.Print t.TimeElapsed
 End Sub
 
-
 Sub TMaptest()
 
     Dim i As Long
@@ -425,10 +424,14 @@ Sub TMaptest()
     
     Dim hm As GenericMap
     Set hm = GenericMap.Build()
-    
+    Dim t As Timer
+    Set t = New Timer
+    t.StartCounter
     For i = 1 To 20000
-        Call hm.Add(GString("Key" & i), GString("Value" & i)) 'TString("Value" & i)
+        Call hm.Add(GString("Key" & i), GString("Value" & i), False) 'TString("Value" & i)
     Next
+    Debug.Print t.TimeElapsed
+    Exit Sub
     Debug.Print hm(GString("Key1"))
     Dim hm2 As GenericMap
     Set hm2 = Skynet.Clone(hm)
@@ -437,7 +440,7 @@ Sub TMaptest()
     Debug.Print Skynet.Generic(hm2).Equals(hm)
     Debug.Print hm2.Item(GString("Key" & 1)).ToString
     
-    Call hm.Add(GString("Key" & 1), GString("ValueNew" & 1))
+    Call hm.Add(GString("Key" & 1), GString("ValueNew" & 1), False)
     Debug.Print hm2.Item(GString("Key" & 1)).ToString
     Debug.Print hm.Item(GString("Key" & 1)).ToString
     

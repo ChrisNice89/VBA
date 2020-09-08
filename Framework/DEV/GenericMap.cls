@@ -31,12 +31,6 @@ Private Const IS_EMPTY As Byte = 0
 Private Const HAS_ENTRY As Byte = 2 ^ 0
 Private Const HAS_COLLISION As Byte = 2 ^ 1
 
-Private Enum InternalData
-    Keys_ = 0
-    Values_
-    pairs_
-End Enum
-
 Private Type Constant
     MaxVal As Long
     InitialSize As Long
@@ -66,7 +60,7 @@ Private Type Member
     Occupancy As Long
     Count As Long
     RawSize As Long
-    HashSize As Long
+    Size As Long
     LoadSize As Long
     LoadFactor As Double
     Buckets() As Bucket
@@ -84,8 +78,8 @@ Private Virtual As Internal
 Public Property Get LoadSize() As Long: LoadSize = myClass.LoadSize: End Property
 Public Property Get LoadFactor() As Double: LoadFactor = myClass.LoadFactor: End Property
 Public Property Get Count() As Long: Count = myClass.Count: End Property
-Public Property Let Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
-Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
+Public Property Let Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
+Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myClass.Buckets(FindEntry(Key)).Value: End Property
 Attribute Item.VB_UserMemId = 0
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
@@ -162,12 +156,12 @@ Public Function Build( _
         If (.RawSize > Skynet.MaxLong) Then _
            Call Skynet.Throw(Me, "Build").Overflow(".RawSize > Skynet.MaxArraySize")
         
-        .HashSize = IIf(.RawSize > .Const.InitialSize, getPrime(.RawSize), .Const.InitialSize)
-        ReDim .Buckets(.HashSize - 1)
+        .Size = IIf(.RawSize > .Const.InitialSize, getPrime(.RawSize), .Const.InitialSize)
+        ReDim .Buckets(.Size - 1)
         
-        .LoadSize = Int(.LoadFactor * .HashSize)
-        If Not (.LoadSize < .HashSize) Then _
-            Call Skynet.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadsize must be less than hashsize.")
+        .LoadSize = Int(.LoadFactor * .Size)
+        If Not (.LoadSize < .Size) Then _
+            Call Skynet.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadsize must be less than Size.")
             
     End With
     
@@ -175,38 +169,16 @@ Public Function Build( _
     
 End Function
 
-Private Function AddKeysToArray(ByVal GArray As GenericArray, ByVal ArrayIndex As Long) As GenericArray
-    Dim i As Long
-    
-    For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
-        If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set GArray(ArrayIndex) = myClass.Buckets(i).Key: Call InterlockedIncrement(ArrayIndex)
-    Next
-    
-    Set AddKeysToArray = GArray
-    
-End Function
-
-Private Function AddValuesToArray(ByVal GArray As GenericArray, ByVal ArrayIndex As Long) As GenericArray
-    Dim i As Long
-    
-    For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
-        If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set GArray(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
-    Next
-    
-    Set AddValuesToArray = GArray
-    
-End Function
-
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
              
     Dim Try As Long
+    Dim Hash As HashItem
     
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function TryGetValue").KeyIsNothing
     
-    With InitialHashing(Key.HashValue, myClass.HashSize)
+    Call LoadHash(Hash, Key.HashValue, myClass.Size)
+    With Hash
         Do
             With myClass.Buckets(.Index)
                 If Not (.Key Is Nothing) Then _
@@ -229,23 +201,24 @@ End Function
 Private Function FindEntry(ByVal Key As IGeneric) As Long
 
     Dim Try As Long
-    Dim h As HashItem
+    Dim Hash As HashItem
     
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "FindEntry").KeyIsNothing
     
-    h = InitialHashing(Key.HashValue, myClass.HashSize)
+    Call LoadHash(Hash, Key.HashValue, myClass.Size)
+  
     Do
-        With myClass.Buckets(h.Index)
+        With myClass.Buckets(Hash.Index)
             If Not .Key Is Nothing Then _
                 If .Key.Equals(Key) Then _
-                    FindEntry = h.Index: Exit Function
+                    FindEntry = Hash.Index: Exit Function
 
             If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _
                 FindEntry = -1: Exit Function
         
         End With
-        With h
+        With Hash
             If ((InterlockedIncrement(Try)) > .Size) Then _
                 FindEntry = -1: Exit Function
     
@@ -324,26 +297,26 @@ Private Function Expandprime(ByVal oldSize As Long) As Long
     Else
         Expandprime = getPrime(newSize)
     End If
+    
 End Function
 
 Private Sub Expand()
-    Call Rehash(Expandprime(myClass.HashSize), False)
+    Call Rehash(Expandprime(myClass.Size), False)
 End Sub
 
-Private Function InitialHashing(ByVal HashValue As Long, ByVal HashSize As Long) As HashItem
+Private Sub LoadHash(ByRef H As HashItem, ByVal HashValue As Long, ByVal Size As Long)
     
-    With InitialHashing
-        .Size = HashSize
+    With H
+        .Size = Size
         .Index = Modulo(HashValue, .Size)
         .Incr = 1 + Modulo((CDbl(HashValue) * myClass.Const.HashPrime), (.Size - 1))
     End With
     
-End Function
+End Sub
 
 Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
 
     Dim NewBuckets() As Bucket: ReDim NewBuckets(Size - 1)
-    Dim b As Bucket
     Dim i As Long
   
     With myClass
@@ -352,25 +325,30 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
         If ForceNewHashing Then
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    b = .Buckets(i): b.HashCode = b.Key.HashValue: Call PutEntry(NewBuckets, b, InitialHashing(b.HashCode, Size))
+                    Call PutEntry(NewBuckets, .Buckets(i), .Buckets(i).Key.HashValue, Size)
             Next
         Else
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    b = .Buckets(i): Call PutEntry(NewBuckets, b, InitialHashing(b.HashCode, Size))
+                    Call PutEntry(NewBuckets, .Buckets(i), .Buckets(i).HashCode, Size)
             Next
         End If
         
-        b = EmptyBucket
         .Buckets = NewBuckets
         .LoadSize = Int(.LoadFactor * Size)
-        .HashSize = Size
+        .Size = Size
     End With
     
 End Sub
 
-Private Sub PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef Hash As HashItem)
+Private Sub PutEntry( _
+                        ByRef Buckets() As Bucket, _
+                        ByRef Entry As Bucket, _
+                        ByVal HashCode As Long, _
+                        ByVal Size As Long)
 
+    Dim Hash As HashItem
+    Call LoadHash(Hash, HashCode, Size)
     Entry.State = HAS_ENTRY
     
     With Hash
@@ -388,27 +366,29 @@ Private Sub PutEntry(ByRef Buckets() As Bucket, ByRef Entry As Bucket, ByRef Has
 End Sub
 
 Public Sub Add( _
-                    ByVal Key As IGeneric, _
-                    ByVal Value As IGeneric)
+                  ByVal Key As IGeneric, _
+                  ByVal Value As IGeneric, _
+                  Optional ByVal Overwrite As Boolean)
 
     Dim Try As Long
     Dim HashValue As Long
+    Dim Hash As HashItem
     
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Add").KeyIsNothing
         
     With myClass
         If (.Count >= .LoadSize) Then
-            Call Rehash(Expandprime(.HashSize), False)
+            Call Rehash(Expandprime(.Size), False)
         ElseIf ((.Occupancy > .LoadSize) And (.Count > .Const.RehashBarrier)) Then
-            Call Rehash(.HashSize, False)
+            Call Rehash(.Size, False)
         End If
         
         HashValue = Key.HashValue
-            
+        Call LoadHash(Hash, HashValue, .Size)
     End With
     
-    With InitialHashing(HashValue, myClass.HashSize)
+    With Hash
         Do
             With myClass.Buckets(.Index)
                 If .Key Is Nothing Then
@@ -419,9 +399,13 @@ Public Sub Add( _
                     Exit Sub
                 End If
                 
-                If .Key.Equals(Key) Then _
+                If .Key.Equals(Key) Then
+                    If (Overwrite = False) Then _
+                        Call Skynet.Throw(Me, "Public Function Add").DuplicateNotAllowed(Key)
+        
                     Set .Value = Value: Exit Sub
-             
+                End If
+                
                 If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _
                     .State = (HAS_ENTRY Or HAS_COLLISION): Call InterlockedIncrement(myClass.Occupancy)
                 
@@ -436,7 +420,6 @@ End Sub
 Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
-
 
 Private Function CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
     
@@ -527,7 +510,7 @@ Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "HashSize: " & .HashSize & vbNewLine & _
+                            "Size: " & .Size & vbNewLine & _
                             "LoadFactor: " & .LoadFactor & vbNewLine & _
                             "LoadSize: " & .LoadSize & vbNewLine & _
                             "Elements: " & .Count & vbNewLine & _
@@ -536,23 +519,42 @@ Private Function IGeneric_ToString() As String
 End Function
 
 'IGenericDictionary
-Private Property Get IGenericDictionary_Elements() As IGenericCollection: Set IGenericDictionary_Elements = Me: End Property
-Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Property
+Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
 Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myClass.Buckets(FindEntry(Key)).Value: End Property
+Private Property Get IGenericDictionary_Count() As Long: IGenericDictionary_Count = myClass.Count: End Property
 
 Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
+Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Boolean
+        
+        Dim i As Long
+        
+        If Not Value Is Nothing Then
+            For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+                If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                    If (Value.Equals(myClass.Buckets(i).Value)) Then _
+                        IGenericDictionary_ContainsValue = True: Exit Function
+            Next
+            
+        Else
+            For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
+                If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                    If (myClass.Buckets(i).Value Is Nothing) Then _
+                        IGenericDictionary_ContainsValue = True: Exit Function
+            Next
+        End If
+            
+End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
-Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
-Private Sub IGenericDictionary_CopyKeysTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Keys_, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyKeysTo"): End Sub
-Private Sub IGenericDictionary_CopyValuesTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Values_, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyValuesTo"): End Sub
+Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, False): End Sub
+Private Sub IGenericDictionary_CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Internal, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyOf"): End Sub
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray
     
