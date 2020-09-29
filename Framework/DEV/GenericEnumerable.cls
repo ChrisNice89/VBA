@@ -40,7 +40,7 @@ Private myClass As Member
 'Private Formats() As String
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -61,7 +61,7 @@ End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
     Set myClass.Sequence = GenericEnumerable.Sequence
 End Sub
 
@@ -170,7 +170,7 @@ End Sub
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericEnumerable: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericEnumerable: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 

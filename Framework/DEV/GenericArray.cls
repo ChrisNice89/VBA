@@ -119,7 +119,7 @@ End Type
 Private myClass As Member
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -293,7 +293,7 @@ End Sub
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
 End Sub
 
 Private Sub Class_Terminate()
@@ -341,8 +341,8 @@ Public Sub Copy( _
                     ByVal Elements As Long)
                     
     Dim Overlay As SAFEARRAYSTRUCT
-    Dim Src As SAFEARRAYSTRUCT
-    Dim Dst As SAFEARRAYSTRUCT
+    Dim src As SAFEARRAYSTRUCT
+    Dim dst As SAFEARRAYSTRUCT
  
     If (SrcArray Is Nothing) Or (DstArray Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Sub Copy").InvalidInput("SrcArray Is Nothing) Or (DstArray Is Nothing)")
@@ -366,21 +366,21 @@ Public Sub Copy( _
     End With
     
     With SrcArray
-        Call LoadArrayStructure(Src, .Descriptor) ' Could use prototype and load all member
+        Call LoadArrayStructure(src, .Descriptor) ' Could use prototype and load all member
         Overlay.pvData = .AdressOf(Element:=SrcIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
     
     With DstArray
-        Call LoadArrayStructure(Dst, .Descriptor)
+        Call LoadArrayStructure(dst, .Descriptor)
         Overlay.pvData = .AdressOf(Element:=DstIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
     
     Call Catch(SafeArrayCopyData(ByVal SrcArray.Descriptor, ByVal DstArray.Descriptor))
     
-    Call SwitchTo(SrcArray.Descriptor, Src)
-    Call SwitchTo(DstArray.Descriptor, Dst)
+    Call SwitchTo(SrcArray.Descriptor, src)
+    Call SwitchTo(DstArray.Descriptor, dst)
 
 ' faster then LoadArrayStructure
 '    Call SrcArray.Refresh
@@ -657,7 +657,7 @@ Public Sub Transpose()
         ptrT2 = VarPtr(t2(1, 1))
         TotalSize = Me.SizeOf(Me.Length)
         
-        Call Skynet.CopyData(Dst:=ByVal ptrT1, Src:=ByVal .pvData, Bytes:=TotalSize)
+        Call Skynet.CopyData(dst:=ByVal ptrT1, src:=ByVal .pvData, Bytes:=TotalSize)
         
         For i = LBound(t1, 1) To UBound(t1, 1)
             For j = LBound(t1, 2) To UBound(t1, 2)
@@ -665,13 +665,13 @@ Public Sub Transpose()
             Next
         Next
     
-        Call Skynet.CopyData(Dst:=ByVal .pvData, Src:=ByVal ptrT2, Bytes:=TotalSize)
+        Call Skynet.CopyData(dst:=ByVal .pvData, src:=ByVal ptrT2, Bytes:=TotalSize)
 
         Dim Bounds() As SAFEARRAYBOUND
         ReDim Bounds(1 To 2)
         Bounds(1) = .Bounds(2): Bounds(2) = .Bounds(1)
 
-        Call Skynet.CopyData(Dst:=ByVal Me.Descriptor + 16&, Src:=VarPtr(Bounds(1)), Bytes:=.cDims * 8&)
+        Call Skynet.CopyData(dst:=ByVal Me.Descriptor + 16&, src:=VarPtr(Bounds(1)), Bytes:=.cDims * 8&)
         .Bounds(1) = Bounds(2): .Bounds(2) = Bounds(1)
      
     End With
@@ -881,7 +881,7 @@ End Sub
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericArray: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericArray: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 

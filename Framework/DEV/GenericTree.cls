@@ -21,12 +21,9 @@ Implements IPrototype
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
-Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (ByRef Var() As Any) As Long
-
-Private Const MAX_CALLSTACK_SIZE As Long = 1000
 
 Private Type InternalStack
-    Size As Long
+    size As Long
     Items() As GenericTreeNode
     Reverse As Boolean
 End Type
@@ -47,7 +44,7 @@ End Type
 Private myClass As Member
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -90,8 +87,7 @@ Public Function GetMax() As IGeneric
         Loop
     End If
     
-    
-    Set GetMax = Node.CopyToPair
+    Set GetMax = Node.AsPair
 
 End Function
 
@@ -105,19 +101,19 @@ Public Function GetMin() As IGeneric
         Loop
     End If
     
-    Set GetMin = Node.CopyToPair
+    Set GetMin = Node.AsPair
 
 End Function
 
 Public Sub AddAll(ByVal Collection As IGenericEnumerator)
     
-'    Dim p As GenericPairXY
+'    Dim p As GenericPair
 '    Dim i As IGeneric
 '
 '    With Collection
 '        Do While Collection.MoveNext
 '            Set i = .Current
-'            If TypeOf i Is GenericPairXY Then
+'            If TypeOf i Is GenericPair Then
 '                Set p = .Current
 '                If Not Me.Contains(p.Key) Then _
 '                    Call Me.Add(p.Key, p.Value)
@@ -244,14 +240,13 @@ End Sub
 
 Public Function Build() As GenericTree
 
-   'Set myClass.Root = GenericTreeNode.Build(Nothing, Nothing)
     Set Build = New GenericTree 'Skynet.Create(GenericTree)
 
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
 End Sub
 
 Public Function Enumerator(Optional ByVal Reverse As Boolean) As IGenericEnumerator
@@ -261,7 +256,7 @@ Public Function Enumerator(Optional ByVal Reverse As Boolean) As IGenericEnumera
     Call LoadEnumerator(C.Enumerator, Reverse)
     Set C.Enumerator.Parent = Me
     
-    Set Enumerator = Skynet.CreateInstance(New GenericTree, VarPtr(C), Virtual.Size)
+    Set Enumerator = Skynet.CreateInstance(New GenericTree, VarPtr(C), Virtual.size)
     
 End Function
 
@@ -269,6 +264,11 @@ Public Sub Clear()
     Set myClass.Root = Nothing
     myClass.Count = 0
 End Sub
+
+Public Function Remove(ByVal Item As IGeneric) As Boolean
+
+
+End Function
 
 Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: ContainsKey = Not FindNode(Key) Is Nothing: End Function
 Public Function ContainsValue(ByVal Value As IGeneric) As Boolean
@@ -330,10 +330,10 @@ Public Function IndexOf(ByVal Key As IGeneric) As Long
     
     Do While Not (Node Is Nothing)
         Order = Node.Key.CompareTo(Key)
-        If (Order = 0) Then
-           IndexOf = Count: Exit Function
-        End If
         
+        If (Order = 0) Then _
+           IndexOf = Count: Exit Function
+      
         If (Order > 0) Then
             Set Node = Node.Left
             Count = 2 * Count
@@ -391,20 +391,20 @@ Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Boolean
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Add").KeyIsNothing
     
-    If (myClass.Root Is Nothing) Then
-        Set myClass.Root = GenericTreeNode(Key, Value, False)
-        Call InterlockedIncrement(myClass.Count)
-        Add = True: Exit Function
-    End If
+    If (myClass.Root Is Nothing) Then _
+        Set myClass.Root = GenericTreeNode(Key, Value, False): _
+        Call InterlockedIncrement(myClass.Count): _
+        Add = True: _
+        Exit Function
     
     Set Current = myClass.Root
     Do While Not (Current Is Nothing)
         Order = Current.Key.CompareTo(Key)
-        If (Order = 0) Then
-            myClass.Root.IsRed = False
-            Add = False
+        
+        If (Order = 0) Then _
+            myClass.Root.IsRed = False: _
+            Add = False: _
             Exit Function
-        End If
         
         If (Is4Node(Current)) Then
              'Call Split4Node(Current)
@@ -602,25 +602,25 @@ Private Function InOrderTreeWalk( _
     
     Dim Node As GenericTreeNode
 
-    If Stack.Size = 0 Then _
+    If Stack.size = 0 Then _
         Set Current = Nothing: Exit Function
     
     With Stack
-        Set Current = .Items(.Size)
-        Set .Items(.Size) = Nothing
-        .Size = .Size - 1
+        Set Current = .Items(.size)
+        Set .Items(.size) = Nothing
+        .size = .size - 1
         If .Reverse = False Then
             Set Node = Current.Right
     
             Do While Not (Node Is Nothing)
-                Set .Items(InterlockedIncrement(.Size)) = Node
+                Set .Items(InterlockedIncrement(.size)) = Node
                 Set Node = Node.Left
             Loop
         Else
             Set Node = Current.Left
     
             Do While Not (Node Is Nothing)
-                Set .Items(InterlockedIncrement(.Size)) = Node
+                Set .Items(InterlockedIncrement(.size)) = Node
                 Set Node = Node.Right
             Loop
         End If
@@ -637,17 +637,17 @@ Private Sub LoadStack(ByRef Stack As InternalStack, ByVal Reverse As Boolean)
     
     With Stack
         .Reverse = Reverse
-        .Size = 0
+        .size = 0
         ReDim .Items(1 To MaxHeight)
         
         If .Reverse = False Then
             Do While Not (Node Is Nothing)
-                Set .Items(InterlockedIncrement(.Size)) = Node
+                Set .Items(InterlockedIncrement(.size)) = Node
                 Set Node = Node.Left
             Loop
         Else
             Do While Not (Node Is Nothing)
-                Set .Items(InterlockedIncrement(.Size)) = Node
+                Set .Items(InterlockedIncrement(.size)) = Node
                 Set Node = Node.Right
             Loop
         End If
@@ -694,7 +694,7 @@ Private Function CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericA
             Loop
         Case Else
             Do While InOrderTreeWalk(Current, Stack)
-                Set GArray(ArrayIndex) = Current.CopyToPair
+                Set GArray(ArrayIndex) = Current.AsPair
                 ArrayIndex = ArrayIndex + 1
             Loop
     End Select
@@ -708,7 +708,7 @@ Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass
     Call Skynet.Throw(Me, "Private Function IGeneric_Equals").NotImplemented
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTree, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTree, VarPtr(C), Virtual.size)
   
 End Function
 
@@ -746,7 +746,7 @@ Private Property Get IGenericDictionary_Count() As Long: IGenericDictionary_Coun
 Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.ContainsKey(Key:=Key): End Function
 Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Boolean: IGenericDictionary_ContainsValue = Me.ContainsValue(Value:=Value): End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
-Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric):: End Sub
+Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Item:=Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 Private Sub IGenericDictionary_CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Internal, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyOf"): End Sub
 
@@ -768,12 +768,12 @@ Private Function IGenericEnumerator_MoveNext() As Boolean
     Dim Node As GenericTreeNode
     
     If InOrderTreeWalk(Node, myClass.Enumerator.Stack) Then _
-        Set myClass.Enumerator.Current = Node.CopyToPair: IGenericEnumerator_MoveNext = True
-    'case Enumerator is  GenericTree
+        Set myClass.Enumerator.Current = Node.AsPair: IGenericEnumerator_MoveNext = True
+  
     If myClass.Enumerator.HasLoaded = False Then _
         Call LoadEnumerator(myClass.Enumerator, myClass.Enumerator.Stack.Reverse): _
         If InOrderTreeWalk(Node, myClass.Enumerator.Stack) Then _
-            Set myClass.Enumerator.Current = Node.CopyToPair: IGenericEnumerator_MoveNext = True
+            Set myClass.Enumerator.Current = Node.AsPair: IGenericEnumerator_MoveNext = True
  
 End Function
 
@@ -784,7 +784,7 @@ End Sub
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericTree: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericTree: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 

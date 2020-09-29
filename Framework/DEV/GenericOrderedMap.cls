@@ -33,29 +33,29 @@ End Type
 Private myClass As Member
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
 
 Public Property Get BaseIndex() As Long: BaseIndex = myClass.Internal.BaseIndex: End Property
-Public Property Get Entry(ByVal Index As Long) As GenericPairXY: Set Entry = myClass.Internal(Index): End Property
+Public Property Get Entry(ByVal Index As Long) As GenericPair: Set Entry = myClass.Internal(Index): End Property
 Public Property Get Count() As Long: Count = myClass.Internal.Count: End Property
 
 Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As GenericOrderedMap
     
     With myClass
         Set .Internal = GenericList.Build(Capacity)
-        Set .HashTable = GenericMap.Build(Capacity)
+        Set .HashTable = GenericMap.Build(Capacity * 2) 'GenericTree.Build
     End With
 
-    Set Build = Skynet.CreateInstance(New GenericOrderedMap, Virtual.Pointer, Virtual.Size)
+    Set Build = Skynet.CreateInstance(New GenericOrderedMap, Virtual.Pointer, Virtual.size)
 
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
 End Sub
 
 Public Function GetKeys() As GenericArray
@@ -92,17 +92,20 @@ Public Property Get ElementAt(ByVal Index As Long): Set ElementAt = Me.Entry(Ind
 
 Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
     Dim Key As IGeneric
-    Set Key = Me.Entry(Index).Key
     
+    If (Index > myClass.Internal.Count) Then _
+        Call Skynet.Throw(Me, "Public Property Set ElementAt").IndexOutofRange("Index not valid")
+    
+    Set Key = Me.Entry(Index).Key
     Set myClass.HashTable(Key) = Item
-    Set myClass.Internal(Index) = GenericPairXY(Key, Item)
+    Set myClass.Internal(Index) = GenericPair(Key, Item)
     
 End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Item As IGeneric)
     With myClass
         If (.HashTable.ContainsKey(Key)) Then _
-            Set .Internal(IndexOfKey(Key)) = GenericPairXY(Key, Item)
+            Set .Internal(IndexOfKey(Key)) = GenericPair(Key, Item)
 
         Set .HashTable(Key) = Item
     End With
@@ -111,13 +114,13 @@ End Property
 Public Sub Add(ByVal Key As IGeneric, ByVal Item As IGeneric)
     With myClass
         Call .HashTable.Add(Key, Item)
-        Call .Internal.Add(GenericPairXY(Key, Item))
+        Call .Internal.Add(GenericPair(Key, Item))
     End With
 End Sub
 
 Public Sub AddAll(ByVal Enumerator As IGenericEnumerator)
     
-    Dim p As GenericPairXY
+    Dim p As GenericPair
     Dim Item As IGeneric
     
     With Enumerator
@@ -129,10 +132,10 @@ Public Sub AddAll(ByVal Enumerator As IGenericEnumerator)
             Loop
         Else
             Do While Enumerator.MoveNext
-                If TypeOf .Current Is GenericPairXY Then
+                If TypeOf .Current Is GenericPair Then
                     Set p = .Current
                 Else
-                    Set p = GenericPairXY(.Current, Nothing)
+                    Set p = GenericPair(.Current, Nothing)
                 End If
                 Call myClass.HashTable.Add(p.Key, p.Value)
                 Call myClass.Internal.Add(p)
@@ -178,7 +181,7 @@ Public Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IGe
         
     With myClass
         Call .HashTable.Add(Key, Value)
-        Call .Internal.Insert(Index, GenericPairXY(Key, Value))
+        Call .Internal.Insert(Index, GenericPair(Key, Value))
     End With
     
 End Sub
@@ -232,7 +235,7 @@ Private Function CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericA
                 Set GArray(ArrayIndex) = Me.Entry(i).Value: Call InterlockedIncrement(ArrayIndex)
             Next
         Case Else
-             Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Internal.Count)
+            Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Internal.Count)
     End Select
     
     Set CopyOf = GArray
@@ -246,7 +249,7 @@ Private Function IGeneric_Clone() As IGeneric
     Set C.HashTable = Skynet.Clone(myClass.HashTable)
     Set C.Internal = Skynet.Clone(myClass.Internal)
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericOrderedMap, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericOrderedMap, VarPtr(C), Virtual.size)
    
 End Function
 
@@ -326,5 +329,5 @@ End Sub
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericOrderedMap: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericOrderedMap: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property

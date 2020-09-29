@@ -38,12 +38,12 @@ Sub TestTree2()
     Debug.Print t.TimeElapsed
     Debug.Print tree.GetMax
     Dim ga As GenericArray
-
-    Set ga = tree.GetKeys(True)
+'
+'    Set ga = tree.GetKeys()
 '    For i = ga.LowerBound To ga.Length
 '        Debug.Print ga(i)
 '    Next
-''
+'
 '
 '    With tree.Enumerator
 '        Do While .MoveNext
@@ -159,16 +159,16 @@ Sub TestGenericCollection()
     Call C.Remove(C.GetKeys(9))
     
 End Sub
-Sub TestGenericPairXY()
+Sub TestGenericPair()
     
     Dim C As New VBA.Collection
         
     Dim pair1 As IGeneric
-    Set pair1 = GenericPairXY(GString("A"), Nothing)
+    Set pair1 = GenericPair(GString("A"), Nothing)
     
     
     Dim pair2 As IGeneric
-    Set pair2 = GenericPairXY(GString("A"), C)
+    Set pair2 = GenericPair(GString("A"), C)
     
     Debug.Print pair1.Equals(pair2)
 End Sub

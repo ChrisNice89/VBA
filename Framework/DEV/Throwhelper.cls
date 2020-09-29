@@ -47,7 +47,7 @@ End Type
 Private myClass As Member
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -65,13 +65,13 @@ Public Function Build(ByVal Source As Object, ByVal Method As String) As Throwhe
         myClass.Method = Method
     End With
    
-    Set Build = Skynet.CreateInstance(New Throwhelper, Virtual.Pointer, Virtual.Size)
+    Set Build = Skynet.CreateInstance(New Throwhelper, Virtual.Pointer, Virtual.size)
     
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
 End Sub
 
 Public Sub Complete()
@@ -210,7 +210,7 @@ End Sub
 Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass 'hardcopy
-    Set IGeneric_Clone = Skynet.CreateInstance(New Throwhelper, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New Throwhelper, VarPtr(C), Virtual.size)
 
 End Function
 
@@ -243,6 +243,6 @@ End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New Throwhelper: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = Throwhelper: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

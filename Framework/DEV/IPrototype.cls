@@ -12,7 +12,7 @@ Option Explicit
 '@Folder "Base"
 Public Property Get StaticInstance() As Object: End Property
 Public Property Get VirtualPointer() As LongPtr: End Property
-Public Property Get Size() As Long: End Property
+Public Property Get size() As Long: End Property
 Public Function CreateDefault() As IPrototype: End Function
 
 'Private Sub Class_Initialize()

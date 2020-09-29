@@ -23,8 +23,5 @@ Public Function ToTree(ByVal Instance As IGeneric) As GenericTree: Set ToTree = 
 
 Public Function ToCollection(ByVal Instance As IGeneric) As IGenericCollection: Set ToCollection = Instance: End Function
 Public Function ToDictionary(ByVal Instance As IGeneric) As IGenericDictionary: Set ToDictionary = Instance: End Function
-Public Function ToPair(ByVal Instance As IGeneric) As GenericPairXY: Set ToPair = Instance: End Function
-
-
-
+Public Function ToPair(ByVal Instance As IGeneric) As GenericPair: Set ToPair = Instance: End Function
 

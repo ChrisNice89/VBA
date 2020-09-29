@@ -24,7 +24,7 @@ End Type
 Private myClass As Member
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -41,20 +41,20 @@ Attribute Build.VB_UserMemId = 0
         Set .Key = Key: Set .Value = Value
     End With
     
-    Set Build = Skynet.CreateInstance(New GenericPairXY, Virtual.Pointer, Virtual.Size)
+    Set Build = Skynet.CreateInstance(New GenericPairXY, Virtual.Pointer, Virtual.size)
     
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
 End Sub
 
 Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass 'hardcopy
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericMap, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericMap, VarPtr(C), Virtual.size)
   
 End Function
 
@@ -117,7 +117,7 @@ End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericPairXY: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericPairXY: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 

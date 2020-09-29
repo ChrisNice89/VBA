@@ -14,7 +14,7 @@ Option Explicit
 '@PredeclaredId
 
 Implements IGeneric
-'Implements GenericPairXY 'Bug!
+'Implements GenericPair 'Bug!
 Implements IPrototype
 
 Private Type Member
@@ -27,7 +27,7 @@ End Type
 Private myClass As Member
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -47,10 +47,10 @@ Public Property Set Key(ByVal k As IGeneric): Set myClass.Key = k: End Property
 Public Property Get Value() As IGeneric: Set Value = myClass.Value: End Property
 Public Property Set Value(ByVal v As IGeneric): Set myClass.Value = v: End Property
 
-'GenericPairXY
-Private Function GenericPairXY_Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPairXY: Set GenericPairXY_Build = GenericPairXY(Key, Value): End Function
-Private Property Get GenericPairXY_Key() As IGeneric: Set GenericPairXY_Key = myClass.Key: End Property
-Private Property Get GenericPairXY_Value() As Object: Set GenericPairXY_Value = myClass.Value: End Property
+'GenericPair
+Private Function GenericPair_Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPair: Set GenericPair_Build = GenericPair(Key, Value): End Function
+Private Property Get GenericPair_Key() As IGeneric: Set GenericPair_Key = myClass.Key: End Property
+Private Property Get GenericPair_Value() As Object: Set GenericPair_Value = myClass.Value: End Property
 
 Public Function Build( _
                         ByVal Key As IGeneric, _
@@ -75,15 +75,15 @@ End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
 End Sub
 
-Public Function CopyToPair() As GenericPairXY: Set CopyToPair = GenericPairXY.Build(myClass.Key, myClass.Value): End Function
+Public Function AsPair() As GenericPair: Set AsPair = GenericPair.Build(myClass.Key, myClass.Value): End Function
 Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass 'Hardcopy
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTreeNode, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTreeNode, VarPtr(C), Virtual.size)
     
 End Function
 
@@ -92,10 +92,10 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
-    Dim Pair As GenericPairXY
+    Dim Pair As GenericPair
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
-    If TypeOf Other Is GenericPairXY Then
+    If TypeOf Other Is GenericPair Then
         Set Pair = Other
         If Not myClass.Value Is Nothing Then
             IGeneric_Equals = myClass.Key.Equals(Pair.Key) And myClass.Value.Equals(Pair.Value): Exit Function
@@ -110,12 +110,12 @@ End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     
-    Dim Pair As GenericPairXY
+    Dim Pair As GenericPair
     
     If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    If TypeOf Other Is GenericPairXY Then
+    If TypeOf Other Is GenericPair Then
         Set Pair = Other
         IGeneric_CompareTo = myClass.Key.CompareTo(Pair.Key): Exit Function
     End If
@@ -124,7 +124,7 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = myClass.Key.HashValue: End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPairXY): End Function
+Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPair): End Function
 Private Function IGeneric_ToString() As String
     
     IGeneric_ToString = "Class: " & TypeName$(Me) & vbNewLine & _
@@ -136,7 +136,7 @@ Private Function IGeneric_ToString() As String
  
 End Function
 
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericPairXY: End Function
-Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericPairXY: End Property
+Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericPair: End Function
+Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericPair: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myClass): End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property

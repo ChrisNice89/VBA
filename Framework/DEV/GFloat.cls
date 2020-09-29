@@ -33,7 +33,7 @@ Private myClass As Member
 'Private Formats() As String
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -53,13 +53,13 @@ With myClass
     End With
     
     'Set Build = Skynet.Create(GFloat)
-    Set Build = Skynet.CreateInstance(New GFloat, Virtual.Pointer, Virtual.Size)
+    Set Build = Skynet.CreateInstance(New GFloat, Virtual.Pointer, Virtual.size)
 
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
 
@@ -73,7 +73,7 @@ Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GFloat, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GFloat, VarPtr(C), Virtual.size)
    
 End Function
 
@@ -119,6 +119,6 @@ End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GFloat: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GFloat: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

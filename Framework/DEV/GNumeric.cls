@@ -35,7 +35,7 @@ Private myClass As Member
 Private Formats() As String
 
 Private Type Internal
-    Size As Long
+    size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -75,13 +75,13 @@ Attribute Build.VB_UserMemId = 0
     End With
     
     'Set Build = Skynet.Create(GNumeric)
-    Set Build = Skynet.CreateInstance(New GNumeric, Virtual.Pointer, Virtual.Size)
+    Set Build = Skynet.CreateInstance(New GNumeric, Virtual.Pointer, Virtual.size)
 
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.size = LenB(myClass)
 '    ReDim Formats(TNumericFormat.[_First] To TNumericFormat.[_Last])
 '    Formats(TNumericFormat.DefaultNumber) = "General Number"
 '
@@ -111,7 +111,7 @@ Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass 'hardcopy
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GNumeric, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GNumeric, VarPtr(C), Virtual.size)
    
 End Function
 
@@ -156,6 +156,6 @@ End Function
     
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GNumeric: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GNumeric: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
