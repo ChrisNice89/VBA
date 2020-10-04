@@ -104,7 +104,7 @@ Sub TestListIterator()
 
     Dim i As Long, n As Long
     
-    n = 10000
+    n = 10
     For i = 1 To n
         Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
     Next

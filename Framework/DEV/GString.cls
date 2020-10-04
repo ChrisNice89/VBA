@@ -57,7 +57,7 @@ Public Function ToFormat() As String
 End Function
 Public Property Get Value() As String: Value = myClass.Value: End Property
 
-Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myClass.Value, Find, ReplaceWith), myClass.Hashfunction, myClass.Format): End Function
+Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myClass.Value, Find, ReplaceWith), myClass.Format): End Function
 Public Function ToByteArray() As Byte(): ToByteArray = StrConv(myClass.Value, vbFromUnicode): End Function
 Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myClass.Value Like Pattern): End Function
 Public Function StartsWith(ByVal text As String) As Boolean: StartsWith = (myClass.Value Like ("%" & text)): End Function
@@ -94,15 +94,15 @@ Public Function Concat(ByVal Item As IGeneric, Optional ByVal Delimiter = DEFAUL
             
     If Not Me Is GString Then
         If Not Other Is Nothing Then
-            Set Concat = GString(myClass.Value & Delimiter & Other.Value, myClass.Hashfunction, myClass.Format)
+            Set Concat = GString(myClass.Value & Delimiter & Other.Value, myClass.Format)
         Else
-            Set Concat = GString(myClass.Value & Delimiter & Item.ToString, myClass.Hashfunction, myClass.Format)
+            Set Concat = GString(myClass.Value & Delimiter & Item.ToString, myClass.Format)
         End If
     Else 'Static default call
         If Not Other Is Nothing Then
             Set Concat = Item.Clone ' must be a Gstring ;)
         Else
-            Set Concat = GString(Item.ToString, myClass.Hashfunction, myClass.Format)
+            Set Concat = GString(Item.ToString, myClass.Format)
         End If
     End If
     
@@ -140,7 +140,7 @@ Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DE
             Strings(i) = S.ToString
     Next
     
-    Set Join = Me.Concat(GString(VBA.Join$(Strings, Delimiter), myClass.Hashfunction, myClass.Format))
+    Set Join = Me.Concat(GString(VBA.Join$(Strings, Delimiter), myClass.Format))
     
 End Function
 
@@ -166,7 +166,6 @@ Attribute Build.VB_UserMemId = 0
         .Value = Value
         .Length = Len(Value)
         .Format = Format
-        .Hashfunction = Hashfunction
     End With
     
     'Set Build = Skynet.Create(GString)
