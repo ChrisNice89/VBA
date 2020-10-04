@@ -49,7 +49,7 @@ Private Interval() As String
 'Private Formats() As String
 
 Private Type Internal
-    size As Long
+    Size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -62,8 +62,8 @@ Public Function Add(ByVal Number As Long, ByVal i As DateInterval) As GDate
     Set Add = GDate(DateAdd(Me.IntervalName(i), Number, myClass.Value), myClass.Format)
 End Function
 
-Public Function DifferenceTo(ByVal d As GDate, ByVal i As DateInterval) As Long
-    DifferenceTo = DateDiff(Me.IntervalName(i), myClass.Value, d.Value)
+Public Function DifferenceTo(ByVal D As GDate, ByVal i As DateInterval) As Long
+    DifferenceTo = DateDiff(Me.IntervalName(i), myClass.Value, D.Value)
 End Function
 
 Public Property Get IntervalName(ByVal i As DateInterval) As String
@@ -92,13 +92,13 @@ Attribute Build.VB_UserMemId = 0
         .Format = Format
     End With
     
-    Set Build = Skynet.CreateInstance(New GDate, Virtual.Pointer, Virtual.size)
+    Set Build = Skynet.CreateInstance(New GDate, Virtual.Pointer, Virtual.Size)
     
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.size = LenB(myClass)
+    Virtual.Size = LenB(myClass)
     ReDim Interval(DateInterval.[_First] To DateInterval.[_Last])
     Interval(DateInterval.Day) = "d"
     Interval(DateInterval.DayOfYear) = "y"
@@ -120,38 +120,37 @@ Private Property Get IValue_DatabaseType() As AdoDataType
 End Property
 Private Property Get IValue_Value() As Variant: IValue_Value = myClass.Value: End Property
 
+'IGeneric
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Sub IGeneric_Dispose(): End Sub
+Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GDate, VarPtr(C), Virtual.size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GDate, VarPtr(C), Virtual.Size)
    
 End Function
-
-Private Sub IGeneric_Dispose()
-    myClass = EmptyStructure
-End Sub
-Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim d As GDate: Set d = Other
+    Dim D As GDate: Set D = Other
    
-    IGeneric_Equals = (myClass.Value = d.Value)
+    IGeneric_Equals = (myClass.Value = D.Value)
      
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim d As GDate
+    Dim D As GDate
     
     If Other.IsRelatedTo(Me) Then
-        Set d = Other
+        Set D = Other
         Select Case True
-            Case myClass.Value > d.Value: IGeneric_CompareTo = IsGreater
-            Case myClass.Value < d.Value: IGeneric_CompareTo = IsLower
+            Case myClass.Value > D.Value: IGeneric_CompareTo = IsGreater
+            Case myClass.Value < D.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If
@@ -170,6 +169,6 @@ End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GDate: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GDate: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

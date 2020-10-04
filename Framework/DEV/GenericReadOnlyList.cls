@@ -17,7 +17,7 @@ Attribute VB_Exposed = False
 'Implements IGeneric
 'Implements IGenericReadOnlyList
 'Implements IGenericCollection
-'Implements IGenericEnumerator
+'Implements IGenericIterator
 '
 'Private Type Member
 '    Internal As GenericArray
@@ -123,15 +123,15 @@ Attribute VB_Exposed = False
 '    End With
 'End Function
 '
-'Private Property Get IGenericEnumerator_Current() As IGeneric
+'Private Property Get IGenericIterator_Current() As IGeneric
 '
 'End Property
 '
-'Private Function IGenericEnumerator_MoveNext() As Boolean
+'Private Function IGenericIterator_MoveNext() As Boolean
 '
 'End Function
 '
-'Private Sub IGenericEnumerator_Reset()
+'Private Sub IGenericIterator_Reset()
 '
 'End Sub
 '
@@ -166,9 +166,9 @@ Attribute VB_Exposed = False
 'End Function
 'Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex): End Sub
 '
-'Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
+'Private Function IGenericCollection_Iterator() As IGenericIterator
 '
-'    'Set IGenericCollection_NewEnumerator = myClass.Internal.Elements.NewEnumerator
+'    'Set IGenericCollection_Iterator = myClass.Internal.Elements.Iterator
 '
 'End Function
 '

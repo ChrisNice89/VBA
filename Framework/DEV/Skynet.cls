@@ -12,28 +12,31 @@ Attribute VB_Exposed = True
 '@Folder "Base"
 Option Explicit
 
+Public Event Dispose()
+Public Event Delegate(ByRef Object As IGeneric)
+
 Private Const DEFAULT_SORTORDER As Integer = 1 'SortOrder.Ascending
 Private Const MAXVALUE As Double = 2 ^ 31
 Private Const MAX_INT32 As Long = &H7FFFFFFF
 Private Const NullPointer As Long = 0
 
 #If Win64 Then
-    Private Const POINTERSIZE As LongPtr = 8
+    Private Const POINTERSize As LongPtr = 8
     Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As LongPtr)
     Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal size As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
-    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal size As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal size As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Size As LongPtr)
 #Else
 
-    Private Const POINTERSIZE As Long = 4
+    Private Const POINTERSize As Long = 4
     Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As Long)
     Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal size As Long, ByRef dst As LongPtr, ByVal src As Long) As Long
-    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal size As Long, ByRef dst As Long, ByVal src As Long) As Long
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef dst As LongPtr, ByVal src As Long) As Long
+    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef dst As Long, ByVal src As Long) As Long
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal size As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Size As Long)
 #End If
 '#If Mac Then
 '  #If Win64 Then
@@ -41,8 +44,8 @@ Private Const NullPointer As Long = 0
 '    Private Declare PtrSafe Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef Src As Any, ByVal Size As Long) As LongPtr
 '    Private Declare PtrSafe Function ZeroMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef Src As Any, ByVal Size As Long) As LongPtr
 '  #Else
-    'Private Declare Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As Long, ByVal src As Long, ByVal size As Long) As Long
-    'Private Declare Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal size As Long) As Long
+    'Private Declare Function CopyMemory_byPtr Lib "libc.dylib" Alias "memmove" (ByVal dest As Long, ByVal src As Long, ByVal Size As Long) As Long
+    'Private Declare Function CopyMemory_byVar Lib "libc.dylib" Alias "memmove" (ByRef dest As Any, ByRef src As Any, ByVal Size As Long) As Long
 '  #End If
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
@@ -54,9 +57,9 @@ Public Enum Hashing
 End Enum
 
 Public Enum SortOrder
-    Descending = -1
+    descending = -1
     Random = 0
-    Ascending = 1
+    ascending = 1
 End Enum
 
 Public Enum SortMethod
@@ -83,8 +86,9 @@ Private WithEvents ContainsEnumerable As GenericEnumerable
 Attribute ContainsEnumerable.VB_VarHelpID = -1
 
 Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End Property
-Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
+Public Property Get PointerLength() As Byte: PointerLength = POINTERSize: End Property
 Public Property Get MaxLong() As Long: MaxLong = MAX_INT32: End Property
+Public Property Get MaxHash() As Double: MaxHash = MAXVALUE: End Property
 
 Public Function Throw(ByVal Source As Object, ByVal Method As String) As Throwhelper
     Set Throw = Throwhelper.Build(Source, Method)
@@ -102,13 +106,13 @@ Public Sub CopyData(ByVal dst As LongPtr, ByVal src As LongPtr, ByVal Bytes As L
         Call ZeroMemory(ByVal src, Bytes) 'FillMemory(ByVal Src, Bytes, 0)
 End Sub
 
-Public Function CreateInstance(ByVal Prototype As IPrototype, ByVal Source As LongPtr, ByVal size As Long) As Object
+Public Function CreateInstance(ByVal Prototype As IPrototype, ByVal Source As LongPtr, ByVal Size As Long) As Object
         
     With Prototype
         If (Prototype Is .StaticInstance) Then _
             Set Prototype = .CreateDefault
         'Call CopyBytes(.Size, ByVal Clone.VirtualPointer, ByVal .VirtualPointer) 'works
-        Call CopyMemory_byVar(ByVal .VirtualPointer, ByVal Source, size): Call ZeroMemory(ByVal Source, size)
+        Call CopyMemory_byVar(ByVal .VirtualPointer, ByVal Source, Size): Call ZeroMemory(ByVal Source, Size)
     End With
 
     Set CreateInstance = Prototype
@@ -125,11 +129,11 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
             .Throw(Me, "ArrayPointer").InvalidInput ("Not (IsArray(SomeArray))")
     
         Call .CopyData(dst:=ByVal VarPtr(vType), src:=ByVal VarPtr(SomeArray), Bytes:=2&)
-        Call .CopyData(dst:=ByVal VarPtr(PointerOf), src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSIZE)
+        Call .CopyData(dst:=ByVal VarPtr(PointerOf), src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSize)
         
         'if SomeArray is defined x() as ...
         If (vType And VT_BYREF) = VT_BYREF Then _
-            Call .CopyData(dst:=ByVal VarPtr(PointerOf), src:=ByVal PointerOf, Bytes:=POINTERSIZE)
+            Call .CopyData(dst:=ByVal VarPtr(PointerOf), src:=ByVal PointerOf, Bytes:=POINTERSize)
     End With
     
 End Function
@@ -189,7 +193,6 @@ Public Function BinarySearch( _
 
     Dim i As Long
     Dim C As ComparerEnum
-   
     Dim lo As Long: lo = Index
     Dim hi As Long: hi = Index + Length - 1
     
@@ -197,10 +200,10 @@ Public Function BinarySearch( _
     
         i = lo + ((hi - lo) / 2)
       
-        If (Objects(i) Is Nothing) Then
-            C = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
-        Else
+        If (Objects(i) Is Nothing) = False Then
             C = Objects(i).CompareTo(Value) * Order
+        Else
+            C = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
         End If
         
         If (C = IsEqual) Then _
@@ -283,8 +286,8 @@ Public Sub Sort(ByRef Objects() As IGeneric, ByVal Index As Long, ByVal Length A
     Const QuickSortDepthThreshold As Long = 32
     
     If Order = Random Then
-        Call Shuffle(Objects)
-    ElseIf Order = Ascending Then
+        Call Shuffle(Objects, Index, Length)
+    ElseIf Order = ascending Then
         Call DepthLimitedQuicksort_Asc(Objects, Index, Length, QuickSortDepthThreshold)
     Else
         Call DepthLimitedQuicksort_Desc(Objects, Index, Length, QuickSortDepthThreshold)
@@ -292,19 +295,19 @@ Public Sub Sort(ByRef Objects() As IGeneric, ByVal Index As Long, ByVal Length A
    
 End Sub
 
-Private Sub Shuffle(ByRef Element() As IGeneric)
+Private Sub Shuffle(ByRef element() As IGeneric, ByVal Index As Long, ByVal Length As Long)
 
     Dim i As Long
     Randomize VBA.Timer
     
-    For i = UBound(Element) To LBound(Element) Step -1
-        Call Swap(Element, i, (i * Rnd + 0.5))
+    For i = Length To Index Step -1
+        Call Swap(element, i, (i * Rnd + 0.5))
     Next
 
 End Sub
 
 Private Sub DepthLimitedQuicksort_Asc( _
-                                        ByRef Element() As IGeneric, _
+                                        ByRef element() As IGeneric, _
                                         ByVal Left As Long, _
                                         ByVal Right As Long, _
                                         ByVal DepthLimit As Long)
@@ -321,33 +324,33 @@ Private Sub DepthLimitedQuicksort_Asc( _
    
     Do
         If (DepthLimit = 0) Then _
-            Call HeapSort_Asc(Element, Left, Right): Exit Sub
+            Call HeapSort_Asc(element, Left, Right): Exit Sub
 
         i = Left: j = Right
         middle = i + ((j - i) / 2)
 
-        Call SwapIfGreater(Element, i, middle)
-        Call SwapIfGreater(Element, i, j)
-        Call SwapIfGreater(Element, middle, j)
+        Call SwapIfGreater(element, i, middle)
+        Call SwapIfGreater(element, i, j)
+        Call SwapIfGreater(element, middle, j)
 
-        Set pivot = Element(middle)
+        Set pivot = element(middle)
 
         Do
     
             If (pivot Is Nothing) Then
-                Do While Not (Element(j) Is Nothing): j = j - 1: Loop
+                Do While Not (element(j) Is Nothing): j = j - 1: Loop
             Else
-                Do While (pivot.CompareTo(Element(i)) = IsGreater): i = i + 1: Loop
-                Do While (pivot.CompareTo(Element(j)) = IsLower): j = j - 1: Loop
+                Do While (pivot.CompareTo(element(i)) = IsGreater): i = i + 1: Loop
+                Do While (pivot.CompareTo(element(j)) = IsLower): j = j - 1: Loop
             End If
 
             If (i > j) Then _
                 Exit Do
 
             If (i < j) Then _
-                Set tmp = Element(i): _
-                Set Element(i) = Element(j): _
-                Set Element(j) = tmp
+                Set tmp = element(i): _
+                Set element(i) = element(j): _
+                Set element(j) = tmp
 
             i = i + 1: j = j - 1
 
@@ -357,11 +360,11 @@ Private Sub DepthLimitedQuicksort_Asc( _
 
         If (j - Left) <= (Right - i) Then
             If (Left < j) Then _
-                Call DepthLimitedQuicksort_Asc(Element, Left, j, DepthLimit)
+                Call DepthLimitedQuicksort_Asc(element, Left, j, DepthLimit)
             Left = i
         Else
             If (i < Right) Then _
-                Call DepthLimitedQuicksort_Asc(Element, i, Right, DepthLimit)
+                Call DepthLimitedQuicksort_Asc(element, i, Right, DepthLimit)
             Right = j
         End If
 
@@ -370,7 +373,7 @@ Private Sub DepthLimitedQuicksort_Asc( _
 End Sub
                               
 Private Sub DepthLimitedQuicksort_Desc( _
-                                        ByRef Element() As IGeneric, _
+                                        ByRef element() As IGeneric, _
                                         ByVal Left As Long, _
                                         ByVal Right As Long, _
                                         ByVal DepthLimit As Long)
@@ -387,33 +390,33 @@ Private Sub DepthLimitedQuicksort_Desc( _
     
     Do
         If (DepthLimit = 0) Then _
-            Call HeapSort_Desc(Element, Left, Right): Exit Sub
+            Call HeapSort_Desc(element, Left, Right): Exit Sub
 
         i = Left: j = Right
         middle = i + ((j - i) / 2)
 
-        Call SwapIfGreater(Element, i, middle)
-        Call SwapIfGreater(Element, i, j)
-        Call SwapIfGreater(Element, middle, j)
+        Call SwapIfGreater(element, i, middle)
+        Call SwapIfGreater(element, i, j)
+        Call SwapIfGreater(element, middle, j)
 
-        Set pivot = Element(middle)
+        Set pivot = element(middle)
 
         Do
         
             If (pivot Is Nothing) Then
-                Do While Not (Element(i) Is Nothing): i = i + 1: Loop
+                Do While Not (element(i) Is Nothing): i = i + 1: Loop
             Else
-                Do While (pivot.CompareTo(Element(i)) = IsLower): i = i + 1: Loop
-                Do While (pivot.CompareTo(Element(j)) = IsGreater): j = j - 1: Loop
+                Do While (pivot.CompareTo(element(i)) = IsLower): i = i + 1: Loop
+                Do While (pivot.CompareTo(element(j)) = IsGreater): j = j - 1: Loop
             End If
 
             If (i > j) Then _
                 Exit Do
         
             If (i < j) Then _
-                Set tmp = Element(i): _
-                Set Element(i) = Element(j): _
-                Set Element(j) = tmp
+                Set tmp = element(i): _
+                Set element(i) = element(j): _
+                Set element(j) = tmp
 
             i = i + 1: j = j - 1
             
@@ -423,11 +426,11 @@ Private Sub DepthLimitedQuicksort_Desc( _
 
         If (j - Left) <= (Right - i) Then
             If (Left < j) Then _
-                Call DepthLimitedQuicksort_Desc(Element, Left, j, DepthLimit)
+                Call DepthLimitedQuicksort_Desc(element, Left, j, DepthLimit)
             Left = i
         Else
             If (i < Right) Then _
-                Call DepthLimitedQuicksort_Desc(Element, i, Right, DepthLimit)
+                Call DepthLimitedQuicksort_Desc(element, i, Right, DepthLimit)
             Right = j
         End If
 
@@ -454,7 +457,7 @@ End Sub
 
 Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
-    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim D As IGeneric: Set D = Keys(lo + i - 1)
     Dim Child As Long
 
     Do While (i <= n / 2)
@@ -470,14 +473,14 @@ Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, 
         If (Keys(lo + Child - 1) Is Nothing) Then _
             Exit Do
 
-        If (Keys(lo + Child - 1).CompareTo(d) = IsLower) Then _
+        If (Keys(lo + Child - 1).CompareTo(D) = IsLower) Then _
             Exit Do
 
         Set Keys(lo + i - 1) = Keys(lo + Child - 1)
         i = Child
     Loop
 
-    Set Keys(lo + i - 1) = d
+    Set Keys(lo + i - 1) = D
 
 End Sub
 
@@ -500,7 +503,7 @@ End Sub
 
 Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
-    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim D As IGeneric: Set D = Keys(lo + i - 1)
     Dim Child As Long
 
     Do While (i <= n / 2)
@@ -514,7 +517,7 @@ Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, 
         End If
 
         If Not (Keys(lo + Child - 1) Is Nothing) Then
-            If (Keys(lo + Child - 1).CompareTo(d) = IsGreater) Then _
+            If (Keys(lo + Child - 1).CompareTo(D) = IsGreater) Then _
                 Exit Do
         
         End If
@@ -523,19 +526,19 @@ Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, 
         i = Child
     Loop
 
-    Set Keys(lo + i - 1) = d
+    Set Keys(lo + i - 1) = D
 
 End Sub
 Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As Long)
     
-    Dim t As IGeneric
+    Dim T As IGeneric
    
     If Not (a = b) Then
         If Not (Keys(a) Is Nothing) Then
             If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
-                Set t = Keys(a)
+                Set T = Keys(a)
                 Set Keys(a) = Keys(b)
-                Set Keys(b) = t
+                Set Keys(b) = T
             End If
         End If
     End If
@@ -543,11 +546,11 @@ Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As 
 End Sub
 
 Private Sub Swap(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
-    Dim t As IGeneric
+    Dim T As IGeneric
     
-    Set t = a(i)
+    Set T = a(i)
     Set a(i) = a(j)
-    Set a(j) = t
+    Set a(j) = T
 
 End Sub
 
@@ -605,7 +608,7 @@ Private Sub Class_Initialize()
    
 End Sub
 
-Public Function EnumeratorOf(ByVal C As IGenericCollection) As IGenericEnumerator: Set EnumeratorOf = C.NewEnumerator: End Function
+Public Function IteratorOf(ByVal C As IGenericCollection) As IGenericIterator: Set IteratorOf = C.Iterator: End Function
 Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function
 Public Sub Dispose(ByVal Instance As IGeneric): Call Instance.Dispose: End Sub
 Public Function Clone(ByVal Instance As IGeneric) As IGeneric: Set Clone = Instance.Clone: End Function
@@ -615,13 +618,13 @@ Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i:
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function
 Public Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
-Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
+Public Function LimitDouble(ByVal D As Double) As Long: LimitDouble = CLng(D - (Fix(D / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 Public Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: Logn = Log(Value) / Log(Base): End Function
 
 Public Sub TestRange()
 
-    Dim Range As IGenericEnumerator
+    Dim Range As IGenericIterator
     Set Range = GenericEnumerable.Range(-5, 5)
     
     With GenericEnumerable.Range(-5, 5)
@@ -670,13 +673,24 @@ Public Sub TestContains()
     Debug.Print "Has grape: " & GenericEnumerable(fruits).Contains(grape)
     Debug.Print "Has kiwi: " & GenericEnumerable(fruits).Contains(kiwi)
     
-    Dim list As GenericList
-    Set list = GenericList.Build(Capacity:=fruits.Length - 1)
-    Call list.AddAll(fruits)
+    Dim List As GenericList
+    Set List = GenericList.Build(Capacity:=fruits.Length - 1)
+    Call List.AddAll(fruits)
     
-    Debug.Print "fruit list contains grape: " & Cast.ToCollection(list).Contains(grape)
+    Debug.Print "fruit list contains grape: " & Cast.ToCollection(List).Contains(grape)
     
 End Sub
+
+Public Sub ForEach(ByVal Iterator As IGenericIterator)
+
+    With Iterator
+        Do While .MoveNext
+            RaiseEvent Delegate(.Current)
+        Loop
+    End With
+
+End Sub
+Public Sub DoAction(ByRef Object As IGeneric): RaiseEvent Delegate(Object): End Sub
 
 Public Sub TestString()
     
@@ -685,7 +699,7 @@ Public Sub TestString()
     
     Debug.Print "Before: " & sentence.Value
     
-    Set WordSequence = GenericEnumerable(sentence.Split(" ").Enumerator(1, 9))
+    Set WordSequence = GenericEnumerable(sentence.Split(" ").Iterator(1, 9))
     
     Debug.Print "After: " & WordSequence.Aggregate(GString, IgnoreNull:=True)
     
@@ -696,7 +710,7 @@ Public Sub TestInteger()
     Dim ints As GenericArray
     Set ints = GenericArray.BuildWithIntegers(4, 8, 8, 3, 9, 0, 7, 8, 2)
     
-    Set IntegerSequence = GenericEnumerable(ints.Enumerator(1, 9))
+    Set IntegerSequence = GenericEnumerable(ints.Iterator(1, 9))
     Debug.Print "Integers: " & GString.Join(ints, ";").Value
     
     Debug.Print "The number of even integers is: " & IntegerSequence.Aggregate(GNumeric, IgnoreNull:=True)

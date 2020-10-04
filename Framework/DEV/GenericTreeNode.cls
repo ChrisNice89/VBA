@@ -13,8 +13,8 @@ Option Compare Database
 Option Explicit
 '@PredeclaredId
 
+Implements GenericPair
 Implements IGeneric
-'Implements GenericPair 'Bug!
 Implements IPrototype
 
 Private Type Member
@@ -27,7 +27,7 @@ End Type
 Private myClass As Member
 
 Private Type Internal
-    size As Long
+    Size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -47,8 +47,12 @@ Public Property Set Key(ByVal k As IGeneric): Set myClass.Key = k: End Property
 Public Property Get Value() As IGeneric: Set Value = myClass.Value: End Property
 Public Property Set Value(ByVal v As IGeneric): Set myClass.Value = v: End Property
 
+Public Function CompareTo(ByVal Other As IGeneric) As ComparerEnum: CompareTo = myClass.Key.CompareTo(Other): End Function
 'GenericPair
-Private Function GenericPair_Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPair: Set GenericPair_Build = GenericPair(Key, Value): End Function
+Private Function GenericPair_Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPair
+    If (Me Is GenericTreeNode) = False Then _
+        Call Skynet.Throw(Me, "Private Function GenericPair_Build").BuildExeption
+End Function
 Private Property Get GenericPair_Key() As IGeneric: Set GenericPair_Key = myClass.Key: End Property
 Private Property Get GenericPair_Value() As Object: Set GenericPair_Value = myClass.Value: End Property
 
@@ -60,7 +64,7 @@ Attribute Build.VB_UserMemId = 0
 
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Build").NullPointer("Key is nothing")
-    
+
     Dim n As GenericTreeNode: Set n = New GenericTreeNode
     
     With n
@@ -75,20 +79,23 @@ End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.size = LenB(myClass)
+    Virtual.Size = LenB(myClass)
 End Sub
+'Bug when implements GenericPair ' Me: End Function '
+Public Function AsPair() As GenericPair: Set AsPair = Me: End Function 'GenericPair(myClass.Key, myClass.Value): End Function
 
-Public Function AsPair() As GenericPair: Set AsPair = GenericPair.Build(myClass.Key, myClass.Value): End Function
+'IGeneric
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Sub IGeneric_Dispose(): End Sub
+Private Function EmptyStructure() As Member: End Function
+
 Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass 'Hardcopy
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTreeNode, VarPtr(C), Virtual.size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTreeNode, VarPtr(C), Virtual.Size)
     
 End Function
-
-Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
-Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     

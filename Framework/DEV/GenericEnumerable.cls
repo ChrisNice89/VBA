@@ -13,7 +13,7 @@ Option Compare Database
 Option Explicit
 '@PredeclaredId
 
-Implements IGenericEnumerator
+Implements IGenericIterator
 Implements IPrototype
 
 Public Event Aggregate(ByRef Result As IGeneric, ByVal Current As IGeneric, ByVal NullsIgnored As Boolean)
@@ -33,23 +33,23 @@ Private Type Range
 End Type
 
 Private Type Member
-    Sequence As IGenericEnumerator
+    Sequence As IGenericIterator
     Range As Range
 End Type
 Private myClass As Member
 'Private Formats() As String
 
 Private Type Internal
-    size As Long
+    Size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
 
-Public Property Get Sequence() As IGenericEnumerator
+Public Property Get Sequence() As IGenericIterator
     Set Sequence = myClass.Sequence
 End Property
 
-Public Function Build(ByVal Sequence As IGenericEnumerator) As GenericEnumerable
+Public Function Build(ByVal Sequence As IGenericIterator) As GenericEnumerable
 Attribute Build.VB_UserMemId = 0
     If Sequence Is Nothing Then _
         Call Skynet.Throw(Me, "Public Function Build").NullPointer("Sequence is nothing")
@@ -61,7 +61,7 @@ End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.size = LenB(myClass)
+    Virtual.Size = LenB(myClass)
     Set myClass.Sequence = GenericEnumerable.Sequence
 End Sub
 
@@ -129,7 +129,7 @@ Public Function Contains(ByVal Item As IGeneric, Optional ByVal Custom As Boolea
     
 End Function
 
-Public Function Range(ByVal Start As Long, ByVal Count As Long) As IGenericEnumerator
+Public Function Range(ByVal Start As Long, ByVal Count As Long) As IGenericIterator
     
     Dim C As Member
     With C.Range
@@ -143,11 +143,11 @@ Public Function Range(ByVal Start As Long, ByVal Count As Long) As IGenericEnume
 
 End Function
 
-Private Property Get IGenericEnumerator_Current() As IGeneric
-    Set IGenericEnumerator_Current = myClass.Range.Current
+Private Property Get IGenericIterator_Current() As IGeneric
+    Set IGenericIterator_Current = myClass.Range.Current
 End Property
 
-Private Function IGenericEnumerator_MoveNext() As Boolean
+Private Function IGenericIterator_MoveNext() As Boolean
     
     With myClass.Range
         If Not .Complete Then
@@ -156,21 +156,21 @@ Private Function IGenericEnumerator_MoveNext() As Boolean
             Set .Current = Nothing: Exit Function
         End If
         
-        IGenericEnumerator_MoveNext = Not .Complete
+        IGenericIterator_MoveNext = Not .Complete
       
         .Complete = InterlockedIncrement(.i) > .Count
     End With
     
 End Function
 
-Private Sub IGenericEnumerator_Reset()
+Private Sub IGenericIterator_Reset()
     myClass.Range.i = myClass.Range.Start
     myClass.Range.Complete = False
 End Sub
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericEnumerable: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericEnumerable: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 

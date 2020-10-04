@@ -16,7 +16,7 @@ Attribute Item.VB_UserMemId = 0
 Public Property Get Count() As Long: End Property
 
 Public Function IndexOf(ByVal Item As IGeneric) As Long: End Function
-Public Function NewEnumerator() As IGenericEnumerator: End Function
+Public Function Iterator() As IGenericIterator: End Function
 
 Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
 Public Sub Clear(): End Sub

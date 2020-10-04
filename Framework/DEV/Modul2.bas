@@ -1,7 +1,7 @@
 Attribute VB_Name = "Modul2"
 Public Function HeapSort(Keys)
    Dim Base As Long: Base = LBound(Keys)                    ' array index base
-   Dim n As Long: n = UBound(Keys) - LBound(Keys) + 1       ' array size
+   Dim n As Long: n = UBound(Keys) - LBound(Keys) + 1       ' array Size
    ReDim Index(Base To Base + n - 1) As Long                ' allocate index array
    Dim i As Long, m As Long
    For i = 0 To n - 1: Index(Base + i) = Base + i: Next     ' fill index array

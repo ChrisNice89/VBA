@@ -17,7 +17,7 @@ Implements IPrototype
 Implements IGeneric
 Implements IGenericReadOnlyList
 Implements IGenericCollection
-Implements IGenericEnumerator
+Implements IGenericIterator
 
 'Pointer
 Private Const VT_BYREF As Long = &H4000&
@@ -95,8 +95,9 @@ Private Type ObjectTransfer
     #End If
 End Type
 
-Private Type Enumerator
+Private Type Iterator
     StartIndex As Long
+    EndIndex As Long
     Count As Long
     Complete As Boolean
     Rank As Long
@@ -104,6 +105,7 @@ Private Type Enumerator
     ptrIndices As LongPtr
     Descriptor As LongPtr
     Parent As IGeneric
+    HasLoaded As Boolean
 End Type
 
 Private Type Member
@@ -111,15 +113,14 @@ Private Type Member
    Descriptor As LongPtr
    Elements As Long
    Indices() As Long
-   ptrIndices As LongPtr
    Internal() As IGeneric
    IsReadOnly As Boolean
-   Enumerator As Enumerator
+   Iterator As Iterator
 End Type
 Private myClass As Member
 
 Private Type Internal
-    size As Long
+    Size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -136,16 +137,22 @@ Public Property Get Rank() As Long: Rank = SafeArrayGetDim(ByVal myClass.Descrip
 Public Property Set ElementAt(ByVal Index As Long, ByVal Value As IGeneric): Set myClass.Internal(Index) = Value: End Property
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myClass.Internal(Index): End Property
 Attribute ElementAt.VB_UserMemId = 0
-
+' Check 4 Memoy Leak (myclass.Internal SafeArray)
 Public Function Build(ParamArray Indices() As Variant) As GenericArray
-
-    Dim SAB() As SAFEARRAYBOUND
-    Dim i As Long, ub As Long, lb As Long
-
-    lb = LBound(Indices): ub = UBound(Indices)
     
-    ReDim SAB(lb To ub)
-    For i = lb To ub
+    Dim SAB() As SAFEARRAYBOUND
+    Dim i As Long, UB As Long, LB As Long
+    
+    If (Me Is GenericArray) = False Then _
+        Call Skynet.Throw(Me, "Public Function Build").BuildExeption
+    
+    If IsMissing(Indices) Then _
+        Call Skynet.Throw(Me, "Public Function Build").NullPointer("Dimension/ Size of Array is missing")
+    
+    LB = LBound(Indices): UB = UBound(Indices)
+    
+    ReDim SAB(LB To UB)
+    For i = LB To UB
         If (Indices(i) < 0) Then _
             Call Skynet.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
         
@@ -155,59 +162,45 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
         End With
     Next i
     
+    'Call Catch(SafeArrayDestroyDescriptor(ByVal Skynet.PointerOf(myclass.internal))) '!Memoryleak?!
+
     With myClass
-        .Descriptor = SafeArrayCreateEx(VbVarType.vbObject, ub + 1, SAB(ub), ByVal 0&)
-    
+        .Descriptor = SafeArrayCreateEx(VbVarType.vbObject, UB + 1, SAB(UB), ByVal 0&)
+        
         If (.Descriptor = 0) Then _
-            Call Skynet.Throw(Me, "Build").InvalidOperation("myClass.Descriptor = 0")
+            Call Skynet.Throw(Me, "Public Function BuildFrom").InvalidOperation("Descriptor = 0")
         
-        Call Catch(SafeArrayDestroyDescriptor(ByVal Skynet.PointerOf(.Internal)))
         Call Skynet.CopyData(ByVal VarPtrArray(.Internal), VarPtr(.Descriptor), 4&)
-        
-        .Descriptor = 0
+        Call LoadArrayStructure(.Struct, .Descriptor)
     End With
     
-    Set Build = GenericArray.BuildFrom(myClass.Internal)
+    Set Build = Skynet.CreateInstance(New GenericArray, Virtual.Pointer, Virtual.Size)
  
 End Function
-'ToDo - need to be tested, What happend to caller when matrix get out of scope? Whats with lbound?! Should be checked
+'ToDo - need to be tested extremly!
 Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
         
     Dim i As Long
     
-     If LBound(Matrix) < MIN_INDEX Then _
-        Call Skynet.Throw(Me, "Public Function BuildFrom").InvalidOperation("LBound(Matrix) < MIN_INDEX")
-        
-    If Me Is GenericArray Then
-        With New GenericArray
-            Set BuildFrom = .BuildFrom(Matrix): Exit Function
-        End With
-    End If
+    If (Me Is GenericArray) = False Then _
+        Call Skynet.Throw(Me, "Public Function BuildFrom").BuildExeption
     
+    If LBound(Matrix) < MIN_INDEX Then _
+        Call Skynet.Throw(Me, "Public Function BuildFrom").InvalidOperation("LBound(Matrix) < MIN_INDEX")
+ 
     With myClass
         .Descriptor = Skynet.PointerOf(Matrix)
+
         If (.Descriptor = 0) Then _
             Call Skynet.Throw(Me, "Public Function BuildFrom").InvalidOperation("Descriptor = 0")
-        
-        Call Skynet.ClearData(ByVal VarPtrArray(Matrix), 4&)
+  
+        Call Skynet.ClearData(ByVal VarPtrArray(Matrix), 4&) '!Memoryleak?!
         Call Skynet.CopyData(ByVal VarPtrArray(.Internal), VarPtr(.Descriptor), 4&)
-        
-        .Elements = 1
-      
         Call LoadArrayStructure(.Struct, .Descriptor)
-        With .Struct
-            ReDim myClass.Indices(.cDims - 1)
-            For i = LBound(.Bounds) To UBound(.Bounds)
-                myClass.Elements = myClass.Elements * .Bounds(i).cElements
-                'myClass.Size = myClass.Size * .Bounds(i).cElements * .cbElements
-            Next
-        End With
-        
-        Call LoadEnumerator(.Enumerator, .Descriptor, .Struct.cDims, MIN_INDEX, .Elements) 'Load default enumerator
-        
+      
     End With
     
-    Set BuildFrom = Me
+    Set BuildFrom = Skynet.CreateInstance(New GenericArray, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -263,7 +256,7 @@ Public Function GetValue(ParamArray Indices() As Variant) As IGeneric
         
 End Function
 
-Public Function AdressOf(ByVal Element As Long) As LongPtr: AdressOf = myClass.Struct.pvData + (Me.SizeOf(Element - MIN_INDEX)): End Function
+Public Function AdressOf(ByVal element As Long) As LongPtr: AdressOf = myClass.Struct.pvData + (Me.SizeOf(element - MIN_INDEX)): End Function
 Public Function SizeOf(ByVal Elements As Long) As Long: SizeOf = Elements * myClass.Struct.cbElements: End Function
 
 Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
@@ -280,20 +273,19 @@ Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
     
 End Function
 
-Public Function AsReadOnly() As IGenericReadOnlyList
-    Set AsReadOnly = Me 'GenericReadOnlyList.Build(Internal:=Me, Size:=Me.Length)
-End Function
-
-Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef s As SAFEARRAYSTRUCT)
+Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef S As SAFEARRAYSTRUCT)
     With Skynet
-        Call .CopyData(ByVal Descriptor, VarPtr(s), 16&): _
-        Call .CopyData(ByVal Descriptor + 16&, VarPtr(s.Bounds(LBound(s.Bounds))), s.cDims * 8&)
+        Call .CopyData(ByVal Descriptor, VarPtr(S), 16&): _
+        Call .CopyData(ByVal Descriptor + 16&, VarPtr(S.Bounds(LBound(S.Bounds))), S.cDims * 8&)
     End With
 End Sub
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.size = LenB(myClass)
+    Virtual.Size = LenB(myClass)
+'    If Me Is GenericArray Then
+'        Call Catch(SafeArrayDestroyDescriptor(ByVal Skynet.PointerOf(myClass.Internal))) '!
+'    End If
 End Sub
 
 Private Sub Class_Terminate()
@@ -321,7 +313,7 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     Set Column = GenericArray.Build(Me.LengthOf(1))
   
     Call LoadArrayStructure(Overlay, Column.Descriptor)
-    Overlay.pvData = Me.AdressOf(Element:=Me.LengthOf(1) * Index)
+    Overlay.pvData = Me.AdressOf(element:=Me.LengthOf(1) * Index)
     
     With Skynet
         Call SwitchTo(Me.Descriptor, Overlay)
@@ -367,13 +359,13 @@ Public Sub Copy( _
     
     With SrcArray
         Call LoadArrayStructure(src, .Descriptor) ' Could use prototype and load all member
-        Overlay.pvData = .AdressOf(Element:=SrcIndex)
+        Overlay.pvData = .AdressOf(element:=SrcIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
     
     With DstArray
         Call LoadArrayStructure(dst, .Descriptor)
-        Overlay.pvData = .AdressOf(Element:=DstIndex)
+        Overlay.pvData = .AdressOf(element:=DstIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
     
@@ -388,12 +380,12 @@ Public Sub Copy( _
     
 End Sub
 
-Public Sub ResizeTo(ByVal newSize As Long)
+Public Sub ReSizeTo(ByVal newSize As Long)
     
     Dim bound As SAFEARRAYBOUND
     
     If Not (Me.Rank = 1) Then _
-        Call Skynet.Throw(Me, "Public Sub ResizeTo").NotSupported("Me.Rank != 1")
+        Call Skynet.Throw(Me, "Public Sub ReSizeTo").NotSupported("Me.Rank != 1")
 
 ''The hard way ;)
 '    With myClass.struct
@@ -559,7 +551,7 @@ Public Function IndexOf( _
             Count = (myClass.Elements - StartIndex) + MIN_INDEX
         Else
             If (Count < 0) Or (Count > myClass.Elements - StartIndex + MIN_INDEX) Then _
-                Call Skynet.Throw(Me, "Public Function IndexOf").IndexOutofRange("(Count < 0) Or (Count > Me.elements - StartIndex + MIN_INDEX)")
+                Call Skynet.Throw(Me, "Public Function IndexOf").ArgOutOfRange("(Count < 0) Or (Count > Me.elements - StartIndex + MIN_INDEX)")
         End If
     End If
    
@@ -585,12 +577,22 @@ Public Sub Reverse(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Leng
     
 End Sub
 
-Public Sub Sort(ByVal Order As SortOrder)
+Public Sub Sort(ByVal Order As SortOrder, Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Length As Long)
+    
+    If Length = 0 Then _
+        Length = myClass.Elements
     
     If Not Me.Rank = 1 Then _
         Call Skynet.Throw(Me, "Public Sub Sort").NotSupported("Me.Rank != 1")
-       
-    Call Skynet.Sort(myClass.Internal, MIN_INDEX, myClass.Elements, Order)
+        
+    If (Index < MIN_INDEX Or Length < 0) Then _
+        Call Skynet.Throw(Me, "Public Sub Sort").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
+    
+    If (myClass.Elements - (Index - MIN_INDEX) < Length) Then _
+        Call Skynet.Throw(Me, "Public Sub Sort").ArgOutOfRange("Argument_InvalidOffLen")
+        
+    Call Skynet.Sort(myClass.Internal, Index, Length, Order)
+    
 End Sub
 
 'Public Sub Refresh()
@@ -598,6 +600,8 @@ End Sub
 'End Sub
 
 Private Sub LoadArrayStructure(ByRef Structure As SAFEARRAYSTRUCT, ByVal SafeArrayPointer As LongPtr)
+    
+    Dim i As Long
     
     If (SafeArrayPointer = 0) Then _
         Skynet.Throw(Me, "Private Sub LoadArrayStructure").NullPointer ("SafeArrayPointer")
@@ -610,6 +614,13 @@ Private Sub LoadArrayStructure(ByRef Structure As SAFEARRAYSTRUCT, ByVal SafeArr
         
         ReDim .Bounds(1 To .cDims)
         Call Skynet.CopyData(VarPtr(.Bounds(1)), ByVal (SafeArrayPointer + 16&), .cDims * 8&)
+        
+        myClass.Elements = 1
+        ReDim myClass.Indices(.cDims - 1)
+        For i = LBound(.Bounds) To UBound(.Bounds)
+            myClass.Elements = myClass.Elements * .Bounds(i).cElements
+        Next
+        
     End With
 
 End Sub
@@ -683,24 +694,24 @@ Public Sub Transpose()
 '
 End Sub
 
-Public Sub Feature()
-    
-    Const FADF_AUTO = &H1
-    Const FADF_STATIC = &H2
-    Const FADF_EMBEDDED = &H4
-    Const FADF_FIXEDSIZE = &H10
-    Const FADF_RECORD = &H20
-    Const FADF_HAVEIID = &H40
-    Const FADF_HAVEVARTYPE = &H80
-    Const FADF_BSTR = &H100
-    Const FADF_UNKNOWN = &H200
-    Const FADF_DISPATCH = &H400
-    Const FADF_VARIANT = &H800
-    
-    
-    Debug.Print myClass.Struct.fFeatures
-
-End Sub
+'Public Sub Feature()
+'
+'    Const FADF_AUTO = &H1
+'    Const FADF_STATIC = &H2
+'    Const FADF_EMBEDDED = &H4
+'    Const FADF_FIXEDSize = &H10
+'    Const FADF_RECORD = &H20
+'    Const FADF_HAVEIID = &H40
+'    Const FADF_HAVEVARTYPE = &H80
+'    Const FADF_BSTR = &H100
+'    Const FADF_UNKNOWN = &H200
+'    Const FADF_DISPATCH = &H400
+'    Const FADF_VARIANT = &H800
+'
+'
+'    Debug.Print myClass.Struct.fFeatures
+'
+'End Sub
 
 Private Sub Catch(ByVal hResult As Long)
 
@@ -724,7 +735,84 @@ Private Sub Catch(ByVal hResult As Long)
     
 End Sub
 
+'Todo new instance
+Public Function AsReadOnly(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Count As Long) As IGenericReadOnlyList
+  
+    If Count = 0 Then _
+        Count = myClass.Elements
+    
+    If Not Me.Rank = 1 Then _
+        Call Skynet.Throw(Me, "Public Function AsReadOnly").NotSupported("Me.Rank != 1")
+        
+    If (Index < MIN_INDEX Or Count < 0) Then _
+        Call Skynet.Throw(Me, "Public Function AsReadOnly").ArgOutOfRange("Index < MIN_INDEX Or Count < 0")
+    
+    If (myClass.Elements - (Index - MIN_INDEX) < Count) Then _
+        Call Skynet.Throw(Me, "Public Function AsReadOnly").ArgOutOfRange("Argument_InvalidOffLen")
+    
+    If (Me.IsEmpty) Then _
+        Call Skynet.Throw(Me, "Public Function AsReadOnly").NullPointer("Me.IsEmpty")
+    
+    Call LoadIterator(myClass.Iterator, Nothing, myClass.Descriptor, myClass.Struct.cDims, Index, Count)
+    myClass.IsReadOnly = True
+    
+    Set AsReadOnly = Me
+
+End Function
+
+Public Function Iterator(Optional ByVal StartIndex As Long = MIN_INDEX, Optional ByVal Count As Long) As IGenericIterator
+
+    Dim C As Member
+        
+    If Count = 0 Then _
+        Count = myClass.Elements
+        
+    If (myClass.Descriptor = 0) Then _
+        Call Skynet.Throw(Me, "Public Function Iterator").InvalidOperation("Descriptor = 0")
+            
+    If (StartIndex < MIN_INDEX) Or (StartIndex > myClass.Elements + MIN_INDEX) Then _
+        Call Skynet.Throw(Me, "Public Function Iterator").IndexOutofRange("(StartIndex < MIN_INDEX) Or (StartIndex > myClass.Elements + MIN_INDEX)")
+
+    If (Count < 0) Or (Count > myClass.Elements - StartIndex + MIN_INDEX) Then _
+        Call Skynet.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Elements - StartIndex + MIN_INDEX)")
+
+    Call LoadIterator(C.Iterator, Me, myClass.Descriptor, myClass.Struct.cDims, StartIndex, Count)
+    
+    Set Iterator = Skynet.CreateInstance(New GenericArray, VarPtr(C), LenB(C))
+    
+End Function
+
+Private Sub LoadIterator( _
+                            ByRef E As Iterator, _
+                            ByVal Parent As GenericArray, _
+                            ByVal Descriptor As Long, _
+                            ByVal Rank As Long, _
+                            ByVal StartIndex As Long, _
+                            ByVal Count As Long)
+
+    With E
+        Set .Parent = Parent '! default is nothing, should only be set with Iterator
+        .Descriptor = Descriptor
+        .Rank = Rank
+        .Complete = False
+        .StartIndex = StartIndex
+        .EndIndex = .StartIndex + Count - MIN_INDEX
+        .Count = Count
+        ReDim .Indices(.Rank - 1)
+        .ptrIndices = VarPtr(.Indices(0))
+   
+        If (.Rank = 1) Then
+            .Indices(0) = StartIndex - 1
+        Else
+        
+        End If
+        
+        .HasLoaded = True
+    End With
+
+End Sub
 'IGeneric
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
 Private Sub IGeneric_Dispose()
 
 '    If (SafeArrayUnlock(myClass.Descriptor) = S_OK) Then
@@ -732,9 +820,12 @@ Private Sub IGeneric_Dispose()
 '        Call Catch(SafeArrayDestroyDescriptor(ByVal Me.Descriptor))
 ''    Call Catch(SafeArrayDestroy(ByVal Descriptor))
 '    End If
-
-    myClass = EmptyStructure
     
+    If myClass.IsReadOnly Then _
+        Call Skynet.ClearData(Virtual.Pointer, Virtual.Size)
+  
+    myClass = EmptyStructure
+  
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
@@ -753,10 +844,7 @@ Private Function IGeneric_Clone() As IGeneric
         Call LoadArrayStructure(.Struct, .Descriptor) '! pv.data
         
         ReDim .Indices(.Struct.cDims - 1) '!
-        .ptrIndices = VarPtr(.Indices(0)) '!
         .Elements = myClass.Elements
-        
-        Call LoadEnumerator(.Enumerator, .Descriptor, .Struct.cDims, MIN_INDEX, .Elements)
         
     End With
     
@@ -777,14 +865,24 @@ Private Function IGeneric_ToString() As String
 End Function
 
 'IGenericReadOnlyList
+' Uses myclass.Iterator as underlying
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = MIN_INDEX: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myClass.Elements: End Property
-Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_Item = myClass.Internal(Index): End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements): End Function
+Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
+    
+    If (Index > myClass.Elements) Or Index < MIN_INDEX Then _
+        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_Item").IndexOutofRange("Index not valid") '!
+    
+'    If (SafeArrayGetElement(ByVal myClass.Descriptor, ByVal VarPtr(Index), IGenericReadOnlyList_Item) = DISP_E_BADINDEX) Then _
+'        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_Item").InvalidInput("Invalid Index")
 
-Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
-Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Elements): End Sub
-Private Function IGenericReadOnlyList_NewEnumerator() As IGenericEnumerator: Set IGenericReadOnlyList_NewEnumerator = Me.Enumerator: End Function
+    Set IGenericReadOnlyList_Item = myClass.Internal(Index)
+        
+End Property
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=myClass.Iterator.StartIndex, Count:=myClass.Iterator.Count): End Function
+Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub 'TODO Clear Range
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=myClass.Iterator.StartIndex, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Iterator.Count): End Sub 'TODO CopyTo as Vector
+Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = True: End Property
@@ -794,94 +892,51 @@ Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me: End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myClass.Elements) >= 0: End Function
-'// GetEnumerator returns an IEnumerator over this Array.
-'//
-'// Currently, only one dimensional arrays are supported.
-'//
 
-Public Function Enumerator(Optional ByVal StartIndex As Long = MIN_INDEX, Optional ByVal Count As Long) As IGenericEnumerator
+'IGenericIterator
+Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(MIN_INDEX, Me.Length): End Function
 
-    Dim C As Member
-    
-    If Count = 0 Then _
-        Count = myClass.Elements
-        
-    Call LoadEnumerator(C.Enumerator, myClass.Descriptor, myClass.Struct.cDims, StartIndex, Count)
-    Set C.Enumerator.Parent = Me 'make sure that parent cant go out of scope
-    
-    Set Enumerator = Skynet.CreateInstance(New GenericArray, VarPtr(C), LenB(C))
-    
-End Function
-
-'IGenericEnumerator
-Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator: Set IGenericCollection_NewEnumerator = Me.Enumerator(MIN_INDEX, Me.Length): End Function
-
-Private Property Get IGenericEnumerator_Current() As IGeneric
-    If (SafeArrayGetElement(ByVal myClass.Enumerator.Descriptor, ByVal myClass.Enumerator.ptrIndices, IGenericEnumerator_Current) = DISP_E_BADINDEX) Then _
-        Call Skynet.Throw(Me, "Private Property Get IGenericEnumerator_Current").InvalidInput("Invalid Index")
+Private Property Get IGenericIterator_Current() As IGeneric
+    If (SafeArrayGetElement(ByVal myClass.Iterator.Descriptor, ByVal myClass.Iterator.ptrIndices, IGenericIterator_Current) = DISP_E_BADINDEX) Then _
+        Call Skynet.Throw(Me, "Private Property Get IGenericIterator_Current").InvalidInput("Invalid Index")
 End Property
 
-Private Function IGenericEnumerator_MoveNext() As Boolean
+Private Function IGenericIterator_MoveNext() As Boolean
     
-        With myClass.Enumerator
+        With myClass.Iterator
             If (.Rank = 1) Then
-                If .Complete Then _
+    
+                If .Complete Then
+                    If .HasLoaded = False Then _
+                        Call Skynet.Throw(Me, "Private Function IGenericIterator_MoveNext").InvalidIterator
+            
                     Erase .Indices: Exit Function
-                
-                IGenericEnumerator_MoveNext = Not .Complete
-                .Complete = InterlockedIncrement(.Indices(0)) = .Count
+                End If
+                .Complete = InterlockedIncrement(.Indices(0)) = .EndIndex
+               
             Else
 
-
+                'Multidim
             End If
     End With
-
+    
+    IGenericIterator_MoveNext = True
+    
 End Function
 
-Private Sub IGenericEnumerator_Reset()
-    With myClass.Enumerator
-        Call LoadEnumerator(myClass.Enumerator, .Descriptor, .Rank, .StartIndex, .Count)
-    End With
-End Sub
-
-Private Sub LoadEnumerator( _
-                            ByRef e As Enumerator, _
-                            ByVal Descriptor As Long, _
-                            ByVal Rank As Long, _
-                            ByVal StartIndex As Long, _
-                            ByVal Count As Long)
-
-    If (Descriptor = 0) Then _
-        Call Skynet.Throw(Me, "Private Sub LoadEnumerator").InvalidOperation("Descriptor = 0")
+Private Sub IGenericIterator_Reset()
+    With myClass.Iterator
+        If .HasLoaded = False Then _
+            Call Skynet.Throw(Me, "Private Function IGenericIterator_MoveNext").InvalidIterator
             
-    If (StartIndex < MIN_INDEX) Or (StartIndex > myClass.Elements + MIN_INDEX) Then _
-        Call Skynet.Throw(Me, "Private Sub LoadEnumerator").IndexOutofRange("(StartIndex < MIN_INDEX) Or (StartIndex > myClass.Elements + MIN_INDEX)")
-
-    If (Count < 0) Or (Count > myClass.Elements - StartIndex + MIN_INDEX) Then _
-        Call Skynet.Throw(Me, "Private Sub LoadEnumerator").IndexOutofRange("(Count < 0) Or (Count > myClass.Elements - StartIndex + MIN_INDEX)")
-
-    With e
-        Set .Parent = e.Parent '! default is nothing, should only be set with newEnumerator
-        .Descriptor = Descriptor
-        .Rank = Rank
-        .Complete = False
-        .StartIndex = StartIndex
-        .Count = Count
-        ReDim .Indices(.Rank - 1)
-        .ptrIndices = VarPtr(.Indices(0))
-   
-        If (.Rank = 1) Then
-            .Indices(0) = StartIndex - 1
-        Else
-        
-        End If
+        Call LoadIterator(myClass.Iterator, .Parent, .Descriptor, .Rank, .StartIndex, .Count)
     End With
-
 End Sub
+
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericArray: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericArray: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
 

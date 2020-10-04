@@ -15,7 +15,7 @@ Public Enum ComparerEnum
     IsEqual = 0
     IsGreater = 1
 End Enum
-
+Public Property Get IsMutable() As Boolean: End Property
 Public Property Get HashValue() As Long: End Property
 Public Function IsRelatedTo(ByVal Other As IGeneric) As Boolean: End Function
 Public Function Equals(ByVal Other As IGeneric) As Boolean: End Function

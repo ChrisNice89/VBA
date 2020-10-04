@@ -29,23 +29,32 @@ Private Type Member
     Value As String
     Length As Long
     Format As TStringFormat
-    Hashfunction As Hashing
 End Type
 Private myClass As Member
-'Private Formats() As String
 
 Private Type Internal
-    size As Long
+    Size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
 
-Public Property Get Hashfunction() As Hashing: Hashfunction = myClass.Hashfunction: End Property
 Public Property Get Length() As Long: Length = myClass.Length: End Property
 Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myClass.Value, 1, 1): End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myClass.Value, Len(myClass.Value), 1): End Property
 Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myClass.Value, Index, 1): End Property
 Public Property Get Format() As TStringFormat: Format = myClass.Format: End Property
+Public Function ToFormat() As String
+    
+    With myClass
+        Select Case .Format
+            Case TStringFormat.DefaultString: ToFormat = .Value: Exit Function
+            Case TStringFormat.Trim: ToFormat = VBA.Trim$(.Value): Exit Function
+            Case TStringFormat.LTrim: ToFormat = VBA.LTrim$(.Value): Exit Function
+            Case TStringFormat.RTrim: ToFormat = VBA.RTrim$(.Value): Exit Function
+        End Select
+    End With
+    
+End Function
 Public Property Get Value() As String: Value = myClass.Value: End Property
 
 Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myClass.Value, Find, ReplaceWith), myClass.Hashfunction, myClass.Format): End Function
@@ -54,6 +63,7 @@ Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myClass.Va
 Public Function StartsWith(ByVal text As String) As Boolean: StartsWith = (myClass.Value Like ("%" & text)): End Function
 Public Function EndsWith(ByVal text As String) As Boolean: EndsWith = (myClass.Value Like (text & "%")): End Function
 Public Function Contains(ByVal text As String) As Boolean: Contains = Not (InStr(1, myClass.Value, text) = 0): End Function
+Public Function CompareToString(ByRef S As String) As ComparerEnum: CompareToString = StrComp(myClass.Value, S, vbBinaryCompare): End Function
 
 Public Function CountChar(ByVal C As String) As Long
     
@@ -103,11 +113,11 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     Dim chars As Variant
     chars = VBA.Split(myClass.Value, Delimiter)
     
-    Dim i As Long, lb As Long: lb = GenericArray.LowerBound
-    ReDim Strings(lb To UBound(chars) + lb) As IGeneric
+    Dim i As Long, LB As Long: LB = GenericArray.LowerBound
+    ReDim Strings(LB To UBound(chars) + LB) As IGeneric
     
     For i = LBound(chars) To UBound(chars)
-        Set Strings(i + lb) = GString(chars(i))
+        Set Strings(i + LB) = GString(chars(i))
     Next
     
     Set Split = GenericArray.BuildFrom(Strings)
@@ -116,7 +126,7 @@ End Function
 
 Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
-    Dim s As IGeneric
+    Dim S As IGeneric
     Dim i As Long
     
     If (Values Is Nothing) Then _
@@ -125,9 +135,9 @@ Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DE
     ReDim Strings(Values.LowerBound To Values.Length) As String
     
     For i = Values.LowerBound To Values.Length
-        Set s = Values(i) 'Should use enumerable.Select(IgnoreNulls:=true)
-        If Not s Is Nothing Then _
-            Strings(i) = s.ToString
+        Set S = Values(i) 'Should use enumerable.Select(IgnoreNulls:=true)
+        If Not S Is Nothing Then _
+            Strings(i) = S.ToString
     Next
     
     Set Join = Me.Concat(GString(VBA.Join$(Strings, Delimiter), myClass.Hashfunction, myClass.Format))
@@ -150,7 +160,6 @@ End Function
 
 Public Function Build( _
                         ByVal Value As String, _
-                        Optional ByVal Hashfunction As Hashing = Hashing.Function1, _
                         Optional ByVal Format As TStringFormat = TStringFormat.DefaultString) As GString
 Attribute Build.VB_UserMemId = 0
     With myClass
@@ -161,47 +170,42 @@ Attribute Build.VB_UserMemId = 0
     End With
     
     'Set Build = Skynet.Create(GString)
-    Set Build = Skynet.CreateInstance(New GString, Virtual.Pointer, Virtual.size)
+    Set Build = Skynet.CreateInstance(New GString, Virtual.Pointer, Virtual.Size)
 
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.size = LenB(myClass)
-'    With GString
-'        myClass.Value = .Value
-'        myClass.Length = .Length
-'        myClass.Format = .Format
-'        myClass.Hashfunction = .Hashfunction
-'    End With
-    
-    'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
+    Virtual.Size = LenB(myClass)
 End Sub
 
 Private Property Get IValue_Object() As IGeneric: Set IValue_Object = Me: End Property
 Private Property Get IValue_DatabaseType() As AdoDataType: IValue_DatabaseType = T_String: End Property
 Private Property Get IValue_Value() As Variant: IValue_Value = myClass.Value: End Property
 
+'IGeneric
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Sub IGeneric_Dispose(): End Sub
+Private Function EmptyStructure() As Member: End Function
+
 Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass 'hardcopy
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GString, VarPtr(C), Virtual.size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GString, VarPtr(C), Virtual.Size)
    
 End Function
 
-Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
-Private Function EmptyStructure() As Member: End Function
-
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    Dim s As GString
     
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
-    Set s = Other
-    If Not (myClass.Length = Me.Length) Then IGeneric_Equals = False: Exit Function
-
-    IGeneric_Equals = (StrComp(myClass.Value, s.Value, vbBinaryCompare) = 0)
+    Dim S As GString: Set S = Other
+    If Not (myClass.Length = S.Length) Then IGeneric_Equals = False: Exit Function
+    
+    IGeneric_Equals = S.CompareToString(myClass.Value) * -1
+    
+    'IGeneric_Equals = (StrComp(myClass.Value, S.Value, vbBinaryCompare) = 0)
      
 End Function
 
@@ -210,12 +214,32 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    Dim s As GString: Set s = Other
-    IGeneric_CompareTo = StrComp(myClass.Value, s.Value, vbBinaryCompare)
+    Dim S As GString: Set S = Other
+    IGeneric_CompareTo = StrComp(myClass.Value, S.Value, vbBinaryCompare)
 
 End Function
 
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.HashValue(StrConv(myClass.Value, vbFromUnicode), myClass.Hashfunction): End Property
+Private Property Get IGeneric_HashValue() As Long
+
+    Dim H As Double
+    Dim i As Long
+    Dim ascii() As Byte: ascii() = StrConv(myClass.Value, vbFromUnicode)
+
+    Const Shift As Long = 2& ^ 5
+    Dim h1 As Double: h1 = 352654597# 'LeftShift(5381,16))+5381
+    Dim h2 As Double: h2 = h1
+    
+    With Skynet
+        For i = LBound(ascii) To UBound(ascii) - 1
+            h1 = .X0R((h1 * Shift) + h1, ascii(i)): h2 = .X0R((h2 * Shift) + h2, ascii(i + 1))
+        Next
+    
+        H = h1 + (h2 * 1566083941#)
+        
+        IGeneric_HashValue = CLng(H - (Fix(H / .MaxHash) * .MaxHash))
+    End With
+
+End Property
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GString): End Function
 Private Function IGeneric_ToString() As String
 
@@ -230,6 +254,6 @@ End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GString: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GString: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

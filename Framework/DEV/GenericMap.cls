@@ -17,7 +17,7 @@ Implements IGeneric
 Implements IGenericDictionary
 Implements IGenericCollection
 
-'Implements IGenericEnumerator
+'Implements IGenericIterator
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
@@ -42,7 +42,7 @@ End Type
 '
 Private Type HashItem
     Incr As Long
-    size As Long
+    Size As Long
     Index As Long
 End Type
 
@@ -60,7 +60,7 @@ Private Type Member
     Occupancy As Long
     Count As Long
     RawSize As Long
-    size As Long
+    Size As Long
     LoadSize As Long
     LoadFactor As Double
     Buckets() As Bucket
@@ -70,7 +70,7 @@ End Type
 '
 Private myClass As Member
 Private Type Internal
-    size As Long
+    Size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -123,12 +123,15 @@ Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment =
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.size = LenB(myClass)
+    Virtual.Size = LenB(myClass)
 End Sub
 
 Public Function Build( _
                         Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
                         Optional ByVal LoadFactor As Double = DEFAULT_LOADFACTOR) As GenericMap
+    
+    If (Me Is GenericMap) = False Then _
+        Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
     With myClass
         With .Const
@@ -156,16 +159,16 @@ Public Function Build( _
         If (.RawSize > Skynet.MaxLong) Then _
            Call Skynet.Throw(Me, "Build").Overflow(".RawSize > Skynet.MaxArraySize")
         
-        .size = IIf(.RawSize > .Const.InitialSize, getPrime(.RawSize), .Const.InitialSize)
-        ReDim .Buckets(.size - 1)
+        .Size = IIf(.RawSize > .Const.InitialSize, getPrime(.RawSize), .Const.InitialSize)
+        ReDim .Buckets(.Size - 1)
         
-        .LoadSize = Int(.LoadFactor * .size)
-        If Not (.LoadSize < .size) Then _
-            Call Skynet.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadsize must be less than Size.")
+        .LoadSize = Int(.LoadFactor * .Size)
+        If Not (.LoadSize < .Size) Then _
+            Call Skynet.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")
             
     End With
     
-    Set Build = Skynet.CreateInstance(New GenericMap, Virtual.Pointer, Virtual.size)
+    Set Build = Skynet.CreateInstance(New GenericMap, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -177,7 +180,7 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function TryGetValue").KeyIsNothing
     
-    Call LoadHash(Hash, Key.HashValue, myClass.size)
+    Call LoadHash(Hash, Key.HashValue, myClass.Size)
     With Hash
         Do
             With myClass.Buckets(.Index)
@@ -189,10 +192,10 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
                     Exit Function
             
             End With
-            If ((InterlockedIncrement(Try)) > .size) Then _
+            If ((InterlockedIncrement(Try)) > .Size) Then _
                 Exit Function
                 
-            .Index = Modulo(.Index + .Incr, .size)
+            .Index = Modulo(.Index + .Incr, .Size)
         Loop
     End With
     
@@ -206,7 +209,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "FindEntry").KeyIsNothing
     
-    Call LoadHash(Hash, Key.HashValue, myClass.size)
+    Call LoadHash(Hash, Key.HashValue, myClass.Size)
   
     Do
         With myClass.Buckets(Hash.Index)
@@ -219,10 +222,10 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
         
         End With
         With Hash
-            If ((InterlockedIncrement(Try)) > .size) Then _
+            If ((InterlockedIncrement(Try)) > .Size) Then _
                 FindEntry = -1: Exit Function
     
-            .Index = Modulo(.Index + .Incr, .size)
+            .Index = Modulo(.Index + .Incr, .Size)
         End With
     Loop
     
@@ -232,13 +235,13 @@ End Function
 
 Public Sub Remove(ByVal Key As IGeneric)
     
-    Dim s As Byte
+    Dim S As Byte
     Dim i As Long: i = FindEntry(Key)
     
     If (i >= 0) Then
         With myClass
-            s = (.Buckets(i).State And Not HAS_ENTRY)
-            .Buckets(i) = EmptyBucket: .Buckets(i).State = s
+            S = (.Buckets(i).State And Not HAS_ENTRY)
+            .Buckets(i) = EmptyBucket: .Buckets(i).State = S
             Call InterlockedDecrement(.Count)
         End With
     End If
@@ -301,22 +304,22 @@ Private Function Expandprime(ByVal oldSize As Long) As Long
 End Function
 
 Private Sub Expand()
-    Call Rehash(Expandprime(myClass.size), False)
+    Call Rehash(Expandprime(myClass.Size), False)
 End Sub
 
-Private Sub LoadHash(ByRef H As HashItem, ByVal HashValue As Long, ByVal size As Long)
+Private Sub LoadHash(ByRef H As HashItem, ByVal HashValue As Long, ByVal Size As Long)
     
     With H
-        .size = size
-        .Index = Modulo(HashValue, .size)
-        .Incr = 1 + Modulo((CDbl(HashValue) * myClass.Const.HashPrime), (.size - 1))
+        .Size = Size
+        .Index = Modulo(HashValue, .Size)
+        .Incr = 1 + Modulo((CDbl(HashValue) * myClass.Const.HashPrime), (.Size - 1))
     End With
     
 End Sub
 
-Private Sub Rehash(ByVal size As Long, ByVal ForceNewHashing As Boolean)
+Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
 
-    Dim NewBuckets() As Bucket: ReDim NewBuckets(size - 1)
+    Dim NewBuckets() As Bucket: ReDim NewBuckets(Size - 1)
     Dim i As Long
   
     With myClass
@@ -325,18 +328,18 @@ Private Sub Rehash(ByVal size As Long, ByVal ForceNewHashing As Boolean)
         If ForceNewHashing Then
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    Call PutEntry(NewBuckets, .Buckets(i), .Buckets(i).Key.HashValue, size)
+                    Call PutEntry(NewBuckets, .Buckets(i), .Buckets(i).Key.HashValue, Size)
             Next
         Else
             For i = LBound(.Buckets) To UBound(.Buckets)
                 If Not (.Buckets(i).Key Is Nothing) Then _
-                    Call PutEntry(NewBuckets, .Buckets(i), .Buckets(i).HashCode, size)
+                    Call PutEntry(NewBuckets, .Buckets(i), .Buckets(i).HashCode, Size)
             Next
         End If
         
         .Buckets = NewBuckets
-        .LoadSize = Int(.LoadFactor * size)
-        .size = size
+        .LoadSize = Int(.LoadFactor * Size)
+        .Size = Size
     End With
     
 End Sub
@@ -345,10 +348,10 @@ Private Sub PutEntry( _
                         ByRef Buckets() As Bucket, _
                         ByRef Entry As Bucket, _
                         ByVal HashCode As Long, _
-                        ByVal size As Long)
+                        ByVal Size As Long)
 
     Dim Hash As HashItem
-    Call LoadHash(Hash, HashCode, size)
+    Call LoadHash(Hash, HashCode, Size)
     Entry.State = HAS_ENTRY
     
     With Hash
@@ -359,7 +362,7 @@ Private Sub PutEntry( _
             If Not (Buckets(.Index).State And HAS_COLLISION) = HAS_COLLISION Then _
                 Buckets(.Index).State = (HAS_ENTRY + HAS_COLLISION): Call InterlockedIncrement(myClass.Occupancy)
                 
-            .Index = Modulo(.Index + .Incr, .size)
+            .Index = Modulo(.Index + .Incr, .Size)
         Loop
     End With
 
@@ -379,13 +382,13 @@ Public Sub Add( _
         
     With myClass
         If (.Count >= .LoadSize) Then
-            Call Rehash(Expandprime(.size), False)
+            Call Rehash(Expandprime(.Size), False)
         ElseIf ((.Occupancy > .LoadSize) And (.Count > .Const.RehashBarrier)) Then
-            Call Rehash(.size, False)
+            Call Rehash(.Size, False)
         End If
         
         HashValue = Key.HashValue
-        Call LoadHash(Hash, HashValue, .size)
+        Call LoadHash(Hash, HashValue, .Size)
     End With
     
     With Hash
@@ -411,8 +414,8 @@ Public Sub Add( _
                 
             End With
             
-            .Index = Modulo(.Index + .Incr, .size)
-        Loop While (InterlockedIncrement(Try) < .size)
+            .Index = Modulo(.Index + .Incr, .Size)
+        Loop While (InterlockedIncrement(Try) < .Size)
     End With
 
 End Sub
@@ -421,7 +424,7 @@ Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
 
-Private Function CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
+Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
     
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
@@ -435,12 +438,12 @@ Private Function CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericA
     Dim i As Long
     
     Select Case True
-        Case Internal = Keys_
+        Case T = keys_
             For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
                 If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myClass.Buckets(i).Key: Call InterlockedIncrement(ArrayIndex)
             Next
-        Case Internal = Values_
+        Case T = Values_
             For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
                 If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
@@ -456,11 +459,15 @@ Private Function CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericA
     
 End Function
 
-Private Property Get IGenericEnumerator_Current() As IGeneric
+Public Function Iterator(ByVal T As DictionaryData) As IGenericIterator
+    
+End Function
+
+Private Property Get IGenericIterator_Current() As IGeneric
 
 End Property
 
-Private Function IGenericEnumerator_MoveNext() As Boolean
+Private Function IGenericIterator_MoveNext() As Boolean
 '    With myClass.Cache
 '        Do While Increment(.CurrentSlot) < .Slots
 '            If Not (.Buckets(.CurrentSlot).Key Is Nothing) Then
@@ -468,17 +475,18 @@ Private Function IGenericEnumerator_MoveNext() As Boolean
 ''                    Set Key = .Key
 ''                    Set Value = .Value
 '                End With
-'                IEnumerator_MoveNext = True: Exit Function
+'                IIterator_MoveNext = True: Exit Function
 '            End If
 '        Loop
 '
 '    End With
 End Function
 
-Private Sub IGenericEnumerator_Reset()
+Private Sub IGenericIterator_Reset()
 
 End Sub
 'IGeneric
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
 
 Private Function IGeneric_Clone() As IGeneric
@@ -510,7 +518,7 @@ Private Function IGeneric_ToString() As String
     With myClass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Size: " & .size & vbNewLine & _
+                            "Size: " & .Size & vbNewLine & _
                             "LoadFactor: " & .LoadFactor & vbNewLine & _
                             "LoadSize: " & .LoadSize & vbNewLine & _
                             "Elements: " & .Count & vbNewLine & _
@@ -547,7 +555,8 @@ End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, False): End Sub
-Private Sub IGenericDictionary_CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Internal, GArray, ArrayIndex, "Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Sub IGenericDictionary_CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=T, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Function IGenericDictionary_Iterator(ByVal T As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(T:=T): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
@@ -565,13 +574,11 @@ Private Function IGenericCollection_ToArray() As GenericArray
     Set IGenericCollection_ToArray = GArray
     
 End Function
-Private Function IGenericCollection_NewEnumerator() As IGenericEnumerator
-
-End Function
+Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(Pairs_): End Function
 
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericMap: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericMap: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

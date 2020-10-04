@@ -33,7 +33,8 @@ Public Enum ErrorNumber
     DuplicateNotAllowed_
     NoSuchElement_
     InvalidIndex_
-    
+    InvalidIterator_
+    BuildExeption_
 End Enum
 
 Private Type Member
@@ -47,7 +48,7 @@ End Type
 Private myClass As Member
 
 Private Type Internal
-    size As Long
+    Size As Long
     Pointer As LongPtr
 End Type
 Private Virtual As Internal
@@ -65,18 +66,25 @@ Public Function Build(ByVal Source As Object, ByVal Method As String) As Throwhe
         myClass.Method = Method
     End With
    
-    Set Build = Skynet.CreateInstance(New Throwhelper, Virtual.Pointer, Virtual.size)
+    Set Build = Skynet.CreateInstance(New Throwhelper, Virtual.Pointer, Virtual.Size)
     
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myClass)
-    Virtual.size = LenB(myClass)
+    Virtual.Size = LenB(myClass)
 End Sub
 
 Public Sub Complete()
     RaiseEvent Assert
 End Sub
+
+Public Function BuildExeption(Optional ByVal Message As String = "Build called from already instantiated Object") As Throwhelper
+    myClass.Number = BuildExeption_
+    myClass.Type = "BuildExeption"
+    Call Me.Raise(Message)
+    Set BuildExeption = Me
+End Function
 
 Public Function NoSuchElement(Optional ByVal Message As String = "Element not found in Collection") As Throwhelper
     myClass.Number = NoSuchElement_
@@ -85,15 +93,15 @@ Public Function NoSuchElement(Optional ByVal Message As String = "Element not fo
     Set NoSuchElement = Me
 End Function
 
-Public Function DuplicateNotAllowed(Optional ByVal Element As IGeneric) As Throwhelper
+Public Function DuplicateNotAllowed(Optional ByVal element As IGeneric) As Throwhelper
     Dim Message As String
     
     myClass.Number = DuplicateNotAllowed_
     myClass.Type = "DuplicateNotAllowed"
-    If Element Is Nothing Then
+    If element Is Nothing Then
         Message = "Element is already in Collection"
     Else
-        Message = Element.ToString & " is already in Collection"
+        Message = element.ToString & " is already in Collection"
     End If
     Call Me.Raise(Message)
     Set DuplicateNotAllowed = Me
@@ -111,6 +119,13 @@ Public Function Overflow(Optional ByVal Message As String) As Throwhelper
     myClass.Type = "Overflow"
     Call Me.Raise(Message)
     Set Overflow = Me
+End Function
+
+Public Function InvalidIterator(Optional ByVal Message As String = "Iterator not loaded") As Throwhelper
+    myClass.Number = InvalidIterator_
+    myClass.Type = "InvalidIterator"
+    Call Me.Raise(Message)
+    Set InvalidIterator = Me
 End Function
 
 Public Function InvalidOperation(Optional ByVal Message As String) As Throwhelper
@@ -150,6 +165,7 @@ End Function
 Public Function IndexOutofRange(Optional ByVal Message As String) As Throwhelper
     myClass.Number = IndexOutofRange_
     myClass.Type = "IndexOutofRange"
+    Call Me.Raise(Message)
     Set IndexOutofRange = Me
 End Function
 
@@ -207,19 +223,20 @@ CleanFail:
     Debug.Print Skynet.Generic(Me).ToString
 End Sub
 
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Sub IGeneric_Dispose(): End Sub
+Private Function EmptyStructure() As Member: End Function
+
 Private Function IGeneric_Clone() As IGeneric
     
     Dim C As Member: C = myClass 'hardcopy
-    Set IGeneric_Clone = Skynet.CreateInstance(New Throwhelper, VarPtr(C), Virtual.size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New Throwhelper, VarPtr(C), Virtual.Size)
 
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
 
 End Function
-
-Private Sub IGeneric_Dispose(): myClass = EmptyStructure: End Sub
-Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
@@ -243,6 +260,6 @@ End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New Throwhelper: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = Throwhelper: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.size: End Property
+Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

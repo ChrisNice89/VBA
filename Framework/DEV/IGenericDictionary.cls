@@ -11,8 +11,8 @@ Attribute VB_Exposed = True
 Option Explicit
 '@Folder "<T>Enumerable"
 
-Public Enum InternalData
-    Keys_ = 0
+Public Enum DictionaryData
+    keys_ = 0
     Values_
     Pairs_
 End Enum
@@ -31,8 +31,9 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
 Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric): End Sub
 Public Sub Remove(ByVal Key As IGeneric): End Sub
 
-Public Sub CopyOf(ByVal Internal As InternalData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
-
+Public Sub CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
+Public Function Iterator(ByVal T As DictionaryData) As IGenericIterator: End Function
+    
 
 'Private Sub Class_Initialize()
 '    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
