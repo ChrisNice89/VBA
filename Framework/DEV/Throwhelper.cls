@@ -93,15 +93,15 @@ Public Function NoSuchElement(Optional ByVal Message As String = "Element not fo
     Set NoSuchElement = Me
 End Function
 
-Public Function DuplicateNotAllowed(Optional ByVal element As IGeneric) As Throwhelper
+Public Function DuplicateNotAllowed(Optional ByVal Element As IGeneric) As Throwhelper
     Dim Message As String
     
     myClass.Number = DuplicateNotAllowed_
     myClass.Type = "DuplicateNotAllowed"
-    If element Is Nothing Then
+    If Element Is Nothing Then
         Message = "Element is already in Collection"
     Else
-        Message = element.ToString & " is already in Collection"
+        Message = Element.ToString & " is already in Collection"
     End If
     Call Me.Raise(Message)
     Set DuplicateNotAllowed = Me

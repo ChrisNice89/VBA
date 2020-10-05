@@ -105,7 +105,7 @@ Public Property Let Capacity(ByVal Value As Long)
             Dim newItems As GenericArray
             Set newItems = GenericArray.Build(Value)
             If (myClass.Size > 0) Then _
-                Call Skynet.CopyData(dst:=newItems.AdressOf(element:=1), src:=myClass.Items.AdressOf(element:=1), Bytes:=myClass.Items.TotalSize, ClearSource:=True)
+                Call Skynet.CopyData(dst:=newItems.AdressOf(Element:=1), src:=myClass.Items.AdressOf(Element:=1), Bytes:=myClass.Items.TotalSize, ClearSource:=True)
 
             Set myClass.Items = newItems
         Else
@@ -187,8 +187,7 @@ Public Function Iterator(Optional ByVal Index As Long, Optional ByVal Count As L
     If (Count < 0) Or (Count > myClass.Size - Index + myClass.Items.LowerBound) Then _
         Call Skynet.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Size - Index + myClass.Items.LowerBound)")
         
-    Call LoadIterator(C.Iterator, myClass.Items, Index, Count)
-
+    'Call LoadIterator(C.Iterator, myClass.Items, Index, Count)
     'Set Iterator = Skynet.CreateInstance(New GenericList, VarPtr(C), LenB(C))
     Set Iterator = myClass.Items.Iterator(StartIndex:=Index, Count:=Count)
 
@@ -218,8 +217,8 @@ Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
         
     With myClass.Items
         If (Index < myClass.Size + .LowerBound) Then _
-            Call Skynet.CopyData(dst:=ByVal .AdressOf(element:=Index + 1), src:=ByVal .AdressOf(element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
-            Call Skynet.ClearData(dst:=ByVal .AdressOf(element:=Index), Bytes:=.SizeOf(1))
+            Call Skynet.CopyData(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.ClearData(dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(1))
 
          Set .ElementAt(Index) = Item: Call InterlockedIncrement(myClass.Size)
     End With
@@ -246,8 +245,8 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
     
         With myClass.Items
             If (Index < myClass.Size + .LowerBound) Then _
-                Call Skynet.CopyData(dst:=ByVal .AdressOf(element:=Index + C.Count), src:=ByVal .AdressOf(element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
-                Call Skynet.ClearData(dst:=ByVal .AdressOf(element:=Index), Bytes:=.SizeOf(C.Count))
+                Call Skynet.CopyData(dst:=ByVal .AdressOf(Element:=Index + C.Count), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+                Call Skynet.ClearData(dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(C.Count))
 
         End With
       
@@ -283,8 +282,8 @@ Public Sub RemoveAt(ByVal Index As Long)
         Set .ElementAt(Index) = Nothing
         
         If (Index < myClass.Size + .LowerBound) Then _
-            Call Skynet.CopyData(dst:=ByVal .AdressOf(element:=Index), src:=ByVal .AdressOf(element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
-            Call Skynet.ClearData(dst:=ByVal .AdressOf(element:=myClass.Size), Bytes:=.SizeOf(1))
+            Call Skynet.CopyData(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.ClearData(dst:=ByVal .AdressOf(Element:=myClass.Size), Bytes:=.SizeOf(1))
             
     End With
     

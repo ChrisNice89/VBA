@@ -154,8 +154,8 @@ Public Property Let Capacity(ByVal Value As Long)
             Dim newValues As GenericArray: Set newValues = GenericArray.Build(Value)
             
             If (myClass.Size > 0) Then _
-                Call Skynet.CopyData(dst:=newKeys.AdressOf(element:=1), src:=myClass.Keys.AdressOf(element:=1), Bytes:=myClass.Keys.TotalSize, ClearSource:=True): _
-                Call Skynet.CopyData(dst:=newValues.AdressOf(element:=1), src:=myClass.Values.AdressOf(element:=1), Bytes:=myClass.Values.TotalSize, ClearSource:=True)
+                Call Skynet.CopyData(dst:=newKeys.AdressOf(Element:=1), src:=myClass.Keys.AdressOf(Element:=1), Bytes:=myClass.Keys.TotalSize, ClearSource:=True): _
+                Call Skynet.CopyData(dst:=newValues.AdressOf(Element:=1), src:=myClass.Values.AdressOf(Element:=1), Bytes:=myClass.Values.TotalSize, ClearSource:=True)
 
             Set myClass.Keys = newKeys
             Set myClass.Values = newValues
@@ -272,12 +272,12 @@ Public Sub RemoveAt(ByVal Index As Long)
     
     If (Index < myClass.Size + myClass.Keys.LowerBound) Then
         With myClass.Keys
-            Call Skynet.CopyData(dst:=ByVal .AdressOf(element:=Index), src:=ByVal .AdressOf(element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
-            Call Skynet.ClearData(dst:=ByVal .AdressOf(element:=myClass.Size), Bytes:=.SizeOf(1))
+            Call Skynet.CopyData(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.ClearData(dst:=ByVal .AdressOf(Element:=myClass.Size), Bytes:=.SizeOf(1))
         End With
         With myClass.Values
-            Call Skynet.CopyData(dst:=ByVal .AdressOf(element:=Index), src:=ByVal .AdressOf(element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
-            Call Skynet.ClearData(dst:=ByVal .AdressOf(element:=myClass.Size), Bytes:=.SizeOf(1))
+            Call Skynet.CopyData(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.ClearData(dst:=ByVal .AdressOf(Element:=myClass.Size), Bytes:=.SizeOf(1))
         End With
     End If
     
@@ -305,12 +305,12 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
 
     If (Index < myClass.Size + myClass.Keys.LowerBound) Then
         With myClass.Keys
-            Call Skynet.CopyData(dst:=ByVal .AdressOf(element:=Index + 1), src:=ByVal .AdressOf(element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
-            Call Skynet.ClearData(dst:=ByVal .AdressOf(element:=Index), Bytes:=.SizeOf(1))
+            Call Skynet.CopyData(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.ClearData(dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(1))
         End With
         With myClass.Values
-            Call Skynet.CopyData(dst:=ByVal .AdressOf(element:=Index + 1), src:=ByVal .AdressOf(element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
-            Call Skynet.ClearData(dst:=ByVal .AdressOf(element:=Index), Bytes:=.SizeOf(1))
+            Call Skynet.CopyData(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(myClass.Size - Index + .LowerBound)): _
+            Call Skynet.ClearData(dst:=ByVal .AdressOf(Element:=Index), Bytes:=.SizeOf(1))
         End With
     End If
     

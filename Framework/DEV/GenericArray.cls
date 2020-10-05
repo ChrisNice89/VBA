@@ -150,7 +150,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
     If IsMissing(Indices) Then _
-        Call Skynet.Throw(Me, "Public Function Build").NullPointer("Dimension/ Size of Array is missing")
+        Call Skynet.Throw(Me, "Public Function Build").NullPointer("ParamArray Indices are missing")
     
     LB = LBound(Indices): UB = UBound(Indices)
     
@@ -207,29 +207,32 @@ Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
     
 End Function
 
-Public Function BuildWithIntegers(ParamArray Values() As Variant) As GenericArray
+Public Function BuildWith(ParamArray GenericValues() As Variant) As GenericArray
     
     Dim i As Long
-    ReDim ints(MIN_INDEX To UBound(Values) + MIN_INDEX) As IGeneric
     
-    For i = LBound(Values) To UBound(Values)
-        Set ints(i + MIN_INDEX) = GNumeric(Values(i))
+    If (Me Is GenericArray) = False Then _
+        Call Skynet.Throw(Me, "Public Function BuildWith").BuildExeption
+    
+    If IsMissing(GenericValues) Then _
+        Call Skynet.Throw(Me, "Public Function BuildWith(").NullPointer("ParamArray GenericValues are missing")
+    
+    ReDim Values(MIN_INDEX To UBound(GenericValues) + MIN_INDEX) As IGeneric
+    
+    For i = LBound(GenericValues) To UBound(GenericValues)
+        
+        If Not VarType(GenericValues(i)) = vbObject Then _
+            Call Skynet.Throw(Me, "Public Function BuildWith").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+        
+        If (GenericValues(i) Is Nothing) Then _
+            Call Skynet.Throw(Me, "Public Function BuildWith").InvalidInput("Element is nothing")
+        
+        If TypeOf GenericValues(i) Is IGeneric Then _
+            Set Values(i + MIN_INDEX) = GenericValues(i)
+                
     Next
     
-    Set BuildWithIntegers = GenericArray.BuildFrom(ints)
-    
-End Function
-
-Public Function BuildWithStrings(ParamArray Values() As Variant) As GenericArray
-    
-    Dim i As Long
-    ReDim Strings(MIN_INDEX To UBound(Values) + MIN_INDEX) As IGeneric
-    
-    For i = LBound(Values) To UBound(Values)
-        Set Strings(i + MIN_INDEX) = GString(Values(i))
-    Next
-    
-    Set BuildWithStrings = GenericArray.BuildFrom(Strings)
+    Set BuildWith = GenericArray.BuildFrom(Values)
     
 End Function
 
@@ -259,7 +262,7 @@ Public Function GetValue(ParamArray Indices() As Variant) As IGeneric
         
 End Function
 
-Public Function AdressOf(ByVal element As Long) As LongPtr: AdressOf = myClass.Struct.pvData + (Me.SizeOf(element - MIN_INDEX)): End Function
+Public Function AdressOf(ByVal Element As Long) As LongPtr: AdressOf = myClass.Struct.pvData + (Me.SizeOf(Element - MIN_INDEX)): End Function
 Public Function SizeOf(ByVal elements As Long) As Long: SizeOf = elements * myClass.Struct.cbElements: End Function
 
 Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
@@ -316,7 +319,7 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     Set Column = GenericArray.Build(Me.LengthOf(1))
   
     Call LoadArrayStructure(Overlay, Column.Descriptor)
-    Overlay.pvData = Me.AdressOf(element:=Me.LengthOf(1) * Index)
+    Overlay.pvData = Me.AdressOf(Element:=Me.LengthOf(1) * Index)
     
     With Skynet
         Call SwitchTo(Me.Descriptor, Overlay)
@@ -362,13 +365,13 @@ Public Sub Copy( _
     
     With SrcArray
         Call LoadArrayStructure(src, .Descriptor) ' Could use prototype and load all member
-        Overlay.pvData = .AdressOf(element:=SrcIndex)
+        Overlay.pvData = .AdressOf(Element:=SrcIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
     
     With DstArray
         Call LoadArrayStructure(dst, .Descriptor)
-        Overlay.pvData = .AdressOf(element:=DstIndex)
+        Overlay.pvData = .AdressOf(Element:=DstIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
     

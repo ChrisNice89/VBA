@@ -6,6 +6,21 @@ Option Explicit
 
 Private List As GenericList
 
+
+Sub testArrayConstructor()
+
+    Dim ga As GenericArray
+    Set ga = GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   ", Trim), GDate(VBA.Now, Year))
+    
+    Dim Element As IGeneric
+    With ga.Iterator
+        Do While .HasNext(Element)
+            Debug.Print Element
+        Loop
+    End With
+    
+End Sub
+
 Sub TestArrayIterator()
    
     Dim i As Long, n As Long
@@ -45,7 +60,7 @@ Sub TestRange()
     Dim l As GenericList
     Set l = GenericList.Build
     
-    Call l.AddAll(Skynet.Range(-5, 50))
+    Call l.AddAll(Skynet.Range(-5, 25))
     With l.Iterator
         Do While .HasNext(Number)
             Debug.Print Number.Value
@@ -71,7 +86,7 @@ Sub TestArraySort()
 '        Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Call List.Add(GNumeric(i))
     Next
-    Call List.Sort(Random)
+    Call List.Sort(random)
     
     T.StartCounter
     Call List.Sort(descending)
@@ -219,14 +234,14 @@ Sub TestMaps()
     Set Map = GenericTree.Build ' GenericOrderedMap.Build 'GenericSortedList.Build() 'GenericTree.Build '
     
     Dim i As Long, n As Long
-    n = 1000
+    n = 50000
     
     If List Is Nothing Then
         Set List = GenericList.Build
         For i = 1 To n
             Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Next
-        Call List.Sort(descending)
+        Call List.Sort(random)
     End If
     
     Dim p As GenericPair

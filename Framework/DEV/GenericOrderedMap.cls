@@ -78,10 +78,12 @@ Public Function GetKeys() As GenericArray
     ReDim Keys(GenericArray.LowerBound To myClass.Internal.Count) As IGeneric
 
     Dim i As Long
-
-    For i = LBound(Keys) To UBound(Keys)
-        Set Keys(i) = Me.Entry(i).Key
-    Next
+    
+    With Me
+        For i = LBound(Keys) To UBound(Keys)
+            Set Keys(i) = .Entry(i).Key
+        Next
+    End With
     
     Set GetKeys = GenericArray.BuildFrom(Keys)
     
@@ -93,9 +95,11 @@ Public Function GetValues() As GenericArray
 
     Dim i As Long
     
-    For i = LBound(Values) To UBound(Values)
-        Set Values(i) = Me.Entry(i).Value
-    Next
+    With Me
+        For i = LBound(Values) To UBound(Values)
+            Set Values(i) = Me.Entry(i).Value
+        Next
+    End With
     
     Set GetValues = GenericArray.BuildFrom(Values)
 

@@ -42,7 +42,7 @@ End Enum
 Private Type Member
     Value As Date
     Format As TFloatFormat
-   
+    
 End Type
 Private myClass As Member
 Private Interval() As String
@@ -85,7 +85,7 @@ End Property
 
 Public Function Build( _
                         ByVal Value As Date, _
-                        Optional ByVal Format As TDateFormat = TDateFormat.DefaultDate) As GDate
+                        Optional ByVal Format As DateInterval = DateInterval.Year) As GDate
 Attribute Build.VB_UserMemId = 0
     With myClass
         .Value = Value
@@ -159,12 +159,7 @@ End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = 0: End Property
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GDate): End Function
 Private Function IGeneric_ToString() As String
-
-    Select Case myClass.Format
-        
-        
-    End Select
-    
+    IGeneric_ToString = Format$(myClass.Value, Interval(myClass.Format))
 End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GDate: End Function

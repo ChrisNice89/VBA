@@ -61,7 +61,7 @@ End Enum
 
 Public Enum SortOrder
     descending = -1
-    Random = 0
+    random = 0
     ascending = 1
 End Enum
 
@@ -388,7 +388,7 @@ Public Sub Sort(ByRef Objects() As IGeneric, ByVal Index As Long, ByVal Length A
     
     Const QuickSortDepthThreshold As Long = 32
     
-    If Order = Random Then
+    If Order = random Then
         Call Shuffle(Objects, Index, Length)
     ElseIf Order = ascending Then
         Call DepthLimitedQuicksort_Asc(Objects, Index, Length, QuickSortDepthThreshold)
@@ -407,7 +407,7 @@ Public Sub SortKeysWithItems( _
     
     Const QuickSortDepthThreshold As Long = 32
     
-    If Order = Random Then
+    If Order = random Then
         Call ShuffleWithItems(Keys, Items, Index, Length)
     ElseIf Order = ascending Then
         Call DepthLimitedQuicksortWithItems_Asc(Keys, Items, Index, Length, QuickSortDepthThreshold)
@@ -449,13 +449,13 @@ Public Sub SortGenericArrays( _
     End With
 End Sub
 
-Private Sub Shuffle(ByRef element() As IGeneric, ByVal Index As Long, ByVal Length As Long)
+Private Sub Shuffle(ByRef Element() As IGeneric, ByVal Index As Long, ByVal Length As Long)
 
     Dim i As Long
     Randomize VBA.Timer
     
     For i = Length To Index Step -1
-        Call Swap(element, i, (i * Rnd + 0.5))
+        Call Swap(Element, i, (i * Rnd + 0.5))
     Next
 
 End Sub
@@ -472,7 +472,7 @@ Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, 
 End Sub
 
 Private Sub DepthLimitedQuicksort_Asc( _
-                                         ByRef element() As IGeneric, _
+                                         ByRef Element() As IGeneric, _
                                          ByVal Left As Long, _
                                          ByVal Right As Long, _
                                          ByVal DepthLimit As Long)
@@ -489,33 +489,33 @@ Private Sub DepthLimitedQuicksort_Asc( _
    
     Do
         If (DepthLimit = 0) Then _
-            Call HeapSort_Asc(element, Left, Right): Exit Sub
+            Call HeapSort_Asc(Element, Left, Right): Exit Sub
 
         i = Left: j = Right
         middle = i + ((j - i) / 2)
 
-        Call SwapIfGreater(element, i, middle)
-        Call SwapIfGreater(element, i, j)
-        Call SwapIfGreater(element, middle, j)
+        Call SwapIfGreater(Element, i, middle)
+        Call SwapIfGreater(Element, i, j)
+        Call SwapIfGreater(Element, middle, j)
 
-        Set pivot = element(middle)
+        Set pivot = Element(middle)
 
         Do
     
             If (pivot Is Nothing) Then
-                Do While Not (element(j) Is Nothing): j = j - 1: Loop
+                Do While Not (Element(j) Is Nothing): j = j - 1: Loop
             Else
-                Do While (pivot.CompareTo(element(i)) = IsGreater): i = i + 1: Loop
-                Do While (pivot.CompareTo(element(j)) = IsLower): j = j - 1: Loop
+                Do While (pivot.CompareTo(Element(i)) = IsGreater): i = i + 1: Loop
+                Do While (pivot.CompareTo(Element(j)) = IsLower): j = j - 1: Loop
             End If
 
             If (i > j) Then _
                 Exit Do
 
             If (i < j) Then _
-                Set tmp = element(i): _
-                Set element(i) = element(j): _
-                Set element(j) = tmp
+                Set tmp = Element(i): _
+                Set Element(i) = Element(j): _
+                Set Element(j) = tmp
 
             i = i + 1: j = j - 1
 
@@ -525,11 +525,11 @@ Private Sub DepthLimitedQuicksort_Asc( _
 
         If (j - Left) <= (Right - i) Then
             If (Left < j) Then _
-                Call DepthLimitedQuicksort_Asc(element, Left, j, DepthLimit)
+                Call DepthLimitedQuicksort_Asc(Element, Left, j, DepthLimit)
             Left = i
         Else
             If (i < Right) Then _
-                Call DepthLimitedQuicksort_Asc(element, i, Right, DepthLimit)
+                Call DepthLimitedQuicksort_Asc(Element, i, Right, DepthLimit)
             Right = j
         End If
 
@@ -538,7 +538,7 @@ Private Sub DepthLimitedQuicksort_Asc( _
 End Sub
                               
 Private Sub DepthLimitedQuicksort_Desc( _
-                                          ByRef element() As IGeneric, _
+                                          ByRef Element() As IGeneric, _
                                           ByVal Left As Long, _
                                           ByVal Right As Long, _
                                           ByVal DepthLimit As Long)
@@ -555,31 +555,31 @@ Private Sub DepthLimitedQuicksort_Desc( _
     
     Do
         If (DepthLimit = 0) Then _
-            Call HeapSort_Desc(element, Left, Right): Exit Sub
+            Call HeapSort_Desc(Element, Left, Right): Exit Sub
 
         i = Left: j = Right
         middle = i + ((j - i) / 2)
 
-        Call SwapIfGreater(element, i, middle)
-        Call SwapIfGreater(element, i, j)
-        Call SwapIfGreater(element, middle, j)
+        Call SwapIfGreater(Element, i, middle)
+        Call SwapIfGreater(Element, i, j)
+        Call SwapIfGreater(Element, middle, j)
 
-        Set pivot = element(middle)
+        Set pivot = Element(middle)
 
         Do
         
             If (pivot Is Nothing) Then
-                Do While Not (element(i) Is Nothing): i = i + 1: Loop
+                Do While Not (Element(i) Is Nothing): i = i + 1: Loop
             Else
-                Do While (pivot.CompareTo(element(i)) = IsLower): i = i + 1: Loop
-                Do While (pivot.CompareTo(element(j)) = IsGreater): j = j - 1: Loop
+                Do While (pivot.CompareTo(Element(i)) = IsLower): i = i + 1: Loop
+                Do While (pivot.CompareTo(Element(j)) = IsGreater): j = j - 1: Loop
             End If
 
             If (i > j) Then _
                 Exit Do
         
             If (i < j) Then _
-                Set tmp = element(i): Set element(i) = element(j): Set element(j) = tmp
+                Set tmp = Element(i): Set Element(i) = Element(j): Set Element(j) = tmp
         
             i = i + 1: j = j - 1
             
@@ -589,11 +589,11 @@ Private Sub DepthLimitedQuicksort_Desc( _
 
         If (j - Left) <= (Right - i) Then
             If (Left < j) Then _
-                Call DepthLimitedQuicksort_Desc(element, Left, j, DepthLimit)
+                Call DepthLimitedQuicksort_Desc(Element, Left, j, DepthLimit)
             Left = i
         Else
             If (i < Right) Then _
-                Call DepthLimitedQuicksort_Desc(element, i, Right, DepthLimit)
+                Call DepthLimitedQuicksort_Desc(Element, i, Right, DepthLimit)
             Right = j
         End If
 
