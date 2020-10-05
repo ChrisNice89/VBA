@@ -23,13 +23,13 @@ Attribute VB_Exposed = True
 'versa.
 
 'The SortedList class provides a convenient way to create a sorted
-'copy of another dictionary, such as a Hashtable. For example:
+'copy of another dictionary, such as a GenericMap. For example:
 
-'Hashtable h = new Hashtable();
+'h = GenericMap.Build();
 'h.Add(...);
 'h.Add(...);
 
-'SortedList s = new SortedList(h);
+'sl = GenericSortedList(Dictionary:=h);
 
 'The last line above creates a sorted list that contains a copy of the keys
 'and values stored in the hashtable. In this particular example, the keys
@@ -37,8 +37,6 @@ Attribute VB_Exposed = True
 'all must implement.
 
 '@Folder("<T>Enumerable")
-Option Compare Database
-
 Option Explicit
 '@PredeclaredId
 
@@ -179,22 +177,21 @@ Public Function Build( _
         Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     With myClass
+        .SortOrder = Skynet.SortOrder
+          
         If (Dictionary Is Nothing) Then
             Set .Keys = GenericArray.Build(Capacity)
             Set .Values = GenericArray.Build(Capacity)
         Else
-            Call Skynet.Throw(Me, "Build").NotImplemented 'Todo Sort Keys/Values
-            
             Set .Keys = GenericArray.Build(Dictionary.Count)
             Set .Values = GenericArray.Build(Dictionary.Count)
             
             Call Dictionary.CopyOf(T:=keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
             Call Dictionary.CopyOf(T:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
+            
+            Call Skynet.SortGenericArrays(.Keys, .Values, .Keys.LowerBound, .Keys.Length, myClass.SortOrder)
             .Size = Dictionary.Count
         End If
-    
-        .SortOrder = Skynet.SortOrder
-      
     End With
    
     Set Build = Skynet.CreateInstance(New GenericSortedList, Virtual.Pointer, Virtual.Size)
@@ -370,9 +367,9 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
      
     Select Case True
         Case T = keys_
-            Call GenericArray.Copy(SrcArray:=myClass.Keys, SrcIndex:=myClass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
+            Call GenericArray.Copy(SrcArray:=myClass.Keys, SrcIndex:=myClass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, elements:=myClass.Size)
         Case T = Values_
-            Call GenericArray.Copy(SrcArray:=myClass.Values, SrcIndex:=myClass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
+            Call GenericArray.Copy(SrcArray:=myClass.Values, SrcIndex:=myClass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, elements:=myClass.Size)
         Case Else
             For i = myClass.Keys.LowerBound To myClass.Size
                 Set GArray(ArrayIndex) = GenericPair(myClass.Keys(i), myClass.Values(i)): Call InterlockedIncrement(ArrayIndex)
@@ -514,23 +511,24 @@ Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGeneric
 
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myClass.Iterator.Current: End Property
-Private Function IGenericIterator_MoveNext() As Boolean
+Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     With myClass.Iterator
         If .Index = .EndIndex Then
             If .HasLoaded = False Then _
-                Call Skynet.Throw(Me, "Private Function IGenericIterator_MoveNext").InvalidIterator
+                Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
             
+            Set Out = Nothing
             Set .Current = Nothing
             Exit Function
         End If
         
         Call InterlockedIncrement(.Index)
-        Set .Current = GenericPair(.Keys(.Index), .Values(.Index))
+        Set .Current = GenericPair(.Keys(.Index), .Values(.Index)): Set Out = .Current
         
     End With
     
-    IGenericIterator_MoveNext = True
+    IGenericIterator_HasNext = True
 
 End Function
 

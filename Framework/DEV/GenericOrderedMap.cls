@@ -78,7 +78,7 @@ Public Function GetKeys() As GenericArray
     ReDim Keys(GenericArray.LowerBound To myClass.Internal.Count) As IGeneric
 
     Dim i As Long
-    
+
     For i = LBound(Keys) To UBound(Keys)
         Set Keys(i) = Me.Entry(i).Key
     Next
@@ -133,33 +133,25 @@ Public Sub Add(ByVal Key As IGeneric, ByVal Item As IGeneric)
     End With
 End Sub
 
-Public Sub AddAll(ByVal Iterator As IGenericIterator)
+Public Sub AddAll(ByVal Map As IGenericDictionary)
     
     Dim p As GenericPair
-    Dim Item As IGeneric
-    
-    With Iterator
-        If (TypeOf Iterator Is IGenericDictionary) Then
-            Do While .MoveNext
-                Set p = .Current
-                Call myClass.HashTable.Add(p.Key, p.Value)
-                Call myClass.Internal.Add(p)
-            Loop
-        Else
-            Do While Iterator.MoveNext
-                If TypeOf .Current Is GenericPair Then
-                    Set p = .Current
-                Else
-                    Set p = GenericPair(.Current, Nothing)
-                End If
-                Call myClass.HashTable.Add(p.Key, p.Value)
-                Call myClass.Internal.Add(p)
-            Loop
-        End If
+  
+    With Map.Iterator(T:=Pairs_) ' Copy
+        Do While .HasNext(p): Call Me.Add(p.Key, p.Value): Loop
+        'Do While .HasNext(p): Call Me.AddPair(p): Loop
     End With
     
 End Sub
 
+Public Sub AddPair(ByVal Pair As GenericPair)
+    
+    With myClass
+        Call .HashTable.Add(Pair.Key, Pair.Value)
+        Call .Internal.Add(Skynet.Clone(Pair))
+    End With
+    
+End Sub
 Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: ContainsKey = myClass.HashTable.ContainsKey(Key): End Function
 Public Function TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: TryGetValue = myClass.HashTable.TryGetValue(Key, Value): End Function
 Public Function IndexOfKey(ByVal Key As IGeneric) As Long
@@ -248,7 +240,7 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
                 Set GArray(ArrayIndex) = Me.Entry(i).Value: Call InterlockedIncrement(ArrayIndex)
             Next
         Case Else
-            Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Internal.Count)
+            Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, elements:=myClass.Internal.Count)
     End Select
     
     Set CopyOf = GArray
@@ -379,30 +371,31 @@ Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGeneric
 
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myClass.Iterator.Current: End Property
-Private Function IGenericIterator_MoveNext() As Boolean
+Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     Dim p As GenericPair
     
     With myClass.Iterator
         If .Index = .EndIndex Then
             If .HasLoaded = False Then _
-                Call Skynet.Throw(Me, "Private Function IGenericIterator_MoveNext").InvalidIterator
+                Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
             
+            Set Out = Nothing
             Set .Current = Nothing
             Exit Function
         End If
         
-        IGenericIterator_MoveNext = True
+        IGenericIterator_HasNext = True
         
         Set p = .Entries(InterlockedIncrement(.Index))
         
         If .Type = keys_ Then _
-            Set .Current = p.Key: Exit Function
+            Set .Current = p.Key: Set Out = .Current: Exit Function
         
         If .Type = Values_ Then _
-            Set .Current = p.Value: Exit Function
+            Set .Current = p.Value: Set Out = .Current: Exit Function
         
-        Set .Current = p
+        Set .Current = p: Set Out = .Current
         
     End With
 

@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@Folder("<T>Enumerable")
-Option Compare Database
+
 
 Option Explicit
 '@PredeclaredId
@@ -110,7 +110,7 @@ Public Sub AddAll(ByVal collection As IGenericIterator)
 '    Dim i As IGeneric
 '
 '    With Collection
-'        Do While Collection.MoveNext
+'        Do While Collection.HasNext
 '            Set i = .Current
 '            If TypeOf i Is GenericPair Then
 '                Set p = .Current
@@ -779,29 +779,29 @@ Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGeneric
 
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myClass.Iterator.Current: End Property
-
-Private Function IGenericIterator_MoveNext() As Boolean
+Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     Dim Node As GenericTreeNode
     
     With myClass.Iterator
         If InOrderTreeWalk(Node, .Stack) Then
             
-            IGenericIterator_MoveNext = True
-            
-            If .Type = keys_ Then _
-                Set .Current = Node.Key: Exit Function
+            IGenericIterator_HasNext = True
             
             If .Type = Values_ Then _
-                Set .Current = Node.Value: Exit Function
+                Set .Current = Node.Value: Set Out = .Current: Exit Function
             
-            Set .Current = Node.AsPair: Exit Function
+            If .Type = keys_ Then _
+                Set .Current = Node.Key: Set Out = .Current: Exit Function
+            
+            Set .Current = Node.AsPair: Set Out = .Current: Exit Function
            
         End If
         
         If .HasLoaded = False Then _
-            Call Skynet.Throw(Me, "Private Function IGenericIterator_MoveNext").InvalidIterator
-          
+            Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+        
+        Set Out = Nothing
         Set .Current = Nothing
       
     End With

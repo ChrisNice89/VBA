@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 '@Folder "<T>Class"
-Option Compare Database
+
 
 Public Enum AdoDataType
     T_String

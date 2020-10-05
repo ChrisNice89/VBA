@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 '@Folder("<T>Class")
-Option Compare Database
+
 
 Option Explicit
 '@PredeclaredId

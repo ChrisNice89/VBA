@@ -235,13 +235,13 @@ End Function
 
 Public Sub Remove(ByVal Key As IGeneric)
     
-    Dim S As Byte
+    Dim s As Byte
     Dim i As Long: i = FindEntry(Key)
     
     If (i >= 0) Then
         With myClass
-            S = (.Buckets(i).State And Not HAS_ENTRY)
-            .Buckets(i) = EmptyBucket: .Buckets(i).State = S
+            s = (.Buckets(i).State And Not HAS_ENTRY)
+            .Buckets(i) = EmptyBucket: .Buckets(i).State = s
             Call InterlockedDecrement(.Count)
         End With
     End If
@@ -467,7 +467,7 @@ Private Property Get IGenericIterator_Current() As IGeneric
 
 End Property
 
-Private Function IGenericIterator_MoveNext() As Boolean
+Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
 '    With myClass.Cache
 '        Do While Increment(.CurrentSlot) < .Slots
 '            If Not (.Buckets(.CurrentSlot).Key Is Nothing) Then
@@ -475,7 +475,7 @@ Private Function IGenericIterator_MoveNext() As Boolean
 ''                    Set Key = .Key
 ''                    Set Value = .Value
 '                End With
-'                IIterator_MoveNext = True: Exit Function
+'                IIterator_HasNext = True: Exit Function
 '            End If
 '        Loop
 '

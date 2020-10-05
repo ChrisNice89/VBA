@@ -12,14 +12,12 @@ Attribute VB_Exposed = True
 Option Explicit
 '@PredeclaredId
 
-Option Compare Database
-
 Implements IGeneric
 Implements IPrototype
 
 Private Type Member
     Key As IGeneric
-    Value As Object
+    Value As IGeneric
 End Type
 Private myClass As Member
 
@@ -32,7 +30,7 @@ Private Virtual As Internal
 Public Property Get Key() As IGeneric: Set Key = myClass.Key: End Property
 Public Property Get Value() As Object: Set Value = myClass.Value: End Property
 
-Public Function Build(ByVal Key As IGeneric, ByVal Value As Object) As GenericPair
+Public Function Build(ByVal Key As IGeneric, ByVal Value As IGeneric) As GenericPair
 Attribute Build.VB_UserMemId = 0
     
     If (Key Is Nothing) Then _
@@ -75,49 +73,41 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
-    If TypeOf Other Is GenericPair Then
-        If Not myClass.Key Is Nothing Then
-            If Not myClass.Value Is Nothing Then
-                IGeneric_Equals = myClass.Key.Equals(otherPair.Key) And myClass.Value.Equals(otherPair.Value): Exit Function
-            Else
-                IGeneric_Equals = myClass.Key.Equals(otherPair.Key) And otherPair.Value Is Nothing: Exit Function
-            End If
+    Set otherPair = Other
+    If myClass.Key.Equals(otherPair.Key) Then
+        If (myClass.Value Is Nothing) = False Then
+            IGeneric_Equals = myClass.Value.Equals(otherPair.Value)
+        Else
+            IGeneric_Equals = otherPair.Value Is Nothing
         End If
-        
     End If
-    
-    IGeneric_Equals = myClass.Key.Equals(Other)
-    
+
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     
-    Dim Pair As GenericPair
+    Dim otherPair As GenericPair
     
     If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
+
+    Set otherPair = Other
+    IGeneric_CompareTo = myClass.Key.CompareTo(otherPair.Key)
     
-    If TypeOf Other Is GenericPair Then
-        Set Pair = Other
-        IGeneric_CompareTo = myClass.Key.CompareTo(Pair.Key): Exit Function
-    End If
-    
-    IGeneric_CompareTo = myClass.Key.CompareTo(Other)
-     
 End Function
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = myClass.Key.HashValue: End Property
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPair): End Function
 Private Function IGeneric_ToString() As String
     
-    IGeneric_ToString = "Class: " & TypeName$(Me) & vbNewLine & _
+    IGeneric_ToString = "Class: " & TypeName$(Me) & " :: " & _
                         "[" & _
                             myClass.Key.ToString & _
                             ", "
                          
-                        If Not myClass.Value Is Nothing Then
+                        If (myClass.Value Is Nothing) = False Then
                             IGeneric_ToString = IGeneric_ToString & myClass.Value.ToString & "]"
                         Else
-                            IGeneric_ToString = IGeneric_ToString & " Nothing]"
+                            IGeneric_ToString = IGeneric_ToString & " NULL]"
                         End If
  
 End Function

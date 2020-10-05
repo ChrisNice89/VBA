@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 '@Folder("<T>Enumerable")
-Option Compare Database
+
 
 Public Property Get BaseIndex() As Long: End Property
 Public Property Get Item(ByVal Index As Long) As IGeneric: End Property

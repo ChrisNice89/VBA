@@ -63,7 +63,7 @@ Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myClass.Va
 Public Function StartsWith(ByVal text As String) As Boolean: StartsWith = (myClass.Value Like ("%" & text)): End Function
 Public Function EndsWith(ByVal text As String) As Boolean: EndsWith = (myClass.Value Like (text & "%")): End Function
 Public Function Contains(ByVal text As String) As Boolean: Contains = Not (InStr(1, myClass.Value, text) = 0): End Function
-Public Function CompareToString(ByRef S As String) As ComparerEnum: CompareToString = StrComp(myClass.Value, S, vbBinaryCompare): End Function
+Public Function CompareToString(ByRef s As String) As ComparerEnum: CompareToString = StrComp(myClass.Value, s, vbBinaryCompare): End Function
 
 Public Function CountChar(ByVal C As String) As Long
     
@@ -126,7 +126,7 @@ End Function
 
 Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
-    Dim S As IGeneric
+    Dim s As IGeneric
     Dim i As Long
     
     If (Values Is Nothing) Then _
@@ -135,9 +135,9 @@ Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DE
     ReDim Strings(Values.LowerBound To Values.Length) As String
     
     For i = Values.LowerBound To Values.Length
-        Set S = Values(i) 'Should use enumerable.Select(IgnoreNulls:=true)
-        If Not S Is Nothing Then _
-            Strings(i) = S.ToString
+        Set s = Values(i) 'Should use enumerable.Select(IgnoreNulls:=true)
+        If Not s Is Nothing Then _
+            Strings(i) = s.ToString
     Next
     
     Set Join = Me.Concat(GString(VBA.Join$(Strings, Delimiter), myClass.Format))
@@ -199,13 +199,11 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
-    Dim S As GString: Set S = Other
-    If Not (myClass.Length = S.Length) Then IGeneric_Equals = False: Exit Function
+    Dim s As GString: Set s = Other
+    If (myClass.Length = s.Length) = False Then IGeneric_Equals = False: Exit Function
+
+    IGeneric_Equals = (StrComp(myClass.Value, s.Value, vbBinaryCompare) = 0)
     
-    IGeneric_Equals = S.CompareToString(myClass.Value) * -1
-    
-    'IGeneric_Equals = (StrComp(myClass.Value, S.Value, vbBinaryCompare) = 0)
-     
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
@@ -213,8 +211,8 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    Dim S As GString: Set S = Other
-    IGeneric_CompareTo = StrComp(myClass.Value, S.Value, vbBinaryCompare)
+    Dim s As GString: Set s = Other
+    IGeneric_CompareTo = StrComp(myClass.Value, s.Value, vbTextCompare)
 
 End Function
 

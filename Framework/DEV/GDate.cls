@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 '@Folder("<T>Class")
-Option Compare Database
+
 
 Option Explicit
 '@PredeclaredId
@@ -62,8 +62,8 @@ Public Function Add(ByVal Number As Long, ByVal i As DateInterval) As GDate
     Set Add = GDate(DateAdd(Me.IntervalName(i), Number, myClass.Value), myClass.Format)
 End Function
 
-Public Function DifferenceTo(ByVal D As GDate, ByVal i As DateInterval) As Long
-    DifferenceTo = DateDiff(Me.IntervalName(i), myClass.Value, D.Value)
+Public Function DifferenceTo(ByVal d As GDate, ByVal i As DateInterval) As Long
+    DifferenceTo = DateDiff(Me.IntervalName(i), myClass.Value, d.Value)
 End Function
 
 Public Property Get IntervalName(ByVal i As DateInterval) As String
@@ -137,20 +137,20 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim D As GDate: Set D = Other
+    Dim d As GDate: Set d = Other
    
-    IGeneric_Equals = (myClass.Value = D.Value)
+    IGeneric_Equals = (myClass.Value = d.Value)
      
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim D As GDate
+    Dim d As GDate
     
     If Other.IsRelatedTo(Me) Then
-        Set D = Other
+        Set d = Other
         Select Case True
-            Case myClass.Value > D.Value: IGeneric_CompareTo = IsGreater
-            Case myClass.Value < D.Value: IGeneric_CompareTo = IsLower
+            Case myClass.Value > d.Value: IGeneric_CompareTo = IsGreater
+            Case myClass.Value < d.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If

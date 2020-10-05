@@ -12,8 +12,8 @@ Option Explicit
 '@Folder "<T>Enumerable"
 
 Public Property Get Current() As IGeneric: End Property
-Public Function MoveNext() As Boolean: End Function
-Attribute MoveNext.VB_UserMemId = 0
+Public Function HasNext() As Boolean: End Function
+Attribute HasNext.VB_UserMemId = 0
 Public Sub Reset(): End Sub
 
 
