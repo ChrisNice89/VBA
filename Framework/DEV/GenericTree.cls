@@ -104,7 +104,7 @@ Public Function GetMin() As IGeneric
 
 End Function
 
-Public Sub AddAll(ByVal collection As IGenericIterator)
+Public Sub AddAll(ByVal Collection As IGenericIterator)
     
 '    Dim p As GenericPair
 '    Dim i As IGeneric
@@ -251,14 +251,14 @@ Private Sub Class_Initialize()
     Virtual.Size = LenB(myClass)
 End Sub
 
-Public Function Iterator(ByVal T As DictionaryData, Optional ByVal Reverse As Boolean) As IGenericIterator
+Public Function Iterator(ByVal t As DictionaryData, Optional ByVal Reverse As Boolean) As IGenericIterator
     
     Dim c As Member
 
     With c
         Set .Root = myClass.Root
         .Count = myClass.Count
-        Call LoadIterator(.Iterator, T, Reverse)
+        Call LoadIterator(.Iterator, t, Reverse)
     End With
     
     Set Iterator = Skynet.CreateInstance(New GenericTree, VarPtr(c), LenB(c))
@@ -664,10 +664,10 @@ Private Sub LoadStack(ByRef Stack As InternalStack, ByVal Reverse As Boolean)
     
 End Sub
 
-Private Sub LoadIterator(ByRef E As Iterator, ByVal T As DictionaryData, ByVal Reverse As Boolean)
+Private Sub LoadIterator(ByRef e As Iterator, ByVal t As DictionaryData, ByVal Reverse As Boolean)
     
-    With E
-        .Type = T
+    With e
+        .Type = t
         Call LoadStack(.Stack, Reverse)
         Set .Current = Nothing
         .HasLoaded = True
@@ -675,7 +675,7 @@ Private Sub LoadIterator(ByRef E As Iterator, ByVal T As DictionaryData, ByVal R
     
 End Sub
 
-Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
+Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
     
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
@@ -692,12 +692,12 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
     Call LoadStack(Stack, False)
 
     Select Case True
-        Case T = keys_
+        Case t = keys_
             Do While InOrderTreeWalk(Node, Stack)
                 Set GArray(ArrayIndex) = Node.Key
                 ArrayIndex = ArrayIndex + 1
             Loop
-        Case T = Values_
+        Case t = Values_
             Do While InOrderTreeWalk(Node, Stack)
                 Set GArray(ArrayIndex) = Node.Value
                 ArrayIndex = ArrayIndex + 1
@@ -764,19 +764,19 @@ Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Bo
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Item:=Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
-Private Sub IGenericDictionary_CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=T, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Sub IGenericDictionary_CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=t, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
 Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
-Private Function IGenericDictionary_Iterator(ByVal T As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(T:=T): End Function
+Private Function IGenericDictionary_Iterator(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(t:=t): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.ContainsKey(Key:=Item): End Function
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(T:=Pairs_, GArray:=GenericArray.Build(myClass.Count), ArrayIndex:=GenericArray.LowerBound, Caller:="Private Function IGenericCollection_ToArray() As GenericArray"): End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=Pairs_, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(t:=Pairs_, GArray:=GenericArray.Build(myClass.Count), ArrayIndex:=GenericArray.LowerBound, Caller:="Private Function IGenericCollection_ToArray() As GenericArray"): End Function
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=Pairs_, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(T:=Pairs_, Reverse:=False): End Function
+Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(t:=Pairs_, Reverse:=False): End Function
 
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myClass.Iterator.Current: End Property
@@ -789,14 +789,18 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             
             IGenericIterator_HasNext = True
             
-            If .Type = Values_ Then _
-                Set .Current = Node.Value: Set Out = .Current: Exit Function
+            If .Type = Values_ Then
+                Set .Current = Node.Value
             
-            If .Type = keys_ Then _
-                Set .Current = Node.Key: Set Out = .Current: Exit Function
+            ElseIf .Type = keys_ Then
+                Set .Current = Node.Key
             
-            Set .Current = Node.AsPair: Set Out = .Current: Exit Function
-           
+            Else
+                Set .Current = Node.AsPair
+            End If
+            
+            Set Out = .Current
+            Exit Function
         End If
         
         If .HasLoaded = False Then _
@@ -810,7 +814,12 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
 End Function
 
 Private Sub IGenericIterator_Reset()
-    Call LoadIterator(myClass.Iterator, myClass.Iterator.Type, myClass.Iterator.Stack.Reverse)
+    With myClass.Iterator
+         If .HasLoaded = False Then _
+            Call Skynet.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
+          
+        Call LoadIterator(myClass.Iterator, .Type, .Stack.Reverse)
+    End With
 End Sub
 
 'IPrototype

@@ -12,7 +12,7 @@ Option Explicit
 
 Implements IGeneric
 Implements IPrototype
-Implements IValue
+
 
 Private Const DEFAULT_DELIMITER As String = ","
 
@@ -170,7 +170,7 @@ Attribute Build.VB_UserMemId = 0
     
     'Set Build = Skynet.Create(GString)
     Set Build = Skynet.CreateInstance(New GString, Virtual.Pointer, Virtual.Size)
-
+ 
 End Function
 
 Private Sub Class_Initialize()

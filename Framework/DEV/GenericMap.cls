@@ -18,11 +18,23 @@ Implements IGenericDictionary
 Implements IGenericCollection
 Implements IGenericIterator
 
-Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
-Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
+#If Win64 Then
+    Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
+    Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
+    Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
+    Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Size As LongPtr)
+#Else
+    Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
+    Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
+    Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
+    Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Size As Long)
+#End If
 
 Private Const DEFAULT_LOADFACTOR As Double = 0.7
 Private Const DEFAULT_CAPACITY As Long = 23 ' 23*LoadFactor(0.7) =16
+Private Const S_OK As Long = &H0&
 
 'Bucketstate
 Private Const ZERO As Byte = 0
@@ -56,10 +68,11 @@ End Type
 Private Type Iterator
     Type As DictionaryData
     Index As Long
+    Size As Long
     HasLoaded As Boolean
     Current As IGeneric
-    Buckets() As Bucket
     Map As GenericMap
+    Descriptor As Long
 End Type
 '
 Private Type Member
@@ -434,7 +447,7 @@ Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
 
-Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
+Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
     
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
@@ -448,12 +461,12 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
     Dim i As Long
     
     Select Case True
-        Case T = keys_
+        Case t = keys_
             For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
                 If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myClass.Buckets(i).Key: Call InterlockedIncrement(ArrayIndex)
             Next
-        Case T = Values_
+        Case t = Values_
             For i = LBound(myClass.Buckets) To UBound(myClass.Buckets)
                 If (myClass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myClass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
@@ -469,14 +482,12 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
     
 End Function
 
-Public Function Iterator(ByVal T As DictionaryData) As IGenericIterator
-    
+Public Function Iterator(ByVal t As DictionaryData) As IGenericIterator
+                     
     Dim c As Member
-    Dim ptr As LongPtr
     
-    Call Skynet.CopyData(VarPtr(c), Virtual.Pointer, Virtual.Size)
-    Call LoadIterator(c.Iterator, Me, T, myClass.Size) '! Order is important because skynet overwrites class structure
-
+    Call LoadIterator(c.Iterator, Me, t, myClass.Size)
+    
     Set Iterator = Skynet.CreateInstance(New GenericMap, VarPtr(c), Virtual.Size)
     
 End Function
@@ -484,13 +495,15 @@ End Function
 Private Sub LoadIterator( _
                             ByRef Iterator As Iterator, _
                             ByVal Map As GenericMap, _
-                            ByVal T As DictionaryData, _
+                            ByVal t As DictionaryData, _
                             ByVal Size As Long)
     
     With Iterator
-        .Type = T
+        .Type = t
+        Call Skynet.CopyData(ByVal VarPtr(.Descriptor), ByVal VarPtrArray(myClass.Buckets), Skynet.PointerLength)
         Set .Map = Map
         Set .Current = Nothing
+        .Size = Size
         .Index = Size
         .HasLoaded = True
     End With
@@ -502,7 +515,7 @@ Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim B As Bucket
+    Dim b As Bucket
     Dim c As Member
     c = myClass 'hardcopy
     
@@ -511,12 +524,7 @@ Private Function IGeneric_Clone() As IGeneric
 End Function
 
 Private Sub IGeneric_Dispose()
-    If myClass.Iterator.HasLoaded = True Then
-        Set myClass.Iterator.Map = Nothing
-        Call Skynet.ClearData(Virtual.Pointer, Virtual.Size)
-    Else
-        myClass = EmptyStructure
-    End If
+    myClass = EmptyStructure
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
@@ -571,9 +579,9 @@ End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, False): End Sub
-Private Sub IGenericDictionary_CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=T, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Sub IGenericDictionary_CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=t, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
 Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
-Private Function IGenericDictionary_Iterator(ByVal T As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(T:=T): End Function
+Private Function IGenericDictionary_Iterator(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(t:=t): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
@@ -592,31 +600,37 @@ Private Function IGenericCollection_ToArray() As GenericArray
 End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(Pairs_): End Function
 
-'
+'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myClass.Iterator.Current: End Property
-
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
+    
+    Dim b As Bucket
+
     With myClass.Iterator
-        If Not .Map.Count = 0 Then 'Keep Map in focus
-            Do While .Index > 0
-                If Not (myClass.Buckets(Decrement(.Index)).Key Is Nothing) Then
+        Do While .Index > 0
+            If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedDecrement(.Index), b)) Then
+                If Not (b.Key Is Nothing) Then
                     
                     If .Type = keys_ Then
-                         Set .Current = myClass.Buckets(.Index).Key
-                    
+                        Set .Current = b.Key: Call ZeroMemory(b, LenB(b))
+
                     ElseIf .Type = Values_ Then
-                        Set .Current = myClass.Buckets(.Index).Value
-                    
+                        Set .Current = b.Value: Call ZeroMemory(b, LenB(b))
+
                     Else
-                        Set .Current = GenericPair(myClass.Buckets(.Index).Key, myClass.Buckets(.Index).Value)
+                        Set .Current = GenericPair(b.Key, b.Value): Call ZeroMemory(b, LenB(b))
                     End If
+
                     Set Out = .Current
                     IGenericIterator_HasNext = True
                     Exit Function
                 End If
-            Loop
-        End If
+            End If
+        Loop
         
+        If .HasLoaded = False Then _
+            Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+
         Set .Current = Nothing
         Set Out = Nothing
         
@@ -624,7 +638,12 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
 End Function
 
 Private Sub IGenericIterator_Reset()
-    Call LoadIterator(myClass.Iterator, myClass.Iterator.Map, myClass.Iterator.Type, UBound(myClass.Buckets))
+    With myClass.Iterator
+         If .HasLoaded = False Then _
+            Call Skynet.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
+            
+        Call LoadIterator(myClass.Iterator, .Map, .Type, .Size)
+    End With
 End Sub
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericMap: End Function

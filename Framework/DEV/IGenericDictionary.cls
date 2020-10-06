@@ -32,8 +32,8 @@ Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric): End Sub
 Public Sub Remove(ByVal Key As IGeneric): End Sub
 Public Sub Clear(): End Sub
 
-Public Sub CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
-Public Function Iterator(ByVal T As DictionaryData) As IGenericIterator: End Function
+Public Sub CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
+Public Function Iterator(ByVal t As DictionaryData) As IGenericIterator: End Function
     
 
 'Private Sub Class_Initialize()

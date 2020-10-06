@@ -186,8 +186,8 @@ Public Function Build( _
             Set .Keys = GenericArray.Build(Dictionary.Count)
             Set .Values = GenericArray.Build(Dictionary.Count)
             
-            Call Dictionary.CopyOf(T:=keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
-            Call Dictionary.CopyOf(T:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
+            Call Dictionary.CopyOf(t:=keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
+            Call Dictionary.CopyOf(t:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
             
             Call Skynet.SortGenericArrays(.Keys, .Values, .Keys.LowerBound, .Keys.Length, myClass.SortOrder)
             .Size = Dictionary.Count
@@ -352,7 +352,7 @@ Public Sub Clear():
     myClass.Size = 0
 End Sub
 
-Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
+Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
     
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
@@ -366,9 +366,9 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
     Dim i As Long
      
     Select Case True
-        Case T = keys_
+        Case t = keys_
             Call GenericArray.Copy(SrcArray:=myClass.Keys, SrcIndex:=myClass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
-        Case T = Values_
+        Case t = Values_
             Call GenericArray.Copy(SrcArray:=myClass.Values, SrcIndex:=myClass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
         Case Else
             For i = myClass.Keys.LowerBound To myClass.Size
@@ -380,7 +380,7 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
     
 End Function
 
-Public Function Iterator(ByVal T As DictionaryData, Optional ByVal Index As Long, Optional ByVal Count As Long) As IGenericIterator
+Public Function Iterator(ByVal t As DictionaryData, Optional ByVal Index As Long, Optional ByVal Count As Long) As IGenericIterator
     
     Dim c As Member
     
@@ -397,9 +397,9 @@ Public Function Iterator(ByVal T As DictionaryData, Optional ByVal Index As Long
         Call Skynet.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Size - Index + myClass.Keys.LowerBound)")
     
     Select Case True
-        Case T = keys_
+        Case t = keys_
             Set Iterator = myClass.Keys.Iterator(StartIndex:=myClass.Keys.LowerBound, Count:=myClass.Size)
-        Case T = Values_
+        Case t = Values_
             Set Iterator = myClass.Values.Iterator(StartIndex:=myClass.Values.LowerBound, Count:=myClass.Size)
         Case Else
             Call LoadIterator(c.Iterator, Pairs_, myClass.Keys, myClass.Values, Index, Count)
@@ -410,14 +410,14 @@ End Function
 
 Private Sub LoadIterator( _
                             ByRef Iterator As Iterator, _
-                            ByVal T As DictionaryData, _
+                            ByVal t As DictionaryData, _
                             ByVal Keys As GenericArray, _
                             ByVal Values As GenericArray, _
                             ByVal StartIndex As Long, _
                             ByVal Count As Long)
  
     With Iterator
-        .Type = T
+        .Type = t
         Set .Current = Nothing
         Set .Keys = Keys
         Set .Values = Values
@@ -496,9 +496,9 @@ Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Bo
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
-Private Sub IGenericDictionary_CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=T, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Sub IGenericDictionary_CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=t, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
 Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
-Private Function IGenericDictionary_Iterator(ByVal T As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(T:=T): End Function
+Private Function IGenericDictionary_Iterator(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(t:=t): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
@@ -525,8 +525,21 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
         End If
         
         Call InterlockedIncrement(.Index)
-        Set .Current = GenericPair(.Keys(.Index), .Values(.Index)): Set Out = .Current
         
+        If .Type = keys_ Then
+            Set .Current = .Keys(.Index)
+
+        ElseIf .Type = Values_ Then
+            Set .Current = .Values(.Index)
+
+        Else
+            Set .Current = GenericPair(.Keys(.Index), .Values(.Index))
+        End If
+
+        Set Out = .Current
+        IGenericIterator_HasNext = True
+        Exit Function
+      
     End With
     
     IGenericIterator_HasNext = True

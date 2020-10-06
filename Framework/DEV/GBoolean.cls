@@ -15,7 +15,7 @@ Option Explicit
 
 Implements IGeneric
 Implements IPrototype
-Implements IValue
+
 
 Public Enum TBooleanFormat
     [_First]
@@ -83,20 +83,20 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim B As GBoolean: Set B = Other
+    Dim b As GBoolean: Set b = Other
    
-    IGeneric_Equals = (myClass.Value = B.Value)
+    IGeneric_Equals = (myClass.Value = b.Value)
      
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim B As GBoolean
+    Dim b As GBoolean
     
     If Other.IsRelatedTo(Me) Then
-        Set B = Other
+        Set b = Other
         Select Case True
-            Case myClass.Value > B.Value: IGeneric_CompareTo = IsGreater
-            Case myClass.Value < B.Value: IGeneric_CompareTo = IsLower
+            Case myClass.Value > b.Value: IGeneric_CompareTo = IsGreater
+            Case myClass.Value < b.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If

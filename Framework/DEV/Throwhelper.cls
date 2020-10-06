@@ -176,9 +176,9 @@ Public Function ArgOutOfRange(Optional ByVal Message As String) As Throwhelper
     Set ArgOutOfRange = Me
 End Function
 
-Public Function NotEqual(ByRef A As IGeneric, ByRef B As IGeneric) As Throwhelper
+Public Function NotEqual(ByRef A As IGeneric, ByRef b As IGeneric) As Throwhelper
     myClass.Number = NotEqual_
-    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(B) & ">"
+    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(b) & ">"
     myClass.Type = "Not Equal"
     Set NotEqual = Me
 End Function

@@ -15,7 +15,7 @@ Option Explicit
 
 Implements IGeneric
 Implements IPrototype
-Implements IValue
+
 
 Public Enum TDateFormat
     [_First]

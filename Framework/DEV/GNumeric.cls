@@ -12,7 +12,7 @@ Option Explicit
 
 Implements IGeneric
 Implements IPrototype
-Implements IValue
+
 
 Private Const MaxLong As Long = 2 ^ 31 - 1
 

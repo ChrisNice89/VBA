@@ -178,22 +178,22 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
 End Function
 
 'SequenceCompare
-Public Function SequenceCompare(ByVal A As IGenericReadOnlyList, ByVal B As IGenericReadOnlyList) As ComparerEnum
+Public Function SequenceCompare(ByVal A As IGenericReadOnlyList, ByVal b As IGenericReadOnlyList) As ComparerEnum
     
-    If (A Is B) Then SequenceCompare = IsEqual: Exit Function
+    If (A Is b) Then SequenceCompare = IsEqual: Exit Function
     
-    If Not (A Is Nothing) And (B Is Nothing) Then
+    If Not (A Is Nothing) And (b Is Nothing) Then
         
-        If Not (Me.Generic(A).IsRelatedTo(B)) Then _
+        If Not (Me.Generic(A).IsRelatedTo(b)) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("Type(a) != Type(b)")
     
-        If Not (A.Count = B.Count) Then _
+        If Not (A.Count = b.Count) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("a.Count != b.Count")
         
         Dim i As Long, c As ComparerEnum
         Do While (InterlockedIncrement(i) < A.Count And c = IsEqual)
             If Not A(i) Is Nothing Then _
-                c = A(i).Equals(B(i))
+                c = A(i).Equals(b(i))
         Loop
     End If
     
@@ -950,31 +950,31 @@ Private Sub MinHeapWithItems( _
     
 End Sub
 
-Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As Long)
+Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal A As Long, ByVal b As Long)
     
-    Dim T As IGeneric
+    Dim t As IGeneric
    
-    If Not (A = B) Then
+    If Not (A = b) Then
         If Not (Keys(A) Is Nothing) Then
-            If (Keys(A).CompareTo(Keys(B)) = IsGreater) Then
-                Set T = Keys(A)
-                Set Keys(A) = Keys(B)
-                Set Keys(B) = T
+            If (Keys(A).CompareTo(Keys(b)) = IsGreater) Then
+                Set t = Keys(A)
+                Set Keys(A) = Keys(b)
+                Set Keys(b) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal A As Long, ByVal B As Long)
+Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal A As Long, ByVal b As Long)
     
-    Dim T As IGeneric
+    Dim t As IGeneric
    
-    If Not (A = B) Then
+    If Not (A = b) Then
         If Not (Keys(A) Is Nothing) Then
-            If (Keys(A).CompareTo(Keys(B)) = IsGreater) Then
-                Set T = Keys(A): Set Keys(A) = Keys(B): Set Keys(B) = T
-                Set T = Items(A): Set Items(A) = Items(B): Set Items(B) = T
+            If (Keys(A).CompareTo(Keys(b)) = IsGreater) Then
+                Set t = Keys(A): Set Keys(A) = Keys(b): Set Keys(b) = t
+                Set t = Items(A): Set Items(A) = Items(b): Set Items(b) = t
             End If
         End If
     End If
@@ -983,18 +983,18 @@ End Sub
 
 Private Sub Swap(ByRef A() As IGeneric, ByVal i As Long, ByVal j As Long)
 
-    Dim T As IGeneric
+    Dim t As IGeneric
     
-    Set T = A(i): Set A(i) = A(j): Set A(j) = T
+    Set t = A(i): Set A(i) = A(j): Set A(j) = t
 
 End Sub
 
-Private Sub SwapWithItem(ByRef A() As IGeneric, ByRef B() As Object, ByVal i As Long, ByVal j As Long)
+Private Sub SwapWithItem(ByRef A() As IGeneric, ByRef b() As Object, ByVal i As Long, ByVal j As Long)
     
-    Dim T As IGeneric
+    Dim t As IGeneric
     
-    Set T = A(i): Set A(i) = A(j): Set A(j) = T
-    Set T = B(i): Set B(i) = B(j): Set B(j) = T
+    Set t = A(i): Set A(i) = A(j): Set A(j) = t
+    Set t = b(i): Set b(i) = b(j): Set b(j) = t
     
 End Sub
 

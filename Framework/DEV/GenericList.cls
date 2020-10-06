@@ -135,7 +135,7 @@ End Sub
 
 Public Function Build( _
                         Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
-                        Optional ByVal collection As IGenericCollection) As GenericList
+                        Optional ByVal Collection As IGenericCollection) As GenericList
     
     If (Me Is GenericList) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
@@ -145,12 +145,12 @@ Public Function Build( _
     
     With myClass
         .SortOrder = Skynet.SortOrder
-        If (collection Is Nothing) Then
+        If (Collection Is Nothing) Then
             Set .Items = GenericArray.Build(Capacity)
         Else
-            Set .Items = GenericArray.Build(collection.Count)
-            Call collection.CopyTo(GArray:=.Items, ArrayIndex:=.Items.LowerBound)
-            .Size = collection.Count
+            Set .Items = GenericArray.Build(Collection.Count)
+            Call Collection.CopyTo(GArray:=.Items, ArrayIndex:=.Items.LowerBound)
+            .Size = Collection.Count
         End If
     End With
     
@@ -203,8 +203,8 @@ Public Function Add(ByVal Item As IGeneric) As Long
 
 End Function
 
-Public Sub AddAll(ByVal collection As IGenericIterator)
-    Call Me.InsertAll(Index:=myClass.Size + myClass.Items.LowerBound, Enumerable:=collection)
+Public Sub AddAll(ByVal Collection As IGenericIterator)
+    Call Me.InsertAll(Index:=myClass.Size + myClass.Items.LowerBound, Enumerable:=Collection)
 End Sub
 
 Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
@@ -232,7 +232,7 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
     Dim Item As IGeneric
     
     If (Enumerable Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Sub InsertAll").NullPointer("Collection Is Nothing")
+        Call Skynet.Throw(Me, "Public Sub InsertAll").NullPointer("Enumerable Is Nothing")
     
     If (Index > myClass.Size + myClass.Items.LowerBound) Then _
         Call Skynet.Throw(Me, "InsertAll").IndexOutofRange("Index > myClass.Size")
