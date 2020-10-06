@@ -16,8 +16,7 @@ Implements IPrototype
 Implements IGeneric
 Implements IGenericDictionary
 Implements IGenericCollection
-
-'Implements IGenericIterator
+Implements IGenericIterator
 
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
@@ -53,7 +52,15 @@ Private Type Bucket
     Value As IGeneric
     State As Byte
 End Type
-
+'
+Private Type Iterator
+    Type As DictionaryData
+    Index As Long
+    HasLoaded As Boolean
+    Current As IGeneric
+    Buckets() As Bucket
+    Map As GenericMap
+End Type
 '
 Private Type Member
     Const As Constant
@@ -64,7 +71,7 @@ Private Type Member
     LoadSize As Long
     LoadFactor As Double
     Buckets() As Bucket
-    IsReadOnly As Boolean
+    Iterator As Iterator
 End Type
 
 '
@@ -117,7 +124,7 @@ End Function
 
 Private Function getMinPrime() As Long: getMinPrime = myClass.Const.Primes(LBound(myClass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
-Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
+Private Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
@@ -171,6 +178,13 @@ Public Function Build( _
     Set Build = Skynet.CreateInstance(New GenericMap, Virtual.Pointer, Virtual.Size)
     
 End Function
+
+Public Sub Clear()
+    Erase myClass.Buckets
+    ReDim myClass.Buckets(myClass.Size - 1)
+    myClass.Count = 0
+    myClass.Occupancy = 0
+End Sub
 
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
              
@@ -245,10 +259,6 @@ Public Sub Remove(ByVal Key As IGeneric)
             Call InterlockedDecrement(.Count)
         End With
     End If
-End Sub
-
-Public Sub Clear()
-     Call Skynet.Dispose(Me)
 End Sub
 
 Private Function getPrime(ByVal Min As Long) As Long
@@ -461,29 +471,30 @@ End Function
 
 Public Function Iterator(ByVal T As DictionaryData) As IGenericIterator
     
+    Dim c As Member
+    Dim ptr As LongPtr
+    
+    Call Skynet.CopyData(VarPtr(c), Virtual.Pointer, Virtual.Size)
+    Call LoadIterator(c.Iterator, Me, T, myClass.Size) '! Order is important because skynet overwrites class structure
+
+    Set Iterator = Skynet.CreateInstance(New GenericMap, VarPtr(c), Virtual.Size)
+    
 End Function
 
-Private Property Get IGenericIterator_Current() As IGeneric
-
-End Property
-
-Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
-'    With myClass.Cache
-'        Do While Increment(.CurrentSlot) < .Slots
-'            If Not (.Buckets(.CurrentSlot).Key Is Nothing) Then
-'                With .Buckets(.CurrentSlot)
-''                    Set Key = .Key
-''                    Set Value = .Value
-'                End With
-'                IIterator_HasNext = True: Exit Function
-'            End If
-'        Loop
-'
-'    End With
-End Function
-
-Private Sub IGenericIterator_Reset()
-
+Private Sub LoadIterator( _
+                            ByRef Iterator As Iterator, _
+                            ByVal Map As GenericMap, _
+                            ByVal T As DictionaryData, _
+                            ByVal Size As Long)
+    
+    With Iterator
+        .Type = T
+        Set .Map = Map
+        Set .Current = Nothing
+        .Index = Size
+        .HasLoaded = True
+    End With
+    
 End Sub
 'IGeneric
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
@@ -491,16 +502,21 @@ Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim b As Bucket
-    Dim C As Member
-    C = myClass 'hardcopy
+    Dim B As Bucket
+    Dim c As Member
+    c = myClass 'hardcopy
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericMap, VarPtr(C), LenB(C))
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericMap, VarPtr(c), LenB(c))
    
 End Function
 
 Private Sub IGeneric_Dispose()
-    myClass = EmptyStructure
+    If myClass.Iterator.HasLoaded = True Then
+        Set myClass.Iterator.Map = Nothing
+        Call Skynet.ClearData(Virtual.Pointer, Virtual.Size)
+    Else
+        myClass = EmptyStructure
+    End If
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
@@ -556,12 +572,12 @@ Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As 
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, False): End Sub
 Private Sub IGenericDictionary_CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=T, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
 Private Function IGenericDictionary_Iterator(ByVal T As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(T:=T): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
-Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myClass.IsReadOnly: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
@@ -576,6 +592,40 @@ Private Function IGenericCollection_ToArray() As GenericArray
 End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(Pairs_): End Function
 
+'
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myClass.Iterator.Current: End Property
+
+Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
+    With myClass.Iterator
+        If Not .Map.Count = 0 Then 'Keep Map in focus
+            Do While .Index > 0
+                If Not (myClass.Buckets(Decrement(.Index)).Key Is Nothing) Then
+                    
+                    If .Type = keys_ Then
+                         Set .Current = myClass.Buckets(.Index).Key
+                    
+                    ElseIf .Type = Values_ Then
+                        Set .Current = myClass.Buckets(.Index).Value
+                    
+                    Else
+                        Set .Current = GenericPair(myClass.Buckets(.Index).Key, myClass.Buckets(.Index).Value)
+                    End If
+                    Set Out = .Current
+                    IGenericIterator_HasNext = True
+                    Exit Function
+                End If
+            Loop
+        End If
+        
+        Set .Current = Nothing
+        Set Out = Nothing
+        
+    End With
+End Function
+
+Private Sub IGenericIterator_Reset()
+    Call LoadIterator(myClass.Iterator, myClass.Iterator.Map, myClass.Iterator.Type, UBound(myClass.Buckets))
+End Sub
 'IPrototype
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericMap: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericMap: End Property

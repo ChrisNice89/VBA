@@ -76,9 +76,9 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim C As Member: C = myClass
+    Dim c As Member: c = myClass
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GFloat, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GFloat, VarPtr(c), Virtual.Size)
    
 End Function
 

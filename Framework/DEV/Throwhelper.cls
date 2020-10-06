@@ -176,9 +176,9 @@ Public Function ArgOutOfRange(Optional ByVal Message As String) As Throwhelper
     Set ArgOutOfRange = Me
 End Function
 
-Public Function NotEqual(ByRef a As IGeneric, ByRef b As IGeneric) As Throwhelper
+Public Function NotEqual(ByRef A As IGeneric, ByRef B As IGeneric) As Throwhelper
     myClass.Number = NotEqual_
-    myClass.Message = "<" & TypeName$(a) & "> !=  <" & TypeName$(b) & ">"
+    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(B) & ">"
     myClass.Type = "Not Equal"
     Set NotEqual = Me
 End Function
@@ -229,8 +229,8 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim C As Member: C = myClass 'hardcopy
-    Set IGeneric_Clone = Skynet.CreateInstance(New Throwhelper, VarPtr(C), Virtual.Size)
+    Dim c As Member: c = myClass 'hardcopy
+    Set IGeneric_Clone = Skynet.CreateInstance(New Throwhelper, VarPtr(c), Virtual.Size)
 
 End Function
 

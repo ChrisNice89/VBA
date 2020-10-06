@@ -6,7 +6,15 @@ Option Explicit
 
 Private List As GenericList
 
+Sub TestMultiDimArray()
 
+    Dim ga As GenericArray
+    Set ga = GenericArray.Build(3, 3)
+    
+    Call ga.SetValue(GNumeric(1), 3, 3)
+    Debug.Print ga.GetValue(3, 3)
+
+End Sub
 Sub testArrayConstructor()
 
     Dim ga As GenericArray
@@ -74,6 +82,7 @@ Sub TestRange()
 '    End With
 
 End Sub
+
 Sub TestArraySort()
     Dim T As CTimer
     Set T = New CTimer
@@ -148,12 +157,12 @@ Sub TestArray()
     
     Set ga3 = GenericArray.BuildFrom(x)
     
-    Dim C As GenericArray
-    Set C = Skynet.Clone(ga3)
+    Dim c As GenericArray
+    Set c = Skynet.Clone(ga3)
     
     Dim Item As IGeneric
     
-    With C.Iterator
+    With c.Iterator
         Do While .HasNext(Item)
             
         Loop
@@ -184,12 +193,12 @@ Sub TestOrderedMap()
     Call Map.AddAll(Imap)
     Debug.Print T.TimeElapsed
     
-    Dim C As GenericOrderedMap
-    Set C = Skynet.Clone(Map)
+    Dim c As GenericOrderedMap
+    Set c = Skynet.Clone(Map)
     
     Dim Item As GenericPair
 
-    With C.Iterator(Pairs_)
+    With c.Iterator(Pairs_)
         Do While .HasNext(Item)
             
         Loop
@@ -212,12 +221,12 @@ Sub TestListIterator()
         Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
     Next
     
-    Dim C As GenericList
-    Set C = Skynet.Clone(List)
+    Dim c As GenericList
+    Set c = Skynet.Clone(List)
     
     T.StartCounter
     Dim Item As IGeneric
-    With C.Iterator
+    With c.Iterator
         Do While .HasNext(Item)
            
         Loop
@@ -300,12 +309,12 @@ Sub TestSortedList()
     Next
     Debug.Print T.TimeElapsed
     
-    Dim C As GenericSortedList
-    Set C = Skynet.Clone(sl)
+    Dim c As GenericSortedList
+    Set c = Skynet.Clone(sl)
     
     Dim Item As IGeneric
 
-    With C.Iterator(Pairs_)
+    With c.Iterator(Pairs_)
         Do While .HasNext(Item)
            
         Loop
@@ -331,12 +340,12 @@ Sub TestTree()
     Next
     Debug.Print T.TimeElapsed
     
-    Dim C As GenericTree
-    Set C = Skynet.Clone(tree)
+    Dim c As GenericTree
+    Set c = Skynet.Clone(tree)
     
     Dim Item As IGeneric
     
-    With C.Iterator(Pairs_)
+    With c.Iterator(Pairs_)
         Do While .HasNext(Item)
           
         Loop
@@ -355,18 +364,18 @@ End Sub
 
 Sub TestGenericCollection()
     
-    Dim C As GenericOrderedMap
-    Set C = GenericOrderedMap.Build
+    Dim c As GenericOrderedMap
+    Set c = GenericOrderedMap.Build
     
     Dim i As Long
     For i = 1 To 10
-        Call C.Add(GString("Key: " & i), GString("Value: " & i))
+        Call c.Add(GString("Key: " & i), GString("Value: " & i))
     Next
 
     Dim List As GenericList
     Set List = GenericList.Build
     
-    Call List.AddAll(C.Iterator(Pairs_)) 'size is unknown
+    Call List.AddAll(c.Iterator(Pairs_)) 'size is unknown
     'Call List.AddAll(C)' faster because size is known
    
     Dim Clone As IGenericReadOnlyList
@@ -392,78 +401,62 @@ Sub TestArray2()
     Dim ga As GenericArray
     Set ga = GenericArray.Build(100)
     
-    Call ga.SetValue(GString("b"), 13)
-    Call ga.SetValue(GString("c"), 14)
-    Call ga.SetValue(GString("a"), 15)
-    Call ga.SetValue(GString("h"), 16)
-    Call ga.SetValue(GString("s"), 17)
-    Call ga.SetValue(GString("d"), 18)
-    Call ga.SetValue(GString("zz"), 19)
-    Call ga.SetValue(GString("c"), 20)
-    Call ga.SetValue(GString("x"), 21)
-    Call ga.SetValue(GString("e"), 22)
-    Call ga.SetValue(GString("t"), 23)
-    Call ga.SetValue(GString("a"), 24)
-
-    Call ga.SetValue(GString("a"), 50)
-    Call ga.SetValue(GString("c"), 51)
-    Call ga.SetValue(GString("a"), 52)
-    Call ga.SetValue(GString("j"), 53)
-    Call ga.SetValue(GString("s"), 54)
-    Call ga.SetValue(GString("ö"), 55)
-    Call ga.SetValue(GString("q"), 56)
-    Call ga.SetValue(GString("k"), 57)
-    Call ga.SetValue(GString("x"), 58)
-    Call ga.SetValue(GString("h"), 59)
-    Call ga.SetValue(GString("t"), 60)
-    Call ga.SetValue(GString("a"), 61)
-
-    Call ga.SetValue(GString("z"), 70)
-    Call ga.SetValue(GString("h"), 71)
-    Call ga.SetValue(GString("t"), 72)
-    Call ga.SetValue(GString("ä"), 73)
-
-    Call ga.SetValue(GString("c"), 80)
-    Call ga.SetValue(GString(""), 81)
-    Call ga.SetValue(GString("e"), 82)
-    Call ga.SetValue(GString("f"), 83)
-    Call ga.SetValue(GString("d"), 84)
-    Call ga.SetValue(GString("zz"), 85)
-    Call ga.SetValue(GString("c"), 86)
-    Call ga.SetValue(GString("x"), 87)
-    Call ga.SetValue(GString("e"), 88)
-    Call ga.SetValue(GString("f"), 89)
-    Call ga.SetValue(GString("a"), 90)
-    Call ga.SetValue(GString("a"), 100)
-    Call ga.Sort(descending, ga.LowerBound, ga.Length)
-
-    For i = 1 To ga.Length
-        If Not ga(i) Is Nothing Then _
-            Debug.Print "i: " & i & "  " & ga(i)
-    Next
+    With ga
+        Call .SetValue(GString("b"), 13)
+        Call .SetValue(GString("c"), 14)
+        Call .SetValue(GString("a"), 15)
+        Call .SetValue(GString("h"), 16)
+        Call .SetValue(GString("s"), 17)
+        Call .SetValue(GString("d"), 18)
+        Call .SetValue(GString("zz"), 19)
+        Call .SetValue(GString("c"), 20)
+        Call .SetValue(GString("x"), 21)
+        Call .SetValue(GString("e"), 22)
+        Call .SetValue(GString("t"), 23)
+        Call .SetValue(GString("a"), 24)
     
-    Debug.Print ga.BinarySearch(GString("a"), 1, ga.Length, descending)
-    Call ga.Reverse
-
-End Sub
-
-Public Sub normalArraytest()
-
-    Dim i As Long
-    ReDim a(10000) As IGeneric
+        Call .SetValue(GString("a"), 50)
+        Call .SetValue(GString("c"), 51)
+        Call .SetValue(GString("a"), 52)
+        Call .SetValue(GString("j"), 53)
+        Call .SetValue(GString("s"), 54)
+        Call .SetValue(GString("ö"), 55)
+        Call .SetValue(GString("q"), 56)
+        Call .SetValue(GString("k"), 57)
+        Call .SetValue(GString("x"), 58)
+        Call .SetValue(GString("h"), 59)
+        Call .SetValue(GString("t"), 60)
+        Call .SetValue(GString("a"), 61)
     
-    Dim T As CTimer
-    Set T = New CTimer
-    T.StartCounter
+        Call .SetValue(GString("z"), 70)
+        Call .SetValue(GString("h"), 71)
+        Call .SetValue(GString("t"), 72)
+        Call .SetValue(GString("ä"), 73)
     
-    For i = 1 To 10000
-'        If i > UBound(a) Then _
-'            ReDim Preserve a(UBound(a) * 2)
-'
-        Set a(i) = GString("Test1" & i)
-    Next
-    Debug.Print T.TimeElapsed
-
+        Call .SetValue(GString("c"), 80)
+        Call .SetValue(GString(""), 81)
+        Call .SetValue(GString("e"), 82)
+        Call .SetValue(GString("f"), 83)
+        Call .SetValue(GString("d"), 84)
+        Call .SetValue(GString("zz"), 85)
+        Call .SetValue(GString("c"), 86)
+        Call .SetValue(GString("x"), 87)
+        Call .SetValue(GString("e"), 88)
+        Call .SetValue(GString("f"), 89)
+        Call .SetValue(GString("a"), 90)
+        Call .SetValue(GString("a"), 100)
+        Call .Sort(descending, ga.LowerBound, ga.Length)
+    
+        For i = 1 To .Length
+            If Not ga(i) Is Nothing Then _
+                Debug.Print "i: " & i & "  " & ga(i)
+        Next
+        
+        Debug.Print .BinarySearch(GString("a"), 1, .Length, descending)
+        Call .Reverse
+        Call .Clear
+    End With
+    
 End Sub
 
 Public Sub ListTest()
@@ -507,21 +500,25 @@ End Sub
 Sub testMap()
 
     Dim i As Long
-    Dim K As GString
-    Dim v As GString
-    
+ 
     Dim hm As IGenericDictionary
     Set hm = GenericMap.Build()
     Dim T As CTimer
     Set T = New CTimer
     T.StartCounter
-    For i = 1 To 20000
+    For i = 1 To 20
         Call hm.Add(GString("Key" & i), GNumeric(i))
     Next
     Debug.Print T.TimeElapsed
     
     Dim Item As IGeneric
-
+    
+    With hm.Iterator(T:=Values_)
+        Do While .HasNext(Item)
+            Debug.Print Item
+        Loop
+    End With
+        
     With GenericSortedList.Build(Dictionary:=hm).Iterator(Pairs_)
         Do While .HasNext(Item)
            

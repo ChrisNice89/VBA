@@ -253,15 +253,15 @@ End Sub
 
 Public Function Iterator(ByVal T As DictionaryData, Optional ByVal Reverse As Boolean) As IGenericIterator
     
-    Dim C As Member
+    Dim c As Member
 
-    With C
+    With c
         Set .Root = myClass.Root
         .Count = myClass.Count
         Call LoadIterator(.Iterator, T, Reverse)
     End With
     
-    Set Iterator = Skynet.CreateInstance(New GenericTree, VarPtr(C), LenB(C))
+    Set Iterator = Skynet.CreateInstance(New GenericTree, VarPtr(c), LenB(c))
     
 End Function
 
@@ -718,14 +718,14 @@ Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True:
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim C As Member
+    Dim c As Member
     
-    With C
+    With c
         Set .Root = myClass.Root
         .Count = myClass.Count
     End With
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTree, VarPtr(C), LenB(C))
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTree, VarPtr(c), LenB(c))
     
 End Function
 
@@ -765,6 +765,7 @@ Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As 
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Item:=Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 Private Sub IGenericDictionary_CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=T, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
 Private Function IGenericDictionary_Iterator(ByVal T As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(T:=T): End Function
 
 'IGenericCollection

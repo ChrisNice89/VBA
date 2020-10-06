@@ -72,9 +72,9 @@ Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim C As Member: C = myClass
+    Dim c As Member: c = myClass
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GBoolean, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GBoolean, VarPtr(c), Virtual.Size)
    
 End Function
 
@@ -83,20 +83,20 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim b As GBoolean: Set b = Other
+    Dim B As GBoolean: Set B = Other
    
-    IGeneric_Equals = (myClass.Value = b.Value)
+    IGeneric_Equals = (myClass.Value = B.Value)
      
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim b As GBoolean
+    Dim B As GBoolean
     
     If Other.IsRelatedTo(Me) Then
-        Set b = Other
+        Set B = Other
         Select Case True
-            Case myClass.Value > b.Value: IGeneric_CompareTo = IsGreater
-            Case myClass.Value < b.Value: IGeneric_CompareTo = IsLower
+            Case myClass.Value > B.Value: IGeneric_CompareTo = IsGreater
+            Case myClass.Value < B.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If

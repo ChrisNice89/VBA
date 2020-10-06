@@ -100,18 +100,18 @@ Public Property Get MaxHash() As Double: MaxHash = MAXVALUE: End Property
 
 Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIterator
     
-    Dim C As Member
+    Dim c As Member
     
     If Start > Last Then _
         Call Me.Throw(Me, "Public Function Range").InvalidInput("Start > Last")
         
-    With C.Range
+    With c.Range
         .Start = Start
         .Last = Last
         .i = .Start - 1
     End With
    
-    Set Range = Skynet.CreateInstance(New Skynet, VarPtr(C), LenB(C))
+    Set Range = Skynet.CreateInstance(New Skynet, VarPtr(c), LenB(c))
 
 End Property
 
@@ -134,13 +134,27 @@ End Sub
 Public Function CreateInstance(ByVal Prototype As IPrototype, ByVal Source As LongPtr, ByVal Size As Long) As Object
         
     With Prototype
-        If (Prototype Is .StaticInstance) Then _
-            Set Prototype = .CreateDefault
+'        If (Prototype Is .StaticInstance) Then _
+'            Set Prototype = .CreateDefault
         'Call CopyBytes(.Size, ByVal Clone.VirtualPointer, ByVal .VirtualPointer) 'works
         Call CopyMemory_byVar(ByVal .VirtualPointer, ByVal Source, Size): Call ZeroMemory(ByVal Source, Size)
     End With
 
     Set CreateInstance = Prototype
+
+End Function
+
+Public Function CreateInstanceOf(ByVal Prototype As IPrototype) As Object
+    
+    Dim Instance As IPrototype
+    
+    With Prototype
+        Set Instance = .CreateDefault
+        'Call CopyBytes(.Size, ByVal Clone.VirtualPointer, ByVal .VirtualPointer) 'works
+        Call CopyMemory_byVar(ByVal Instance.VirtualPointer, ByVal .VirtualPointer, .Size): Call ZeroMemory(ByVal .VirtualPointer, .Size)
+    End With
+
+    Set CreateInstanceOf = Prototype
 
 End Function
 
@@ -164,26 +178,26 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
 End Function
 
 'SequenceCompare
-Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGenericReadOnlyList) As ComparerEnum
+Public Function SequenceCompare(ByVal A As IGenericReadOnlyList, ByVal B As IGenericReadOnlyList) As ComparerEnum
     
-    If (a Is b) Then SequenceCompare = IsEqual: Exit Function
+    If (A Is B) Then SequenceCompare = IsEqual: Exit Function
     
-    If Not (a Is Nothing) And (b Is Nothing) Then
+    If Not (A Is Nothing) And (B Is Nothing) Then
         
-        If Not (Me.Generic(a).IsRelatedTo(b)) Then _
+        If Not (Me.Generic(A).IsRelatedTo(B)) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("Type(a) != Type(b)")
     
-        If Not (a.Count = b.Count) Then _
+        If Not (A.Count = B.Count) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("a.Count != b.Count")
         
-        Dim i As Long, C As ComparerEnum
-        Do While (InterlockedIncrement(i) < a.Count And C = IsEqual)
-            If Not a(i) Is Nothing Then _
-                C = a(i).Equals(b(i))
+        Dim i As Long, c As ComparerEnum
+        Do While (InterlockedIncrement(i) < A.Count And c = IsEqual)
+            If Not A(i) Is Nothing Then _
+                c = A(i).Equals(B(i))
         Loop
     End If
     
-    SequenceCompare = C
+    SequenceCompare = c
     
 End Function
 
@@ -217,7 +231,7 @@ Public Function BinarySearch( _
                                 ByVal Order As SortOrder) As Long
 
     Dim i As Long
-    Dim C As ComparerEnum
+    Dim c As ComparerEnum
     Dim lo As Long: lo = Index
     Dim hi As Long: hi = Index + Length - 1
     
@@ -226,15 +240,15 @@ Public Function BinarySearch( _
         i = lo + ((hi - lo) / 2)
       
         If (Objects(i) Is Nothing) = False Then
-            C = Objects(i).CompareTo(Value) * Order
+            c = Objects(i).CompareTo(Value) * Order
         Else
-            C = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
+            c = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
         End If
         
-        If (C = IsEqual) Then _
+        If (c = IsEqual) Then _
             BinarySearch = i: Exit Function
         
-        If (C = IsLower) Then
+        If (c = IsLower) Then
             lo = i + 1
         Else
             hi = i - 1
@@ -358,12 +372,12 @@ Private Sub Class_Initialize()
     Virtual.Size = LenB(myClass)
 End Sub
 
-Public Function IteratorOf(ByVal C As IGenericCollection) As IGenericIterator: Set IteratorOf = C.Iterator: End Function
+Public Function IteratorOf(ByVal c As IGenericCollection) As IGenericIterator: Set IteratorOf = c.Iterator: End Function
 Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function
 Public Sub Dispose(ByVal Instance As IGeneric): Call Instance.Dispose: End Sub
 Public Function Clone(ByVal Instance As IGeneric) As IGeneric: Set Clone = Instance.Clone: End Function
 Public Function Generic(ByRef Instance As IGeneric) As IGeneric: Set Generic = Instance: End Function
-Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
+Public Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function
@@ -936,51 +950,51 @@ Private Sub MinHeapWithItems( _
     
 End Sub
 
-Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As Long)
+Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As Long)
     
     Dim T As IGeneric
    
-    If Not (a = b) Then
-        If Not (Keys(a) Is Nothing) Then
-            If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
-                Set T = Keys(a)
-                Set Keys(a) = Keys(b)
-                Set Keys(b) = T
+    If Not (A = B) Then
+        If Not (Keys(A) Is Nothing) Then
+            If (Keys(A).CompareTo(Keys(B)) = IsGreater) Then
+                Set T = Keys(A)
+                Set Keys(A) = Keys(B)
+                Set Keys(B) = T
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal b As Long)
+Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal A As Long, ByVal B As Long)
     
     Dim T As IGeneric
    
-    If Not (a = b) Then
-        If Not (Keys(a) Is Nothing) Then
-            If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
-                Set T = Keys(a): Set Keys(a) = Keys(b): Set Keys(b) = T
-                Set T = Items(a): Set Items(a) = Items(b): Set Items(b) = T
+    If Not (A = B) Then
+        If Not (Keys(A) Is Nothing) Then
+            If (Keys(A).CompareTo(Keys(B)) = IsGreater) Then
+                Set T = Keys(A): Set Keys(A) = Keys(B): Set Keys(B) = T
+                Set T = Items(A): Set Items(A) = Items(B): Set Items(B) = T
             End If
         End If
     End If
     
 End Sub
 
-Private Sub Swap(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
+Private Sub Swap(ByRef A() As IGeneric, ByVal i As Long, ByVal j As Long)
 
     Dim T As IGeneric
     
-    Set T = a(i): Set a(i) = a(j): Set a(j) = T
+    Set T = A(i): Set A(i) = A(j): Set A(j) = T
 
 End Sub
 
-Private Sub SwapWithItem(ByRef a() As IGeneric, ByRef b() As Object, ByVal i As Long, ByVal j As Long)
+Private Sub SwapWithItem(ByRef A() As IGeneric, ByRef B() As Object, ByVal i As Long, ByVal j As Long)
     
     Dim T As IGeneric
     
-    Set T = a(i): Set a(i) = a(j): Set a(j) = T
-    Set T = b(i): Set b(i) = b(j): Set b(j) = T
+    Set T = A(i): Set A(i) = A(j): Set A(j) = T
+    Set T = B(i): Set B(i) = B(j): Set B(j) = T
     
 End Sub
 

@@ -91,9 +91,9 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim C As Member: C = myClass 'Hardcopy
+    Dim c As Member: c = myClass 'Hardcopy
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTreeNode, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericTreeNode, VarPtr(c), Virtual.Size)
     
 End Function
 

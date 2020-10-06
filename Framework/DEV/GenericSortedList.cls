@@ -367,9 +367,9 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
      
     Select Case True
         Case T = keys_
-            Call GenericArray.Copy(SrcArray:=myClass.Keys, SrcIndex:=myClass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, elements:=myClass.Size)
+            Call GenericArray.Copy(SrcArray:=myClass.Keys, SrcIndex:=myClass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
         Case T = Values_
-            Call GenericArray.Copy(SrcArray:=myClass.Values, SrcIndex:=myClass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, elements:=myClass.Size)
+            Call GenericArray.Copy(SrcArray:=myClass.Values, SrcIndex:=myClass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myClass.Size)
         Case Else
             For i = myClass.Keys.LowerBound To myClass.Size
                 Set GArray(ArrayIndex) = GenericPair(myClass.Keys(i), myClass.Values(i)): Call InterlockedIncrement(ArrayIndex)
@@ -382,7 +382,7 @@ End Function
 
 Public Function Iterator(ByVal T As DictionaryData, Optional ByVal Index As Long, Optional ByVal Count As Long) As IGenericIterator
     
-    Dim C As Member
+    Dim c As Member
     
     If Index = 0 Then _
         Index = myClass.Keys.LowerBound
@@ -402,8 +402,8 @@ Public Function Iterator(ByVal T As DictionaryData, Optional ByVal Index As Long
         Case T = Values_
             Set Iterator = myClass.Values.Iterator(StartIndex:=myClass.Values.LowerBound, Count:=myClass.Size)
         Case Else
-            Call LoadIterator(C.Iterator, Pairs_, myClass.Keys, myClass.Values, Index, Count)
-            Set Iterator = Skynet.CreateInstance(New GenericSortedList, VarPtr(C), LenB(C))
+            Call LoadIterator(c.Iterator, Pairs_, myClass.Keys, myClass.Values, Index, Count)
+            Set Iterator = Skynet.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
     End Select
     
 End Function
@@ -434,16 +434,16 @@ Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True:
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim C As Member
+    Dim c As Member
     
-    With C
+    With c
         Set .Keys = Skynet.Clone(myClass.Keys)
         Set .Values = Skynet.Clone(myClass.Values)
         .Size = myClass.Size
         .SortOrder = myClass.SortOrder
     End With
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericSortedList, VarPtr(C), LenB(C))
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
   
 End Function
 
@@ -497,6 +497,7 @@ Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As 
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 Private Sub IGenericDictionary_CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=T, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
 Private Function IGenericDictionary_Iterator(ByVal T As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(T:=T): End Function
 
 'IGenericCollection

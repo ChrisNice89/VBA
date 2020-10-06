@@ -30,6 +30,7 @@ Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: End Function
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean: End Function
 Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric): End Sub
 Public Sub Remove(ByVal Key As IGeneric): End Sub
+Public Sub Clear(): End Sub
 
 Public Sub CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
 Public Function Iterator(ByVal T As DictionaryData) As IGenericIterator: End Function

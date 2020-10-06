@@ -244,7 +244,7 @@ Private Function CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray,
                 Set GArray(ArrayIndex) = Me.Entry(i).Value: Call InterlockedIncrement(ArrayIndex)
             Next
         Case Else
-            Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, elements:=myClass.Internal.Count)
+            Call myClass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myClass.Internal.Count)
     End Select
     
     Set CopyOf = GArray
@@ -253,7 +253,7 @@ End Function
 
 Public Function Iterator(ByVal T As DictionaryData, Optional ByVal Index As Long, Optional ByVal Count As Long) As IGenericIterator
     
-    Dim C As Member
+    Dim c As Member
     
     If Index = 0 Then _
         Index = myClass.Internal.BaseIndex
@@ -270,8 +270,8 @@ Public Function Iterator(ByVal T As DictionaryData, Optional ByVal Index As Long
     If T = Pairs_ Then
         Set Iterator = myClass.Internal.Iterator(Index:=Index, Count:=Count)
     Else
-        Call LoadIterator(C.Iterator, T, myClass.Internal, Index, Count)
-        Set Iterator = Skynet.CreateInstance(New GenericOrderedMap, VarPtr(C), LenB(C))
+        Call LoadIterator(c.Iterator, T, myClass.Internal, Index, Count)
+        Set Iterator = Skynet.CreateInstance(New GenericOrderedMap, VarPtr(c), LenB(c))
     End If
     
 End Function
@@ -300,11 +300,11 @@ Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True:
 Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim C As Member
-    Set C.HashTable = Skynet.Clone(myClass.HashTable)
-    Set C.Internal = Skynet.Clone(myClass.Internal)
+    Dim c As Member
+    Set c.HashTable = Skynet.Clone(myClass.HashTable)
+    Set c.Internal = Skynet.Clone(myClass.Internal)
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericOrderedMap, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericOrderedMap, VarPtr(c), Virtual.Size)
    
 End Function
 
@@ -361,6 +361,7 @@ Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Bo
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_CopyOf(ByVal T As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(T:=T, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
+Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
 Private Function IGenericDictionary_Iterator(ByVal T As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(T:=T): End Function
 
 'IGenericCollection

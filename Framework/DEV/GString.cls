@@ -65,15 +65,15 @@ Public Function EndsWith(ByVal text As String) As Boolean: EndsWith = (myClass.V
 Public Function Contains(ByVal text As String) As Boolean: Contains = Not (InStr(1, myClass.Value, text) = 0): End Function
 Public Function CompareToString(ByRef s As String) As ComparerEnum: CompareToString = StrComp(myClass.Value, s, vbBinaryCompare): End Function
 
-Public Function CountChar(ByVal C As String) As Long
+Public Function CountChar(ByVal c As String) As Long
     
     Dim i As Long
     Dim ascii As Integer
     
-    If Len(C) > 1 Then _
+    If Len(c) > 1 Then _
         Skynet.Throw(Me, "Private Function GetArrayStructure").NotSupported ("Len(C) > 1")
 
-    ascii = AscW(C)
+    ascii = AscW(c)
     
     For i = 1 To Me.Length
         If AscW(Mid$(myClass.Value, i, 1)) = ascii Then _
@@ -189,9 +189,9 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim C As Member: C = myClass 'hardcopy
+    Dim c As Member: c = myClass 'hardcopy
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GString, VarPtr(C), Virtual.Size)
+    Set IGeneric_Clone = Skynet.CreateInstance(New GString, VarPtr(c), Virtual.Size)
    
 End Function
 
