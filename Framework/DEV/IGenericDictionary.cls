@@ -12,7 +12,7 @@ Option Explicit
 '@Folder "<T>Enumerable"
 
 Public Enum DictionaryData
-    keys_ = 0
+    Keys_ = 0
     Values_
     Pairs_
 End Enum

@@ -37,7 +37,7 @@ Private Const NullPointer As Long = 0
     Private Const POINTERSIZE As Long = 4
     Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As Long)
     Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef dst As LongPtr, ByVal src As Long) As Long
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef dst As Long, ByVal src As Long) As Long
     Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef dst As Long, ByVal src As Long) As Long
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Size As Long)
@@ -85,7 +85,7 @@ End Type
 Private Type Member
      Range As Range
 End Type
-Private myClass As Member
+Private myclass As Member
 
 Private Type Internal
     Size As Long
@@ -343,9 +343,9 @@ Public Function HashValue( _
         Case Hashing.Function2
             
              Dim Length As Long: Length = UBound(ascii) + 1
-             Dim n As Long
+             Dim N As Long
              
-             For n = (Length / 2) To 1 Step -1
+             For N = (Length / 2) To 1 Step -1
                 H = H + ascii(i)
                 H = Me.X0R(Me.X0R(LeftShift(H, 16), Me.LeftShift(ascii(i + 1), 11)), H)
                 H = H + Me.RightShift(H, 11)
@@ -368,8 +368,8 @@ Public Function HashValue( _
 End Function
 
 Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.Pointer = VarPtr(myclass)
+    Virtual.Size = LenB(myclass)
 End Sub
 
 Public Function IteratorOf(ByVal c As IGenericCollection) As IGenericIterator: Set IteratorOf = c.Iterator: End Function
@@ -620,26 +620,26 @@ Private Sub HeapSort_Asc( _
                             ByVal lo As Long, _
                             ByVal hi As Long)
 
-    Dim n As Long: n = hi - lo + 1
+    Dim N As Long: N = hi - lo + 1
     Dim i As Long
  
-    For i = n / 2 To 1 Step -1
-        Call MaxHeap(Keys, i, n, lo)
+    For i = N / 2 To 1 Step -1
+        Call MaxHeap(Keys, i, N, lo)
     Next
-    For i = n To 2 Step -1
+    For i = N To 2 Step -1
         Call Swap(Keys, lo, lo + i - 1)
         Call MaxHeap(Keys, 1, i - 1, lo)
     Next
 End Sub
 
-Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
+Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal N As Long, ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= n / 2)
+    Do While (i <= N / 2)
         Child = 2 * i
-        If (Child < n) Then
+        If (Child < N) Then
             If (Keys(lo + Child - 1) Is Nothing) Then
                 Child = Child + 1
             ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
@@ -666,26 +666,26 @@ Private Sub HeapSort_Desc( _
                              ByVal lo As Long, _
                              ByVal hi As Long)
 
-    Dim n As Long: n = hi - lo + 1
+    Dim N As Long: N = hi - lo + 1
     Dim i As Long
  
-    For i = n / 2 To 1 Step -1
-        Call MinHeap(Keys, i, n, lo)
+    For i = N / 2 To 1 Step -1
+        Call MinHeap(Keys, i, N, lo)
     Next
-    For i = n To 2 Step -1
+    For i = N To 2 Step -1
         Call Swap(Keys, lo, lo + i - 1)
         Call MinHeap(Keys, 1, i - 1, lo)
     Next
 End Sub
 
-Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
+Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal N As Long, ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= n / 2)
+    Do While (i <= N / 2)
         Child = 2 * i
-        If (Child < n) Then
+        If (Child < N) Then
             If Not (Keys(lo + Child - 1) Is Nothing) Then
                 If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
                     Child = Child + 1
@@ -845,13 +845,13 @@ Private Sub HeapSortWithItems_Asc( _
                                      ByVal lo As Long, _
                                      ByVal hi As Long)
 
-    Dim n As Long: n = hi - lo + 1
+    Dim N As Long: N = hi - lo + 1
     Dim i As Long
  
-    For i = n / 2 To 1 Step -1
-        Call MaxHeapWithItems(Keys, Items, i, n, lo)
+    For i = N / 2 To 1 Step -1
+        Call MaxHeapWithItems(Keys, Items, i, N, lo)
     Next
-    For i = n To 2 Step -1
+    For i = N To 2 Step -1
         Call SwapWithItem(Keys, Items, lo, lo + i - 1)
         Call MaxHeapWithItems(Keys, Items, 1, i - 1, lo)
     Next
@@ -861,16 +861,16 @@ Private Sub MaxHeapWithItems( _
                                 ByRef Keys() As IGeneric, _
                                 ByRef Items() As Object, _
                                 ByVal i As Long, _
-                                ByVal n As Long, _
+                                ByVal N As Long, _
                                 ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim dItem As Object: Set dItem = Items(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= n / 2)
+    Do While (i <= N / 2)
         Child = 2 * i
-        If (Child < n) Then
+        If (Child < N) Then
             If (Keys(lo + Child - 1) Is Nothing) Then
                 Child = Child + 1
             ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
@@ -900,13 +900,13 @@ Private Sub HeapSortWithItems_Desc( _
                                         ByVal lo As Long, _
                                         ByVal hi As Long)
 
-    Dim n As Long: n = hi - lo + 1
+    Dim N As Long: N = hi - lo + 1
     Dim i As Long
  
-    For i = n / 2 To 1 Step -1
-        Call MinHeapWithItems(Keys, Items, i, n, lo)
+    For i = N / 2 To 1 Step -1
+        Call MinHeapWithItems(Keys, Items, i, N, lo)
     Next
-    For i = n To 2 Step -1
+    For i = N To 2 Step -1
         Call SwapWithItem(Keys, Items, lo, lo + i - 1)
         Call MinHeapWithItems(Keys, Items, 1, i - 1, lo)
     Next
@@ -916,16 +916,16 @@ Private Sub MinHeapWithItems( _
                                 ByRef Keys() As IGeneric, _
                                 ByRef Items() As Object, _
                                 ByVal i As Long, _
-                                ByVal n As Long, _
+                                ByVal N As Long, _
                                 ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim dItem As Object: Set dItem = Items(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= n / 2)
+    Do While (i <= N / 2)
         Child = 2 * i
-        If (Child < n) Then
+        If (Child < N) Then
             If Not (Keys(lo + Child - 1) Is Nothing) Then
                 If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
                     Child = Child + 1
@@ -999,10 +999,10 @@ Private Sub SwapWithItem(ByRef A() As IGeneric, ByRef b() As Object, ByVal i As 
 End Sub
 
 'IGenericIterator
-Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myClass.Range.Current: End Property
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Range.Current: End Property
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
-    With myClass.Range
+    With myclass.Range
         If .i = .Last Then _
             Set .Current = Nothing: Set Out = Nothing: Exit Function
             
@@ -1014,8 +1014,8 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
 End Function
 
 Private Sub IGenericIterator_Reset()
-    Set myClass.Range.Current = Nothing
-    myClass.Range.i = myClass.Range.Start
+    Set myclass.Range.Current = Nothing
+    myclass.Range.i = myclass.Range.Start
 End Sub
 
 'IPrototype

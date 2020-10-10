@@ -15,11 +15,19 @@ Option Explicit
 Implements IGeneric
 Implements IPrototype
 
+#If Win64 Then
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
+#Else
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
+#End If
+
 Private Type Member
     Key As IGeneric
     Value As IGeneric
 End Type
-Private myClass As Member
+Private myclass As Member
 
 Private Type Internal
     Size As Long
@@ -27,8 +35,8 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get Key() As IGeneric: Set Key = myClass.Key: End Property
-Public Property Get Value() As Object: Set Value = myClass.Value: End Property
+Public Property Get Key() As IGeneric: Set Key = myclass.Key: End Property
+Public Property Get Value() As Object: Set Value = myclass.Value: End Property
 
 Public Function Build(ByVal Key As IGeneric, ByVal Value As IGeneric) As GenericPair
 Attribute Build.VB_UserMemId = 0
@@ -39,19 +47,19 @@ Attribute Build.VB_UserMemId = 0
     If (Me Is GenericPair) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
-    Set myClass.Key = Key: Set myClass.Value = Value
-  
-    Set Build = New GenericPair 'Skynet.CreateInstance(New GenericPair, Virtual.Pointer, Virtual.Size)
-    myClass = EmptyStructure
+    Set myclass.Key = Key: Set myclass.Value = Value
     
+'    Dim P As IPrototype
+'    Set P = New GenericPair
+'    Call CopyMemory(dst:=ByVal P.VirtualPointer, src:=ByVal Virtual.Pointer, Length:=Virtual.Size): Call ZeroMemory(src:=ByVal Virtual.Pointer, Length:=Virtual.Size)
+'
+'    Set Build = P
+    Set Build = Skynet.CreateInstance(New GenericPair, Virtual.Pointer, Virtual.Size)
 End Function
 
 Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
-    With GenericPair
-        Set myClass.Key = .Key: Set myClass.Value = .Value
-    End With
+    Virtual.Pointer = VarPtr(myclass)
+    Virtual.Size = LenB(myclass)
 End Sub
 
 'IGeneric
@@ -61,7 +69,7 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass 'hardcopy
+    Dim c As Member: c = myclass 'hardcopy
 
     Set IGeneric_Clone = Skynet.CreateInstance(New GenericMap, VarPtr(c), Virtual.Size)
   
@@ -74,9 +82,9 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
     Set otherPair = Other
-    If myClass.Key.Equals(otherPair.Key) Then
-        If (myClass.Value Is Nothing) = False Then
-            IGeneric_Equals = myClass.Value.Equals(otherPair.Value)
+    If myclass.Key.Equals(otherPair.Key) Then
+        If (myclass.Value Is Nothing) = False Then
+            IGeneric_Equals = myclass.Value.Equals(otherPair.Value)
         Else
             IGeneric_Equals = otherPair.Value Is Nothing
         End If
@@ -92,29 +100,28 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
         IGeneric_CompareTo = IsGreater: Exit Function
 
     Set otherPair = Other
-    IGeneric_CompareTo = myClass.Key.CompareTo(otherPair.Key)
+    IGeneric_CompareTo = myclass.Key.CompareTo(otherPair.Key)
     
 End Function
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = myClass.Key.HashValue: End Property
+Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = myclass.Key.HashValue: End Property
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPair): End Function
 Private Function IGeneric_ToString() As String
     
     IGeneric_ToString = "Class: " & TypeName$(Me) & " :: " & _
                         "[" & _
-                            myClass.Key.ToString & _
+                            myclass.Key.ToString & _
                             ", "
                          
-                        If (myClass.Value Is Nothing) = False Then
-                            IGeneric_ToString = IGeneric_ToString & myClass.Value.ToString & "]"
+                        If (myclass.Value Is Nothing) = False Then
+                            IGeneric_ToString = IGeneric_ToString & myclass.Value.ToString & "]"
                         Else
                             IGeneric_ToString = IGeneric_ToString & " NULL]"
                         End If
  
 End Function
 
+'IPrototyp
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericPair: End Function
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericPair: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
-
-

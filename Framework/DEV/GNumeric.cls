@@ -31,7 +31,7 @@ Private Type Member
     Value As Currency
     Format As TNumericFormat
 End Type
-Private myClass As Member
+Private myclass As Member
 Private Formats() As String
 
 Private Type Internal
@@ -49,27 +49,27 @@ Public Property Get Max() As Currency
 End Property
 
 Public Function ToLong() As Long
-    If myClass.Value > MaxLong Then
+    If myclass.Value > MaxLong Then
         ToLong = MaxLong
     Else
-        ToLong = CLng(myClass.Value)
+        ToLong = CLng(myclass.Value)
     End If
 End Function
 
-Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myClass.Value - Other.Value): End Function
-Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myClass.Value + Other.Value): End Function
-Public Function Modulo(ByVal m As Double) As GNumeric: Set Modulo = GNumeric((myClass.Value - (Int(myClass.Value / m) * m))): End Function
-Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(myClass.Value + Factor): End Function
+Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
+Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
+Public Function Modulo(ByVal m As Double) As GNumeric: Set Modulo = GNumeric((myclass.Value - (Int(myclass.Value / m) * m))): End Function
+Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(myclass.Value + Factor): End Function
 
-Public Property Get Format() As TNumericFormat: Format = myClass.Format: End Property
-Public Property Get Value() As Currency: Value = myClass.Value: End Property
-Public Property Get IsZero() As Boolean: IsZero = myClass.Value = 0: End Property
-Public Property Get IsEven() As Boolean: IsEven = (myClass.Value - (Int(myClass.Value / 2) * 2)) = 0: End Property
+Public Property Get Format() As TNumericFormat: Format = myclass.Format: End Property
+Public Property Get Value() As Currency: Value = myclass.Value: End Property
+Public Property Get IsZero() As Boolean: IsZero = myclass.Value = 0: End Property
+Public Property Get IsEven() As Boolean: IsEven = (myclass.Value - (Int(myclass.Value / 2) * 2)) = 0: End Property
 
 Public Function Build(ByVal Value As Currency, Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As GNumeric
 Attribute Build.VB_UserMemId = 0
     
-    With myClass
+    With myclass
         .Value = Value
         .Format = Format
     End With
@@ -80,8 +80,8 @@ Attribute Build.VB_UserMemId = 0
 End Function
 
 Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.Pointer = VarPtr(myclass)
+    Virtual.Size = LenB(myclass)
 '    ReDim Formats(TNumericFormat.[_First] To TNumericFormat.[_Last])
 '    Formats(TNumericFormat.DefaultNumber) = "General Number"
 '
@@ -105,7 +105,7 @@ Private Property Get IValue_Object() As IGeneric: Set IValue_Object = Me: End Pr
 Private Property Get IValue_DatabaseType() As AdoDataType
 
 End Property
-Private Property Get IValue_Value() As Variant: IValue_Value = myClass.Value: End Property
+Private Property Get IValue_Value() As Variant: IValue_Value = myclass.Value: End Property
 
 'IGeneric
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
@@ -114,7 +114,7 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass 'hardcopy
+    Dim c As Member: c = myclass 'hardcopy
 
     Set IGeneric_Clone = Skynet.CreateInstance(New GNumeric, VarPtr(c), Virtual.Size)
    
@@ -124,9 +124,9 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
 
-    Dim n As GNumeric: Set n = Other
+    Dim N As GNumeric: Set N = Other
 
-    IGeneric_Equals = (myClass.Value = n.Value)
+    IGeneric_Equals = (myclass.Value = N.Value)
      
 End Function
 
@@ -135,21 +135,21 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    Dim n As GNumeric:  Set n = Other
+    Dim N As GNumeric:  Set N = Other
     
     Select Case True
-        Case myClass.Value > n.Value: IGeneric_CompareTo = IsGreater
-        Case myClass.Value < n.Value: IGeneric_CompareTo = IsLower
+        Case myclass.Value > N.Value: IGeneric_CompareTo = IsGreater
+        Case myclass.Value < N.Value: IGeneric_CompareTo = IsLower
         Case Else: IGeneric_CompareTo = IsEqual
     End Select
 
 End Function
 
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.LimitDouble(myClass.Value): End Property
+Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.LimitDouble(myclass.Value): End Property
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GNumeric): End Function
 Private Function IGeneric_ToString() As String
 
-    IGeneric_ToString = myClass.Value
+    IGeneric_ToString = myclass.Value
     
 End Function
     

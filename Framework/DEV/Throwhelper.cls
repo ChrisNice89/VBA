@@ -45,7 +45,7 @@ Private Type Member
     Method As String
     Number As ErrorNumber
 End Type
-Private myClass As Member
+Private myclass As Member
 
 Private Type Internal
     Size As Long
@@ -53,17 +53,17 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get HasError() As Boolean: HasError = myClass.HasError: End Property
-Public Property Get Source() As Object: Set Source = myClass.Source: End Property
-Public Property Get ErrorNumber() As Long: ErrorNumber = myClass.Number: End Property
-Public Property Get MethodName() As String: MethodName = myClass.Method: End Property
+Public Property Get HasError() As Boolean: HasError = myclass.HasError: End Property
+Public Property Get Source() As Object: Set Source = myclass.Source: End Property
+Public Property Get ErrorNumber() As Long: ErrorNumber = myclass.Number: End Property
+Public Property Get MethodName() As String: MethodName = myclass.Method: End Property
 
 '@DefaultMember
 Public Function Build(ByVal Source As Object, ByVal Method As String) As Throwhelper
     
-    With myClass
-        Set myClass.Source = Source
-        myClass.Method = Method
+    With myclass
+        Set myclass.Source = Source
+        myclass.Method = Method
     End With
    
     Set Build = Skynet.CreateInstance(New Throwhelper, Virtual.Pointer, Virtual.Size)
@@ -71,8 +71,8 @@ Public Function Build(ByVal Source As Object, ByVal Method As String) As Throwhe
 End Function
 
 Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.Pointer = VarPtr(myclass)
+    Virtual.Size = LenB(myclass)
 End Sub
 
 Public Sub Complete()
@@ -80,15 +80,15 @@ Public Sub Complete()
 End Sub
 
 Public Function BuildExeption(Optional ByVal Message As String = "Build called from already instantiated Object") As Throwhelper
-    myClass.Number = BuildExeption_
-    myClass.Type = "BuildExeption"
+    myclass.Number = BuildExeption_
+    myclass.Type = "BuildExeption"
     Call Me.Raise(Message)
     Set BuildExeption = Me
 End Function
 
 Public Function NoSuchElement(Optional ByVal Message As String = "Element not found in Collection") As Throwhelper
-    myClass.Number = NoSuchElement_
-    myClass.Type = "NoSuchElement"
+    myclass.Number = NoSuchElement_
+    myclass.Type = "NoSuchElement"
     Call Me.Raise(Message)
     Set NoSuchElement = Me
 End Function
@@ -96,8 +96,8 @@ End Function
 Public Function DuplicateNotAllowed(Optional ByVal Element As IGeneric) As Throwhelper
     Dim Message As String
     
-    myClass.Number = DuplicateNotAllowed_
-    myClass.Type = "DuplicateNotAllowed"
+    myclass.Number = DuplicateNotAllowed_
+    myclass.Type = "DuplicateNotAllowed"
     If Element Is Nothing Then
         Message = "Element is already in Collection"
     Else
@@ -108,92 +108,92 @@ Public Function DuplicateNotAllowed(Optional ByVal Element As IGeneric) As Throw
 End Function
 
 Public Function KeyIsNothing(Optional ByVal Message As String = "Key is nothing") As Throwhelper
-    myClass.Number = KeyIsNothing_
-    myClass.Type = "Key is nothing"
+    myclass.Number = KeyIsNothing_
+    myclass.Type = "Key is nothing"
     Call Me.Raise(Message)
     Set KeyIsNothing = Me
 End Function
 
 Public Function Overflow(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = Overflow_
-    myClass.Type = "Overflow"
+    myclass.Number = Overflow_
+    myclass.Type = "Overflow"
     Call Me.Raise(Message)
     Set Overflow = Me
 End Function
 
 Public Function InvalidIterator(Optional ByVal Message As String = "Iterator not loaded") As Throwhelper
-    myClass.Number = InvalidIterator_
-    myClass.Type = "InvalidIterator"
+    myclass.Number = InvalidIterator_
+    myclass.Type = "InvalidIterator"
     Call Me.Raise(Message)
     Set InvalidIterator = Me
 End Function
 
 Public Function InvalidOperation(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = InvalidOperation_
-    myClass.Type = "InvalidOperation"
+    myclass.Number = InvalidOperation_
+    myclass.Type = "InvalidOperation"
     Call Me.Raise(Message)
     Set InvalidOperation = Me
 End Function
 
 Public Function NoNegativ(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = NoNegativ_
-    myClass.Type = "NoNegativ"
+    myclass.Number = NoNegativ_
+    myclass.Type = "NoNegativ"
     Set NoNegativ = Me
 End Function
 
 Public Function NullPointer(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = NullPointer_
-    myClass.Type = "NullPointer"
+    myclass.Number = NullPointer_
+    myclass.Type = "NullPointer"
     Call Me.Raise(Message)
     Set NullPointer = Me
 End Function
 
 Public Function NotSupported(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = NotSupported_
-    myClass.Type = "NotSupported"
+    myclass.Number = NotSupported_
+    myclass.Type = "NotSupported"
     Call Me.Raise(Message)
     Set NotSupported = Me
 End Function
 
 Public Function NotImplemented(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = NotImplemented_
-    myClass.Type = "NotImplemented"
+    myclass.Number = NotImplemented_
+    myclass.Type = "NotImplemented"
     Call Me.Raise(Message)
     Set NotImplemented = Me
 End Function
 
 Public Function IndexOutofRange(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = IndexOutofRange_
-    myClass.Type = "IndexOutofRange"
+    myclass.Number = IndexOutofRange_
+    myclass.Type = "IndexOutofRange"
     Call Me.Raise(Message)
     Set IndexOutofRange = Me
 End Function
 
 Public Function ArgOutOfRange(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = ArgOutOfRange_
-    myClass.Type = "ArgOutOfRange"
+    myclass.Number = ArgOutOfRange_
+    myclass.Type = "ArgOutOfRange"
     Call Me.Raise(Message)
     Set ArgOutOfRange = Me
 End Function
 
 Public Function NotEqual(ByRef A As IGeneric, ByRef b As IGeneric) As Throwhelper
-    myClass.Number = NotEqual_
-    myClass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(b) & ">"
-    myClass.Type = "Not Equal"
+    myclass.Number = NotEqual_
+    myclass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(b) & ">"
+    myclass.Type = "Not Equal"
     Set NotEqual = Me
 End Function
 
 Public Function Instantiation(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = PreDeclared_
-    myClass.Type = "Instantiation Error"
-    myClass.Message = "Invalid use of 'New' Keyword "
+    myclass.Number = PreDeclared_
+    myclass.Type = "Instantiation Error"
+    myclass.Message = "Invalid use of 'New' Keyword "
     Call Me.Raise(Message)
     Set Instantiation = Me
 End Function
 
 Public Function InvalidInput(Optional ByVal Message As String) As Throwhelper
-    myClass.Number = InvalidInput_
-    myClass.Type = "Invalid Input"
+    myclass.Number = InvalidInput_
+    myclass.Type = "Invalid Input"
     Call Me.Raise(Message)
     Set InvalidInput = Me
 End Function
@@ -202,12 +202,12 @@ Public Sub Raise(Optional ByVal Message As String)
     Dim raiseVBA As Boolean
     raiseVBA = True
     
-    myClass.Message = myClass.Message & Message
+    myclass.Message = myclass.Message & Message
     
     RaiseEvent Failed(raiseVBA)
     
     If raiseVBA Then _
-        Call Err.Raise(myClass.Number, TypeName$(myClass.Source), Skynet.Generic(Me).ToString)
+        Call Err.Raise(myclass.Number, TypeName$(myclass.Source), Skynet.Generic(Me).ToString)
         
 End Sub
 
@@ -229,7 +229,7 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass 'hardcopy
+    Dim c As Member: c = myclass 'hardcopy
     Set IGeneric_Clone = Skynet.CreateInstance(New Throwhelper, VarPtr(c), Virtual.Size)
 
 End Function
@@ -251,11 +251,11 @@ Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean
 End Function
 
 Private Function IGeneric_ToString() As String
-    IGeneric_ToString = "Source :: " & TypeName$(myClass.Source) _
-                        & vbNewLine & "ErrorType :: " & myClass.Type _
-                        & vbNewLine & "Errornumber :: (#" & myClass.Number & ")" _
-                        & vbNewLine & "Procedure :: " & myClass.Method _
-                        & vbNewLine & "Description :: " & myClass.Message
+    IGeneric_ToString = "Source :: " & TypeName$(myclass.Source) _
+                        & vbNewLine & "ErrorType :: " & myclass.Type _
+                        & vbNewLine & "Errornumber :: (#" & myclass.Number & ")" _
+                        & vbNewLine & "Procedure :: " & myclass.Method _
+                        & vbNewLine & "Description :: " & myclass.Message
 End Function
 
 Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New Throwhelper: End Function

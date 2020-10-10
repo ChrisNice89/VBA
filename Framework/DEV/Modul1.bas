@@ -6,29 +6,97 @@ Option Explicit
 
 Private List As GenericList
 
-
-Sub TestCreation()
-
+Sub TestQuery()
+    
+    Dim t As New CTimer
+    
+    Dim Query As GenericQuery
+    Dim Value As IGeneric
+    Dim Name As GString
+    Dim Name2 As GString
+   
     Dim i As Long
-    Dim t As CTimer
-    Set t = New CTimer
+    Dim N As Long
+    
+    N = 1000
+    Dim Querys As GenericList
+    Set Querys = GenericList.Build(N)
     
     t.StartCounter
-    
-    For i = 1 To 1000
-        Call GString.Build("Testaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    For i = 1 To N
+
+         Set Query = New GenericQuery
+         Call Query.Initialize(2)
+         
+         Set Name = GString("Parameter1")
+         Set Name2 = GString("Parameter2")
+         
+'         Call Query.AddWithValues(Name, GenericList.BuildWith(GNumeric(100), GNumeric(1000), GNumeric(10000)))
+'         Call Query.AddWithValues(Name2, GenericList.BuildWith(GString("value1"), GString("value2"), GString("value3")))
+
+        Call Query.AddWithValues(Name, GNumeric(1000), GNumeric(100), GNumeric(10), GNumeric(1))
+        Call Query.AddWithValues(Name2, GString("value3"), GString("value5"), GString("value2"), GString("value1"), GString("value4"))
+     
+        Call Querys.Add(Query)
     Next
+    
     Debug.Print t.TimeElapsed
+   
+    t.StartCounter
+    Set Querys = Nothing
+    Debug.Print t.TimeElapsed
+    
+    
+End Sub
+Sub TestCreation()
+    
+    Dim ga As GenericArray, Clone As GenericArray
+    Dim i As Long, N As Long
+   
+    N = 10
+    Set ga = GenericArray.Build(N)
+
+    For i = 1 To N
+        Call ga.SetValue(GNumeric(i), i)
+    Next
+    
+    Set Clone = GenericArray.Build(ga.Length)
+    Call GenericArray.Copy(ga, ga.LowerBound, Clone, Clone.LowerBound, ga.Length)
+    
+    Dim Element As IGeneric
+    With Clone.Iterator
+        Do While .HasNext(Element)
+            Debug.Print Element
+        Loop
+    End With
 
 End Sub
 
 Sub TestMultiDimArray()
 
     Dim ga As GenericArray
-    Set ga = GenericArray.Build(3, 3)
+    Set ga = GenericArray.Build(3, 4)
     
-    Call ga.SetValue(GNumeric(1), 3, 3)
-    Debug.Print ga.GetValue(3, 3)
+    Call ga.SetValue(GNumeric(1), 1, 3)
+    Call ga.SetValue(GNumeric(2), 2, 3)
+    Call ga.SetValue(GNumeric(3), 3, 3)
+    
+    Dim Column As GenericArray
+    Set Column = ga.SlizeColumn(3)
+    
+    Dim Element As GNumeric
+    With Column.Iterator
+        Do While .HasNext(Element)
+            Debug.Print Element.Value
+        Loop
+    End With
+    
+    'Insert/ Copy Column into Matrix first column
+    Call GenericArray.Copy(Column, Column.LowerBound, ga, ga.LowerBound, Column.Length)
+    Debug.Print ga.GetValue(1, 1).Equals(ga.GetValue(1, 3))
+    
+    Call ga.Transpose
+    Debug.Print ga.GetValue(3, 1).Equals(Column(1))
 
 End Sub
 Sub testArrayConstructor()
@@ -47,13 +115,13 @@ End Sub
 
 Sub TestArrayIterator()
    
-    Dim i As Long, n As Long
-    n = 10000
+    Dim i As Long, N As Long
+    N = 10000
     
     Dim x() As IGeneric
-    ReDim x(1 To n)
+    ReDim x(1 To N)
     
-    For i = 1 To n
+    For i = 1 To N
         Set x(i) = GNumeric(i)
     Next
     
@@ -103,11 +171,11 @@ Sub TestArraySort()
     Dim t As CTimer
     Set t = New CTimer
     
-    Dim i As Long, n As Long
-    n = 40000
+    Dim i As Long, N As Long
+    N = 40000
     
-    Set List = GenericList.Build(n)
-    For i = 1 To n
+    Set List = GenericList.Build(N)
+    For i = 1 To N
 '        Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Call List.Add(GNumeric(i))
     Next
@@ -138,11 +206,11 @@ Sub TestEquals()
     Set s1 = GString("asasasfkfnkdfndjcfv falmxxs ejf")
     Set s2 = GString("asasasfkfnkdfndjcfv falmxxs ejf")
     
-    Dim i As Long, n As Long
+    Dim i As Long, N As Long
     
     t.StartCounter
-    n = 10000
-    For i = 1 To n
+    N = 10000
+    For i = 1 To N
         s1.Equals s2
     Next
     Debug.Print t.TimeElapsed
@@ -158,14 +226,14 @@ Sub TestArray()
     Dim ga2 As GenericArray
     Dim ga3 As GenericArray
     Dim x() As IGeneric
-    Dim i As Long, n As Long
+    Dim i As Long, N As Long
    
-    n = 10000
-    Set ga = GenericArray.Build(n)
-    Set ga2 = GenericArray.Build(n)
-    ReDim x(1 To n)
+    N = 10000
+    Set ga = GenericArray.Build(N)
+    Set ga2 = GenericArray.Build(N)
+    ReDim x(1 To N)
     
-    For i = 1 To n
+    For i = 1 To N
         Call ga.SetValue(GNumeric(i), i)
         Call ga2.SetValue(GString("Value: " & i), i)
         Set x(i) = GString("Value: " & i)
@@ -198,11 +266,11 @@ Sub TestOrderedMap()
     Dim Imap As IGenericDictionary
     Set Imap = GenericTree.Build
     
-    Dim i As Long, n As Long
+    Dim i As Long, N As Long
     
-    n = 10000
+    N = 10000
     t.StartCounter
-    For i = 1 To n
+    For i = 1 To N
         Call Imap.Add(GNumeric(i), GNumeric(i))
     Next
     
@@ -217,7 +285,7 @@ Sub TestOrderedMap()
     t.StartCounter
     With c.Iterator(Pairs_)
         Do While .HasNext(Item)
-            
+'            Debug.Print Item.Key
         Loop
     End With
     Debug.Print t.TimeElapsed
@@ -229,24 +297,53 @@ Sub TestListIterator()
     Dim t As CTimer
     Set t = New CTimer
     
-    Dim List As GenericList
-    Set List = GenericList.Build
+    Dim l As GenericList
+    Set l = GenericList.Build
 
-    Dim i As Long, n As Long
+    Dim i As Long, N As Long
     
-    n = 10000
-    For i = 1 To n
-        Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
+    N = 5000
+    For i = 1 To N
+        Call l.Add(GenericPair(GNumeric(i), GNumeric(i)))
     Next
     
     Dim c As GenericList
-    Set c = Skynet.Clone(List)
+    Set c = Skynet.Clone(l)
     
     t.StartCounter
     Dim Item As IGeneric
     With c.Iterator
         Do While .HasNext(Item)
-           
+'           Debug.Print Item
+        Loop
+    End With
+    Debug.Print t.TimeElapsed
+
+End Sub
+
+Sub TestSortedListIterator()
+
+    Dim t As CTimer
+    Set t = New CTimer
+    
+    Dim sl As GenericSortedList
+    Set sl = GenericSortedList.Build
+
+    Dim i As Long, N As Long
+    
+    N = 5000
+    For i = 1 To N
+        Call sl.Add(GNumeric(i), GNumeric(i))
+    Next
+    
+    Dim c As GenericSortedList
+    Set c = Skynet.Clone(sl)
+    
+    t.StartCounter
+    Dim Item As IGeneric
+    With c.Iterator(t:=Keys_)
+        Do While .HasNext(Item)
+'           Debug.Print Item
         Loop
     End With
     Debug.Print t.TimeElapsed
@@ -260,54 +357,57 @@ Sub TestMaps()
     Dim Map As IGenericDictionary
     Set Map = GenericTree.Build ' GenericOrderedMap.Build 'GenericSortedList.Build() 'GenericTree.Build '
     
-    Dim i As Long, n As Long
-    n = 10000
+    Dim i As Long, N As Long, j As Long
+    N = 5
     
     If List Is Nothing Then
         Set List = GenericList.Build
-        For i = 1 To n
+        For i = 1 To N
             Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Next
         Call List.Sort(random)
     End If
-    
+ 
     Dim p As GenericPair
     Dim Item As IGeneric
     
     Set t = New CTimer
     t.StartCounter
-   
-    For i = 1 To n
+    For i = 1 To N
         Set p = List(i)
         Call Map.Add(p.Key, p.Value)
     Next
-    Debug.Print t.TimeElapsed
+    Debug.Print N & " :: "; t.TimeElapsed
     
-    t.StartCounter
-    For i = 1 To n
+  
+    For i = 1 To N
         Set p = List(i)
         Set Item = Map.Item(p.Key)
     Next
-
-    Debug.Print t.TimeElapsed
+    Dim tree As GenericTree
+    Set tree = Map
+    Debug.Print tree.SelectSmallest(2)
+    Debug.Print "Average access :: " & tree.FindCounter / N
+    
 '
 '    Dim ga As GenericArray
-'    Set ga = GenericArray.Build(map.Count)
-'    Call map.CopyOf(Pairs_, ga, ga.LowerBound)
+'    Set ga = GenericArray.Build(Map.Count)
+'    Call Map.CopyOf(Pairs_, ga, ga.LowerBound)
 '
 '    For i = ga.LowerBound + 1 To ga.Length
 '        If ga(i - 1).CompareTo(ga(i)) = IsGreater Then
 '            Debug.Print "Error"
 '        End If
 '    Next
-
-'    With map.Iterator(Pairs_)
+''
+'    t.StartCounter
+'    With Map.Iterator(Pairs_)
 '        Do While .HasNext(Item)
-
+'            Debug.Print Item
 '        Loop
 '    End With
-'    Debug.Print T.TimeElapsed
-
+'    Debug.Print t.TimeElapsed
+'
 End Sub
 
 Sub TestSortedList()
@@ -319,10 +419,10 @@ Sub TestSortedList()
     Dim sl As GenericSortedList
     Set sl = GenericSortedList.Build()
     
-    Dim i As Long, n As Long
+    Dim i As Long, N As Long
     
-    n = 1000
-    For i = n To 1 Step -1
+    N = 1000
+    For i = N To 1 Step -1
         Call sl.Add(GNumeric(i), GNumeric(i))
     Next
     Debug.Print t.TimeElapsed
@@ -347,25 +447,30 @@ Sub TestTree()
     Set t = New CTimer
     t.StartCounter
     
-    Dim tree As GenericTree
+    Dim tree As IGenericDictionary
     Set tree = GenericTree.Build
     
-    Dim i As Long, n As Long
-
-    n = 10000
-    For i = n To 1 Step -1
-        Call tree.Add(GNumeric(i), GNumeric(i))
+    Dim i As Long, N As Long, j As Long
+    
+    For i = 1 To 30
+        N = N + 1000
+        t.StartCounter
+        For j = 1 To N
+            Call tree.Add(GNumeric(j), Nothing)
+        Next
+        Debug.Print N & " :: "; t.TimeElapsed / N
     Next
-    Debug.Print t.TimeElapsed
+    Exit Sub
     
     Dim c As GenericTree
     Set c = Skynet.Clone(tree)
     
     Dim Item As IGeneric
     
+    t.StartCounter
     With c.Iterator(Pairs_)
         Do While .HasNext(Item)
-          
+'            Debug.Print Item
         Loop
     End With
     
@@ -486,7 +591,7 @@ Public Sub ListTest()
     Dim t As CTimer
     Set t = New CTimer
     t.StartCounter
-    For i = 1 To 10000
+    For i = 1 To 1000
         Call List.Add(GString("test" & i))
     Next
     Debug.Print t.TimeElapsed
@@ -503,14 +608,13 @@ Public Sub ListTest()
     Debug.Print List2(500)
 
     Dim List3 As GenericList
-    Set List3 = List.GetRange(1, 100)
-
-'    For i = 1 To List2.Count
-'        Debug.Print List2.ElementAt(i).ToString
-'    Next
+    Set List3 = List.GetRange(500, 503)
+    
     Dim readOnly As IGenericReadOnlyList
     Set readOnly = List3.AsReadOnly
     Debug.Print readOnly(1)
+    Debug.Print readOnly(10)
+    Debug.Print readOnly.Count
     Set List = Nothing
 
 End Sub
@@ -527,10 +631,14 @@ Sub testMap()
     For i = 1 To 10000
         Call hm.Add(GString("Key" & i), GNumeric(i))
     Next
-   
+    
+    Dim Clone As IGenericDictionary
+    Set Clone = Skynet.Clone(hm)
+    Set hm = Nothing
+    
     Dim Item As IGeneric
     t.StartCounter
-    With hm.Iterator(t:=Values_)
+    With Clone.Iterator(t:=Pairs_)
         Do While .HasNext(Item)
 '            Debug.Print Item
         Loop

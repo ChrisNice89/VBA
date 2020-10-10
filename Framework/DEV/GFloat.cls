@@ -29,7 +29,7 @@ Private Type Member
     Format As TFloatFormat
    
 End Type
-Private myClass As Member
+Private myclass As Member
 'Private Formats() As String
 
 Private Type Internal
@@ -39,14 +39,14 @@ End Type
 Private Virtual As Internal
 
 Public Property Get Value() As Double
-    Value = myClass.Value
+    Value = myclass.Value
 End Property
 
 Public Function Build( _
                         ByVal Value As Double, _
                         Optional ByVal Format As TFloatFormat = TFloatFormat.DefaultFloat) As GFloat
 Attribute Build.VB_UserMemId = 0
-With myClass
+With myclass
         .Value = Value
         .Format = Format
         
@@ -58,8 +58,8 @@ With myClass
 End Function
 
 Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myClass)
-    Virtual.Size = LenB(myClass)
+    Virtual.Pointer = VarPtr(myclass)
+    Virtual.Size = LenB(myclass)
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
 
@@ -67,7 +67,7 @@ Private Property Get IValue_Object() As IGeneric: Set IValue_Object = Me: End Pr
 Private Property Get IValue_DatabaseType() As AdoDataType
 
 End Property
-Private Property Get IValue_Value() As Variant: IValue_Value = myClass.Value: End Property
+Private Property Get IValue_Value() As Variant: IValue_Value = myclass.Value: End Property
 
 'IGeneric
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
@@ -76,7 +76,7 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myClass
+    Dim c As Member: c = myclass
     
     Set IGeneric_Clone = Skynet.CreateInstance(New GFloat, VarPtr(c), Virtual.Size)
    
@@ -89,7 +89,7 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
     Dim F As GFloat: Set F = Other
     
-    IGeneric_Equals = (myClass.Value = F.Value)
+    IGeneric_Equals = (myclass.Value = F.Value)
      
 End Function
 
@@ -99,8 +99,8 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     If Other.IsRelatedTo(Me) Then
         Set F = Other
         Select Case True
-            Case myClass.Value > F.Value: IGeneric_CompareTo = IsGreater
-            Case myClass.Value < F.Value: IGeneric_CompareTo = IsLower
+            Case myclass.Value > F.Value: IGeneric_CompareTo = IsGreater
+            Case myclass.Value < F.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If
@@ -110,7 +110,7 @@ Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = 0: End P
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GFloat): End Function
 Private Function IGeneric_ToString() As String
 
-    Select Case myClass.Format
+    Select Case myclass.Format
         
         
     End Select
