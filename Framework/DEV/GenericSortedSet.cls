@@ -17,7 +17,7 @@ Implements IGenericCollection
 Implements IPrototype
 
 Private Type Member
-    tree As GenericTree
+    Tree As GenericTree
 End Type
 Private myclass As Member
 
@@ -27,10 +27,10 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get Count() As Long: Count = myclass.tree.Count: End Property
-Public Function GetMax() As IGeneric: Set GetMax = myclass.tree.GetMax: End Function
-Public Function GetMin() As IGeneric: Set GetMin = myclass.tree.GetMin: End Function
-Public Function Add(ByVal Value As IGeneric) As Boolean: Add = myclass.tree.Add(Value, Value): End Function 'Performance Hack
+Public Property Get Count() As Long: Count = myclass.Tree.Count: End Property
+Public Function GetMax() As IGeneric: Set GetMax = myclass.Tree.GetMax: End Function
+Public Function GetMin() As IGeneric: Set GetMin = myclass.Tree.GetMin: End Function
+Public Function Add(ByVal Value As IGeneric) As Boolean: Add = myclass.Tree.Add(Value, Value): End Function 'Performance Hack
 Public Sub AddAll(ByVal Iterator As IGenericIterator)
 
     Dim p As GenericPair
@@ -40,25 +40,25 @@ Public Sub AddAll(ByVal Iterator As IGenericIterator)
         Do While .HasNext(Item)
             If TypeOf Item Is GenericPair Then
                 Set p = Item
-                Call myclass.tree.Add(p.Key, p)
+                Call myclass.Tree.Add(p.Key, p)
             Else
-                Call myclass.tree.Add(Item, Item)
+                Call myclass.Tree.Add(Item, Item)
             End If
         Loop
     End With
     
 End Sub
-Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray: Set ToArray = myclass.tree.GetValues(Reverse:=False): End Function
-Public Function Iterator(Optional ByVal Reverse As Boolean) As IGenericIterator: Set Iterator = myclass.tree.Iterator(t:=Values_, Reverse:=Reverse): End Function
-Public Function Remove(ByVal Item As IGeneric) As Boolean: Call myclass.tree.Remove(Item): End Function
-Public Function Contains(ByVal Value As IGeneric) As Boolean: Contains = myclass.tree.ContainsKey(Value): End Function
+Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray: Set ToArray = myclass.Tree.GetValues(Reverse:=False): End Function
+Public Function Iterator(Optional ByVal Reverse As Boolean) As IGenericIterator: Set Iterator = myclass.Tree.Iterator(t:=Values_, Reverse:=Reverse): End Function
+Public Function Remove(ByVal Item As IGeneric) As Boolean: Call myclass.Tree.Remove(Item): End Function
+Public Function Contains(ByVal Value As IGeneric) As Boolean: Contains = myclass.Tree.ContainsKey(Value): End Function
 
 Public Function Build() As GenericSortedSet
     
     If (Me Is GenericSortedSet) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
-    Set myclass.tree = GenericTree.Build
+    Set myclass.Tree = GenericTree.Build
     
     Set Build = Skynet.CreateInstance(New GenericSortedSet, Virtual.Pointer, Virtual.Size)
 
@@ -70,8 +70,12 @@ Private Sub Class_Initialize()
 End Sub
 
 Public Sub Clear()
-    Set myclass.tree = Nothing
+    Set myclass.Tree = Nothing
 End Sub
+
+Public Function ElementAt(ByVal Index As Long) As IGeneric
+    Set ElementAt = myclass.Tree.ElementAt(Index).Key
+End Function
 
 'IGeneric
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
@@ -80,7 +84,7 @@ Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member
  
-    Set c.tree = myclass.tree
+    Set c.Tree = myclass.Tree
     Set IGeneric_Clone = Skynet.CreateInstance(New GenericSortedSet, VarPtr(c), LenB(c))
     
 End Function

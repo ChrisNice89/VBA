@@ -33,6 +33,7 @@ Private Const MIN_INDEX As Long = 1 'Option Base { 0 | 1 }
 Private Const MAX_ARRAY_LENGHT As Long = &H7FEFFFFF
 Private Const ELEMENT_SIZE As Long = 4&
 Private Const ELEMENT_TYPE As Integer = 9 'vbvartype.vbObject
+Private Const DEFAULT_SORTORDER As Integer = 1 'SortOrder.Ascending
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
@@ -119,7 +120,7 @@ Private Type Iterator
     Index As Long
     ptrIndices As LongPtr
     Descriptor As LongPtr
-    Parent As GenericArray
+    Values As GenericArray
     Current As IGeneric
     HasLoaded As Boolean
 End Type
@@ -141,6 +142,7 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
+Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End Property
 Public Property Get MaxLength() As Long: MaxLength = MAX_ARRAY_LENGHT: End Property
 Public Property Get LowerBound() As Long: LowerBound = MIN_INDEX: End Property
 Public Property Get IsEmpty() As Boolean: IsEmpty = (myclass.Descriptor = 0): End Property
@@ -480,12 +482,7 @@ Public Sub ResizeTo(ByVal newSize As Long)
 End Sub
 
 Public Sub Swap(ByVal i As Long, j As Long)
-    Dim tmp As IGeneric
-    With myclass
-        Set tmp = .Internal(i)
-        Set .Internal(i) = .Internal(j)
-        Set .Internal(j) = tmp
-    End With
+   Call Swap_2(myclass.Internal, i, j)
 End Sub
 
 'Public Sub Heap()
@@ -602,7 +599,7 @@ Public Function BinarySearch( _
     If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
         Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Argument_InvalidOffLen")
 
-    BinarySearch = Skynet.BinarySearch(Objects:=myclass.Internal, Value:=Value, Index:=Index, Length:=Length, Order:=Order)
+    BinarySearch = Me.BinarySearch_2(Objects:=myclass.Internal, Value:=Value, Index:=Index, Length:=Length, Order:=Order)
    
 End Function
 
@@ -610,7 +607,7 @@ Public Function IndexOf( _
                             ByVal Value As IGeneric, _
                             Optional ByVal StartIndex As Long = MIN_INDEX, _
                             Optional ByVal Count As Long) As Long
- 
+  
    
     If Not (Me.Rank = 1) Then _
         Call Skynet.Throw(Me, "Public Function IndexOf").NotSupported("Me.Rank != 1")
@@ -625,7 +622,7 @@ Public Function IndexOf( _
             Call Skynet.Throw(Me, "Public Function IndexOf").ArgOutOfRange("(Count < 0) Or (Count > Me.Elements - StartIndex + MIN_INDEX)")
     End If
    
-    IndexOf = Skynet.IndexOf(Objects:=myclass.Internal, Value:=Value, StartIndex:=StartIndex, Count:=Count)
+    IndexOf = Me.IndexOf_2(Objects:=myclass.Internal, Value:=Value, StartIndex:=StartIndex, Count:=Count)
     
 End Function
 
@@ -643,11 +640,11 @@ Public Sub Reverse(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Leng
     If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
         Call Skynet.Throw(Me, "Public Sub Reverse").ArgOutOfRange("Argument_InvalidOffLen")
 
-    Call Skynet.Reverse(Objects:=myclass.Internal, Index:=Index, Length:=Length)
+    Call Me.Reverse_2(Objects:=myclass.Internal, Index:=Index, Length:=Length)
     
 End Sub
 
-Public Sub Sort(ByVal Order As SortOrder, Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Length As Long)
+Public Sub Sort(Optional ByVal Order As SortOrder = DEFAULT_SORTORDER, Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Length As Long)
     
     If Length = 0 Then _
         Length = myclass.Elements
@@ -661,7 +658,7 @@ Public Sub Sort(ByVal Order As SortOrder, Optional ByVal Index As Long = MIN_IND
     If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
         Call Skynet.Throw(Me, "Public Sub Sort").ArgOutOfRange("Argument_InvalidOffLen")
         
-    Call Skynet.Sort(myclass.Internal, Index, Length, Order)
+    Call Me.Sort_2(myclass.Internal, Index, Length, Order)
 
 End Sub
 
@@ -672,7 +669,7 @@ Public Sub Transpose()
     Dim ptrT1 As LongPtr, ptrT2 As LongPtr
     Dim t1() As ObjectTransfer, t2() As ObjectTransfer
     Dim TotalSize As Long
-    Dim i As Long, j As Long, m As Long, N As Long
+    Dim i As Long, j As Long, m As Long, n As Long
     
     If (Me.IsEmpty) Then _
         Call Skynet.Throw(Me, "Public Sub Transpose").NullPointer("SafeArray not allocated")
@@ -682,10 +679,10 @@ Public Sub Transpose()
         
     With myclass.Struct
         m = .Bounds(2).cElements
-        N = .Bounds(1).cElements
+        n = .Bounds(1).cElements
         
-        ReDim t1(1 To m, 1 To N)
-        ReDim t2(1 To N, 1 To m)
+        ReDim t1(1 To m, 1 To n)
+        ReDim t2(1 To n, 1 To m)
 
         ptrT1 = VarPtr(t1(1, 1))
         ptrT2 = VarPtr(t2(1, 1))
@@ -771,9 +768,6 @@ Public Function AsReadOnly(Optional ByVal Index As Long = MIN_INDEX, Optional By
     If (Me.IsEmpty) Then _
         Call Skynet.Throw(Me, "Public Function AsReadOnly").NullPointer("Me.IsEmpty")
     
-    Call LoadIterator(myclass.Iterator, Nothing, myclass.Descriptor, myclass.Struct.cDims, Index, Count)
-    myclass.IsReadOnly = True
-    
     Set AsReadOnly = Me
 
 End Function
@@ -794,7 +788,7 @@ Public Function Iterator(Optional ByVal StartIndex As Long = MIN_INDEX, Optional
     If (Count < 0) Or (Count > myclass.Elements - StartIndex + MIN_INDEX) Then _
         Call Skynet.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Elements - StartIndex + MIN_INDEX)")
 
-    Call LoadIterator(c.Iterator, Me, myclass.Descriptor, myclass.Struct.cDims, StartIndex, Count)
+    Call LoadIterator(c.Iterator, Me, StartIndex, Count)
     
     Set Iterator = Skynet.CreateInstance(New GenericArray, VarPtr(c), LenB(c))
     
@@ -802,17 +796,15 @@ End Function
 
 Private Sub LoadIterator( _
                             ByRef e As Iterator, _
-                            ByVal Parent As GenericArray, _
-                            ByVal Descriptor As Long, _
-                            ByVal Rank As Long, _
+                            ByVal Values As GenericArray, _
                             ByVal StartIndex As Long, _
                             ByVal Count As Long)
 
     With e
-        Set .Parent = Parent '! default is nothing, should only be set with Iterator
+        Set .Values = Values
         Set .Current = Nothing
-        .Descriptor = Descriptor
-        .Rank = Rank
+        .Descriptor = Values.Descriptor
+        .Rank = Values.Rank
         .StartIndex = StartIndex
         .EndIndex = .StartIndex + Count - MIN_INDEX
         .Count = Count
@@ -828,6 +820,711 @@ Private Sub LoadIterator( _
     End With
 
 End Sub
+
+'Searches a section of the list for a given element using a binary search
+'algorithm. Elements of the list are compared to the search value using the IGeneric
+'comparer, which in that case must be implemented by all elements of the
+'list and the given search value. This method assumes that the given
+'section of the list is already sorted; if this is not the case, the
+'result will be incorrect.
+'
+'The method returns the index of the given value in the list. If the
+'list does not contain the given value, the method returns a negative
+'integer. The bitwise complement operator (~) can be applied to a
+'negative result to produce the index of the first element (if any) that
+'is larger than the given search value. This is also the index at which
+'the search value should be inserted into the list in order for the list
+'to remain sorted.
+Public Function BinarySearch_2( _
+                                ByRef Objects() As IGeneric, _
+                                ByVal Value As IGeneric, _
+                                ByVal Index As Long, _
+                                ByVal Length As Long, _
+                                ByVal Order As SortOrder) As Long
+
+    Dim i As Long
+    Dim c As ComparerEnum
+    Dim lo As Long: lo = Index
+    Dim hi As Long: hi = Index + Length - 1
+    
+    Do While (lo <= hi)
+    
+        i = lo + ((hi - lo) / 2)
+      
+        If (Objects(i) Is Nothing) = False Then
+            c = Objects(i).CompareTo(Value) * Order
+        Else
+            c = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
+        End If
+        
+        If (c = IsEqual) Then _
+            BinarySearch_2 = i: Exit Function
+        
+        If (c = IsLower) Then
+            lo = i + 1
+        Else
+            hi = i - 1
+        End If
+
+    Loop
+    
+    BinarySearch_2 = Not lo
+    
+End Function
+
+'Returns the index of the first occurrence of a given value in a range of
+'this list. It does a linear, O(n) search. The list is searched forwards, starting at index
+'and upto count number of elements. The
+'elements of the list are compared to the given value using the
+'Object.Equals method.
+
+Public Function IndexOf_2( _
+                            ByRef Objects() As IGeneric, _
+                            ByVal Value As IGeneric, _
+                            ByVal StartIndex As Long, _
+                            ByVal Count As Long) As Long
+    Dim i As Long
+    Dim EndIndex As Long
+
+    EndIndex = StartIndex + Count - LBound(Objects)
+    
+    If Not (Value Is Nothing) Then
+        For i = StartIndex To EndIndex
+            If Value.Equals(Objects(i)) Then _
+                IndexOf_2 = i: Exit Function
+        Next
+    Else
+        For i = StartIndex To EndIndex
+            If (Objects(i) Is Nothing) Then _
+                IndexOf_2 = i: Exit Function
+        Next
+    End If
+    
+    IndexOf_2 = -1
+    
+End Function
+'Reverses the elements in a range of this list. Following a call to this
+'method, an element in the range given by index and count
+'which was previously located at index i will now be located at
+'index index + (index + count - i - 1).
+Public Sub Reverse_2( _
+                        ByRef Objects() As IGeneric, _
+                        ByVal Index As Long, _
+                        ByVal Length As Long)
+
+    Dim i As Long: i = Index
+    Dim j As Long: j = Index + Length - 1
+    Dim temp As IGeneric
+    
+    Do
+        Set temp = Objects(i)
+        Set Objects(i) = Objects(j)
+        Set Objects(j) = temp
+    Loop While InterlockedIncrement(i) < InterlockedDecrement(j)
+
+End Sub
+
+'Sorting
+'@Ignore ProcedureCanBeWrittenAsFunction
+Public Sub Sort_2(ByRef Objects() As IGeneric, ByVal Index As Long, ByVal Length As Long, Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
+    
+    Const QuickSortDepthThreshold As Long = 32
+    
+    If Order = random Then
+        Call Shuffle(Objects, Index, Length)
+    ElseIf Order = ascending Then
+        Call DepthLimitedQuicksort_Asc(Objects, Index, Length, QuickSortDepthThreshold)
+    Else
+        Call DepthLimitedQuicksort_Desc(Objects, Index, Length, QuickSortDepthThreshold)
+    End If
+   
+End Sub
+
+Public Sub SortKeysWithItems( _
+                                ByRef Keys() As IGeneric, _
+                                ByRef Items() As Object, _
+                                ByVal Index As Long, _
+                                ByVal Length As Long, _
+                                Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
+    
+    Const QuickSortDepthThreshold As Long = 32
+    
+    If Order = random Then
+        Call ShuffleWithItems(Keys, Items, Index, Length)
+    ElseIf Order = ascending Then
+        Call DepthLimitedQuicksortWithItems_Asc(Keys, Items, Index, Length, QuickSortDepthThreshold)
+    Else
+        Call DepthLimitedQuicksortWithItems_Desc(Keys, Items, Index, Length, QuickSortDepthThreshold)
+    End If
+   
+End Sub
+
+Public Sub SortGenericArrays( _
+                                ByVal Keys As GenericArray, _
+                                ByVal Items As GenericArray, _
+                                ByVal Index As Long, _
+                                ByVal Length As Long, _
+                                Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
+
+    Dim KeyArray() As IGeneric
+    Dim ItemArray() As Object
+
+    Dim d1 As Long, d2 As Long
+    Dim ptrKeys As LongPtr, ptrItems As LongPtr
+
+    If Keys Is Nothing Or Items Is Nothing Then _
+        Call Skynet.Throw(Me, "Public Sub SortGenericArrays").NullPointer("Keys Is Nothing Or Items Is Nothing")
+
+    d1 = Keys.Descriptor
+    d2 = Items.Descriptor
+
+    If (d1 = 0) Or (d2 = 0) Then _
+        Call Skynet.Throw(Me, "Public Sub SortGenericArrays").NullPointer("Array.Descriptor = 0")
+
+    ptrKeys = VarPtrArray(KeyArray)
+    ptrItems = VarPtrArray(ItemArray)
+
+    Call CopyMemory(dst:=ByVal ptrKeys, src:=ByVal VarPtr(d1), Length:=POINTERSIZE): Call CopyMemory(dst:=ByVal ptrItems, src:=ByVal VarPtr(d2), Length:=POINTERSIZE)
+    Call Me.SortKeysWithItems(Keys:=KeyArray, Items:=ItemArray, Index:=Index, Length:=Length, Order:=Order)
+    Call ZeroMemory(dst:=ByVal ptrKeys, Length:=POINTERSIZE): Call ZeroMemory(dst:=ByVal ptrItems, Length:=POINTERSIZE)
+
+End Sub
+
+Private Sub Shuffle(ByRef Element() As IGeneric, ByVal Index As Long, ByVal Length As Long)
+
+    Dim i As Long
+    Randomize VBA.Timer
+    
+    For i = Length To Index Step -1
+        Call Swap_2(Element, i, (i * Rnd + 0.5))
+    Next
+    
+End Sub
+
+Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal Index As Long, ByVal Length As Long)
+
+    Dim i As Long
+    Randomize VBA.Timer
+    
+    For i = Length To Index Step -1
+        Call SwapWithItem(Keys, Items, i, (i * Rnd + 0.5))
+    Next
+
+End Sub
+
+Private Sub DepthLimitedQuicksort_Asc( _
+                                         ByRef Element() As IGeneric, _
+                                         ByVal Left As Long, _
+                                         ByVal Right As Long, _
+                                         ByVal DepthLimit As Long)
+
+    Dim i As Long
+    Dim j As Long
+    Dim middle As Long
+
+    Dim pivot As IGeneric
+    Dim tmp As IGeneric
+
+    If (Left > Right) Then _
+        Exit Sub
+   
+    Do
+        If (DepthLimit = 0) Then _
+            Call HeapSort_Asc(Element, Left, Right): Exit Sub
+
+        i = Left: j = Right
+        middle = i + ((j - i) / 2)
+
+        Call SwapIfGreater(Element, i, middle)
+        Call SwapIfGreater(Element, i, j)
+        Call SwapIfGreater(Element, middle, j)
+
+        Set pivot = Element(middle)
+
+        Do
+    
+            If (pivot Is Nothing) Then
+                Do While Not (Element(j) Is Nothing): j = j - 1: Loop
+            Else
+                Do While (pivot.CompareTo(Element(i)) = IsGreater): i = i + 1: Loop
+                Do While (pivot.CompareTo(Element(j)) = IsLower): j = j - 1: Loop
+            End If
+
+            If (i > j) Then _
+                Exit Do
+
+            If (i < j) Then _
+                Set tmp = Element(i): _
+                Set Element(i) = Element(j): _
+                Set Element(j) = tmp
+
+            i = i + 1: j = j - 1
+
+        Loop While (i <= j)
+
+        DepthLimit = DepthLimit - 1
+
+        If (j - Left) <= (Right - i) Then
+            If (Left < j) Then _
+                Call DepthLimitedQuicksort_Asc(Element, Left, j, DepthLimit)
+            Left = i
+        Else
+            If (i < Right) Then _
+                Call DepthLimitedQuicksort_Asc(Element, i, Right, DepthLimit)
+            Right = j
+        End If
+
+    Loop While (Left < Right)
+
+End Sub
+                              
+Private Sub DepthLimitedQuicksort_Desc( _
+                                          ByRef Element() As IGeneric, _
+                                          ByVal Left As Long, _
+                                          ByVal Right As Long, _
+                                          ByVal DepthLimit As Long)
+
+    Dim i As Long
+    Dim j As Long
+    Dim middle As Long
+
+    Dim pivot As IGeneric
+    Dim tmp As IGeneric
+
+    If (Left > Right) Then _
+        Exit Sub
+    
+    Do
+        If (DepthLimit = 0) Then _
+            Call HeapSort_Desc(Element, Left, Right): Exit Sub
+
+        i = Left: j = Right
+        middle = i + ((j - i) / 2)
+
+        Call SwapIfGreater(Element, i, middle)
+        Call SwapIfGreater(Element, i, j)
+        Call SwapIfGreater(Element, middle, j)
+
+        Set pivot = Element(middle)
+
+        Do
+        
+            If (pivot Is Nothing) Then
+                Do While Not (Element(i) Is Nothing): i = i + 1: Loop
+            Else
+                Do While (pivot.CompareTo(Element(i)) = IsLower): i = i + 1: Loop
+                Do While (pivot.CompareTo(Element(j)) = IsGreater): j = j - 1: Loop
+            End If
+
+            If (i > j) Then _
+                Exit Do
+        
+            If (i < j) Then _
+                Set tmp = Element(i): Set Element(i) = Element(j): Set Element(j) = tmp
+        
+            i = i + 1: j = j - 1
+            
+        Loop While (i <= j)
+
+        DepthLimit = DepthLimit - 1
+
+        If (j - Left) <= (Right - i) Then
+            If (Left < j) Then _
+                Call DepthLimitedQuicksort_Desc(Element, Left, j, DepthLimit)
+            Left = i
+        Else
+            If (i < Right) Then _
+                Call DepthLimitedQuicksort_Desc(Element, i, Right, DepthLimit)
+            Right = j
+        End If
+
+    Loop While (Left < Right)
+
+End Sub
+
+Private Sub HeapSort_Asc( _
+                            ByRef Keys() As IGeneric, _
+                            ByVal lo As Long, _
+                            ByVal hi As Long)
+
+    Dim n As Long: n = hi - lo + 1
+    Dim i As Long
+ 
+    For i = n / 2 To 1 Step -1
+        Call MaxHeap(Keys, i, n, lo)
+    Next
+    For i = n To 2 Step -1
+        Call Swap_2(Keys, lo, lo + i - 1)
+        Call MaxHeap(Keys, 1, i - 1, lo)
+    Next
+End Sub
+
+Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
+
+    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim Child As Long
+
+    Do While (i <= n / 2)
+        Child = 2 * i
+        If (Child < n) Then
+            If (Keys(lo + Child - 1) Is Nothing) Then
+                Child = Child + 1
+            ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
+                Child = Child + 1
+            End If
+        End If
+
+        If (Keys(lo + Child - 1) Is Nothing) Then _
+            Exit Do
+
+        If (Keys(lo + Child - 1).CompareTo(d) = IsLower) Then _
+            Exit Do
+
+        Set Keys(lo + i - 1) = Keys(lo + Child - 1)
+        i = Child
+    Loop
+
+    Set Keys(lo + i - 1) = d
+
+End Sub
+
+Private Sub HeapSort_Desc( _
+                             ByRef Keys() As IGeneric, _
+                             ByVal lo As Long, _
+                             ByVal hi As Long)
+
+    Dim n As Long: n = hi - lo + 1
+    Dim i As Long
+ 
+    For i = n / 2 To 1 Step -1
+        Call MinHeap(Keys, i, n, lo)
+    Next
+    For i = n To 2 Step -1
+        Call Swap_2(Keys, lo, lo + i - 1)
+        Call MinHeap(Keys, 1, i - 1, lo)
+    Next
+End Sub
+
+Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
+
+    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim Child As Long
+
+    Do While (i <= n / 2)
+        Child = 2 * i
+        If (Child < n) Then
+            If Not (Keys(lo + Child - 1) Is Nothing) Then
+                If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
+                    Child = Child + 1
+    
+            End If
+        End If
+
+        If Not (Keys(lo + Child - 1) Is Nothing) Then
+            If (Keys(lo + Child - 1).CompareTo(d) = IsGreater) Then _
+                Exit Do
+        
+        End If
+        
+        Set Keys(lo + i - 1) = Keys(lo + Child - 1)
+        i = Child
+    Loop
+
+    Set Keys(lo + i - 1) = d
+
+End Sub
+
+Private Sub DepthLimitedQuicksortWithItems_Asc( _
+                                                  ByRef Keys() As IGeneric, _
+                                                  ByRef Items() As Object, _
+                                                  ByVal Left As Long, _
+                                                  ByVal Right As Long, _
+                                                  ByVal DepthLimit As Long)
+
+    Dim i As Long
+    Dim j As Long
+    Dim middle As Long
+
+    Dim pivot As IGeneric
+    Dim tmp As IGeneric
+
+    If (Left > Right) Then _
+        Exit Sub
+   
+    Do
+        If (DepthLimit = 0) Then _
+            Call HeapSort_Asc(Keys, Left, Right): Exit Sub
+
+        i = Left: j = Right
+        middle = i + ((j - i) / 2)
+
+        Call SwapIfGreaterWithItem(Keys, Items, i, middle)
+        Call SwapIfGreaterWithItem(Keys, Items, i, j)
+        Call SwapIfGreaterWithItem(Keys, Items, middle, j)
+
+        Set pivot = Keys(middle)
+
+        Do
+    
+            If (pivot Is Nothing) Then
+                Do While Not (Keys(j) Is Nothing): j = j - 1: Loop
+            Else
+                Do While (pivot.CompareTo(Keys(i)) = IsGreater): i = i + 1: Loop
+                Do While (pivot.CompareTo(Keys(j)) = IsLower): j = j - 1: Loop
+            End If
+
+            If (i > j) Then _
+                Exit Do
+
+            If (i < j) Then _
+                Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
+                Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                
+            i = i + 1: j = j - 1
+
+        Loop While (i <= j)
+
+        DepthLimit = DepthLimit - 1
+
+        If (j - Left) <= (Right - i) Then
+            If (Left < j) Then _
+                Call DepthLimitedQuicksortWithItems_Asc(Keys, Items, Left, j, DepthLimit)
+            Left = i
+        Else
+            If (i < Right) Then _
+                Call DepthLimitedQuicksortWithItems_Asc(Keys, Items, i, Right, DepthLimit)
+            Right = j
+        End If
+
+    Loop While (Left < Right)
+
+End Sub
+                              
+Private Sub DepthLimitedQuicksortWithItems_Desc( _
+                                                   ByRef Keys() As IGeneric, _
+                                                   ByRef Items() As Object, _
+                                                   ByVal Left As Long, _
+                                                   ByVal Right As Long, _
+                                                   ByVal DepthLimit As Long)
+
+    Dim i As Long
+    Dim j As Long
+    Dim middle As Long
+
+    Dim pivot As IGeneric
+    Dim tmp As IGeneric
+
+    If (Left > Right) Then _
+        Exit Sub
+    
+    Do
+        If (DepthLimit = 0) Then _
+            Call HeapSort_Desc(Keys, Left, Right): Exit Sub
+
+        i = Left: j = Right
+        middle = i + ((j - i) / 2)
+
+        Call SwapIfGreaterWithItem(Keys, Items, i, middle)
+        Call SwapIfGreaterWithItem(Keys, Items, i, j)
+        Call SwapIfGreaterWithItem(Keys, Items, middle, j)
+
+        Set pivot = Keys(middle)
+
+        Do
+        
+            If (pivot Is Nothing) Then
+                Do While Not (Keys(i) Is Nothing): i = i + 1: Loop
+            Else
+                Do While (pivot.CompareTo(Keys(i)) = IsLower): i = i + 1: Loop
+                Do While (pivot.CompareTo(Keys(j)) = IsGreater): j = j - 1: Loop
+            End If
+
+            If (i > j) Then _
+                Exit Do
+        
+            If (i < j) Then _
+                Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
+                Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+        
+            i = i + 1: j = j - 1
+            
+        Loop While (i <= j)
+
+        DepthLimit = DepthLimit - 1
+
+        If (j - Left) <= (Right - i) Then
+            If (Left < j) Then _
+                Call DepthLimitedQuicksortWithItems_Desc(Keys, Items, Left, j, DepthLimit)
+            Left = i
+        Else
+            If (i < Right) Then _
+                Call DepthLimitedQuicksortWithItems_Desc(Keys, Items, i, Right, DepthLimit)
+            Right = j
+        End If
+
+    Loop While (Left < Right)
+
+End Sub
+
+Private Sub HeapSortWithItems_Asc( _
+                                     ByRef Keys() As IGeneric, _
+                                     ByRef Items() As Object, _
+                                     ByVal lo As Long, _
+                                     ByVal hi As Long)
+
+    Dim n As Long: n = hi - lo + 1
+    Dim i As Long
+ 
+    For i = n / 2 To 1 Step -1
+        Call MaxHeapWithItems(Keys, Items, i, n, lo)
+    Next
+    For i = n To 2 Step -1
+        Call SwapWithItem(Keys, Items, lo, lo + i - 1)
+        Call MaxHeapWithItems(Keys, Items, 1, i - 1, lo)
+    Next
+End Sub
+
+Private Sub MaxHeapWithItems( _
+                                ByRef Keys() As IGeneric, _
+                                ByRef Items() As Object, _
+                                ByVal i As Long, _
+                                ByVal n As Long, _
+                                ByVal lo As Long)
+
+    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim dItem As Object: Set dItem = Items(lo + i - 1)
+    Dim Child As Long
+
+    Do While (i <= n / 2)
+        Child = 2 * i
+        If (Child < n) Then
+            If (Keys(lo + Child - 1) Is Nothing) Then
+                Child = Child + 1
+            ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
+                Child = Child + 1
+            End If
+        End If
+
+        If (Keys(lo + Child - 1) Is Nothing) Then _
+            Exit Do
+
+        If (Keys(lo + Child - 1).CompareTo(d) = IsLower) Then _
+            Exit Do
+
+        Set Keys(lo + i - 1) = Keys(lo + Child - 1)
+        Set Items(lo + i - 1) = Items(lo + Child - 1)
+        i = Child
+    Loop
+
+    Set Keys(lo + i - 1) = d
+    Set Items(lo + i - 1) = dItem
+
+End Sub
+
+Private Sub HeapSortWithItems_Desc( _
+                                        ByRef Keys() As IGeneric, _
+                                        ByRef Items() As Object, _
+                                        ByVal lo As Long, _
+                                        ByVal hi As Long)
+
+    Dim n As Long: n = hi - lo + 1
+    Dim i As Long
+ 
+    For i = n / 2 To 1 Step -1
+        Call MinHeapWithItems(Keys, Items, i, n, lo)
+    Next
+    For i = n To 2 Step -1
+        Call SwapWithItem(Keys, Items, lo, lo + i - 1)
+        Call MinHeapWithItems(Keys, Items, 1, i - 1, lo)
+    Next
+End Sub
+
+Private Sub MinHeapWithItems( _
+                                ByRef Keys() As IGeneric, _
+                                ByRef Items() As Object, _
+                                ByVal i As Long, _
+                                ByVal n As Long, _
+                                ByVal lo As Long)
+
+    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim dItem As Object: Set dItem = Items(lo + i - 1)
+    Dim Child As Long
+
+    Do While (i <= n / 2)
+        Child = 2 * i
+        If (Child < n) Then
+            If Not (Keys(lo + Child - 1) Is Nothing) Then
+                If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
+                    Child = Child + 1
+    
+            End If
+        End If
+
+        If Not (Keys(lo + Child - 1) Is Nothing) Then
+            If (Keys(lo + Child - 1).CompareTo(d) = IsGreater) Then _
+                Exit Do
+        
+        End If
+        
+        Set Keys(lo + i - 1) = Keys(lo + Child - 1)
+        Set Items(lo + i - 1) = Items(lo + Child - 1)
+        
+        i = Child
+    Loop
+
+    Set Keys(lo + i - 1) = d
+    Set Items(lo + i - 1) = dItem
+    
+End Sub
+
+Private Sub Swap_2(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
+
+    Dim t As IGeneric
+    
+    Set t = a(i): Set a(i) = a(j): Set a(j) = t
+
+End Sub
+
+Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As Long)
+    
+    Dim t As IGeneric
+   
+    If Not (a = b) Then
+        If Not (Keys(a) Is Nothing) Then
+            If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
+                Set t = Keys(a)
+                Set Keys(a) = Keys(b)
+                Set Keys(b) = t
+            End If
+        End If
+    End If
+    
+End Sub
+
+Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal b As Long)
+    
+    Dim t As IGeneric
+   
+    If Not (a = b) Then
+        If Not (Keys(a) Is Nothing) Then
+            If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
+                Set t = Keys(a): Set Keys(a) = Keys(b): Set Keys(b) = t
+                Set t = Items(a): Set Items(a) = Items(b): Set Items(b) = t
+            End If
+        End If
+    End If
+    
+End Sub
+
+Private Sub SwapWithItem(ByRef a() As IGeneric, ByRef b() As Object, ByVal i As Long, ByVal j As Long)
+    
+    Dim t As IGeneric
+    
+    Set t = a(i): Set a(i) = a(j): Set a(j) = t
+    Set t = b(i): Set b(i) = b(j): Set b(j) = t
+    
+End Sub
+
 'IGeneric
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
 Private Sub IGeneric_Dispose()
@@ -940,7 +1637,7 @@ Private Sub IGenericIterator_Reset()
         If .HasLoaded = False Then _
             Call Skynet.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
             
-        Call LoadIterator(myclass.Iterator, .Parent, .Descriptor, .Rank, .StartIndex, .Count)
+        Call LoadIterator(myclass.Iterator, .Values, .StartIndex, .Count)
     End With
 End Sub
 
@@ -949,7 +1646,5 @@ Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_Create
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericArray: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
-
-
 
 

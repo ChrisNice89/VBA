@@ -169,7 +169,7 @@ Public Function Build( _
         Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     With myclass
-        .SortOrder = Skynet.SortOrder
+        .SortOrder = ascending
         If (Collection Is Nothing) Then
             Set .Items = GenericArray.Build(Capacity)
         Else
@@ -296,7 +296,7 @@ End Sub
 Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
     
     Dim c As IGenericCollection
-    Dim N As Long
+    Dim n As Long
     Dim Item As IGeneric
     
     If (Enumerable Is Nothing) Then _
@@ -306,9 +306,9 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
         Call Skynet.Throw(Me, "InsertAll").IndexOutofRange("Index > myClass.Size")
     
     If TypeOf Enumerable Is IGenericCollection Then _
-        Set c = Enumerable: N = c.Count
+        Set c = Enumerable: n = c.Count
     
-    If (N > 0) Then
+    If (n > 0) Then
         Call EnsureCapacity(myclass.Size + c.Count)
     
         With myclass.Items

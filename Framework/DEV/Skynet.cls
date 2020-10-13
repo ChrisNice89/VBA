@@ -178,22 +178,22 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
 End Function
 
 'SequenceCompare
-Public Function SequenceCompare(ByVal A As IGenericReadOnlyList, ByVal b As IGenericReadOnlyList) As ComparerEnum
+Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGenericReadOnlyList) As ComparerEnum
     
-    If (A Is b) Then SequenceCompare = IsEqual: Exit Function
+    If (a Is b) Then SequenceCompare = IsEqual: Exit Function
     
-    If Not (A Is Nothing) And (b Is Nothing) Then
+    If Not (a Is Nothing) And (b Is Nothing) Then
         
-        If Not (Me.Generic(A).IsRelatedTo(b)) Then _
+        If Not (Me.Generic(a).IsRelatedTo(b)) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("Type(a) != Type(b)")
     
-        If Not (A.Count = b.Count) Then _
+        If Not (a.Count = b.Count) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("a.Count != b.Count")
         
         Dim i As Long, c As ComparerEnum
-        Do While (InterlockedIncrement(i) < A.Count And c = IsEqual)
-            If Not A(i) Is Nothing Then _
-                c = A(i).Equals(b(i))
+        Do While (InterlockedIncrement(i) < a.Count And c = IsEqual)
+            If Not a(i) Is Nothing Then _
+                c = a(i).Equals(b(i))
         Loop
     End If
     
@@ -343,9 +343,9 @@ Public Function HashValue( _
         Case Hashing.Function2
             
              Dim Length As Long: Length = UBound(ascii) + 1
-             Dim N As Long
+             Dim n As Long
              
-             For N = (Length / 2) To 1 Step -1
+             For n = (Length / 2) To 1 Step -1
                 H = H + ascii(i)
                 H = Me.X0R(Me.X0R(LeftShift(H, 16), Me.LeftShift(ascii(i + 1), 11)), H)
                 H = H + Me.RightShift(H, 11)
@@ -377,7 +377,7 @@ Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<"
 Public Sub Dispose(ByVal Instance As IGeneric): Call Instance.Dispose: End Sub
 Public Function Clone(ByVal Instance As IGeneric) As IGeneric: Set Clone = Instance.Clone: End Function
 Public Function Generic(ByRef Instance As IGeneric) As IGeneric: Set Generic = Instance: End Function
-Public Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
+Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function
@@ -620,26 +620,26 @@ Private Sub HeapSort_Asc( _
                             ByVal lo As Long, _
                             ByVal hi As Long)
 
-    Dim N As Long: N = hi - lo + 1
+    Dim n As Long: n = hi - lo + 1
     Dim i As Long
  
-    For i = N / 2 To 1 Step -1
-        Call MaxHeap(Keys, i, N, lo)
+    For i = n / 2 To 1 Step -1
+        Call MaxHeap(Keys, i, n, lo)
     Next
-    For i = N To 2 Step -1
+    For i = n To 2 Step -1
         Call Swap(Keys, lo, lo + i - 1)
         Call MaxHeap(Keys, 1, i - 1, lo)
     Next
 End Sub
 
-Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal N As Long, ByVal lo As Long)
+Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= N / 2)
+    Do While (i <= n / 2)
         Child = 2 * i
-        If (Child < N) Then
+        If (Child < n) Then
             If (Keys(lo + Child - 1) Is Nothing) Then
                 Child = Child + 1
             ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
@@ -666,26 +666,26 @@ Private Sub HeapSort_Desc( _
                              ByVal lo As Long, _
                              ByVal hi As Long)
 
-    Dim N As Long: N = hi - lo + 1
+    Dim n As Long: n = hi - lo + 1
     Dim i As Long
  
-    For i = N / 2 To 1 Step -1
-        Call MinHeap(Keys, i, N, lo)
+    For i = n / 2 To 1 Step -1
+        Call MinHeap(Keys, i, n, lo)
     Next
-    For i = N To 2 Step -1
+    For i = n To 2 Step -1
         Call Swap(Keys, lo, lo + i - 1)
         Call MinHeap(Keys, 1, i - 1, lo)
     Next
 End Sub
 
-Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal N As Long, ByVal lo As Long)
+Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= N / 2)
+    Do While (i <= n / 2)
         Child = 2 * i
-        If (Child < N) Then
+        If (Child < n) Then
             If Not (Keys(lo + Child - 1) Is Nothing) Then
                 If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
                     Child = Child + 1
@@ -845,13 +845,13 @@ Private Sub HeapSortWithItems_Asc( _
                                      ByVal lo As Long, _
                                      ByVal hi As Long)
 
-    Dim N As Long: N = hi - lo + 1
+    Dim n As Long: n = hi - lo + 1
     Dim i As Long
  
-    For i = N / 2 To 1 Step -1
-        Call MaxHeapWithItems(Keys, Items, i, N, lo)
+    For i = n / 2 To 1 Step -1
+        Call MaxHeapWithItems(Keys, Items, i, n, lo)
     Next
-    For i = N To 2 Step -1
+    For i = n To 2 Step -1
         Call SwapWithItem(Keys, Items, lo, lo + i - 1)
         Call MaxHeapWithItems(Keys, Items, 1, i - 1, lo)
     Next
@@ -861,16 +861,16 @@ Private Sub MaxHeapWithItems( _
                                 ByRef Keys() As IGeneric, _
                                 ByRef Items() As Object, _
                                 ByVal i As Long, _
-                                ByVal N As Long, _
+                                ByVal n As Long, _
                                 ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim dItem As Object: Set dItem = Items(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= N / 2)
+    Do While (i <= n / 2)
         Child = 2 * i
-        If (Child < N) Then
+        If (Child < n) Then
             If (Keys(lo + Child - 1) Is Nothing) Then
                 Child = Child + 1
             ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
@@ -900,13 +900,13 @@ Private Sub HeapSortWithItems_Desc( _
                                         ByVal lo As Long, _
                                         ByVal hi As Long)
 
-    Dim N As Long: N = hi - lo + 1
+    Dim n As Long: n = hi - lo + 1
     Dim i As Long
  
-    For i = N / 2 To 1 Step -1
-        Call MinHeapWithItems(Keys, Items, i, N, lo)
+    For i = n / 2 To 1 Step -1
+        Call MinHeapWithItems(Keys, Items, i, n, lo)
     Next
-    For i = N To 2 Step -1
+    For i = n To 2 Step -1
         Call SwapWithItem(Keys, Items, lo, lo + i - 1)
         Call MinHeapWithItems(Keys, Items, 1, i - 1, lo)
     Next
@@ -916,16 +916,16 @@ Private Sub MinHeapWithItems( _
                                 ByRef Keys() As IGeneric, _
                                 ByRef Items() As Object, _
                                 ByVal i As Long, _
-                                ByVal N As Long, _
+                                ByVal n As Long, _
                                 ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim dItem As Object: Set dItem = Items(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= N / 2)
+    Do While (i <= n / 2)
         Child = 2 * i
-        If (Child < N) Then
+        If (Child < n) Then
             If Not (Keys(lo + Child - 1) Is Nothing) Then
                 If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
                     Child = Child + 1
@@ -950,15 +950,15 @@ Private Sub MinHeapWithItems( _
     
 End Sub
 
-Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal A As Long, ByVal b As Long)
+Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As Long)
     
     Dim t As IGeneric
    
-    If Not (A = b) Then
-        If Not (Keys(A) Is Nothing) Then
-            If (Keys(A).CompareTo(Keys(b)) = IsGreater) Then
-                Set t = Keys(A)
-                Set Keys(A) = Keys(b)
+    If Not (a = b) Then
+        If Not (Keys(a) Is Nothing) Then
+            If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
+                Set t = Keys(a)
+                Set Keys(a) = Keys(b)
                 Set Keys(b) = t
             End If
         End If
@@ -966,34 +966,34 @@ Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal A As Long, ByVal b As 
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal A As Long, ByVal b As Long)
+Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal b As Long)
     
     Dim t As IGeneric
    
-    If Not (A = b) Then
-        If Not (Keys(A) Is Nothing) Then
-            If (Keys(A).CompareTo(Keys(b)) = IsGreater) Then
-                Set t = Keys(A): Set Keys(A) = Keys(b): Set Keys(b) = t
-                Set t = Items(A): Set Items(A) = Items(b): Set Items(b) = t
+    If Not (a = b) Then
+        If Not (Keys(a) Is Nothing) Then
+            If (Keys(a).CompareTo(Keys(b)) = IsGreater) Then
+                Set t = Keys(a): Set Keys(a) = Keys(b): Set Keys(b) = t
+                Set t = Items(a): Set Items(a) = Items(b): Set Items(b) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub Swap(ByRef A() As IGeneric, ByVal i As Long, ByVal j As Long)
+Private Sub Swap(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
 
     Dim t As IGeneric
     
-    Set t = A(i): Set A(i) = A(j): Set A(j) = t
+    Set t = a(i): Set a(i) = a(j): Set a(j) = t
 
 End Sub
 
-Private Sub SwapWithItem(ByRef A() As IGeneric, ByRef b() As Object, ByVal i As Long, ByVal j As Long)
+Private Sub SwapWithItem(ByRef a() As IGeneric, ByRef b() As Object, ByVal i As Long, ByVal j As Long)
     
     Dim t As IGeneric
     
-    Set t = A(i): Set A(i) = A(j): Set A(j) = t
+    Set t = a(i): Set a(i) = a(j): Set a(j) = t
     Set t = b(i): Set b(i) = b(j): Set b(j) = t
     
 End Sub

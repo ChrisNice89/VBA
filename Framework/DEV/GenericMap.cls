@@ -137,7 +137,7 @@ End Function
 
 Private Function getMinPrime() As Long: getMinPrime = myclass.Const.Primes(LBound(myclass.Const.Primes, 1)): End Function
 Private Function EmptyBucket() As Bucket: End Function
-Private Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
+Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
@@ -431,10 +431,12 @@ Public Sub Add( _
                 End If
                 
                 If .Key.Equals(Key) Then
-                    If (Overwrite = False) Then _
+                    If (Overwrite) Then
+                        Set .Value = Value
+                    Else
                         Call Skynet.Throw(Me, "Public Function Add").DuplicateNotAllowed(Key)
-        
-                    Set .Value = Value: Exit Sub
+                    End If
+                    Exit Sub
                 End If
                 
                 If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _

@@ -207,6 +207,7 @@ Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DE
 End Function
 
 Public Function ToCharArray() As String()
+    
     Dim chars() As String
     Dim i As Long
 
@@ -218,12 +219,12 @@ Public Function ToCharArray() As String()
     End With
 
     ToCharArray = chars
+    
 End Function
 
 Public Function Build( _
                         ByVal Value As String, _
                         Optional ByVal Format As TStringFormat = TStringFormat.DefaultString) As GString
-Attribute Build.VB_UserMemId = 0
     With myclass
         .Value = Value
         .Length = Len(Value)

@@ -210,7 +210,7 @@ Public Function Build( _
         Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     With myclass
-        .SortOrder = Skynet.SortOrder
+        .SortOrder = ascending
           
         If (Dictionary Is Nothing) Then
             Set .Keys = GenericArray.Build(Capacity)
@@ -222,7 +222,7 @@ Public Function Build( _
             Call Dictionary.CopyOf(t:=Keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
             Call Dictionary.CopyOf(t:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
             
-            Call Skynet.SortGenericArrays(.Keys, .Values, .Keys.LowerBound, .Keys.Length, myclass.SortOrder)
+            Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, Length:=.Keys.Length, Order:=myclass.SortOrder)
             .Size = Dictionary.Count
         End If
     End With

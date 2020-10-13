@@ -6,14 +6,13 @@ Attribute VB_Name = "GenericTreeNode"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 '@Folder("<T>Enumerable")
-
 
 Option Explicit
 '@PredeclaredId
 
-'Implements GenericPair
+Implements GenericPair
 Implements IGeneric
 Implements IPrototype
 
@@ -28,6 +27,7 @@ Implements IPrototype
 Private Type Member
     Key As IGeneric
     Value As IGeneric
+    Parent As GenericTreeNode
     Left As GenericTreeNode
     Right As GenericTreeNode
     IsRed As Boolean
@@ -48,10 +48,13 @@ Public Property Get Size() As Long: Size = myclass.Size: End Property
 Public Property Let Size(ByVal Value As Long):  myclass.Size = Value: End Property
 
 Public Property Get Left() As GenericTreeNode: Set Left = myclass.Left: End Property
-Public Property Set Left(ByVal Node As GenericTreeNode): Set myclass.Left = Node: End Property
+Public Property Set Left(ByVal L As GenericTreeNode): Set myclass.Left = L: End Property
 
 Public Property Get Right() As GenericTreeNode: Set Right = myclass.Right: End Property
-Public Property Set Right(ByVal Node As GenericTreeNode): Set myclass.Right = Node: End Property
+Public Property Set Right(ByVal R As GenericTreeNode): Set myclass.Right = R: End Property
+
+Public Property Get Parent() As GenericTreeNode: Set Parent = myclass.Parent: End Property
+Public Property Set Parent(ByVal p As GenericTreeNode): Set myclass.Parent = p: End Property
 
 Public Property Get Key() As IGeneric: Set Key = myclass.Key: End Property
 Public Property Set Key(ByVal K As IGeneric): Set myclass.Key = K: End Property
@@ -65,6 +68,7 @@ Public Sub Clear()
     With myclass
         Set .Left = Nothing
         Set .Right = Nothing
+        Set .Parent = Nothing
     End With
 End Sub
 'GenericPair
@@ -78,7 +82,7 @@ Private Property Get GenericPair_Value() As Object: Set GenericPair_Value = mycl
 Public Function Build( _
                         ByVal Key As IGeneric, _
                         ByVal Value As IGeneric, _
-                        ByVal Size As Long, _
+                        ByVal Parent As GenericTreeNode, _
                         Optional ByVal IsRed As Boolean = True) As GenericTreeNode
 
     If (Me Is GenericTreeNode) = False Then _
@@ -87,6 +91,8 @@ Public Function Build( _
     With myclass
         Set .Key = Key
         Set .Value = Value
+        Set .Parent = Parent
+        .Size = 1
         .IsRed = IsRed
     End With
 
@@ -105,11 +111,25 @@ Private Sub Class_Initialize()
     Virtual.Size = LenB(myclass)
 End Sub
 'Bug when implements GenericPair ' Me: End Function '
-Public Function CopyToPair() As GenericPair: Set CopyToPair = GenericPair(myclass.Key, myclass.Value): End Function
+Public Function CopyToPair() As GenericPair: Set CopyToPair = Me: End Function
+
+Private Sub Class_Terminate()
+
+'    Debug.Print "Node_Terminate"
+End Sub
 
 'IGeneric
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
-Private Sub IGeneric_Dispose(): End Sub
+Private Sub IGeneric_Dispose()
+    
+    If myclass.Left Is Nothing = False Then _
+        Call Skynet.Dispose(myclass.Left)
+
+    If myclass.Right Is Nothing = False Then _
+        Call Skynet.Dispose(myclass.Right)
+        
+    myclass = EmptyStructure
+End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric

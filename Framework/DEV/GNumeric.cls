@@ -124,9 +124,9 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
 
-    Dim N As GNumeric: Set N = Other
+    Dim n As GNumeric: Set n = Other
 
-    IGeneric_Equals = (myclass.Value = N.Value)
+    IGeneric_Equals = (myclass.Value = n.Value)
      
 End Function
 
@@ -135,11 +135,11 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     If Other Is Nothing Then _
         IGeneric_CompareTo = IsGreater: Exit Function
     
-    Dim N As GNumeric:  Set N = Other
+    Dim n As GNumeric:  Set n = Other
     
     Select Case True
-        Case myclass.Value > N.Value: IGeneric_CompareTo = IsGreater
-        Case myclass.Value < N.Value: IGeneric_CompareTo = IsLower
+        Case myclass.Value > n.Value: IGeneric_CompareTo = IsGreater
+        Case myclass.Value < n.Value: IGeneric_CompareTo = IsLower
         Case Else: IGeneric_CompareTo = IsEqual
     End Select
 

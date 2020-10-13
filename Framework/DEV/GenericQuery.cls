@@ -51,7 +51,7 @@ Public Property Get GetValuesByIndex(ByVal Index As Long) As GenericSortedSet
     Set Values = myclass.Values.ElementAt(Index)
     
     If Not Values Is noting Then
-        Set GetValuesByIndex = tree
+        Set GetValuesByIndex = Tree
     Else
         'Error
     End If

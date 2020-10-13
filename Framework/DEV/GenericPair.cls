@@ -62,6 +62,10 @@ Private Sub Class_Initialize()
     Virtual.Size = LenB(myclass)
 End Sub
 
+Private Sub Class_Terminate()
+    myclass = EmptyStructure
+End Sub
+
 'IGeneric
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
 Private Sub IGeneric_Dispose(): End Sub
