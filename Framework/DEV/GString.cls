@@ -19,24 +19,10 @@ Implements IPrototype
     Declare PtrSafe Function lstrcmp Lib "kernel32" Alias "lstrcmpA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
 #Else
 'Groﬂ- und Kleinschreibung spielt keine Rolle
-    Private Declare Function lstrcmpi Lib "kernel32.dll" _
-      Alias "lstrcmpiA" ( _
-      ByVal lpString1 As String, _
-      ByVal lpString2 As String) As Long
+    Private Declare Function lstrcmpi Lib "kernel32.dll" Alias "lstrcmpiA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
     'Groﬂ- und Kleinschreibung wird beachtet
-    Private Declare Function lstrcmp Lib "kernel32.dll" _
-      Alias "lstrcmpA" ( _
-      ByVal lpString1 As String, _
-      ByVal lpString2 As String) As Long
-      
-    Private Declare Function CompareString Lib "kernel32.dll" _
-      Alias "CompareStringA" ( _
-      ByVal Locale As Long, _
-      ByVal dwCmpFlags As Long, _
-      ByVal lpString1 As String, _
-      ByVal cchCount1 As Long, _
-      ByVal lpString2 As String, _
-      ByVal cchCount2 As Long) As Long
+    Private Declare Function lstrcmp Lib "kernel32.dll" Alias "lstrcmpA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
+    Private Declare Function CompareString Lib "kernel32.dll" Alias "CompareStringA" (ByVal Locale As Long, ByVal dwCmpFlags As Long, ByVal lpString1 As String, ByVal cchCount1 As Long, ByVal lpString2 As String, ByVal cchCount2 As Long) As Long
 #End If
 ' Retval = CompareString(0&, NORM_IGNORESYMBOLS Or _
 '        SORT_STRINGSORT, .List(i), Len(.List(i)), .List(j), Len(.List(j)))
@@ -120,6 +106,7 @@ Public Function IsNullOrEmpty() As Boolean
     If Me Is GString Then _
         IsNullOrEmpty = True: Exit Function
 End Function
+
 Public Function CountChar(ByVal c As String) As Long
     
     Dim i As Long

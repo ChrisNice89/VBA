@@ -7,6 +7,40 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  GenericArray
+'*
+'* Purpose: An array stores a fixed-size sequential collection of elements of the IGeneric type.
+'*          It provides methods for creating, manipulating, searching, and sorting arrays, thereby serving as the base class for all Array instances.
+'*          An element is a (reference) value in an Array. The length of an Array is the total number of elements it can contain.
+'*          The lower bound of an Array is the index of its first element (one by default).
+'*          A multidimensional Array can have different upper bounds for each dimension.
+'*          An array can have a maximum of 32 dimensions.
+'*          The Array class is part of the IGenericCollection namespaces. Unlike the other classes which are the IGenericCollection implemented,
+'*          Array has a fixed capacity. To increase the capacity, you must create a new Array object with the required capacity,
+'*          copy the elements from the old Array object to the new one, and delete the old Array.
+'*          The Array is not guaranteed to be sorted. You must sort the Array prior to performing operations (such as BinarySearch)
+'*          that require the Array to be sorted.
+'*
+'* Notes: An array can be Single-Dimensional, Multidimensional or Jagged.
+'*        The number of dimensions and the length of each dimension are established when the array instance is created.
+'*        These values can't be changed during the lifetime of the instance.
+'*        The default values (reference elements) of an array elements are set to null.
+'*        Each element can be referred to by an index.
+'*        The length of the array is the total number of item present in the array.
+'*        A jagged array is an array of arrays, and therefore its elements are reference types and are initialized to null.
+'*        Arrays are one indexed: an array with n elements is indexed from 1 to n.
+'*        Array elements can be of any IGeneric type, including an array type.
+'*        Array types are reference types. GenericArray implements IGenericIterator, you can use foreach iteration.
+'*
+'*
+'*======================================================================================================================
+
 '@Folder("<T>Enumerable")
 
 Option Explicit
@@ -171,7 +205,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     
     ReDim SAB(LB To UB)
     For i = LB To UB
-        If (Indices(i) < 1) Then _
+        If (Indices(i) < 0) Then _
             Call Skynet.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
         
         With SAB(i)
@@ -203,25 +237,6 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     
 End Function
 
-Private Sub LoadArrayStructure(ByRef Structure As SAFEARRAYSTRUCT, ByVal SafeArrayPointer As LongPtr)
-    
-    Dim i As Long
-    
-    If (SafeArrayPointer = 0) Then _
-        Skynet.Throw(Me, "Private Sub LoadArrayStructure").NullPointer ("SafeArrayPointer")
-
-    Call CopyMemory(dst:=Structure, src:=ByVal SafeArrayPointer, Length:=16&)
-    
-    With Structure
-        If (.cDims <= 0) Then _
-            Call Skynet.Throw(Me, "Private Sub LoadArrayStructure").Overflow(".cDims <= 0")
-        
-        ReDim .Bounds(1 To .cDims)
-        Call CopyMemory(dst:=.Bounds(1), src:=ByVal (SafeArrayPointer + 16&), Length:=.cDims * 8&)
-    End With
-
-End Sub
-
 Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
         
     Dim i As Long
@@ -236,7 +251,7 @@ Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
         Call Skynet.Throw(Me, "Public Function BuildFrom").InvalidOperation("LBound(Matrix) < MIN_INDEX")
  
     With myclass
-        .Descriptor = Skynet.PointerOf(Matrix)
+        .Descriptor = Me.DescriptorOf(Matrix)
 
         If (.Descriptor = 0) Then _
             Call Skynet.Throw(Me, "Public Function BuildFrom").InvalidOperation("Descriptor = 0")
@@ -288,6 +303,25 @@ Public Function BuildWith(ParamArray GenericValues() As Variant) As GenericArray
     Set BuildWith = GenericArray.BuildFrom(Values)
     
 End Function
+
+Private Sub LoadArrayStructure(ByRef Structure As SAFEARRAYSTRUCT, ByVal SafeArrayPointer As LongPtr)
+    
+    Dim i As Long
+    
+    If (SafeArrayPointer = 0) Then _
+        Skynet.Throw(Me, "Private Sub LoadArrayStructure").NullPointer ("SafeArrayPointer")
+
+    Call CopyMemory(dst:=Structure, src:=ByVal SafeArrayPointer, Length:=16&)
+    
+    With Structure
+        If (.cDims <= 0) Then _
+            Call Skynet.Throw(Me, "Private Sub LoadArrayStructure").Overflow(".cDims <= 0")
+        
+        ReDim .Bounds(1 To .cDims)
+        Call CopyMemory(dst:=.Bounds(1), src:=ByVal (SafeArrayPointer + 16&), Length:=.cDims * 8&)
+    End With
+
+End Sub
 
 Public Function DescriptorOf(ByRef SomeArray As Variant) As LongPtr
     

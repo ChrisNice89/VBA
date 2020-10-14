@@ -15,13 +15,33 @@ Attribute VB_Exposed = True
 '*
 '* Class:  GenericList
 '*
-'* Purpose: GeneriList is a resizable array
+'* Purpose: The GenericList is a collection of IGeneric objects
+'*          that can be accessed by index and having methods for sorting, searching, and modifying list.
 '*          i.e. GenericList grows dynamically as the elements are added to it.
 '*          If the Size of the current elements (including the new element to be added to the GenericList)
 '*          is greater than the maximum Size of the array then increase the Size of array.
 '*          But the Size of the array can not be increased dynamically.
 '*          So, what happens internally is, a new Array is created and
 '*          the old array is copied into the new array.
+'*          The count,  get, set, and iterator operations run in constant time.
+'*          The add operation runs in amortized constant time, that is, adding n elements requires O(n) time.
+'*          All of the other operations run in linear time (roughly speaking).
+'*          The constant factor is low compared to that for a LinkedList implementation.
+'*          This class provides methods to manipulate the size of the array that is used internally to store the list.
+'*          (List class is roughly equivalent to a Vector)
+'*          Each List instance has a capacity. The capacity is the size of the array used to store the elements in the list.
+'*          It is always at least as large as the list size. As elements are added to an List, its capacity grows automatically.
+'*          The details of the growth policy are not specified beyond the fact that adding an element has constant amortized time cost.
+'*          An application can increase the capacity of a List instance before adding a large number of elements using the
+'*          Let Capacity Property. This may reduce the amount of incremental reallocation.
+'*
+'* Notes:   The important points about GenericList class are:
+'*          List is based on GenericArray data structure.
+'*          List class can contain duplicate elements.
+'*          List class maintains insertion order.
+'*          List allows random access because array works at the index basis.
+'*          List, manipulation is little bit slower than the LinkedList because a lot of shifting needs
+'*          to occur if any element is removed from the list.
 '*
 '*
 '*======================================================================================================================
@@ -72,7 +92,6 @@ Private Type Iterator
     HasLoaded As Boolean
     Current As IGeneric
     Items As GenericArray
-    Parent As GenericList
     Descriptor As Long
 End Type
 
@@ -158,9 +177,7 @@ Private Sub EnsureCapacity(ByVal Min As Long)
     End With
 End Sub
 
-Public Function Build( _
-                        Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
-                        Optional ByVal Collection As IGenericCollection) As GenericList
+Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As GenericList
     
     If (Me Is GenericList) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
@@ -170,16 +187,31 @@ Public Function Build( _
     
     With myclass
         .SortOrder = ascending
-        If (Collection Is Nothing) Then
-            Set .Items = GenericArray.Build(Capacity)
-        Else
+        Set .Items = GenericArray.Build(Capacity)
+    End With
+    
+    Set Build = Skynet.CreateInstance(New GenericList, Virtual.Pointer, Virtual.Size)
+    
+End Function
+
+Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
+    
+    If (Me Is GenericList) = False Then _
+        Call Skynet.Throw(Me, "Public Function BuildFrom").BuildExeption
+    
+    If (Collection Is Nothing) Then _
+        Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Collection Is Nothing)")
+    
+    With myclass
+        .SortOrder = ascending
+        If (Collection Is Nothing) = False Then
             Set .Items = GenericArray.Build(Collection.Count)
             Call Collection.CopyTo(GArray:=.Items, ArrayIndex:=.Items.LowerBound)
             .Size = Collection.Count
         End If
     End With
     
-    Set Build = Skynet.CreateInstance(New GenericList, Virtual.Pointer, Virtual.Size)
+    Set BuildFrom = Skynet.CreateInstance(New GenericList, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -191,7 +223,7 @@ Public Function BuildWith(ParamArray GenericValues() As Variant) As GenericList
         Call Skynet.Throw(Me, "Public Function BuildWith").BuildExeption
     
     If IsMissing(GenericValues) Then _
-        Call Skynet.Throw(Me, "Public Function BuildWith(").NullPointer("ParamArray GenericValues are missing")
+        Call Skynet.Throw(Me, "Public Function BuildWith").NullPointer("ParamArray GenericValues are missing")
     
     Set newList = Me.Build(UBound(GenericValues) + 1)
     
@@ -256,7 +288,7 @@ Public Function Iterator(Optional ByVal Index As Long, Optional ByVal Count As L
     If (Count < 0) Or (Count > myclass.Size - Index + myclass.Items.LowerBound) Then _
         Call Skynet.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Size - Index + myClass.Items.LowerBound)")
         
-    Call LoadIterator(c.Iterator, Me, myclass.Items, Index, Count)
+    Call LoadIterator(c.Iterator, myclass.Items, Index, Count)
     Set Iterator = Skynet.CreateInstance(New GenericList, VarPtr(c), LenB(c))
 
 End Function
@@ -521,14 +553,12 @@ End Sub
 
 Private Sub LoadIterator( _
                             ByRef Iterator As Iterator, _
-                            ByVal Parent As GenericList, _
                             ByVal Items As GenericArray, _
                             ByVal StartIndex As Long, _
                             ByVal Count As Long)
  
     With Iterator
         Set .Current = Nothing
-        Set .Parent = Parent
         Set .Items = Items
         .Descriptor = Items.Descriptor
         .StartIndex = StartIndex
@@ -636,7 +666,7 @@ Private Sub IGenericIterator_Reset()
         If .HasLoaded = False Then _
             Call Skynet.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
         
-        Call LoadIterator(myclass.Iterator, .Parent, .Items, .StartIndex, .Count)
+        Call LoadIterator(myclass.Iterator, .Items, .StartIndex, .Count)
     End With
 End Sub
 

@@ -7,6 +7,30 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  GenericTree
+'*
+'* Purpose: A GenericTree is Red-Black tree based navigable map implementation. It provides an efficient means of
+'*          storing key-value pairs in sorted order (according to the natural ordering of its keys) without affecting performance
+'*          as elements are inserted and deleted.
+'*          GenericTree class implements IGenericDictionary interface similar to GenericMap class.
+'*          The main difference between them is that GenericMap is an unordered collection while GenericTree is sorted
+'*          in the ascending order of its keys. Duplicate Keys are not allowed. A key cannot be null, but a value can be,
+'*          if the value type is a reference type.
+'*          Changing the sort values of existing items is not supported and may lead to unexpected behavior.
+'*          However, if the specified key already exists in the GenericTree, setting the Item[] property overwrites the old value.
+'*          In contrast, the Add method throws an exception if an element with the specified key already exists.
+'*
+'* Notes:   A Red Black Tree guarantee that basic operations like search, get, put and remove take logarithmic time O(log n)
+'*
+'*
+'*======================================================================================================================
+
 '@Folder("<T>Enumerable")
 
 Option Explicit
@@ -18,8 +42,13 @@ Implements IGenericCollection
 Implements IGenericIterator
 Implements IPrototype
 
-Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
-Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
+#If Win64 Then
+    Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
+    Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
+#Else
+    Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
+    Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
+#End If
 
 Private Type InternalStack
     Size As Long
@@ -30,7 +59,6 @@ End Type
 Private Type Iterator
     Type As DictionaryData
     Current As IGeneric
-    Tree As GenericTree
     Root As GenericTreeNode
     Stack As InternalStack
     HasLoaded As Boolean
@@ -56,7 +84,7 @@ Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
     Dim Node As GenericTreeNode: Set Node = FindNode(Key)
     
     If (Node Is Nothing) Then
-         Call Me.Add(Key, Value)
+         Call Me.Add(Key, Value, True)
     Else
         Set Node.Value = Value
     End If
@@ -382,7 +410,7 @@ Public Function Iterator(ByVal t As DictionaryData, Optional ByVal Reverse As Bo
 
     Set c.Root = myclass.Root
     
-    Call LoadIterator(c.Iterator, t, Me, myclass.Root, Reverse)
+    Call LoadIterator(c.Iterator, t, myclass.Root, Reverse)
     Set Iterator = Skynet.CreateInstance(New GenericTree, VarPtr(c), LenB(c))
     
 End Function
@@ -845,17 +873,16 @@ Private Sub LoadStack(ByRef Stack As InternalStack, ByVal Node As GenericTreeNod
     
 End Sub
 
-Private Sub LoadIterator(ByRef e As Iterator, ByVal t As DictionaryData, ByVal Tree As GenericTree, ByVal Root As GenericTreeNode, ByVal Reverse As Boolean)
+Private Sub LoadIterator(ByRef e As Iterator, ByVal t As DictionaryData, ByVal Root As GenericTreeNode, ByVal Reverse As Boolean)
     
     If Root Is Nothing Then _
         Call Skynet.Throw(Me, "Private Sub LoadIterator").NullPointer("Root Is Nothing")
     
     With e
         .Type = t
-        Set .Root = Root
-        Set .Tree = Tree
-        Call LoadStack(.Stack, .Root, Reverse)
         Set .Current = Nothing
+        Set .Root = Root
+        Call LoadStack(.Stack, .Root, Reverse)
         .HasLoaded = True
     End With
     
@@ -1015,7 +1042,7 @@ Private Sub IGenericIterator_Reset()
          If .HasLoaded = False Then _
             Call Skynet.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
           
-        Call LoadIterator(myclass.Iterator, .Type, .Tree, .Root, .Stack.Reverse)
+        Call LoadIterator(myclass.Iterator, .Type, .Root, .Stack.Reverse)
     End With
 End Sub
 

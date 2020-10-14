@@ -7,6 +7,45 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  GenericMap
+'*
+'* Purpose: A GenericMap represents a data structure that can store objects as key value pairs.
+'*          It is dynamic in nature means the size of the map is growing according to the need.
+'*          You can search for a value in an instance of GenericMap class using the corresponding key.
+'*          It holds both keys and values (A key cannot be null, but a value can be) in a
+'*          pseudo random order determined by hashes calculated from keys.
+'*          It is also sparse, with unoccupied holes in a pre-allocated array.
+'*          A GenericMap object consists of buckets that contain the elements of the collection.
+'*          A bucket is a virtual subgroup of elements within the map, which makes searching and retrieving easier and faster than in most collections.
+'*          Each bucket is associated with a hash code, which is generated using a hash function and is based on the key of the element.
+'*          Key objects must be immutable as long as they are used as keys in the map.
+'*          When an element is added to the map, the element is placed into a bucket based on the hash code of the key.
+'*          Subsequent lookups of the key use the hash code of the key to search in only one particular bucket,
+'*          thus substantially reducing the number of key comparisons required to find an element.
+'*          The load factor of a map determines the maximum ratio of elements to buckets.
+'*          Smaller load factors cause faster average lookup times at the cost of increased memory consumption.
+'*          The default load factor of 0.72 generally provides the best balance between speed and size.
+'*          A different load factor can also be specified when the map is created.
+'*          As elements are added to a map, the actual load factor of the map increases.
+'*          When the actual load factor reaches the specified load factor, the number of buckets in the map is automatically
+'*          increased to the smallest prime number that is larger than twice the current number of Hashtable buckets.
+'*          If a specified key already exists in the map, setting the Item() property overwrites the old value.
+'*          In contrast, the Add method throws an exception if an element with the specified key already exists.
+'*
+'* Notes:   Key objects must be immutable as long as they are used as keys in the Hashtable.
+'*          A key cannot be null, but a value can be.
+'*          Each key object in the map must provide its own hash function.
+'*          A GenericMap doesn’t maintain the order of stored values.
+'*          This map uses double hashing. There are hashsize buckets in the map, and ech bucket can contain 0 or 1 element.
+'*
+'*======================================================================================================================
+
 '@Exposed
 '@PredeclaredId
 '@Folder "<T>Enumerable"

@@ -7,6 +7,21 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  GenericOrderedMap
+'*
+'* Purpose: OrderedMap offers IGenericMap syntax with ordering.  Objects
+'*          added or inserted in an IOrderedHashTable must have both a key and an index, and
+'*          can be retrieved by either. A key cannot be null, but a value can be, if the value type is a reference type.
+'*
+'*
+'*======================================================================================================================
+
 '@Exposed
 Option Explicit
 '@Folder "<T>Enumerable"
@@ -21,9 +36,6 @@ Implements IPrototype
 Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
 Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 
-'OrderedHashTable offers IHashTable syntax with ordering.  Objects
-'added or inserted in an IOrderedHashTable must have both a key and an index, and
-'can be retrieved by either.
 Private Const DEFAULT_CAPACITY As Long = 16
 
 Private Type Iterator

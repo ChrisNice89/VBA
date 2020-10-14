@@ -653,7 +653,7 @@ Sub testMap()
     End With
     Debug.Print t.TimeElapsed
     
-    With GenericSortedList.Build(Dictionary:=Clone).Iterator(Pairs_)
+    With GenericSortedList.BuildFrom(Dictionary:=Clone).Iterator(Pairs_)
         Do While .HasNext(Item)
             Debug.Print Item
         Loop

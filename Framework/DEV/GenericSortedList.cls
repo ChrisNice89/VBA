@@ -7,34 +7,52 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-'A sorted list internally maintains two arrays that store the keys and
-'values of the entries. The capacity of a sorted list is the allocated
-'length of these internal arrays. As elements are added to a sorted list, the
-'capacity of the sorted list is automatically increased as required by
-'reallocating the internal arrays.  The capacity is never automatically
-'decreased, but users can call either TrimExcess or
-'Capacity explicitly.
-'
-'The GetKeyList and GetValueList methods of a sorted list
-'provides access to the keys and values of the sorted list in the form of
-'IGenericReadonlyList implementation. The List objects returned by these
-'methods are aliases for the underlying sorted list, so modifications
-'made to those lists are directly reflected in the sorted list, and vice
-'versa.
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  GenericSortedList
+'*
+'* Purpose: The GenericSortedList class represents a collection of key-and-value pairs that are sorted by the keys
+'*          (based on the associated IGeneric CompareTo implementation) and are accessible by key and by index.
+'*          A key cannot be null and must be unique, but a value can be.
+'*          For example, if the keys are of primitive types, then the SortedList is sorted in ascending order of the keys.
+'*          A sorted list internally maintains two arrays that store the keys and values of the entries.
+'*          The capacity of a SortedList object is the number of elements the SortedList can hold.
+'*          As elements are added to a SortedList, the capacity is automatically increased as required through reallocation.
+'*          The capacity(is never automatically decreased) can be decreased by calling TrimToSize or by setting the Capacity property explicitly.
+'*          Operations on a SortedList object tend to be slower than operations on a Hashtable object because of the sorting.
+'*          However, the SortedList offers more flexibility by allowing access to the values either through
+'*          the associated keys or through the indexes.
+'*
+'* Notes:   A SortedList object internally maintains two arrays to store the elements of the list,
+'*          i.e, one array for the keys and another array for the associated values.
+'*          Elements of a SortedList object are sorted by the keys according to the IGeneric Compare implementation
+'*          provided by the keys themselves.
+'*          By default, this collection sort the key/value pairs in ascending order.
+'*          A key must be unique and cannot be null.
+'*          A value can be null or duplicate.
+'*          An element can be accessed by its key or by its index.
 
-'The SortedList class provides a convenient way to create a sorted
-'copy of another dictionary, such as a GenericMap. For example:
-
-'h = GenericMap.Build();
-'h.Add(...);
-'h.Add(...);
-
-'sl = GenericSortedList(Dictionary:=h);
-
-'The last line above creates a sorted list that contains a copy of the keys
-'and values stored in the hashtable. In this particular example, the keys
-'will be ordered according to the IGeneric interface, which they
-'all must implement.
+'*          The SortedList class provides a convenient way to create a sorted
+'*          copy of another dictionary, such as a GenericMap. For example:
+'*
+'*          h = GenericMap.Build();
+'*          h.Add(...);
+'*          h.Add(...);
+'*
+'*          sl = GenericSortedList.BuildFrom(Dictionary:=h);
+'*
+'*          The last line above creates a sorted list that contains a copy of the keys
+'*          and values stored in the hashtable. In this particular example, the keys
+'*          will be ordered according to the IGeneric Compare implementation, which they
+'*          all must implement.
+'*
+'*
+'*
+'*======================================================================================================================
 
 '@Folder("<T>Enumerable")
 Option Explicit
@@ -82,7 +100,6 @@ Private Type Iterator
     Index As Long
     HasLoaded As Boolean
     Current As IGeneric
-    Parent As GenericSortedList
     Keys As GenericArray
     Values As GenericArray
     DescriptorKeys As Long
@@ -199,9 +216,7 @@ Public Property Let Capacity(ByVal Value As Long)
     End If
 End Property
 
-Public Function Build( _
-                        Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
-                        Optional ByVal Dictionary As IGenericDictionary) As GenericSortedList
+Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As GenericSortedList
     
     If (Me Is GenericSortedList) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
@@ -211,23 +226,37 @@ Public Function Build( _
     
     With myclass
         .SortOrder = ascending
-          
-        If (Dictionary Is Nothing) Then
-            Set .Keys = GenericArray.Build(Capacity)
-            Set .Values = GenericArray.Build(Capacity)
-        Else
-            Set .Keys = GenericArray.Build(Dictionary.Count)
-            Set .Values = GenericArray.Build(Dictionary.Count)
-            
-            Call Dictionary.CopyOf(t:=Keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
-            Call Dictionary.CopyOf(t:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
-            
-            Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, Length:=.Keys.Length, Order:=myclass.SortOrder)
-            .Size = Dictionary.Count
-        End If
+        Set .Keys = GenericArray.Build(Capacity)
+        Set .Values = GenericArray.Build(Capacity)
     End With
    
     Set Build = Skynet.CreateInstance(New GenericSortedList, Virtual.Pointer, Virtual.Size)
+    
+End Function
+
+Public Function BuildFrom(ByVal Dictionary As IGenericDictionary) As GenericSortedList
+    
+    If (Me Is GenericSortedList) = False Then _
+        Call Skynet.Throw(Me, "Public Function BuildFrom").BuildExeption
+    
+    If (Dictionary Is Nothing) Then _
+        Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Dictionary Is Nothing)")
+    
+    With myclass
+        .SortOrder = ascending
+          
+        Set .Keys = GenericArray.Build(Dictionary.Count)
+        Set .Values = GenericArray.Build(Dictionary.Count)
+        
+        Call Dictionary.CopyOf(t:=Keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
+        Call Dictionary.CopyOf(t:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
+        
+        Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, Length:=.Keys.Length, Order:=myclass.SortOrder)
+        .Size = Dictionary.Count
+    
+    End With
+   
+    Set BuildFrom = Skynet.CreateInstance(New GenericSortedList, Virtual.Pointer, Virtual.Size)
     
 End Function
 
