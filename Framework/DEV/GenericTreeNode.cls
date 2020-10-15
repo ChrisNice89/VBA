@@ -17,11 +17,11 @@ Implements IGeneric
 Implements IPrototype
 
 #If Win64 Then
-    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal length As Long)
 #Else
-    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal length As Long)
 #End If
 
 Private Type Member
@@ -54,7 +54,7 @@ Public Property Get Right() As GenericTreeNode: Set Right = myclass.Right: End P
 Public Property Set Right(ByVal R As GenericTreeNode): Set myclass.Right = R: End Property
 
 Public Property Get Parent() As GenericTreeNode: Set Parent = myclass.Parent: End Property
-Public Property Set Parent(ByVal p As GenericTreeNode): Set myclass.Parent = p: End Property
+Public Property Set Parent(ByVal P As GenericTreeNode): Set myclass.Parent = P: End Property
 
 Public Property Get Key() As IGeneric: Set Key = myclass.Key: End Property
 Public Property Set Key(ByVal K As IGeneric): Set myclass.Key = K: End Property
@@ -110,8 +110,6 @@ Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myclass)
     Virtual.Size = LenB(myclass)
 End Sub
-'Bug when implements GenericPair ' Me: End Function '
-Public Function CopyToPair() As GenericPair: Set CopyToPair = Me: End Function
 
 Private Sub Class_Terminate()
 

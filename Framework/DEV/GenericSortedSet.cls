@@ -33,14 +33,14 @@ Public Function GetMin() As IGeneric: Set GetMin = myclass.Tree.GetMin: End Func
 Public Function Add(ByVal Value As IGeneric) As Boolean: Add = myclass.Tree.Add(Value, Value): End Function 'Performance Hack
 Public Sub AddAll(ByVal Iterator As IGenericIterator)
 
-    Dim p As GenericPair
+    Dim P As GenericPair
     Dim Item As IGeneric
     
     With Iterator
         Do While .HasNext(Item)
             If TypeOf Item Is GenericPair Then
-                Set p = Item
-                Call myclass.Tree.Add(p.Key, p)
+                Set P = Item
+                Call myclass.Tree.Add(P.Key, P)
             Else
                 Call myclass.Tree.Add(Item, Item)
             End If

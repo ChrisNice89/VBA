@@ -60,7 +60,7 @@ Private Sub Class_Initialize()
 End Sub
 
 Private Property Get IValue_Object() As IGeneric: Set IValue_Object = Me: End Property
-Private Property Get IValue_DatabaseType() As AdoDataType
+Private Property Get IValue_DatabaseType() As ISqlDataType
 
 End Property
 Private Property Get IValue_Value() As Variant: IValue_Value = myclass.Value: End Property

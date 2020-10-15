@@ -160,19 +160,19 @@ End Sub
 
 Public Sub AddAll(ByVal Map As IGenericDictionary)
     
-    Dim p As GenericPair
+    Dim P As GenericPair
   
     With Map.Iterator(t:=Pairs_) ' Copy
-        Do While .HasNext(p): Call Me.Add(p.Key, p.Value): Loop
+        Do While .HasNext(P): Call Me.Add(P.Key, P.Value): Loop
     End With
     
 End Sub
 
-Public Sub AddPair(ByVal pair As GenericPair)
+Public Sub AddPair(ByVal Pair As GenericPair)
     
     With myclass
-        Call .HashTable.Add(pair.Key, pair.Value)
-        Call .Internal.Add(Skynet.Clone(pair))
+        Call .HashTable.Add(Pair.Key, Pair.Value)
+        Call .Internal.Add(Skynet.Clone(Pair))
     End With
     
 End Sub
@@ -247,10 +247,10 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
     
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.length) Then _
         Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < myclass.Internal.Count) Then _
+    If (GArray.length - ArrayIndex + GArray.LowerBound < myclass.Internal.Count) Then _
         Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - ArrayIndex + GArray.LowerBound < myClass.Internal.Count)")
     
     Dim i As Long
@@ -356,14 +356,14 @@ Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyL
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Internal.Count: End Property
 Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
     
-    Dim p As GenericPair
+    Dim P As GenericPair
     
     If (Index > myclass.Internal.Count) Then _
         Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_Item").IndexOutofRange("Index not valid")
     
-    Set p = myclass.Internal(Index)
+    Set P = myclass.Internal(Index)
     
-    Set IGenericReadOnlyList_Item = p.Value
+    Set IGenericReadOnlyList_Item = P.Value
 
 End Property
 
@@ -399,7 +399,7 @@ Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGeneric
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
-    Dim p As GenericPair
+    Dim P As GenericPair
     
     With myclass.Iterator
         If .Index = .EndIndex Then
@@ -411,16 +411,16 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             Exit Function
         End If
         
-        Set p = .Entries(InterlockedIncrement(.Index))
+        Set P = .Entries(InterlockedIncrement(.Index))
         
         If .Type = Keys_ Then
-            Set .Current = p.Key
+            Set .Current = P.Key
         
         ElseIf .Type = Values_ Then
-            Set .Current = p.Value
+            Set .Current = P.Value
         
         Else
-            Set .Current = p
+            Set .Current = P
         End If
         
         Set Out = .Current

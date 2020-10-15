@@ -58,17 +58,21 @@ Implements IGenericCollection
 Implements IGenericIterator
 
 #If Win64 Then
+    Private Const POINTERSIZE As LongPtr = 8
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal length As LongPtr)
     Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As LongPtr)
 #Else
+    Private Const POINTERSIZE As Long = 4
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal length As Long)
     Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
 #End If
 
 Private Const DEFAULT_LOADFACTOR As Double = 0.7
@@ -111,7 +115,7 @@ Private Type Iterator
     HasLoaded As Boolean
     Current As IGeneric
     Map As GenericMap
-    Descriptor As Long
+    Descriptor As LongPtr
 End Type
 '
 Private Type Member
@@ -315,20 +319,20 @@ End Sub
 
 Private Function getPrime(ByVal Min As Long) As Long
     
-    Dim p As Long
+    Dim P As Long
     
     If Min < 0 Then _
         Call Skynet.Throw(Me, "getPrime").InvalidInput("Min < 0")
     
     With myclass.Const
-        For p = LBound(.Primes) To UBound(.Primes)
-            If .Primes(p) >= Min Then _
-                getPrime = .Primes(p): Exit Function
+        For P = LBound(.Primes) To UBound(.Primes)
+            If .Primes(P) >= Min Then _
+                getPrime = .Primes(P): Exit Function
         Next
         
-        For p = Min To .MaxVal
-            If IsPrime(p) And ((p - 1) Mod .HashPrime) <> 0 Then _
-                getPrime = p: Exit Function
+        For P = Min To .MaxVal
+            If IsPrime(P) And ((P - 1) Mod .HashPrime) <> 0 Then _
+                getPrime = P: Exit Function
         Next
     End With
     
@@ -398,12 +402,7 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
                     Call PutEntry(NewBuckets, .Buckets(i), .Buckets(i).HashCode, Size)
             Next
         End If
-        'Todo avoid Hardcopy rehash!
-        
-'        Dim d As Long
-'        Call Skynet.CopyData(ByVal VarPtr(d), ByVal VarPtrArray(NewBuckets), Skynet.PointerLength)
-'        Call Skynet.CopyData(ByVal VarPtrArray(.Buckets), ByVal VarPtr(d), Skynet.PointerLength)
-'
+        'Todo avoid Hardcopy NewBuckets!
         .Buckets = NewBuckets
         .LoadSize = Int(.LoadFactor * Size)
         .Size = Size
@@ -498,10 +497,10 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
     
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.length) Then _
         Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < myclass.Count) Then _
+    If (GArray.length - ArrayIndex + GArray.LowerBound < myclass.Count) Then _
         Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Count)")
     
     Dim i As Long

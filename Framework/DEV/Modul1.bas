@@ -4,76 +4,45 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
+Sub TestSql()
 
-Sub TestQuery()
+    Dim Sql As GenericSql
+    Set Sql = GenericSql.Build(CurrentProject.Connection, "SELECT * FROM tblTest WHERE ID = ?", 1, ReturnRecords + Prepared + NamedParameter)
     
-    Dim t As New CTimer
-    
-    Dim Query As GenericQuery
-    Dim Value As IGeneric
-    Dim Name As GString
-    Dim Name2 As GString
-   
-    Dim i As Long
-    Dim n As Long
-    
-    n = 1000
-    Dim Querys As GenericList
-    Set Querys = GenericList.Build(n)
-    
-    t.StartCounter
-    For i = 1 To n
+    Call Sql.Add(GNumeric(1))
+    Call Sql.Execute
 
-         Set Query = New GenericQuery
-         Call Query.Initialize(2)
-         
-         Set Name = GString("Parameter1")
-         Set Name2 = GString("Parameter2")
-         
-         
-'         Call Query.AddWithValues(Name, GenericList.BuildWith(GNumeric(100), GNumeric(1000), GNumeric(10000)))
-'         Call Query.AddWithValues(Name2, GenericList.BuildWith(GString("value1"), GString("value2"), GString("value3")))
 
-        Call Query.AddWithValues(Name, GNumeric(1000), GNumeric(100), GNumeric(10), GNumeric(1))
-        Call Query.AddWithValues(Name2, GString("value3"), GString("value5"), GString("value2"), GString("value1"), GString("value4"))
-     
-        Call Querys.Add(Query)
-    Next
-    
-    Dim SortedSet As GenericSortedSet
-    Set Query = Querys(1)
-    
-    Set SortedSet = Query.GetValues(Name)
-    Debug.Print SortedSet.ElementAt(1)
-    Debug.Print t.TimeElapsed
-   
-    t.StartCounter
-    Set Querys = Nothing
-    Debug.Print t.TimeElapsed
-    
-    
 End Sub
+
+
 Sub TestCreation()
+    
+    Dim t As CTimer
+    Set t = New CTimer
     
     Dim ga As GenericArray, Clone As GenericArray
     Dim i As Long, n As Long
-   
+
     n = 10
     Set ga = GenericArray.Build(n)
 
     For i = 1 To n
-        Call ga.SetValue(GNumeric(i), i)
+        ReDim x(1 To 1000) As IGeneric
+        t.StartCounter
+        Set ga = GenericArray.BuildFrom(x)
+        Debug.Print t.TimeElapsed
     Next
     
-    Set Clone = GenericArray.Build(ga.Length)
-    Call GenericArray.Copy(ga, ga.LowerBound, Clone, Clone.LowerBound, ga.Length)
-    
-    Dim Element As IGeneric
-    With Clone.Iterator
-        Do While .HasNext(Element)
-            Debug.Print Element
-        Loop
-    End With
+'    Set Clone = GenericArray.Build(ga.length)
+'    Call GenericArray.Copy(ga, ga.LowerBound, Clone, Clone.LowerBound, ga.length)
+'
+'    Dim Element As IGeneric
+'    With Clone.Iterator
+'        Do While .HasNext(Element)
+'            Debug.Print Element
+'        Loop
+'    End With
 
 End Sub
 
@@ -97,7 +66,7 @@ Sub TestMultiDimArray()
     End With
     
     'Insert/ Copy Column into Matrix first column
-    Call GenericArray.Copy(Column, Column.LowerBound, ga, ga.LowerBound, Column.Length)
+    Call GenericArray.Copy(Column, Column.LowerBound, ga, ga.LowerBound, Column.length)
     Debug.Print ga.GetValue(1, 1).Equals(ga.GetValue(1, 3))
     
     Call ga.Transpose
@@ -137,7 +106,7 @@ Sub TestArrayIterator()
     Dim t As CTimer
     Set t = New CTimer
     t.StartCounter
-    For i = ga.LowerBound To ga.Length
+    For i = ga.LowerBound To ga.length
         Set Number = ga(i)
     Next
     Debug.Print t.TimeElapsed
@@ -375,20 +344,20 @@ Sub TestMaps()
         Call List.Sort(random)
     End If
  
-    Dim p As GenericPair
+    Dim P As GenericPair
     Dim Item As IGeneric
     
     Set t = New CTimer
     t.StartCounter
     For i = 1 To n
-        Set p = List(i)
-        Call Map.Add(p.Key, p.Value)
+        Set P = List(i)
+        Call Map.Add(P.Key, P.Value)
     Next
     Debug.Print n & " :: "; t.TimeElapsed
   
     For i = 1 To n
-        Set p = List(i)
-        Set Item = Map.Item(p.Key)
+        Set P = List(i)
+        Set Item = Map.Item(P.Key)
     Next
     Dim Tree As GenericTree
     Set Tree = Map
@@ -518,7 +487,7 @@ Sub TestGenericCollection()
     Call Clone.CopyTo(ga, ga.LowerBound)
     Call Skynet.Dispose(Clone)
        
-    For i = ga.LowerBound To ga.Length
+    For i = ga.LowerBound To ga.length
         Debug.Print ga(i)
     Next
 
@@ -576,14 +545,14 @@ Sub TestArray2()
         Call .SetValue(GString("f"), 89)
         Call .SetValue(GString("a"), 90)
         Call .SetValue(GString("a"), 100)
-        Call .Sort(descending, ga.LowerBound, ga.Length)
+        Call .Sort(descending, ga.LowerBound, ga.length)
     
-        For i = 1 To .Length
+        For i = 1 To .length
             If Not ga(i) Is Nothing Then _
                 Debug.Print "i: " & i & "  " & ga(i)
         Next
         
-        Debug.Print .BinarySearch(GString("a"), 1, .Length, descending)
+        Debug.Print .BinarySearch(GString("a"), 1, .length, descending)
         Call .Reverse
         Call .Clear
     End With
@@ -636,7 +605,7 @@ Sub testMap()
     Dim t As CTimer
     Set t = New CTimer
    
-    For i = 1 To 10
+    For i = 1 To 50000
         Call hm.Add(GString("Key" & i), GNumeric(i))
     Next
     
@@ -655,7 +624,7 @@ Sub testMap()
     
     With GenericSortedList.BuildFrom(Dictionary:=Clone).Iterator(Pairs_)
         Do While .HasNext(Item)
-            Debug.Print Item
+'            Debug.Print Item
         Loop
     End With
 

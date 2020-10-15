@@ -238,58 +238,58 @@ End Function
 
 Private Function InOrderNext(ByVal Node As GenericTreeNode) As GenericTreeNode
     
-    Dim p As GenericTreeNode
+    Dim P As GenericTreeNode
     
     If Node Is Nothing Then _
         Exit Function
         
     If Node.Right Is Nothing = False Then
-        Set p = FindMinOf(Node.Right)
+        Set P = FindMinOf(Node.Right)
     Else
-        Set p = Node.Parent
-        Do While (p Is Nothing) = False
-            If (p.Right Is Node) = False Then _
+        Set P = Node.Parent
+        Do While (P Is Nothing) = False
+            If (P.Right Is Node) = False Then _
                 Exit Do
             
-            Set Node = p
-            Set p = p.Parent
+            Set Node = P
+            Set P = P.Parent
         Loop
     End If
     
-    Set InOrderNext = p
+    Set InOrderNext = P
         
 End Function
 
 Private Function InOrderPrevious(ByVal Node As GenericTreeNode) As GenericTreeNode
 
-    Dim p As GenericTreeNode
+    Dim P As GenericTreeNode
     
     If Node Is Nothing Then _
         Exit Function
         
     If (Node.Left Is Nothing) = False Then
-        p = FindMaxOf(Node.Left)
+        P = FindMaxOf(Node.Left)
     Else
-        Set p = Node.Parent
-        Do While (p Is Nothing) = False
-            If (p.Left Is Node) = False Then _
+        Set P = Node.Parent
+        Do While (P Is Nothing) = False
+            If (P.Left Is Node) = False Then _
                 Exit Do
             
-            Set Node = p
-            Set p = p.Parent
+            Set Node = P
+            Set P = P.Parent
         Loop
     End If
     
-    Set InOrderPrevious = p
+    Set InOrderPrevious = P
 
 End Function
 
 Public Sub AddAll(ByVal Map As IGenericDictionary)
     
-    Dim p As GenericPair
+    Dim P As GenericPair
 
     With Map.Iterator(t:=Pairs_)
-        Do While .HasNext(p): Call Me.Add(p.Key, p.Value): Loop
+        Do While .HasNext(P): Call Me.Add(P.Key, P.Value): Loop
     End With
 
 End Sub
@@ -491,8 +491,9 @@ Private Function FindNode(ByVal Key As IGeneric) As GenericTreeNode
 End Function
 
 Private Function MaxHeightOf(ByVal Root As GenericTreeNode) As Long
-    MaxHeightOf = 2 * Skynet.Logn(SizeOf(Root) + 1, Base:=2)
+    MaxHeightOf = 2 * Logn(SizeOf(Root) + 1, Base:=2)
 End Function
+Private Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: Logn = Log(Value) / Log(Base): End Function
 
 Private Function IndexOf(ByVal Key As IGeneric) As Long
     
@@ -893,10 +894,10 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
     
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.length) Then _
         Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < SizeOf(myclass.Root)) Then _
+    If (GArray.length - ArrayIndex + GArray.LowerBound < SizeOf(myclass.Root)) Then _
         Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Count)")
     
     Dim Stack As InternalStack
@@ -917,7 +918,7 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
             Loop
         Case Else
             Do While InOrderTreeWalk(Node, Stack)
-                Set GArray(ArrayIndex) = Node.CopyToPair
+                Set GArray(ArrayIndex) = Node 'GenericPair
                 ArrayIndex = ArrayIndex + 1
             Loop
     End Select
@@ -1020,7 +1021,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
                 Set .Current = Node.Value
             
             Else
-                Set .Current = Node.CopyToPair
+                Set .Current = Node 'GenericPair
             End If
             
             Set Out = .Current

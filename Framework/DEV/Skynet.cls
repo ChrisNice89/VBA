@@ -25,8 +25,8 @@ Private Const NullPointer As Long = 0
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
-    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
+    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal length As LongPtr)
+    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal length As Long, ByVal Fill As Byte)
     Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
     Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
@@ -35,8 +35,8 @@ Private Const NullPointer As Long = 0
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
     Private Const POINTERSIZE As Long = 4
-    Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As Long)
-    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
+    Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal length As Long)
+    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal length As Long, ByVal Fill As Byte)
     Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef dst As Long, ByVal src As Long) As Long
     Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef dst As Long, ByVal src As Long) As Long
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
@@ -159,22 +159,22 @@ Public Function CreateInstanceOf(ByVal Prototype As IPrototype) As Object
 End Function
 
 Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
-    
+
     Const VT_BYREF As Long = &H4000
     Dim vType As Long
-    
+
     With Me
         If Not (VarType(SomeArray) And VbVarType.vbArray) = VbVarType.vbArray Then _
             .Throw(Me, "ArrayPointer").InvalidInput ("Not (IsArray(SomeArray))")
-    
+
         Call .CopyData(dst:=ByVal VarPtr(vType), src:=ByVal VarPtr(SomeArray), Bytes:=2&)
         Call .CopyData(dst:=ByVal VarPtr(PointerOf), src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSIZE)
-        
+
         'if SomeArray is defined x() as ...
         If (vType And VT_BYREF) = VT_BYREF Then _
             Call .CopyData(dst:=ByVal VarPtr(PointerOf), src:=ByVal PointerOf, Bytes:=POINTERSIZE)
     End With
-    
+
 End Function
 
 'SequenceCompare
@@ -227,13 +227,13 @@ Public Function BinarySearch( _
                                 ByRef Objects() As IGeneric, _
                                 ByVal Value As IGeneric, _
                                 ByVal Index As Long, _
-                                ByVal Length As Long, _
+                                ByVal length As Long, _
                                 ByVal Order As SortOrder) As Long
 
     Dim i As Long
     Dim c As ComparerEnum
     Dim lo As Long: lo = Index
-    Dim hi As Long: hi = Index + Length - 1
+    Dim hi As Long: hi = Index + length - 1
     
     Do While (lo <= hi)
     
@@ -298,10 +298,10 @@ End Function
 Public Sub Reverse( _
                         ByRef Objects() As IGeneric, _
                         ByVal Index As Long, _
-                        ByVal Length As Long)
+                        ByVal length As Long)
 
     Dim i As Long: i = Index
-    Dim j As Long: j = Index + Length - 1
+    Dim j As Long: j = Index + length - 1
     Dim temp As IGeneric
     
     Do
@@ -342,17 +342,17 @@ Public Function HashValue( _
         
         Case Hashing.Function2
             
-             Dim Length As Long: Length = UBound(ascii) + 1
+             Dim length As Long: length = UBound(ascii) + 1
              Dim n As Long
              
-             For n = (Length / 2) To 1 Step -1
+             For n = (length / 2) To 1 Step -1
                 H = H + ascii(i)
                 H = Me.X0R(Me.X0R(LeftShift(H, 16), Me.LeftShift(ascii(i + 1), 11)), H)
                 H = H + Me.RightShift(H, 11)
                 i = i + 2
             Next
             
-            If ((Length Mod 2) = 1) Then
+            If ((length Mod 2) = 1) Then
                 H = H + ascii(i) + 1566083941
                 H = Me.X0R(H, LeftShift(H, 10))
                 H = H + Me.RightShift(H, 1)
@@ -398,16 +398,16 @@ Public Sub Delegate(ByRef Object As IGeneric): RaiseEvent Delegate(Object): End 
 
 'Sorting
 '@Ignore ProcedureCanBeWrittenAsFunction
-Public Sub Sort(ByRef Objects() As IGeneric, ByVal Index As Long, ByVal Length As Long, Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
+Public Sub Sort(ByRef Objects() As IGeneric, ByVal Index As Long, ByVal length As Long, Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
     
     Const QuickSortDepthThreshold As Long = 32
     
     If Order = random Then
-        Call Shuffle(Objects, Index, Length)
+        Call Shuffle(Objects, Index, length)
     ElseIf Order = ascending Then
-        Call DepthLimitedQuicksort_Asc(Objects, Index, Length, QuickSortDepthThreshold)
+        Call DepthLimitedQuicksort_Asc(Objects, Index, length, QuickSortDepthThreshold)
     Else
-        Call DepthLimitedQuicksort_Desc(Objects, Index, Length, QuickSortDepthThreshold)
+        Call DepthLimitedQuicksort_Desc(Objects, Index, length, QuickSortDepthThreshold)
     End If
    
 End Sub
@@ -416,17 +416,17 @@ Public Sub SortKeysWithItems( _
                                 ByRef Keys() As IGeneric, _
                                 ByRef Items() As Object, _
                                 ByVal Index As Long, _
-                                ByVal Length As Long, _
+                                ByVal length As Long, _
                                 Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
     
     Const QuickSortDepthThreshold As Long = 32
     
     If Order = random Then
-        Call ShuffleWithItems(Keys, Items, Index, Length)
+        Call ShuffleWithItems(Keys, Items, Index, length)
     ElseIf Order = ascending Then
-        Call DepthLimitedQuicksortWithItems_Asc(Keys, Items, Index, Length, QuickSortDepthThreshold)
+        Call DepthLimitedQuicksortWithItems_Asc(Keys, Items, Index, length, QuickSortDepthThreshold)
     Else
-        Call DepthLimitedQuicksortWithItems_Desc(Keys, Items, Index, Length, QuickSortDepthThreshold)
+        Call DepthLimitedQuicksortWithItems_Desc(Keys, Items, Index, length, QuickSortDepthThreshold)
     End If
    
 End Sub
@@ -435,7 +435,7 @@ Public Sub SortGenericArrays( _
                                 ByVal Keys As GenericArray, _
                                 ByVal Items As GenericArray, _
                                 ByVal Index As Long, _
-                                ByVal Length As Long, _
+                                ByVal length As Long, _
                                 Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
 
     Dim KeyArray() As IGeneric
@@ -458,28 +458,28 @@ Public Sub SortGenericArrays( _
     
     With Me
         Call .CopyData(ByVal ptrKeys, VarPtr(d1), POINTERSIZE): Call .CopyData(ByVal ptrItems, VarPtr(d2), POINTERSIZE)
-        Call .SortKeysWithItems(KeyArray, ItemArray, Index, Length, Order)
+        Call .SortKeysWithItems(KeyArray, ItemArray, Index, length, Order)
         Call .ClearData(ByVal ptrKeys, POINTERSIZE): Call .ClearData(ByVal ptrItems, POINTERSIZE)
     End With
 End Sub
 
-Private Sub Shuffle(ByRef Element() As IGeneric, ByVal Index As Long, ByVal Length As Long)
+Private Sub Shuffle(ByRef Element() As IGeneric, ByVal Index As Long, ByVal length As Long)
 
     Dim i As Long
     Randomize VBA.Timer
     
-    For i = Length To Index Step -1
+    For i = length To Index Step -1
         Call Swap(Element, i, (i * Rnd + 0.5))
     Next
 
 End Sub
 
-Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal Index As Long, ByVal Length As Long)
+Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal Index As Long, ByVal length As Long)
 
     Dim i As Long
     Randomize VBA.Timer
     
-    For i = Length To Index Step -1
+    For i = length To Index Step -1
         Call SwapWithItem(Keys, Items, i, (i * Rnd + 0.5))
     Next
 

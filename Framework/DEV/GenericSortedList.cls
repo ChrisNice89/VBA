@@ -67,22 +67,22 @@ Implements IGenericIterator
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
-    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal Length As LongPtr, ByVal Fill As Byte)
-    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As LongPtr, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
-    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal length As LongPtr)
+    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal length As LongPtr, ByVal Fill As Byte)
+    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal length As LongPtr, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal length As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
     Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
     Private Const POINTERSIZE As Long = 4
-    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As Long)
-    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As Long, ByRef dst As Long, ByVal src As Long) As Long
-    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef dst As Long, ByVal src As Long) As Long
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal length As Long)
+    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal length As Long, ByVal Fill As Byte)
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal length As Long, ByRef dst As Long, ByVal src As Long) As Long
+    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal length As Long, ByRef dst As Long, ByVal src As Long) As Long
     Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
@@ -160,7 +160,7 @@ Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
         Call Skynet.Throw(Me, "Public Property set Item").KeyIsNothing
        
     Dim i As Long
-    i = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder)
+    i = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, length:=myclass.Size, Order:=myclass.SortOrder)
  
     If (i >= 0) Then _
         Set myclass.Values(i) = Value: Exit Property
@@ -182,7 +182,7 @@ Attribute Item.VB_UserMemId = 0
         
 End Property
 
-Public Property Get Capacity() As Long: Capacity = myclass.Keys.Length: End Property
+Public Property Get Capacity() As Long: Capacity = myclass.Keys.length: End Property
 Public Property Let Capacity(ByVal Value As Long)
     
     If (Value < myclass.Size) Then _
@@ -191,19 +191,19 @@ Public Property Let Capacity(ByVal Value As Long)
     If (myclass.Keys Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Property Let Capacity").NullPointer("myClass.Keys Is Nothing")
     
-    If Not (Value = myclass.Keys.Length) Then
+    If Not (Value = myclass.Keys.length) Then
         If (Value > 0) Then
             Dim newKeys As GenericArray: Set newKeys = GenericArray.Build(Value)
             Dim newValues As GenericArray: Set newValues = GenericArray.Build(Value)
             
             If (myclass.Size > 0) Then
                 With myclass.Keys
-                    Call CopyMemory(dst:=ByVal newKeys.AdressOf(Element:=1), src:=ByVal .AdressOf(Element:=1), Length:=.TotalSize): _
-                    Call ZeroMemory(dst:=ByVal .AdressOf(Element:=1), Length:=.TotalSize)
+                    Call CopyMemory(dst:=ByVal newKeys.AdressOf(Element:=1), src:=ByVal .AdressOf(Element:=1), length:=.TotalSize): _
+                    Call ZeroMemory(dst:=ByVal .AdressOf(Element:=1), length:=.TotalSize)
                 End With
                 With myclass.Values
-                    Call CopyMemory(dst:=ByVal newValues.AdressOf(Element:=1), src:=ByVal .AdressOf(Element:=1), Length:=.TotalSize): _
-                    Call ZeroMemory(dst:=ByVal .AdressOf(Element:=1), Length:=.TotalSize)
+                    Call CopyMemory(dst:=ByVal newValues.AdressOf(Element:=1), src:=ByVal .AdressOf(Element:=1), length:=.TotalSize): _
+                    Call ZeroMemory(dst:=ByVal .AdressOf(Element:=1), length:=.TotalSize)
                 End With
             End If
             
@@ -251,7 +251,7 @@ Public Function BuildFrom(ByVal Dictionary As IGenericDictionary) As GenericSort
         Call Dictionary.CopyOf(t:=Keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
         Call Dictionary.CopyOf(t:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
         
-        Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, Length:=.Keys.Length, Order:=myclass.SortOrder)
+        Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, length:=.Keys.length, Order:=myclass.SortOrder)
         .Size = Dictionary.Count
     
     End With
@@ -277,8 +277,8 @@ Private Sub EnsureCapacity(ByVal Min As Long)
     Dim newCapacity As Long
     
     With myclass.Keys
-        If (.Length < Min) Then
-            newCapacity = IIf(.Length = 0, DEFAULT_CAPACITY, .Length * 2)
+        If (.length < Min) Then
+            newCapacity = IIf(.length = 0, DEFAULT_CAPACITY, .length * 2)
             
             If (newCapacity > .MaxLength) Then _
                 newCapacity = .MaxLength
@@ -295,7 +295,7 @@ End Sub
 'SortedList.TrimExcess();
 Public Sub TrimExcess()
      
-    If myclass.Size < Int(CDbl(myclass.Keys.Length) * 0.9) Then _
+    If myclass.Size < Int(CDbl(myclass.Keys.length) * 0.9) Then _
         Me.Capacity = myclass.Size
 
 End Sub
@@ -334,12 +334,12 @@ Public Sub RemoveAt(ByVal Index As Long)
     
     If (Index < myclass.Size + myclass.Keys.LowerBound) Then
         With myclass.Keys
-            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
+            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=myclass.Size), length:=.SizeOf(1))
         End With
         With myclass.Values
-            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
+            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=myclass.Size), length:=.SizeOf(1))
         End With
     End If
     
@@ -351,7 +351,7 @@ Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
         Call Skynet.Throw(Me, "Public Function Add").KeyIsNothing
        
     Dim i As Long
-    i = myclass.Keys.BinarySearch(Value:=Key, Index:=1, Length:=myclass.Size, Order:=myclass.SortOrder)
+    i = myclass.Keys.BinarySearch(Value:=Key, Index:=1, length:=myclass.Size, Order:=myclass.SortOrder)
     
     If (i >= 0) Then _
         Call Skynet.Throw(Me, "Public Sub Add").InvalidInput("Key duplicated")
@@ -362,17 +362,17 @@ End Sub
 
 Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IGeneric)
 
-    If (myclass.Size = myclass.Keys.Length) Then _
+    If (myclass.Size = myclass.Keys.length) Then _
         Call EnsureCapacity(myclass.Size + 1)
 
     If (Index < myclass.Size + myclass.Keys.LowerBound) Then
         With myclass.Keys
-            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
+            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), length:=.SizeOf(1))
         End With
         With myclass.Values
-            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
+            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), length:=.SizeOf(1))
         End With
     End If
     
@@ -394,7 +394,7 @@ Public Function IndexOfKey(ByVal Key As IGeneric) As Long
         Call Skynet.Throw(Me, "Public Function IndexOfKey").KeyIsNothing
     
     Dim ret As Long
-    ret = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder)
+    ret = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, length:=myclass.Size, Order:=myclass.SortOrder)
 
     IndexOfKey = IIf(ret >= 0, ret, -1)
     
@@ -419,10 +419,10 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
     
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.length) Then _
         Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.Length - ArrayIndex + GArray.LowerBound < myclass.Size) Then _
+    If (GArray.length - ArrayIndex + GArray.LowerBound < myclass.Size) Then _
         Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Size)")
     
     Dim i As Long
@@ -532,7 +532,7 @@ Private Function IGeneric_ToString() As String
     With myclass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Capacity: " & .Keys.Length & vbNewLine & _
+                            "Capacity: " & .Keys.length & vbNewLine & _
                             "Elements: " & .Size & vbNewLine & _
                             "Sortorder: " & IIf(.SortOrder = ascending, "Ascending", "Descending")
     End With

@@ -17,13 +17,18 @@ Implements IPrototype
     Declare PtrSafe Function CompareString Lib "kernel32" Alias "CompareStringA" (ByVal Locale As Long, ByVal dwCmpFlags As Long, ByVal lpString1 As String, ByVal cchCount1 As Long, ByVal lpString2 As String, ByVal cchCount2 As Long) As Long
     Declare PtrSafe Function lstrcmpi Lib "kernel32" Alias "lstrcmpiA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
     Declare PtrSafe Function lstrcmp Lib "kernel32" Alias "lstrcmpA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
+    Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
+    Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
 'Groﬂ- und Kleinschreibung spielt keine Rolle
     Private Declare Function lstrcmpi Lib "kernel32.dll" Alias "lstrcmpiA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
     'Groﬂ- und Kleinschreibung wird beachtet
     Private Declare Function lstrcmp Lib "kernel32.dll" Alias "lstrcmpA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
     Private Declare Function CompareString Lib "kernel32.dll" Alias "CompareStringA" (ByVal Locale As Long, ByVal dwCmpFlags As Long, ByVal lpString1 As String, ByVal cchCount1 As Long, ByVal lpString2 As String, ByVal cchCount2 As Long) As Long
+    Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
+    Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
+
 ' Retval = CompareString(0&, NORM_IGNORESYMBOLS Or _
 '        SORT_STRINGSORT, .List(i), Len(.List(i)), .List(j), Len(.List(j)))
 '        If Retval = CSTR_LESS_THAN Or Retval = CSTR_EQUAL Then
@@ -49,8 +54,8 @@ Private Const SORT_STRINGSORT = &H1000 ' Benutzt eine String-Sort-Methode
 ' anstatt einer Wort Sortierung. In einer String-Sort-Sortierung kommen
 ' Sonderzeichen wie "?,#;*..." vor den Buchstaben
 
-
 Private Const DEFAULT_DELIMITER As String = ","
+Private Const MAXVALUE As Double = 2 ^ 31
 
 Public Enum TStringFormat
     [_First] = -1
@@ -63,7 +68,7 @@ End Enum
 
 Private Type Member
     Value As String
-    Length As Long
+    length As Long
     Format As TStringFormat
 End Type
 Private myclass As Member
@@ -74,7 +79,7 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get Length() As Long: Length = myclass.Length: End Property
+Public Property Get length() As Long: length = myclass.length: End Property
 Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myclass.Value, 1, 1): End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myclass.Value, Len(myclass.Value), 1): End Property
 Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myclass.Value, Index, 1): End Property
@@ -117,7 +122,7 @@ Public Function CountChar(ByVal c As String) As Long
 
     ascii = AscW(c)
     
-    For i = 1 To Me.Length
+    For i = 1 To Me.length
         If AscW(Mid$(myclass.Value, i, 1)) = ascii Then _
             CountChar = CountChar + 1
     Next
@@ -174,7 +179,7 @@ Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DE
     If (Values Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Join").NullPointer("Values is nothing")
     
-    ReDim Strings(Values.LowerBound To Values.Length) As String
+    ReDim Strings(Values.LowerBound To Values.length) As String
     
     With Values.Iterator
         Do While .HasNext(s)
@@ -212,9 +217,10 @@ End Function
 Public Function Build( _
                         ByVal Value As String, _
                         Optional ByVal Format As TStringFormat = TStringFormat.DefaultString) As GString
+Attribute Build.VB_UserMemId = 0
     With myclass
         .Value = Value
-        .Length = Len(Value)
+        .length = Len(Value)
         .Format = Format
     End With
     
@@ -246,7 +252,7 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     
     Dim s As GString: Set s = Other
-    If (myclass.Length = s.Length) = False Then IGeneric_Equals = False: Exit Function
+    If (myclass.length = s.length) = False Then IGeneric_Equals = False: Exit Function
 
     IGeneric_Equals = (StrComp(myclass.Value, s.Value, vbBinaryCompare) = 0)
     
@@ -264,25 +270,24 @@ End Function
 
 Private Property Get IGeneric_HashValue() As Long
 
+    Const Shift As Long = 2& ^ 5
+    
     Dim H As Double
     Dim i As Long
     Dim ascii() As Byte: ascii() = StrConv(myclass.Value, vbFromUnicode)
-
-    Const Shift As Long = 2& ^ 5
+    Dim length As Long: length = UBound(ascii)
+    
     Dim h1 As Double: h1 = 352654597# 'LeftShift(5381,16))+5381
     Dim h2 As Double: h2 = h1
     
-    With Skynet
-        For i = LBound(ascii) To UBound(ascii) - 1
-            h1 = .X0R((h1 * Shift) + h1, ascii(i)): h2 = .X0R((h2 * Shift) + h2, ascii(i + 1))
-        Next
+    Do Until i = length: h1 = X0R((h1 * Shift) + h1, ascii(i)): h2 = X0R((h2 * Shift) + h2, ascii(InterlockedIncrement(i))): Loop
     
-        H = h1 + (h2 * 1566083941#)
-        
-        IGeneric_HashValue = CLng(H - (Fix(H / .MaxHash) * .MaxHash))
-    End With
+    H = h1 + (h2 * 1566083941#)
+    
+    IGeneric_HashValue = CLng(H - (Fix(H / MAXVALUE) * MAXVALUE))
 
 End Property
+Private Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GString): End Function
 Private Function IGeneric_ToString() As String
 
@@ -299,4 +304,24 @@ Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_Create
 Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GString: End Property
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
+
+Private Function ISqlValue_ToParameter( _
+                                          Optional ByVal Name As GString, _
+                                          Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As Variant
+    
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
+    
+    With P
+        .Direction = Direction
+        .Name = Name.Value
+        .Attributes = adParamNullable '64
+        .Type = ISqlDataType.VarChar_Type
+        .Size = Len(myclass.Value)
+        .Value = myclass.Value
+    End With
+    
+    Set ISqlValue_ToParameter = P
+    
+End Function
 

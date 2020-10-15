@@ -11,8 +11,8 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Implements IGeneric
+Implements ISqlValue
 Implements IPrototype
-
 
 Private Const MaxLong As Long = 2 ^ 31 - 1
 
@@ -27,8 +27,15 @@ Public Enum TNumericFormat
     [_Last]
 End Enum
 
+Private Type SqlMember
+    Parameter As ADODB.Parameter
+End Type
+Private Sql As SqlMember
+'
 Private Type Member
     Value As Currency
+    Precision As Byte
+    NumericScale As Byte
     Format As TNumericFormat
 End Type
 Private myclass As Member
@@ -66,11 +73,16 @@ Public Property Get Value() As Currency: Value = myclass.Value: End Property
 Public Property Get IsZero() As Boolean: IsZero = myclass.Value = 0: End Property
 Public Property Get IsEven() As Boolean: IsEven = (myclass.Value - (Int(myclass.Value / 2) * 2)) = 0: End Property
 
-Public Function Build(ByVal Value As Currency, Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As GNumeric
-Attribute Build.VB_UserMemId = 0
+Public Function Build( _
+                            ByVal Value As Currency, _
+                            Optional ByVal Precision As Byte = 4, _
+                            Optional ByVal NumericScale As Byte = 4, _
+                            Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As GNumeric
     
     With myclass
         .Value = Value
+        .Precision = Precision
+        .NumericScale = NumericScale
         .Format = Format
     End With
     
@@ -102,7 +114,7 @@ Private Sub Class_Initialize()
 End Sub
 
 Private Property Get IValue_Object() As IGeneric: Set IValue_Object = Me: End Property
-Private Property Get IValue_DatabaseType() As AdoDataType
+Private Property Get IValue_DatabaseType() As ISqlDataType
 
 End Property
 Private Property Get IValue_Value() As Variant: IValue_Value = myclass.Value: End Property
@@ -136,10 +148,12 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
         IGeneric_CompareTo = IsGreater: Exit Function
     
     Dim n As GNumeric:  Set n = Other
+    Dim i As Currency
+    i = n.Value
     
     Select Case True
-        Case myclass.Value > n.Value: IGeneric_CompareTo = IsGreater
-        Case myclass.Value < n.Value: IGeneric_CompareTo = IsLower
+        Case myclass.Value > i: IGeneric_CompareTo = IsGreater
+        Case myclass.Value < i: IGeneric_CompareTo = IsLower
         Case Else: IGeneric_CompareTo = IsEqual
     End Select
 
@@ -158,3 +172,78 @@ Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_Stati
 Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
 Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 
+'ISqlValue
+Private Function ISqlValue_Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = 1&) As ISqlValue
+
+End Function
+
+Private Property Get ISqlValue_Direction() As ISqlParameterDirection
+    ISqlValue_Direction = ISqlParameterDirection.ParamInput
+End Property
+
+Private Property Get ISqlValue_Format() As String
+
+End Property
+
+Private Function ISqlValue_FormatValue(ByVal Value As Variant) As String
+
+End Function
+
+Private Property Get ISqlValue_IsNumeric() As Boolean
+    ISqlValue_IsNumeric = True
+End Property
+
+Private Function ISqlValue_IsRelatedTo(ByVal Other As ISqlValue) As Boolean
+    ISqlValue_IsRelatedTo = TypeOf Other Is GNumeric
+End Function
+
+Private Property Get ISqlValue_Primitive() As Variant
+    ISqlValue_Primitive = myclass.Value
+End Property
+
+Private Property Get ISqlValue_PrimitiveType() As VbVarType
+    ISqlValue_PrimitiveType = vbCurrency
+End Property
+
+Private Property Get ISqlValue_Size() As Byte
+    ISqlValue_Size = LenB(myclass.Value)
+End Property
+
+Private Property Get ISqlValue_SqlType() As ISqlDataType
+    ISqlValue_SqlType = ISqlDataType.Decimal_Type
+End Property
+
+Private Function ISqlValue_Prepare( _
+                                      Optional ByVal Name As String, _
+                                      Optional ByVal Direction As ISqlParameterDirection = 1&) As ISqlValue
+    
+    Set Sql.Parameter = New ADODB.Parameter
+    
+    With Sql.Parameter
+        .Direction = Direction
+        .Attributes = adParamNullable '64
+        .Precision = myclass.Precision
+        .NumericScale = myclass.NumericScale
+        .Type = ISqlDataType.Decimal_Type
+        
+        If Name = vbNullString = False Then _
+            .Name = Name
+            
+        .Value = myclass.Value
+        
+    End With
+    
+End Function
+
+Private Sub ISqlValue_AppendTo(ByVal Command As ADODB.Command)
+    
+    If Command Is Nothing Then
+    'Error
+    End If
+    
+    If Sql.Parameter Is Nothing Then _
+        Call ISqlValue_Prepare
+    
+    Call Command.Parameters.Append(Sql.Parameter)
+    
+End Sub

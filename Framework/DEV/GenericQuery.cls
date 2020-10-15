@@ -23,10 +23,10 @@ End Property
 
 Public Property Get Parameter(ByVal Name As GString) As IGeneric
     
-    Dim p As IGeneric
+    Dim P As IGeneric
     
-    If myclass.Parameter.TryGetValue(Name, p) Then
-        Set Parameter = p
+    If myclass.Parameter.TryGetValue(Name, P) Then
+        Set Parameter = P
     Else
         'Error
     End If
@@ -61,10 +61,10 @@ Public Function CreateParameter( _
                                     ByVal Name As String, _
                                     ByVal Value As ISqlValue) As Object
 
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = adParamInput
         .Name = Name
         .Attributes = adParamNullable
@@ -78,7 +78,7 @@ Public Function CreateParameter( _
         .Value = Value.Primitive
     End With
     
-    Set CreateParameter = p
+    Set CreateParameter = P
 
 End Function
 
