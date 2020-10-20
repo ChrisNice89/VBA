@@ -225,7 +225,7 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
         Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     With myclass
-        .SortOrder = ascending
+        .SortOrder = Ascending
         Set .Keys = GenericArray.Build(Capacity)
         Set .Values = GenericArray.Build(Capacity)
     End With
@@ -243,7 +243,7 @@ Public Function BuildFrom(ByVal Dictionary As IGenericDictionary) As GenericSort
         Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Dictionary Is Nothing)")
     
     With myclass
-        .SortOrder = ascending
+        .SortOrder = Ascending
           
         Set .Keys = GenericArray.Build(Dictionary.Count)
         Set .Values = GenericArray.Build(Dictionary.Count)
@@ -534,7 +534,7 @@ Private Function IGeneric_ToString() As String
                             "Class: " & TypeName$(Me) & vbNewLine & _
                             "Capacity: " & .Keys.length & vbNewLine & _
                             "Elements: " & .Size & vbNewLine & _
-                            "Sortorder: " & IIf(.SortOrder = ascending, "Ascending", "Descending")
+                            "Sortorder: " & IIf(.SortOrder = Ascending, "Ascending", "Descending")
     End With
 End Function
 

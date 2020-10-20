@@ -61,6 +61,12 @@ Public Enum ISqlParameterDirection
     ParamReturnValue = 4 'Beschreibt einen Return-Wert
 End Enum
 '
+Public Enum ISqlCursorLocation
+    UseClient = 3 'Bedeutet, daß die Daten komplett auf den Client gezogen werden sollen. Dies bringt jedoch einen eventuell großen Speicherbedarf auf dem Client.
+    UseServer = 2 'Die Daten werden nicht komplett auf den Client gezogen, sondern nur diese die vom Client aktuell benötigt werden. Das spart viel Speicherbedarf auf dem Client. Nachteil ist jedoch, daß bei manchen Datenanzeige-Controlls wie z.B. DataGrid oder MSHFlexGrid die Daten mit einem serverseitigen Cursor keine Daten angezeigt werden, bzw. ein paar Funktionen nicht mehr verfügbar sind.
+End Enum
+
+'
 Public Enum ISqlState
     StateClosed = 0        'Indicates that the object is closed.
     StateOpen = 1          'Indicates that the object is open.
@@ -69,11 +75,6 @@ Public Enum ISqlState
     StateFetching = 8      'Indicates that the rows of the object are being retrieved.
 End Enum
 '
-Public Enum ISqlCursorLocation
-    UseClient = 3 'Bedeutet, daß die Daten komplett auf den Client gezogen werden sollen. Dies bringt jedoch einen eventuell großen Speicherbedarf auf dem Client.
-    UseServer = 2 'Die Daten werden nicht komplett auf den Client gezogen, sondern nur diese die vom Client aktuell benötigt werden. Das spart viel Speicherbedarf auf dem Client. Nachteil ist jedoch, daß bei manchen Datenanzeige-Controlls wie z.B. DataGrid oder MSHFlexGrid die Daten mit einem serverseitigen Cursor keine Daten angezeigt werden, bzw. ein paar Funktionen nicht mehr verfügbar sind.
-End Enum
-
 'Der CommandType gibt an was ausgeführt werden soll. Dafür liegt das CommandTypeEnum zu Grunde.
 Public Enum ISqlCommandType
     CmdUnspecified = -1 'Does not specify the command type argument.

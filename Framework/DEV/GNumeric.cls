@@ -78,7 +78,7 @@ Public Function Build( _
                             Optional ByVal Precision As Byte = 4, _
                             Optional ByVal NumericScale As Byte = 4, _
                             Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As GNumeric
-    
+Attribute Build.VB_UserMemId = 0
     With myclass
         .Value = Value
         .Precision = Precision

@@ -186,7 +186,7 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
         Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     With myclass
-        .SortOrder = ascending
+        .SortOrder = Ascending
         Set .Items = GenericArray.Build(Capacity)
     End With
     
@@ -203,7 +203,7 @@ Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
         Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Collection Is Nothing)")
     
     With myclass
-        .SortOrder = ascending
+        .SortOrder = Ascending
         If (Collection Is Nothing) = False Then
             Set .Items = GenericArray.Build(Collection.Count)
             Call Collection.CopyTo(GArray:=.Items, ArrayIndex:=.Items.LowerBound)

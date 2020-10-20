@@ -92,7 +92,7 @@ Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
 End Property
 
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric
-
+Attribute Item.VB_UserMemId = 0
     Dim Node As GenericTreeNode: Set Node = FindNode(Key)
     
     If (Node Is Nothing) Then _

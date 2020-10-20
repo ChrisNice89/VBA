@@ -4,6 +4,14 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
+
+Sub Dattest()
+Dim s As String
+
+s = Null
+Debug.Print s
+
+End Sub
 Sub TestSql()
 
     Dim Sql As GenericSql
@@ -76,7 +84,7 @@ End Sub
 Sub testArrayConstructor()
 
     Dim ga As GenericArray
-    Set ga = GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   ", Trim), GDate(VBA.Now, Year))
+    Set ga = GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   ", Trim), GDate(VBA.Now, year))
     
     Dim Element As IGeneric
     With ga.Iterator
@@ -157,7 +165,7 @@ Sub TestArraySort()
     Call List.Sort(random)
     
     t.StartCounter
-    Call List.Sort(descending)
+    Call List.Sort(Descending)
     Debug.Print t.TimeElapsed
     
     Dim Item As IGeneric
@@ -545,14 +553,14 @@ Sub TestArray2()
         Call .SetValue(GString("f"), 89)
         Call .SetValue(GString("a"), 90)
         Call .SetValue(GString("a"), 100)
-        Call .Sort(descending, ga.LowerBound, ga.length)
+        Call .Sort(Descending, ga.LowerBound, ga.length)
     
         For i = 1 To .length
             If Not ga(i) Is Nothing Then _
                 Debug.Print "i: " & i & "  " & ga(i)
         Next
         
-        Debug.Print .BinarySearch(GString("a"), 1, .length, descending)
+        Debug.Print .BinarySearch(GString("a"), 1, .length, Descending)
         Call .Reverse
         Call .Clear
     End With

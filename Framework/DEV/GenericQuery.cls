@@ -61,25 +61,6 @@ Public Function CreateParameter( _
                                     ByVal Name As String, _
                                     ByVal Value As ISqlValue) As Object
 
-    Dim P As ADODB.Parameter
-    Set P = New ADODB.Parameter
-    
-    With P
-        .Direction = adParamInput
-        .Name = Name
-        .Attributes = adParamNullable
-        
-        If Value.IsNumeric Then
-            .Precision = 4
-            .NumericScale = 4
-        Else
-            .Size = Len(Value.Primitive)
-        End If
-        .Value = Value.Primitive
-    End With
-    
-    Set CreateParameter = P
-
 End Function
 
 Public Sub Initialize(ByVal Number As Long)

@@ -6,7 +6,7 @@ Attribute VB_Name = "GDate"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = False
+Attribute VB_Exposed = True
 '@Folder("<T>Class")
 
 
@@ -20,17 +20,18 @@ Implements IPrototype
 Public Enum TDateFormat
     [_First]
     DefaultDate
-    
+    DDMMYYYY
+    MMDDYYYY
     [_Last]
 End Enum
 
 Public Enum DateInterval
     [_First]
-    Year
+    year
     Quarter
-    Month
+    month
     DayOfYear
-    Day
+    day
     Weekday
     Week
     Hour
@@ -62,22 +63,13 @@ Public Function Add(ByVal Number As Long, ByVal i As DateInterval) As GDate
     Set Add = GDate(DateAdd(Me.IntervalName(i), Number, myclass.Value), myclass.Format)
 End Function
 
-Public Function DifferenceTo(ByVal d As GDate, ByVal i As DateInterval) As Long
-    DifferenceTo = DateDiff(Me.IntervalName(i), myclass.Value, d.Value)
+Public Function DifferenceTo(ByVal D As GDate, ByVal i As DateInterval) As Long
+    DifferenceTo = DateDiff(Me.IntervalName(i), myclass.Value, D.Value)
 End Function
 
 Public Property Get IntervalName(ByVal i As DateInterval) As String
     IntervalName = Interval(i)
 End Property
-
-Public Function Build2( _
-                            ByVal Day As Integer, _
-                            ByVal Month As Integer, _
-                            ByVal Year As Integer, _
-                            Optional ByVal Format As TDateFormat = TDateFormat.DefaultDate) As GDate
-   
-    Set Build2 = GDate(VBA.DateSerial(Year, Month, Day), myclass.Format)
-End Function
 
 Public Property Get Value() As Date
     Value = myclass.Value
@@ -85,7 +77,7 @@ End Property
 
 Public Function Build( _
                         ByVal Value As Date, _
-                        Optional ByVal Format As DateInterval = DateInterval.Year) As GDate
+                        Optional ByVal Format As DateInterval = DateInterval.year) As GDate
 Attribute Build.VB_UserMemId = 0
     With myclass
         .Value = Value
@@ -96,29 +88,54 @@ Attribute Build.VB_UserMemId = 0
     
 End Function
 
+Public Function Build_2( _
+                            ByVal day As Integer, _
+                            ByVal month As Integer, _
+                            ByVal year As Integer, _
+                            Optional ByVal Format As TDateFormat = TDateFormat.DefaultDate) As GDate
+   
+    Set Build_2 = GDate(VBA.DateSerial(year, month, day), myclass.Format)
+End Function
+
+Public Function Build_3(ByVal StringDate As String, ByVal Format As TDateFormat) As GDate
+   
+    Set Build_3 = GDate(Me.Convert(StringDate, Format))
+End Function
+
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myclass)
     Virtual.Size = LenB(myclass)
     ReDim Interval(DateInterval.[_First] To DateInterval.[_Last])
-    Interval(DateInterval.Day) = "d"
+    Interval(DateInterval.day) = "d"
     Interval(DateInterval.DayOfYear) = "y"
     Interval(DateInterval.Hour) = "h"
     Interval(DateInterval.Minute) = "n"
-    Interval(DateInterval.Month) = "m"
+    Interval(DateInterval.month) = "m"
     Interval(DateInterval.Quarter) = "q"
     Interval(DateInterval.Second) = "s"
     Interval(DateInterval.Week) = "ww"
     Interval(DateInterval.Weekday) = "w"
-    Interval(DateInterval.Year) = "yyyy"
+    Interval(DateInterval.year) = "yyyy"
     
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
 
-Private Property Get IValue_Object() As IGeneric: Set IValue_Object = Me: End Property
-Private Property Get IValue_DatabaseType() As ISqlDataType
+Public Function Convert(ByVal D As String, ByVal Format As TDateFormat) As Date
+    Dim day As Integer, month As Integer, year As Integer
+    
+    If Format = TDateFormat.DDMMYYYY Then
+        day = Int(VBA.Mid$(D, 1, 2))
+        month = Int(VBA.Mid$(D, 4, 2))
+        year = Int(VBA.Mid$(D, 7, 4))
+    ElseIf Format = TDateFormat.DDMMYYYY Then
+    
+    Else
+    
+    End If
+  
+    Convert = VBA.DateSerial(year, month, day)
 
-End Property
-Private Property Get IValue_Value() As Variant: IValue_Value = myclass.Value: End Property
+End Function
 
 'IGeneric
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
@@ -137,20 +154,20 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim d As GDate: Set d = Other
+    Dim D As GDate: Set D = Other
    
-    IGeneric_Equals = (myclass.Value = d.Value)
+    IGeneric_Equals = (myclass.Value = D.Value)
      
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim d As GDate
+    Dim D As GDate
     
     If Other.IsRelatedTo(Me) Then
-        Set d = Other
+        Set D = Other
         Select Case True
-            Case myclass.Value > d.Value: IGeneric_CompareTo = IsGreater
-            Case myclass.Value < d.Value: IGeneric_CompareTo = IsLower
+            Case myclass.Value > D.Value: IGeneric_CompareTo = IsGreater
+            Case myclass.Value < D.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If

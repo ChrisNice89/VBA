@@ -966,7 +966,7 @@ Public Sub Sort_2(ByRef Objects() As IGeneric, ByVal Index As Long, ByVal length
     
     If Order = random Then
         Call Shuffle(Objects, Index, length)
-    ElseIf Order = ascending Then
+    ElseIf Order = Ascending Then
         Call DepthLimitedQuicksort_Asc(Objects, Index, length, QuickSortDepthThreshold)
     Else
         Call DepthLimitedQuicksort_Desc(Objects, Index, length, QuickSortDepthThreshold)
@@ -985,7 +985,7 @@ Public Sub SortKeysWithItems( _
     
     If Order = random Then
         Call ShuffleWithItems(Keys, Items, Index, length)
-    ElseIf Order = ascending Then
+    ElseIf Order = Ascending Then
         Call DepthLimitedQuicksortWithItems_Asc(Keys, Items, Index, length, QuickSortDepthThreshold)
     Else
         Call DepthLimitedQuicksortWithItems_Desc(Keys, Items, Index, length, QuickSortDepthThreshold)
@@ -1195,7 +1195,7 @@ End Sub
 
 Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
-    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim D As IGeneric: Set D = Keys(lo + i - 1)
     Dim Child As Long
 
     Do While (i <= n / 2)
@@ -1211,14 +1211,14 @@ Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, 
         If (Keys(lo + Child - 1) Is Nothing) Then _
             Exit Do
 
-        If (Keys(lo + Child - 1).CompareTo(d) = IsLower) Then _
+        If (Keys(lo + Child - 1).CompareTo(D) = IsLower) Then _
             Exit Do
 
         Set Keys(lo + i - 1) = Keys(lo + Child - 1)
         i = Child
     Loop
 
-    Set Keys(lo + i - 1) = d
+    Set Keys(lo + i - 1) = D
 
 End Sub
 
@@ -1241,7 +1241,7 @@ End Sub
 
 Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
 
-    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim D As IGeneric: Set D = Keys(lo + i - 1)
     Dim Child As Long
 
     Do While (i <= n / 2)
@@ -1255,7 +1255,7 @@ Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, 
         End If
 
         If Not (Keys(lo + Child - 1) Is Nothing) Then
-            If (Keys(lo + Child - 1).CompareTo(d) = IsGreater) Then _
+            If (Keys(lo + Child - 1).CompareTo(D) = IsGreater) Then _
                 Exit Do
         
         End If
@@ -1264,7 +1264,7 @@ Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, 
         i = Child
     Loop
 
-    Set Keys(lo + i - 1) = d
+    Set Keys(lo + i - 1) = D
 
 End Sub
 
@@ -1425,7 +1425,7 @@ Private Sub MaxHeapWithItems( _
                                 ByVal n As Long, _
                                 ByVal lo As Long)
 
-    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim D As IGeneric: Set D = Keys(lo + i - 1)
     Dim dItem As Object: Set dItem = Items(lo + i - 1)
     Dim Child As Long
 
@@ -1442,7 +1442,7 @@ Private Sub MaxHeapWithItems( _
         If (Keys(lo + Child - 1) Is Nothing) Then _
             Exit Do
 
-        If (Keys(lo + Child - 1).CompareTo(d) = IsLower) Then _
+        If (Keys(lo + Child - 1).CompareTo(D) = IsLower) Then _
             Exit Do
 
         Set Keys(lo + i - 1) = Keys(lo + Child - 1)
@@ -1450,7 +1450,7 @@ Private Sub MaxHeapWithItems( _
         i = Child
     Loop
 
-    Set Keys(lo + i - 1) = d
+    Set Keys(lo + i - 1) = D
     Set Items(lo + i - 1) = dItem
 
 End Sub
@@ -1480,7 +1480,7 @@ Private Sub MinHeapWithItems( _
                                 ByVal n As Long, _
                                 ByVal lo As Long)
 
-    Dim d As IGeneric: Set d = Keys(lo + i - 1)
+    Dim D As IGeneric: Set D = Keys(lo + i - 1)
     Dim dItem As Object: Set dItem = Items(lo + i - 1)
     Dim Child As Long
 
@@ -1495,7 +1495,7 @@ Private Sub MinHeapWithItems( _
         End If
 
         If Not (Keys(lo + Child - 1) Is Nothing) Then
-            If (Keys(lo + Child - 1).CompareTo(d) = IsGreater) Then _
+            If (Keys(lo + Child - 1).CompareTo(D) = IsGreater) Then _
                 Exit Do
         
         End If
@@ -1506,7 +1506,7 @@ Private Sub MinHeapWithItems( _
         i = Child
     Loop
 
-    Set Keys(lo + i - 1) = d
+    Set Keys(lo + i - 1) = D
     Set Items(lo + i - 1) = dItem
     
 End Sub
