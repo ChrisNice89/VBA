@@ -716,7 +716,7 @@ Public Sub Transpose()
     Dim ptrT1 As LongPtr, ptrT2 As LongPtr
     Dim t1() As ObjectTransfer, t2() As ObjectTransfer
     Dim TotalSize As Long
-    Dim i As Long, j As Long, m As Long, n As Long
+    Dim i As Long, j As Long, m As Long, N As Long
     
     If (Me.IsEmpty) Then _
         Call Skynet.Throw(Me, "Public Sub Transpose").NullPointer("SafeArray not allocated")
@@ -726,10 +726,10 @@ Public Sub Transpose()
         
     With myclass.Struct
         m = .Bounds(2).cElements
-        n = .Bounds(1).cElements
+        N = .Bounds(1).cElements
         
-        ReDim t1(1 To m, 1 To n)
-        ReDim t2(1 To n, 1 To m)
+        ReDim t1(1 To m, 1 To N)
+        ReDim t2(1 To N, 1 To m)
 
         ptrT1 = VarPtr(t1(1, 1))
         ptrT2 = VarPtr(t2(1, 1))
@@ -1194,26 +1194,26 @@ Private Sub HeapSort_Asc( _
                             ByVal lo As Long, _
                             ByVal hi As Long)
 
-    Dim n As Long: n = hi - lo + 1
+    Dim N As Long: N = hi - lo + 1
     Dim i As Long
  
-    For i = n / 2 To 1 Step -1
-        Call MaxHeap(Keys, i, n, lo)
+    For i = N / 2 To 1 Step -1
+        Call MaxHeap(Keys, i, N, lo)
     Next
-    For i = n To 2 Step -1
+    For i = N To 2 Step -1
         Call Swap_2(Keys, lo, lo + i - 1)
         Call MaxHeap(Keys, 1, i - 1, lo)
     Next
 End Sub
 
-Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
+Private Sub MaxHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal N As Long, ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= n / 2)
+    Do While (i <= N / 2)
         Child = 2 * i
-        If (Child < n) Then
+        If (Child < N) Then
             If (Keys(lo + Child - 1) Is Nothing) Then
                 Child = Child + 1
             ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
@@ -1240,26 +1240,26 @@ Private Sub HeapSort_Desc( _
                              ByVal lo As Long, _
                              ByVal hi As Long)
 
-    Dim n As Long: n = hi - lo + 1
+    Dim N As Long: N = hi - lo + 1
     Dim i As Long
  
-    For i = n / 2 To 1 Step -1
-        Call MinHeap(Keys, i, n, lo)
+    For i = N / 2 To 1 Step -1
+        Call MinHeap(Keys, i, N, lo)
     Next
-    For i = n To 2 Step -1
+    For i = N To 2 Step -1
         Call Swap_2(Keys, lo, lo + i - 1)
         Call MinHeap(Keys, 1, i - 1, lo)
     Next
 End Sub
 
-Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal n As Long, ByVal lo As Long)
+Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal N As Long, ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= n / 2)
+    Do While (i <= N / 2)
         Child = 2 * i
-        If (Child < n) Then
+        If (Child < N) Then
             If Not (Keys(lo + Child - 1) Is Nothing) Then
                 If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
                     Child = Child + 1
@@ -1419,13 +1419,13 @@ Private Sub HeapSortWithItems_Asc( _
                                      ByVal lo As Long, _
                                      ByVal hi As Long)
 
-    Dim n As Long: n = hi - lo + 1
+    Dim N As Long: N = hi - lo + 1
     Dim i As Long
  
-    For i = n / 2 To 1 Step -1
-        Call MaxHeapWithItems(Keys, Items, i, n, lo)
+    For i = N / 2 To 1 Step -1
+        Call MaxHeapWithItems(Keys, Items, i, N, lo)
     Next
-    For i = n To 2 Step -1
+    For i = N To 2 Step -1
         Call SwapWithItem(Keys, Items, lo, lo + i - 1)
         Call MaxHeapWithItems(Keys, Items, 1, i - 1, lo)
     Next
@@ -1435,16 +1435,16 @@ Private Sub MaxHeapWithItems( _
                                 ByRef Keys() As IGeneric, _
                                 ByRef Items() As Object, _
                                 ByVal i As Long, _
-                                ByVal n As Long, _
+                                ByVal N As Long, _
                                 ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim dItem As Object: Set dItem = Items(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= n / 2)
+    Do While (i <= N / 2)
         Child = 2 * i
-        If (Child < n) Then
+        If (Child < N) Then
             If (Keys(lo + Child - 1) Is Nothing) Then
                 Child = Child + 1
             ElseIf (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsLower) Then
@@ -1474,13 +1474,13 @@ Private Sub HeapSortWithItems_Desc( _
                                         ByVal lo As Long, _
                                         ByVal hi As Long)
 
-    Dim n As Long: n = hi - lo + 1
+    Dim N As Long: N = hi - lo + 1
     Dim i As Long
  
-    For i = n / 2 To 1 Step -1
-        Call MinHeapWithItems(Keys, Items, i, n, lo)
+    For i = N / 2 To 1 Step -1
+        Call MinHeapWithItems(Keys, Items, i, N, lo)
     Next
-    For i = n To 2 Step -1
+    For i = N To 2 Step -1
         Call SwapWithItem(Keys, Items, lo, lo + i - 1)
         Call MinHeapWithItems(Keys, Items, 1, i - 1, lo)
     Next
@@ -1490,16 +1490,16 @@ Private Sub MinHeapWithItems( _
                                 ByRef Keys() As IGeneric, _
                                 ByRef Items() As Object, _
                                 ByVal i As Long, _
-                                ByVal n As Long, _
+                                ByVal N As Long, _
                                 ByVal lo As Long)
 
     Dim d As IGeneric: Set d = Keys(lo + i - 1)
     Dim dItem As Object: Set dItem = Items(lo + i - 1)
     Dim Child As Long
 
-    Do While (i <= n / 2)
+    Do While (i <= N / 2)
         Child = 2 * i
-        If (Child < n) Then
+        If (Child < N) Then
             If Not (Keys(lo + Child - 1) Is Nothing) Then
                 If (Keys(lo + Child - 1).CompareTo(Keys(lo + Child)) = IsGreater) Then _
                     Child = Child + 1

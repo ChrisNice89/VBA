@@ -10,7 +10,7 @@ Attribute VB_Exposed = True
 '@Folder "<T>Class"
 
 Public Enum ISqlDataType
-    Autoincrement = -1
+    AUTOINCREMENT = -1
     Empty_Type = 0 'No value
     SmallInt_Type = 2 ' A 2-byte signed integer.
     Integer_Type = 3 'A 4-byte signed integer.
@@ -77,7 +77,7 @@ End Enum
 'Der CommandType gibt an was ausgeführt werden soll. Dafür liegt das CommandTypeEnum zu Grunde.
 Public Enum ISqlCommandType
     CmdUnspecified = -1 'Does not specify the command type argument.
-    CmdText = 1 'Evaluates CommandText as a textual definition of a command or stored procedure call.
+    CMDText = 1 'Evaluates CommandText as a textual definition of a command or stored procedure call.
     CmdTable = 2 'Evaluates CommandText as a table name whose columns are all returned by an internally generated SQL query.
     CmdStoredProc = 4 'Evaluates CommandText as a stored procedure name.
     CmdUnknown = 8 'Indicates that the type of command in the CommandText property is not known.
@@ -233,15 +233,16 @@ Public Enum ISqlDBSchema
     '(VIEW_TABLE_USAGE Rowset) VIEW_CATALOG VIEW_SCHEMA VIEW_NAME )
 End Enum
 
-Public Function Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As IGenericValue: End Function
-Public Function CompareTo(ByVal Other As IGenericValue) As ComparerEnum: End Function
-Public Function ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput, Optional ByVal Name As String): End Function
-Public Property Get Instance() As IGeneric: End Property
 Public Property Get RawValue() As Variant: End Property
 Attribute RawValue.VB_UserMemId = 0
 Public Property Get SqlType() As ISqlDataType: End Property
 Public Property Get GetType() As VbVarType: End Property
 Public Property Get Size() As Byte: End Property
+Public Property Get Instance() As IGeneric: End Property
+
+Public Function Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As IGenericValue: End Function
+Public Function CompareTo(ByVal Other As IGenericValue) As ComparerEnum: End Function
+Public Function ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput, Optional ByVal Name As String): End Function
 
 'Private Sub Class_Initialize()
 '    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation

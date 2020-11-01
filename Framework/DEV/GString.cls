@@ -79,11 +79,13 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
+Public Property Get ElementAt(ByVal Index As Long) As GString: Set ElementAt = GString(VBA.Mid$(myclass.Value, Index, 1)): End Property
 Public Property Get Length() As Long: Length = myclass.Length: End Property
 Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myclass.Value, 1, 1): End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myclass.Value, Len(myclass.Value), 1): End Property
 Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myclass.Value, Index, 1): End Property
 Public Property Get Format() As TStringFormat: Format = myclass.Format: End Property
+
 Public Function ToFormat() As String
     
     With myclass
@@ -103,7 +105,7 @@ Public Function ToByteArray() As Byte(): ToByteArray = StrConv(myclass.Value, vb
 Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myclass.Value Like Pattern): End Function
 Public Function StartsWith(ByVal Text As String) As Boolean: StartsWith = (myclass.Value Like ("%" & Text)): End Function
 Public Function EndsWith(ByVal Text As String) As Boolean: EndsWith = (myclass.Value Like (Text & "%")): End Function
-Public Function Contains(ByVal Text As String) As Boolean: Contains = Not (InStr(1, myclass.Value, Text) = 0): End Function
+Public Function Contains(ByVal Text As String) As Boolean: Contains = Not (InStr(1, myclass.Value, Text, vbTextCompare) = 0): End Function
 Public Function CompareWithString(ByRef S As String) As ComparerEnum: CompareWithString = StrComp(myclass.Value, S, vbBinaryCompare): End Function
 Public Function IsNullOrEmpty() As Boolean
     If myclass.Value = vbNullString Then _
@@ -161,7 +163,7 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     chars = VBA.Split(myclass.Value, Delimiter)
     
     Dim i As Long
-    ReDim Strings(1 To UBound(chars) - 1) As IGeneric
+    ReDim Strings(1 To UBound(chars) + 1) As IGeneric
     
     For i = LBound(chars) To UBound(chars)
         Set Strings(i + 1) = GString(chars(i))

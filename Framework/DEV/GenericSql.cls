@@ -18,7 +18,7 @@ Implements IGenericIterator
 Public Event Result(ByVal Data As ADODB.Recordset)
 
 Private Const ASYNC_OPTION As Long = 16&
-Private Const EXECUTE_ASYNC As Boolean = True
+Private Const EXECUTE_ASYNC As Boolean = False
 Private Const CLOSE_CONNECTION_IMMEDIATELY  As Boolean = True
 
 Private Type Iterator
@@ -84,7 +84,7 @@ Public Function Build( _
                         ByVal Credentials As SqlCredentials, _
                         Optional ByVal Sql As String, _
                         Optional ByVal Parameter As Long, _
-                        Optional ByVal Options As ISqlQueryType = ISqlQueryType.ReturnRecords + ISqlQueryType.NamedParameter + ISqlQueryType.Prepared) As GenericSql
+                        Optional ByVal Options As ISqlQueryType) As GenericSql
 
     If Sql = vbNullString Then
         'error
@@ -101,7 +101,7 @@ Public Function Build( _
     With myclass
         Set .Credentials = Credentials
         .Sql = Sql
-        .SqlOptions = Options
+        .SqlOptions = Options '= ISqlQueryType.ReturnRecords + ISqlQueryType.NamedParameter + ISqlQueryType.Prepared
         .Parameter = Parameter
     End With
     
@@ -133,7 +133,7 @@ Public Sub Prepare(ByVal Sql As String)
             .CommandType = ISqlCommandType.CmdStoredProc
         Else
             .CommandText = IIf(VBA.Right$(myclass.Sql, 1) = ";", myclass.Sql, myclass.Sql & ";")
-            .CommandType = ISqlCommandType.CmdText
+            .CommandType = ISqlCommandType.CMDText
         End If
     End With
     

@@ -326,7 +326,7 @@ End Sub
 Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
     
     Dim c As IGenericCollection
-    Dim n As Long
+    Dim N As Long
     Dim Item As IGeneric
     
     If (Enumerable Is Nothing) Then _
@@ -336,9 +336,9 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
         Call Skynet.Throw(Me, "InsertAll").IndexOutofRange("Index > myClass.Size")
     
     If TypeOf Enumerable Is IGenericCollection Then _
-        Set c = Enumerable: n = c.Count
+        Set c = Enumerable: N = c.Count
     
-    If (n > 0) Then
+    If (N > 0) Then
         Call EnsureCapacity(myclass.Size + c.Count)
     
         With myclass.Items
