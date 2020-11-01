@@ -4,67 +4,100 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
+Private Sql As GenericSql
 
-Sub Dattest()
-Dim s As String
+Sub Test2()
 
-s = Null
-Debug.Print s
-
-End Sub
-Sub TestSql()
-
-    Dim Sql As GenericSql
-    Set Sql = GenericSql.Build(CurrentProject.Connection, "SELECT * FROM tblTest WHERE ID = ?", 1, ReturnRecords + Prepared + NamedParameter)
-    
-    Call Sql.Add(GNumeric(1))
-    Call Sql.Execute
-
-
-End Sub
-
-
-Sub TestCreation()
+    Dim i As Long, j As Long
     
     Dim t As CTimer
     Set t = New CTimer
     
-    Dim ga As GenericArray, Clone As GenericArray
-    Dim i As Long, n As Long
-
-    n = 10
-    Set ga = GenericArray.Build(n)
-
-    For i = 1 To n
-        ReDim x(1 To 1000) As IGeneric
-        t.StartCounter
-        Set ga = GenericArray.BuildFrom(x)
-        Debug.Print t.TimeElapsed
+    Dim GA As GenericArray
+    t.StartCounter
+    For i = 1 To 80
+        Set GA = GenericArray.Build(120)
     Next
+    Debug.Print t.TimeElapsed
     
-'    Set Clone = GenericArray.Build(ga.length)
-'    Call GenericArray.Copy(ga, ga.LowerBound, Clone, Clone.LowerBound, ga.length)
+    
+End Sub
+Sub CreateTables()
+
+    Dim Stammdaten As Stringbuilder: Set Stammdaten = New Stringbuilder
+    Dim Portfolio As Stringbuilder: Set Portfolio = New Stringbuilder
+    Dim Normal As Stringbuilder: Set Normal = New Stringbuilder
+    Dim Intensiv As Stringbuilder: Set Intensiv = New Stringbuilder
+    Dim Sanierng As Stringbuilder: Set Sanierng = New Stringbuilder
+    Dim Abwicklung As Stringbuilder: Set Abwicklung = New Stringbuilder
+    Dim Paar As Stringbuilder: Set Paar = New Stringbuilder
+    
+    
+    With Stammdaten
+        .Append "CREATE TABLE Stammdaten ( ID VARCHAR(255) PRIMARY KEY )"
+
+    
+    
+    
+    End With
+    
 '
-'    Dim Element As IGeneric
-'    With Clone.Iterator
-'        Do While .HasNext(Element)
-'            Debug.Print Element
-'        Loop
-'    End With
+'    Stammdaten = "CREATE TABLE " & m_TABLE_FILES & " ( " & _
+'                     m_LIBRARY & " VARCHAR(255) PRIMARY KEY, " & _
+'                     m_NAMESPACE & " VARCHAR(255), " & _
+'                     m_DLL & " IMAGE, " & _
+'                     m_TLB & " IMAGE)"
+'
+'
+'    Sql(2) = "CREATE TABLE " & m_TABLE_PACKAGES & " ( " & _
+'                     m_PACKAGE & " VARCHAR(255) PRIMARY KEY, " & _
+'                     m_LOCATION & " VARCHAR(255))"
+'
+'    Tables(3) = m_TABLE_MAPPING
+'    Sql(3) = "CREATE TABLE " & m_TABLE_MAPPING & " ( " & _
+'                     m_PACKAGE & " VARCHAR(255) NOT NULL, " & _
+'                     m_LIBRARY & " VARCHAR(255) NOT NULL)"
+
+
+End Sub
+
+Sub TestConnection()
+
+    Dim i As Long, j As Long
+    Dim t As CTimer
+    Set t = New CTimer
+    
+    Dim Path As String
+    Path = "C:\Users\cnitz\Desktop\iCAT Neu\Backend\Vers. 2.5\2020-02-24 iCAT-Backend Vers. 2.5.accdb"
+    Dim PW As String
+    PW = "OpenSesame"
+    
+    Set Sql = GenericSql.Build(SqlCredentials.AccessConnection(Path, PW), "SELECT * FROM tblG_00_Basis WHERE ID < 500", 0, ReturnRecords)
+
+    Call Sql.Execute
+
+    
+'    If Sql.HasResult Then
+'        Debug.Print Sql.Result.Fields().Count
+'    Else
+'        Debug.Print "Error"
+'    End If
+
+    Debug.Print t.TimeElapsed / 1000
 
 End Sub
 
 Sub TestMultiDimArray()
 
-    Dim ga As GenericArray
-    Set ga = GenericArray.Build(3, 4)
+    Dim GA As GenericArray
+    Set GA = GenericArray.Build(3, 4)
     
-    Call ga.SetValue(GNumeric(1), 1, 3)
-    Call ga.SetValue(GNumeric(2), 2, 3)
-    Call ga.SetValue(GNumeric(3), 3, 3)
+    Call GA.SetValue(GNumeric(1), 1, 3)
+    Call GA.SetValue(GNumeric(2), 2, 3)
+    Call GA.SetValue(GNumeric(3), 3, 3)
     
     Dim Column As GenericArray
-    Set Column = ga.SlizeColumn(3)
+    Set Column = GA.SlizeColumn(3)
     
     Dim Element As GNumeric
     With Column.Iterator
@@ -74,20 +107,20 @@ Sub TestMultiDimArray()
     End With
     
     'Insert/ Copy Column into Matrix first column
-    Call GenericArray.Copy(Column, Column.LowerBound, ga, ga.LowerBound, Column.length)
-    Debug.Print ga.GetValue(1, 1).Equals(ga.GetValue(1, 3))
+    Call GenericArray.Copy(Column, Column.LowerBound, GA, GA.LowerBound, Column.Length)
+    Debug.Print GA.GetValue(1, 1).Equals(GA.GetValue(1, 3))
     
-    Call ga.Transpose
-    Debug.Print ga.GetValue(3, 1).Equals(Column(1))
+    Call GA.Transpose
+    Debug.Print GA.GetValue(3, 1).Equals(Column(1))
 
 End Sub
 Sub testArrayConstructor()
 
-    Dim ga As GenericArray
-    Set ga = GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   ", Trim), GDate(VBA.Now, year))
+    Dim GA As GenericArray
+    Set GA = GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   ", Trim), GDate(VBA.Now, year))
     
     Dim Element As IGeneric
-    With ga.Iterator
+    With GA.Iterator
         Do While .HasNext(Element)
             Debug.Print Element
         Loop
@@ -108,19 +141,19 @@ Sub TestArrayIterator()
     Next
     
     Dim Number As GNumeric
-    Dim ga As GenericArray
-    Set ga = GenericArray.BuildFrom(x)
+    Dim GA As GenericArray
+    Set GA = GenericArray.BuildFrom(x)
      
     Dim t As CTimer
     Set t = New CTimer
     t.StartCounter
-    For i = ga.LowerBound To ga.length
-        Set Number = ga(i)
+    For i = GA.LowerBound To GA.Length
+        Set Number = GA(i)
     Next
     Debug.Print t.TimeElapsed
     
     t.StartCounter
-    With ga.Iterator
+    With GA.Iterator
         Do While .HasNext(Number) ' Fast
 '            Set Number = .Current
         Loop
@@ -158,6 +191,7 @@ Sub TestArraySort()
     
     Dim List As GenericList
     Set List = GenericList.Build(n)
+   
     For i = 1 To n
 '        Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Call List.Add(GNumeric(i))
@@ -202,38 +236,32 @@ End Sub
 Sub TestArray()
     
     Dim t As CTimer
-    Set t = New CTimer
-    t.StartCounter
     
-    Dim ga As GenericArray
+    Dim GA As GenericArray
     Dim ga2 As GenericArray
     Dim ga3 As GenericArray
     Dim x() As IGeneric
     Dim i As Long, n As Long
    
-    n = 10000
-    Set ga = GenericArray.Build(n)
+    n = 1000
+    Set GA = GenericArray.Build(n)
     Set ga2 = GenericArray.Build(n)
     ReDim x(1 To n)
     
     For i = 1 To n
-        Call ga.SetValue(GNumeric(i), i)
+        Call GA.SetValue(GNumeric(i), i)
         Call ga2.SetValue(GString("Value: " & i), i)
         Set x(i) = GString("Value: " & i)
     Next
     
     Set ga3 = GenericArray.BuildFrom(x)
     
-    Dim c As GenericArray
+    Dim c As IGeneric
     Set c = Skynet.Clone(ga3)
     
-    Dim Item As IGeneric
-    
-    With c.Iterator
-        Do While .HasNext(Item)
-            
-        Loop
-    End With
+    Set t = New CTimer
+    t.StartCounter
+    Debug.Print c.Equals(ga3)
     Debug.Print t.TimeElapsed
     
 End Sub
@@ -444,18 +472,21 @@ Sub TestTree()
     Dim i As Long
     
     For i = 1 To 100
-        Call Tree.Add(GNumeric(i), Nothing)
+        Call Tree.Add(GNumeric(i), GNumeric(i))
     Next
   
-    Dim c As GenericTree
+    Dim c As IGenericReadOnlyList
     Set c = Skynet.Clone(Tree)
     
+    Debug.Print c.IndexOf(GNumeric(99))
+    Debug.Print c.IndexOf(GNumeric(1))
     Dim Item As IGeneric
     
     t.StartCounter
-    With c.Iterator(Pairs_)
+    
+    With c.Iterator
         Do While .HasNext(Item)
-'            Debug.Print Item
+            Debug.Print Item
         Loop
     End With
     
@@ -489,27 +520,27 @@ Sub TestGenericCollection()
     Dim Clone As IGenericReadOnlyList
     Set Clone = Skynet.Clone(List.AsReadOnly)
         
-    Dim ga As GenericArray
-    Set ga = GenericArray.Build(Clone.Count)
+    Dim GA As GenericArray
+    Set GA = GenericArray.Build(Clone.Count)
     
-    Call Clone.CopyTo(ga, ga.LowerBound)
+    Call Clone.CopyTo(GA, GA.LowerBound)
     Call Skynet.Dispose(Clone)
        
-    For i = ga.LowerBound To ga.length
-        Debug.Print ga(i)
+    For i = GA.LowerBound To GA.Length
+        Debug.Print GA(i)
     Next
 
-    Debug.Print ga.IndexOf(List(10))
+    Debug.Print GA.IndexOf(List(10))
 
 End Sub
 
 Sub TestArray2()
     
     Dim i As Long
-    Dim ga As GenericArray
-    Set ga = GenericArray.Build(100)
+    Dim GA As GenericArray
+    Set GA = GenericArray.Build(100)
     
-    With ga
+    With GA
         Call .SetValue(GString("b"), 13)
         Call .SetValue(GString("c"), 14)
         Call .SetValue(GString("a"), 15)
@@ -553,14 +584,14 @@ Sub TestArray2()
         Call .SetValue(GString("f"), 89)
         Call .SetValue(GString("a"), 90)
         Call .SetValue(GString("a"), 100)
-        Call .Sort(Descending, ga.LowerBound, ga.length)
+        Call .Sort(Descending, GA.LowerBound, GA.Length)
     
-        For i = 1 To .length
-            If Not ga(i) Is Nothing Then _
-                Debug.Print "i: " & i & "  " & ga(i)
+        For i = 1 To .Length
+            If Not GA(i) Is Nothing Then _
+                Debug.Print "i: " & i & "  " & GA(i)
         Next
         
-        Debug.Print .BinarySearch(GString("a"), 1, .length, Descending)
+        Debug.Print .BinarySearch(GString("a"), 1, .Length, Descending)
         Call .Reverse
         Call .Clear
     End With

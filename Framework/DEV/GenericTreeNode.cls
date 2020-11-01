@@ -14,14 +14,13 @@ Option Explicit
 
 Implements GenericPair
 Implements IGeneric
-Implements IPrototype
 
 #If Win64 Then
-    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As LongPtr)
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal length As Long)
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
 #Else
-    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As Long)
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal length As Long)
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
 #End If
 
 Private Type Member
@@ -112,12 +111,17 @@ Private Sub Class_Initialize()
 End Sub
 
 Private Sub Class_Terminate()
-
 '    Debug.Print "Node_Terminate"
 End Sub
 
 'IGeneric
-Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericTreeNode: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericTreeNode):  End Property
+
 Private Sub IGeneric_Dispose()
     
     If myclass.Left Is Nothing = False Then _
@@ -128,6 +132,7 @@ Private Sub IGeneric_Dispose()
         
     myclass = EmptyStructure
 End Sub
+
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
@@ -166,8 +171,7 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     IGeneric_CompareTo = myclass.Key.CompareTo(otherPair.Key): Exit Function
 
 End Function
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = myclass.Key.HashValue: End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPair): End Function
+
 Private Function IGeneric_ToString() As String
     
     IGeneric_ToString = "Class: " & TypeName$(Me) & " :: GenericPair ::" & _
@@ -182,8 +186,3 @@ Private Function IGeneric_ToString() As String
                         End If
  
 End Function
-
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericPair: End Function
-Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericPair: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = LenB(myclass): End Property
-Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property

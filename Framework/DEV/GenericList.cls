@@ -51,7 +51,6 @@ Attribute VB_Exposed = True
 Option Explicit
 '@PredeclaredId
 
-Implements IPrototype
 Implements IGeneric
 Implements IGenericReadOnlyList
 Implements IGenericCollection
@@ -59,22 +58,22 @@ Implements IGenericIterator
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
-    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As LongPtr)
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal length As LongPtr)
-    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal length As LongPtr, ByVal Fill As Byte)
-    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal length As LongPtr, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
-    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal length As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal Length As LongPtr, ByVal Fill As Byte)
+    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As LongPtr, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
     Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
     Private Const POINTERSIZE As Long = 4
-    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As Long)
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal length As Long)
-    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal length As Long, ByRef dst As Long, ByVal src As Long) As Long
-    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal length As Long, ByRef dst As Long, ByVal src As Long) As Long
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As Long)
+    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal Length As Long, ByVal Fill As Byte)
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As Long, ByRef dst As Long, ByVal src As Long) As Long
+    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef dst As Long, ByVal src As Long) As Long
     Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
@@ -98,7 +97,6 @@ End Type
 Private Type Member
     Items As GenericArray
     Size As Long
-    IsReadOnly As Boolean
     SortOrder As SortOrder
     Iterator As Iterator
 End Type
@@ -134,7 +132,7 @@ Attribute ElementAt.VB_UserMemId = 0
 
 End Property
 
-Public Property Get Capacity() As Long: Capacity = myclass.Items.length: End Property
+Public Property Get Capacity() As Long: Capacity = myclass.Items.Length: End Property
 Public Property Let Capacity(ByVal Value As Long)
     
     If (Value < myclass.Size) Then _
@@ -143,13 +141,13 @@ Public Property Let Capacity(ByVal Value As Long)
     If (myclass.Items Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Property Let Capacity").NullPointer("myClass.Items Is Nothing")
     
-    If Not (Value = myclass.Items.length) Then
+    If Not (Value = myclass.Items.Length) Then
         If (Value > 0) Then
             Dim newItems As GenericArray
             Set newItems = GenericArray.Build(Value)
             If (myclass.Size > 0) Then _
-                Call CopyMemory(dst:=ByVal newItems.AdressOf(Element:=1), src:=ByVal myclass.Items.AdressOf(Element:=1), length:=myclass.Items.TotalSize): _
-                Call ZeroMemory(dst:=ByVal myclass.Items.AdressOf(Element:=1), length:=myclass.Items.TotalSize)
+                Call CopyMemory(dst:=ByVal newItems.AdressOf(Element:=1), src:=ByVal myclass.Items.AdressOf(Element:=1), Length:=myclass.Items.TotalSize): _
+                Call ZeroMemory(dst:=ByVal myclass.Items.AdressOf(Element:=1), Length:=myclass.Items.TotalSize)
            
             Set myclass.Items = newItems
         Else
@@ -163,8 +161,8 @@ Private Sub EnsureCapacity(ByVal Min As Long)
     Dim newCapacity As Long
     
     With myclass.Items
-        If (.length < Min) Then
-            newCapacity = IIf(.length = 0, DEFAULT_CAPACITY, .length * 2)
+        If (.Length < Min) Then
+            newCapacity = IIf(.Length = 0, DEFAULT_CAPACITY, .Length * 2)
             
             If (newCapacity > .MaxLength) Then _
                 newCapacity = .MaxLength
@@ -312,13 +310,13 @@ Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
     If (Index > myclass.Size + myclass.Items.LowerBound) Then _
         Call Skynet.Throw(Me, "Public Sub Insert").IndexOutofRange("Index > myClass.Size")
     
-    If (myclass.Size = myclass.Items.length) Then _
+    If (myclass.Size = myclass.Items.Length) Then _
         Call EnsureCapacity(myclass.Size + 1)
         
     With myclass.Items
         If (Index < myclass.Size + .LowerBound) Then _
-            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), length:=.SizeOf(1))
+            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
          
          Set .ElementAt(Index) = Item: Call InterlockedIncrement(myclass.Size)
     End With
@@ -345,8 +343,8 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
     
         With myclass.Items
             If (Index < myclass.Size + .LowerBound) Then _
-                Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + c.Count), src:=ByVal .AdressOf(Element:=Index), length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-                Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), length:=.SizeOf(c.Count))
+                Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + c.Count), src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+                Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(c.Count))
                 
         End With
       
@@ -382,8 +380,8 @@ Public Sub RemoveAt(ByVal Index As Long)
         Set .ElementAt(Index) = Nothing
         
         If (Index < myclass.Size + .LowerBound) Then _
-            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=myclass.Size), length:=.SizeOf(1))
+            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
             
     End With
     
@@ -433,10 +431,10 @@ Public Sub CopyTo( _
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").NullPointer("GArray Is Nothing")
     
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.length) Then _
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.length - ArrayIndex + GArray.LowerBound < Elements) Then _
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < Elements) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Elements)")
     
     Call GenericArray.Copy(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Elements)
@@ -447,11 +445,11 @@ End Sub
 'This requires copying the List, which is an O(n) operation.
 Public Function ToArray() As GenericArray
 
-    Dim ga As GenericArray
-    Set ga = GenericArray.Build(myclass.Size)
+    Dim GA As GenericArray
+    Set GA = GenericArray.Build(myclass.Size)
 
-    Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=ga, ArrayIndex:=ga.LowerBound)
-    Set ToArray = ga
+    Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GA, ArrayIndex:=GA.LowerBound)
+    Set ToArray = GA
 
 End Function
 
@@ -487,7 +485,7 @@ Public Function BinarySearch( _
     If (myclass.Size - Index + myclass.Items.LowerBound < Count) Then _
         Call Skynet.Throw(Me, "Public Function BinarySearch").InvalidInput("myClass.Size - Index < Count")
     
-    BinarySearch = myclass.Items.BinarySearch(Value:=Item, Index:=Index, length:=Count, Order:=myclass.SortOrder)
+    BinarySearch = myclass.Items.BinarySearch(Value:=Item, Index:=Index, Length:=Count, Order:=myclass.SortOrder)
     
 End Function
 
@@ -532,7 +530,7 @@ Public Sub Reverse( _
             Call Skynet.Throw(Me, "Public Sub Reverse").InvalidInput("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
     End If
     
-    Call myclass.Items.Reverse(Index:=Index, length:=Count)
+    Call myclass.Items.Reverse(Index:=Index, Length:=Count)
     
 End Sub
 
@@ -546,7 +544,7 @@ End Sub
 'list.TrimExcess();
 Public Sub TrimExcess()
      
-    If myclass.Size < Int(CDbl(myclass.Items.length) * 0.9) Then _
+    If myclass.Size < Int(CDbl(myclass.Items.Length) * 0.9) Then _
         Me.Capacity = myclass.Size
 
 End Sub
@@ -569,9 +567,15 @@ Private Sub LoadIterator( _
     End With
     
 End Sub
+
 'IGeneric
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericList: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericList):  End Property
+
 Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member
@@ -598,12 +602,12 @@ End Function
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericList): End Function
-Private Function IGeneric_ToString() As String
+
+ Private Function IGeneric_ToString() As String
     With myclass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Capacity: " & .Items.length & vbNewLine & _
+                            "Capacity: " & .Items.Length & vbNewLine & _
                             "Elements: " & .Size
     
     End With
@@ -613,12 +617,12 @@ End Function
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = myclass.Items.LowerBound: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Size: End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myclass.Items.IndexOf(Value:=Item, Count:=myclass.Size): End Function
-Private Property Get IGenericReadOnlyList_Item(ByVal Index As Long) As IGeneric
+Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
     If (Index > myclass.Size) Then _
-        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_Item").IndexOutofRange("Index not valid")
+        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("Index not valid")
 
-    Set IGenericReadOnlyList_Item = myclass.Items(Index)
+    Set IGenericReadOnlyList_ElementAt = myclass.Items(Index)
     
 End Property
 
@@ -628,8 +632,7 @@ Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGener
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
-Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
-Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myclass.IsReadOnly: End Property
+Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.ToArray: End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Item:=Item): End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator: End Function
@@ -670,9 +673,4 @@ Private Sub IGenericIterator_Reset()
     End With
 End Sub
 
-'IPrototype
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericList: End Function
-Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericList: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
-Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

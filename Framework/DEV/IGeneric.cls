@@ -10,14 +10,14 @@ Attribute VB_Exposed = True
 '@Exposed
 Option Explicit
 '@Folder "Base"
-Public Enum ComparerEnum
-    IsLower = -1
-    IsEqual = 0
-    IsGreater = 1
-End Enum
+
+Public Property Get Default() As IGeneric: End Property
+Public Property Get VirtualPointer() As LongPtr: End Property
+Public Property Get VirtualSize() As Long: End Property
 Public Property Get IsMutable() As Boolean: End Property
 Public Property Get HashValue() As Long: End Property
-Public Function IsRelatedTo(ByVal Other As IGeneric) As Boolean: End Function
+Public Property Get IsRelatedTo(ByVal Other As IGeneric) As Boolean: End Property
+
 Public Function Equals(ByVal Other As IGeneric) As Boolean: End Function
 Public Function CompareTo(ByVal Other As IGeneric) As ComparerEnum: End Function
 Public Function ToString() As String: End Function

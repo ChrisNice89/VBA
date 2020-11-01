@@ -51,7 +51,6 @@ Attribute VB_Exposed = True
 '@Folder "<T>Enumerable"
 Option Explicit
 
-Implements IPrototype
 Implements IGeneric
 Implements IGenericDictionary
 Implements IGenericCollection
@@ -59,16 +58,16 @@ Implements IGenericIterator
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
-    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As LongPtr)
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal length As LongPtr)
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As LongPtr)
     Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
     Private Const POINTERSIZE As Long = 4
-    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal length As Long)
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal length As Long)
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As Long)
     Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
@@ -148,14 +147,14 @@ Attribute Item.VB_UserMemId = 0
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
 Public Function GetKeys() As GenericArray
 
-    ReDim Keys(GenericArray.LowerBound To myclass.Count) As IGeneric
-    Dim Index As Long: Index = GenericArray.LowerBound
+    ReDim Keys(1 To myclass.Count) As IGeneric
+    Dim Index As Long
 
     Dim i As Long
     
     For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
         If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Keys(Index) = myclass.Buckets(i).Key: Call InterlockedIncrement(Index)
+            Set Keys(InterlockedIncrement(Index)) = myclass.Buckets(i).Key
     Next
     
     Set GetKeys = GenericArray.BuildFrom(Keys)
@@ -164,14 +163,14 @@ End Function
 
 Public Function GetValues() As GenericArray
 
-    ReDim Values(GenericArray.LowerBound To myclass.Count) As IGeneric
-    Dim Index As Long: Index = GenericArray.LowerBound
+    ReDim Values(1 To myclass.Count) As IGeneric
+    Dim Index As Long
 
     Dim i As Long
     
     For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
         If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Values(Index) = myclass.Buckets(i).Value: Call InterlockedIncrement(Index)
+            Set Values(InterlockedIncrement(Index)) = myclass.Buckets(i).Value
     Next
     
     Set GetValues = GenericArray.BuildFrom(Values)
@@ -305,13 +304,13 @@ End Function
 
 Public Sub Remove(ByVal Key As IGeneric)
     
-    Dim s As Byte
+    Dim S As Byte
     Dim i As Long: i = FindEntry(Key)
     
     If (i >= 0) Then
         With myclass
-            s = (.Buckets(i).State And Not HAS_ENTRY)
-            .Buckets(i) = EmptyBucket: .Buckets(i).State = s
+            S = (.Buckets(i).State And Not HAS_ENTRY)
+            .Buckets(i) = EmptyBucket: .Buckets(i).State = S
             Call InterlockedDecrement(.Count)
         End With
     End If
@@ -497,10 +496,10 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     If (GArray Is Nothing) Then _
         Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
     
-    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.length) Then _
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
         Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
-    If (GArray.length - ArrayIndex + GArray.LowerBound < myclass.Count) Then _
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < myclass.Count) Then _
         Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Count)")
     
     Dim i As Long
@@ -556,9 +555,14 @@ Private Sub LoadIterator( _
     End With
     
 End Sub
+
 'IGeneric
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericMap: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericMap):  End Property
 
 Private Function IGeneric_Clone() As IGeneric
     
@@ -584,7 +588,6 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
 
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericMap): End Function
 Private Function IGeneric_ToString() As String
     With myclass
         IGeneric_ToString = _
@@ -632,7 +635,6 @@ Private Function IGenericDictionary_Iterator(ByVal t As DictionaryData) As IGene
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
-Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
@@ -692,9 +694,4 @@ Private Sub IGenericIterator_Reset()
         Call LoadIterator(myclass.Iterator, .Map, .Descriptor, .Type, .Size)
     End With
 End Sub
-'IPrototype
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericMap: End Function
-Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericMap: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
-Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

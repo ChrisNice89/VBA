@@ -14,8 +14,6 @@ Option Explicit
 '@PredeclaredId
 
 Implements IGeneric
-Implements IPrototype
-
 
 Public Enum TBooleanFormat
     [_First]
@@ -66,7 +64,13 @@ End Property
 Private Property Get IValue_Value() As Variant: IValue_Value = myclass.Value: End Property
 
 'IGeneric
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GBoolean: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GBoolean):  End Property
+
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric
@@ -101,8 +105,6 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     End If
 End Function
 
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = 0: End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GBoolean): End Function
 Private Function IGeneric_ToString() As String
 
     Select Case myclass.Format
@@ -111,9 +113,4 @@ Private Function IGeneric_ToString() As String
     End Select
     
 End Function
-
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GBoolean: End Function
-Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GBoolean: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
-Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
 

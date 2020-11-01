@@ -8,14 +8,10 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@Folder("<T>Class")
-
-
 Option Explicit
 '@PredeclaredId
 
 Implements IGeneric
-Implements IPrototype
-
 
 Public Enum TDateFormat
     [_First]
@@ -63,8 +59,8 @@ Public Function Add(ByVal Number As Long, ByVal i As DateInterval) As GDate
     Set Add = GDate(DateAdd(Me.IntervalName(i), Number, myclass.Value), myclass.Format)
 End Function
 
-Public Function DifferenceTo(ByVal D As GDate, ByVal i As DateInterval) As Long
-    DifferenceTo = DateDiff(Me.IntervalName(i), myclass.Value, D.Value)
+Public Function DifferenceTo(ByVal d As GDate, ByVal i As DateInterval) As Long
+    DifferenceTo = DateDiff(Me.IntervalName(i), myclass.Value, d.Value)
 End Function
 
 Public Property Get IntervalName(ByVal i As DateInterval) As String
@@ -120,13 +116,13 @@ Private Sub Class_Initialize()
     'ReDim Formats(TStringFormat.[_First] To TStringFormat.[_Last])
 End Sub
 
-Public Function Convert(ByVal D As String, ByVal Format As TDateFormat) As Date
+Public Function Convert(ByVal d As String, ByVal Format As TDateFormat) As Date
     Dim day As Integer, month As Integer, year As Integer
     
     If Format = TDateFormat.DDMMYYYY Then
-        day = Int(VBA.Mid$(D, 1, 2))
-        month = Int(VBA.Mid$(D, 4, 2))
-        year = Int(VBA.Mid$(D, 7, 4))
+        day = Int(VBA.Mid$(d, 1, 2))
+        month = Int(VBA.Mid$(d, 4, 2))
+        year = Int(VBA.Mid$(d, 7, 4))
     ElseIf Format = TDateFormat.DDMMYYYY Then
     
     Else
@@ -138,7 +134,13 @@ Public Function Convert(ByVal D As String, ByVal Format As TDateFormat) As Date
 End Function
 
 'IGeneric
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GDate: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GDate):  End Property
+
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric
@@ -154,33 +156,25 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim D As GDate: Set D = Other
+    Dim d As GDate: Set d = Other
    
-    IGeneric_Equals = (myclass.Value = D.Value)
+    IGeneric_Equals = (myclass.Value = d.Value)
      
 End Function
 
 Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim D As GDate
+    Dim d As GDate
     
     If Other.IsRelatedTo(Me) Then
-        Set D = Other
+        Set d = Other
         Select Case True
-            Case myclass.Value > D.Value: IGeneric_CompareTo = IsGreater
-            Case myclass.Value < D.Value: IGeneric_CompareTo = IsLower
+            Case myclass.Value > d.Value: IGeneric_CompareTo = IsGreater
+            Case myclass.Value < d.Value: IGeneric_CompareTo = IsLower
             Case Else: IGeneric_CompareTo = IsEqual
         End Select
     End If
 End Function
 
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = 0: End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GDate): End Function
 Private Function IGeneric_ToString() As String
     IGeneric_ToString = Format$(myclass.Value, Interval(myclass.Format))
 End Function
-
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GDate: End Function
-Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GDate: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
-Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
-

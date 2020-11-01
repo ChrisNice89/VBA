@@ -17,13 +17,10 @@ Public Enum DictionaryData
     Pairs_
 End Enum
 
+Public Property Get Count() As Long: End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: End Property
 Attribute Item.VB_UserMemId = 0
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): End Property
-Public Property Get Count() As Long: End Property
-
-'Public Property Get Keys() As IGenericCollection: End Property
-'Public Property Get Values() As IGenericCollection: End Property
 
 Public Function ContainsValue(ByVal Value As IGeneric) As Boolean: End Function
 Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: End Function

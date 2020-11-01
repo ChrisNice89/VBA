@@ -11,8 +11,6 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Implements IGeneric
-Implements ISqlValue
-Implements IPrototype
 
 Private Const MaxLong As Long = 2 ^ 31 - 1
 
@@ -27,10 +25,6 @@ Public Enum TNumericFormat
     [_Last]
 End Enum
 
-Private Type SqlMember
-    Parameter As ADODB.Parameter
-End Type
-Private Sql As SqlMember
 '
 Private Type Member
     Value As Currency
@@ -120,7 +114,13 @@ End Property
 Private Property Get IValue_Value() As Variant: IValue_Value = myclass.Value: End Property
 
 'IGeneric
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GNumeric: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = myclass.Value: End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GNumeric):  End Property
+
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 
@@ -159,91 +159,28 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
 
 End Function
 
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = Skynet.LimitDouble(myclass.Value): End Property
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GNumeric): End Function
 Private Function IGeneric_ToString() As String
 
     IGeneric_ToString = myclass.Value
     
 End Function
     
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GNumeric: End Function
-Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GNumeric: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
-Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
-
-'ISqlValue
-Private Function ISqlValue_Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = 1&) As ISqlValue
-
-End Function
-
-Private Property Get ISqlValue_Direction() As ISqlParameterDirection
-    ISqlValue_Direction = ISqlParameterDirection.ParamInput
-End Property
-
-Private Property Get ISqlValue_Format() As String
-
-End Property
-
-Private Function ISqlValue_FormatValue(ByVal Value As Variant) As String
-
-End Function
-
-Private Property Get ISqlValue_IsNumeric() As Boolean
-    ISqlValue_IsNumeric = True
-End Property
-
-Private Function ISqlValue_IsRelatedTo(ByVal Other As ISqlValue) As Boolean
-    ISqlValue_IsRelatedTo = TypeOf Other Is GNumeric
-End Function
-
-Private Property Get ISqlValue_Primitive() As Variant
-    ISqlValue_Primitive = myclass.Value
-End Property
-
-Private Property Get ISqlValue_PrimitiveType() As VbVarType
-    ISqlValue_PrimitiveType = vbCurrency
-End Property
-
-Private Property Get ISqlValue_Size() As Byte
-    ISqlValue_Size = LenB(myclass.Value)
-End Property
-
-Private Property Get ISqlValue_SqlType() As ISqlDataType
-    ISqlValue_SqlType = ISqlDataType.Decimal_Type
-End Property
-
-Private Function ISqlValue_Prepare( _
-                                      Optional ByVal Name As String, _
-                                      Optional ByVal Direction As ISqlParameterDirection = 1&) As ISqlValue
+'IGenericValue
+Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Variant
     
-    Set Sql.Parameter = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With Sql.Parameter
+    With P
         .Direction = Direction
         .Attributes = adParamNullable '64
         .Precision = myclass.Precision
         .NumericScale = myclass.NumericScale
         .Type = ISqlDataType.Decimal_Type
-        
-        If Name = vbNullString = False Then _
-            .Name = Name
-            
+        .Name = Name
         .Value = myclass.Value
-        
     End With
     
+    Set IGenericValue_ToSqlParameter = P
+    
 End Function
-
-Private Sub ISqlValue_AppendTo(ByVal Command As ADODB.Command)
-    
-    If Command Is Nothing Then
-    'Error
-    End If
-    
-    If Sql.Parameter Is Nothing Then _
-        Call ISqlValue_Prepare
-    
-    Call Command.Parameters.Append(Sql.Parameter)
-    
-End Sub

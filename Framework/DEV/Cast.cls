@@ -17,7 +17,7 @@ Public Function ToString(ByVal Instance As IGeneric) As GString: Set ToString = 
 Public Function ToNumeric(ByVal Instance As IGeneric) As GNumeric: Set ToNumeric = Instance: End Function
 
 
-Public Function SqlValue(ByVal Instance As IGeneric) As ISqlValue: Set SqlValue = Instance: End Function
+Public Function SqlValue(ByVal Instance As IGeneric) As IGenericValue: Set SqlValue = Instance: End Function
 
 Public Function ToArray(ByVal Instance As IGeneric) As GenericArray: Set ToArray = Instance: End Function
 Public Function ToHashMap(ByVal Instance As IGeneric) As GenericMap: Set ToHashMap = Instance: End Function

@@ -11,7 +11,6 @@ Attribute VB_Exposed = True
 Option Explicit
 '@Folder "<T>Enumerable"
 
-Public Property Get IsFixedSize() As Boolean: End Property
 Public Property Get Count() As Long: End Property
 
 Public Function Iterator() As IGenericIterator: End Function

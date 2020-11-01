@@ -14,7 +14,6 @@ Option Explicit
 
 Implements IGeneric
 Implements IGenericCollection
-Implements IPrototype
 
 Private Type Member
     Tree As GenericTree
@@ -78,8 +77,13 @@ Public Function ElementAt(ByVal Index As Long) As IGeneric
 End Function
 
 'IGeneric
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSortedSet: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
-Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = IGeneric_HashValue = ObjPtr(Me): End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedSet):  End Property
+
 Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member
@@ -102,7 +106,6 @@ Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "Private Function IGeneric_Equals").NotImplemented
 End Function
 
-Private Function IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedList): End Function
 Private Function IGeneric_ToString() As String
     With myclass
         IGeneric_ToString = _
@@ -124,12 +127,3 @@ Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericColle
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long):: End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(Reverse:=False): End Function
-
-'IPrototype
-Private Function IPrototype_CreateDefault() As IPrototype: Set IPrototype_CreateDefault = New GenericSortedSet: End Function
-Private Property Get IPrototype_StaticInstance() As Object: Set IPrototype_StaticInstance = GenericSortedSet: End Property
-Private Property Get IPrototype_Size() As Long: IPrototype_Size = Virtual.Size: End Property
-Private Property Get IPrototype_VirtualPointer() As LongPtr: IPrototype_VirtualPointer = Virtual.Pointer: End Property
-
-
-
