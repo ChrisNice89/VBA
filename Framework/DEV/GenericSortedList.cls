@@ -108,6 +108,7 @@ End Type
 Private Type Member
     Keys As GenericArray
     Values As GenericArray
+    Comparer As IGenericComparer
     Size As Long
     IsReadOnly As Boolean
     SortOrder As SortOrder
@@ -159,7 +160,7 @@ Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
         Call Skynet.Throw(Me, "Public Property set Item").KeyIsNothing
        
     Dim i As Long
-    i = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder)
+    i = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
  
     If (i >= 0) Then _
         Set myclass.Values(i) = Value: Exit Property
@@ -215,7 +216,7 @@ Public Property Let Capacity(ByVal Value As Long)
     End If
 End Property
 
-Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As GenericSortedList
+Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY, Optional ByVal Comparer As IGenericComparer) As GenericSortedList
     
     If (Me Is GenericSortedList) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
@@ -223,8 +224,13 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     If (Capacity < 0) Then _
         Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
+    If (Comparer Is Nothing) Then _
+        Set Comparer = GenericValueComparer.Default
+        'Call Skynet.Throw(Me, "Build").NullPointer("(Comparer Is Nothing)")
+        
     With myclass
-        .SortOrder = Ascending
+        .SortOrder = ascending
+        Set .Comparer = Comparer
         Set .Keys = GenericArray.Build(Capacity)
         Set .Values = GenericArray.Build(Capacity)
     End With
@@ -233,7 +239,7 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     
 End Function
 
-Public Function BuildFrom(ByVal Dictionary As IGenericDictionary) As GenericSortedList
+Public Function BuildFrom(ByVal Dictionary As IGenericDictionary, Optional ByVal Comparer As IGenericComparer) As GenericSortedList
     
     If (Me Is GenericSortedList) = False Then _
         Call Skynet.Throw(Me, "Public Function BuildFrom").BuildExeption
@@ -241,16 +247,21 @@ Public Function BuildFrom(ByVal Dictionary As IGenericDictionary) As GenericSort
     If (Dictionary Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Dictionary Is Nothing)")
     
+    If (Comparer Is Nothing) Then _
+        Set Comparer = GenericValueComparer.Default
+        'Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Comparer Is Nothing)")
+    
     With myclass
-        .SortOrder = Ascending
-          
+        .SortOrder = ascending
+        
+        Set .Comparer = Comparer
         Set .Keys = GenericArray.Build(Dictionary.Count)
         Set .Values = GenericArray.Build(Dictionary.Count)
         
         Call Dictionary.CopyOf(t:=Keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
         Call Dictionary.CopyOf(t:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
         
-        Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, Length:=.Keys.Length, Order:=myclass.SortOrder)
+        Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, Length:=.Keys.Length, Comparer:=myclass.Comparer, Order:=myclass.SortOrder)
         .Size = Dictionary.Count
     
     End With
@@ -350,7 +361,7 @@ Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
         Call Skynet.Throw(Me, "Public Function Add").KeyIsNothing
        
     Dim i As Long
-    i = myclass.Keys.BinarySearch(Value:=Key, Index:=1, Length:=myclass.Size, Order:=myclass.SortOrder)
+    i = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
     
     If (i >= 0) Then _
         Call Skynet.Throw(Me, "Public Sub Add").InvalidInput("Key duplicated")
@@ -393,7 +404,7 @@ Public Function IndexOfKey(ByVal Key As IGeneric) As Long
         Call Skynet.Throw(Me, "Public Function IndexOfKey").KeyIsNothing
     
     Dim ret As Long
-    ret = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder)
+    ret = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
 
     IndexOfKey = IIf(ret >= 0, ret, -1)
     
@@ -528,17 +539,13 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     IGeneric_Equals = (Me Is Other)
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
-End Function
-
 Private Function IGeneric_ToString() As String
     With myclass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
                             "Capacity: " & .Keys.Length & vbNewLine & _
                             "Elements: " & .Size & vbNewLine & _
-                            "Sortorder: " & IIf(.SortOrder = Ascending, "Ascending", "Descending")
+                            "Sortorder: " & IIf(.SortOrder = ascending, "Ascending", "Descending")
     End With
 End Function
 

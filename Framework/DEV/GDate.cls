@@ -162,19 +162,6 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
      
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Dim d As GDate
-    
-    If Other.IsRelatedTo(Me) Then
-        Set d = Other
-        Select Case True
-            Case myclass.Value > d.Value: IGeneric_CompareTo = IsGreater
-            Case myclass.Value < d.Value: IGeneric_CompareTo = IsLower
-            Case Else: IGeneric_CompareTo = IsEqual
-        End Select
-    End If
-End Function
-
 Private Function IGeneric_ToString() As String
     IGeneric_ToString = Format$(myclass.Value, Interval(myclass.Format))
 End Function

@@ -239,10 +239,6 @@ Private Function IGeneric_Clone() As IGeneric
 
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-
-End Function
-
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
 End Function

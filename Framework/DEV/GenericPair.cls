@@ -102,18 +102,6 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    
-    Dim otherPair As GenericPair
-    
-    If Other Is Nothing Then _
-        IGeneric_CompareTo = IsGreater: Exit Function
-
-    Set otherPair = Other
-    IGeneric_CompareTo = myclass.Key.CompareTo(otherPair.Key)
-    
-End Function
-
 Private Function IGeneric_ToString() As String
     
     IGeneric_ToString = "Class: " & TypeName$(Me) & " :: " & _

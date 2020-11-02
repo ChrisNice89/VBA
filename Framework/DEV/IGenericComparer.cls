@@ -9,6 +9,12 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 Option Compare Database
 
+Public Enum SortOrder
+    descending = -1
+    Random = 0
+    ascending = 1
+End Enum
+
 Public Enum ComparerEnum
     IsLower = -1
     IsEqual = 0

@@ -102,10 +102,6 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     Call Skynet.Throw(Me, "Private Function IGeneric_Equals").NotImplemented
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Call Skynet.Throw(Me, "Private Function IGeneric_Equals").NotImplemented
-End Function
-
 Private Function IGeneric_ToString() As String
     With myclass
         IGeneric_ToString = _

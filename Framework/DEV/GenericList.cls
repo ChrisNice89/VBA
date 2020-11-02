@@ -184,7 +184,7 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
         Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     With myclass
-        .SortOrder = Ascending
+        .SortOrder = ascending
         Set .Items = GenericArray.Build(Capacity)
     End With
     
@@ -201,7 +201,7 @@ Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
         Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Collection Is Nothing)")
     
     With myclass
-        .SortOrder = Ascending
+        .SortOrder = ascending
         If (Collection Is Nothing) = False Then
             Set .Items = GenericArray.Build(Collection.Count)
             Call Collection.CopyTo(GArray:=.Items, ArrayIndex:=.Items.LowerBound)
@@ -453,8 +453,8 @@ Public Function ToArray() As GenericArray
 
 End Function
 
-Public Sub Sort(ByVal Order As SortOrder)
-    Call myclass.Items.Sort(Order, myclass.Items.LowerBound, myclass.Size)
+Public Sub Sort(ByVal Order As SortOrder, Optional ByVal Comparer As IGenericComparer)
+    Call myclass.Items.Sort(Order:=Order, Index:=myclass.Items.LowerBound, Length:=myclass.Size, Comparer:=Comparer)
 End Sub
 
 Public Sub Clear():
@@ -465,6 +465,7 @@ Public Function Contains(Item As IGeneric) As Boolean: Contains = (Me.IndexOf(It
 
 Public Function BinarySearch( _
                                 ByVal Item As IGeneric, _
+                                Optional ByVal Comparer As IGenericComparer, _
                                 Optional ByVal Index As Long, _
                                 Optional ByVal Count As Long) As Long
     
@@ -485,7 +486,7 @@ Public Function BinarySearch( _
     If (myclass.Size - Index + myclass.Items.LowerBound < Count) Then _
         Call Skynet.Throw(Me, "Public Function BinarySearch").InvalidInput("myClass.Size - Index < Count")
     
-    BinarySearch = myclass.Items.BinarySearch(Value:=Item, Index:=Index, Length:=Count, Order:=myclass.SortOrder)
+    BinarySearch = myclass.Items.BinarySearch(Value:=Item, Index:=Index, Length:=Count, Order:=myclass.SortOrder, Comparer:=Comparer)
     
 End Function
 
@@ -597,10 +598,6 @@ Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     IGeneric_Equals = (Me Is Other)
-End Function
-
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
 
  Private Function IGeneric_ToString() As String

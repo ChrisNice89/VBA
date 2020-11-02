@@ -19,7 +19,7 @@ Public Property Get HashValue() As Long: End Property
 Public Property Get IsRelatedTo(ByVal Other As IGeneric) As Boolean: End Property
 
 Public Function Equals(ByVal Other As IGeneric) As Boolean: End Function
-Public Function CompareTo(ByVal Other As IGeneric) As ComparerEnum: End Function
+'Public Function CompareTo(ByVal Other As IGeneric) As ComparerEnum: End Function
 Public Function ToString() As String: End Function
 Attribute ToString.VB_UserMemId = 0
 Public Function Clone() As IGeneric: End Function

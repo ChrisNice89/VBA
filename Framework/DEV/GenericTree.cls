@@ -68,6 +68,7 @@ End Type
 
 Private Type Member
     Root As GenericTreeNode
+    Comparer As IGenericComparer
     Iterator As Iterator
     FindCounter As Long
 End Type
@@ -104,12 +105,15 @@ Attribute Item.VB_UserMemId = 0
 
 End Property
 
-Public Function Build() As GenericTree
+Public Function Build(Optional ByVal Comparer As IGenericComparer) As GenericTree
     
     If (Me Is GenericTree) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
-    Set Build = New GenericTree
+    If Comparer Is Nothing Then _
+        Comparer = GenericValueComparer.Default
+        
+    Set Build = Skynet.CreateInstance(New GenericTree, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -144,14 +148,16 @@ Public Function GetHigherThan(ByVal Key As IGeneric) As GenericPair
     Dim Current As GenericTreeNode: Set Current = myclass.Root
     Dim BestSoFar As GenericTreeNode
     
-    Do While (Current Is Nothing) = False
-        If Key.CompareTo(Current.Key) = IsLower Then
-            Set BestSoFar = Current
-            Set Current = Current.Left
-        Else
-            Set Current = Current.Right
-        End If
-    Loop
+    With myclass.Comparer
+        Do While (Current Is Nothing) = False
+            If .Compare(Key, Current.Key) = IsLower Then
+                Set BestSoFar = Current
+                Set Current = Current.Left
+            Else
+                Set Current = Current.Right
+            End If
+        Loop
+    End With
     
     Set GetHigherThan = BestSoFar
     
@@ -162,14 +168,16 @@ Public Function GetLowerThan(ByVal Key As IGeneric) As GenericPair
     Dim Current As GenericTreeNode: Set Current = myclass.Root
     Dim BestSoFar As GenericTreeNode
     
-    Do While (Current Is Nothing) = False
-        If Key.CompareTo(Current.Key) = IsGreater Then
-            Set BestSoFar = Current
-            Set Current = Current.Right
-        Else
-            Set Current = Current.Left
-        End If
-    Loop
+    With myclass.Comparer
+        Do While (Current Is Nothing) = False
+            If .Compare(Key, Current.Key) = IsGreater Then
+                Set BestSoFar = Current
+                Set Current = Current.Right
+            Else
+                Set Current = Current.Left
+            End If
+        Loop
+    End With
     
     Set GetLowerThan = BestSoFar
     
@@ -182,7 +190,7 @@ Private Function RankOf(ByVal Key As IGeneric, ByVal Node As GenericTreeNode) As
     If Node Is Nothing Then _
         Exit Function
     
-    Select Case Key.CompareTo(Node.Key)
+    Select Case myclass.Comparer.Compare(Key, Node.Key)
         Case Is < 0
             RankOf = RankOf(Key, Node.Left)
         Case Is > 0
@@ -472,19 +480,21 @@ Private Function FindNode(ByVal Key As IGeneric) As GenericTreeNode
     If (Key Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function FindNode").KeyIsNothing
     
-    Do While (Current Is Nothing) = False
-        Order = Key.CompareTo(Current.Key)
-    
-        If (Order = 0) Then _
-            Set FindNode = Current: Exit Function
+    With myclass.Comparer
+        Do While (Current Is Nothing) = False
+            Order = .Compare(Key, Current.Key)
         
-        If Order < 0 Then
-            Set Current = Current.Left
-        Else
-            Set Current = Current.Right
-        End If
-        
-    Loop
+            If (Order = 0) Then _
+                Set FindNode = Current: Exit Function
+            
+            If Order < 0 Then
+                Set Current = Current.Left
+            Else
+                Set Current = Current.Right
+            End If
+            
+        Loop
+    End With
     
 End Function
 
@@ -571,47 +581,48 @@ Public Function Add( _
         Exit Function
 
     Set Current = myclass.Root
-    Do
-        Order = Key.CompareTo(Current.Key)
-       
-        If (Order = 0) Then
-            myclass.Root.IsRed = False
-            Add = False
-            Do While Parent Is Nothing = False
-                Parent.Size = Parent.Size - 1
-                Set Parent = Parent.Parent
-            Loop
-            
-            If (Overwrite) Then
-                Set Current.Value = Value
-            Else
-                Call Skynet.Throw(Me, "Public Function Add").DuplicateNotAllowed(Key)
-            End If
-            Exit Function
-        End If
-        
-        Current.Size = Current.Size + 1
-        
-        If Split4Node(Current) Then
-            If (Parent Is Nothing) = False Then
-                If Parent.IsRed Then
-                    Call EnsureBalance(Current, Parent, GrandParent, GreatGrandParent)
+    With myclass.Comparer
+        Do
+            Order = .Compare(Key, Current.Key)
+           
+            If (Order = 0) Then
+                myclass.Root.IsRed = False
+                Add = False
+                Do While Parent Is Nothing = False
+                    Parent.Size = Parent.Size - 1
+                    Set Parent = Parent.Parent
+                Loop
+                
+                If (Overwrite) Then
+                    Set Current.Value = Value
+                Else
+                    Call Skynet.Throw(Me, "Public Function Add").DuplicateNotAllowed(Key)
                 End If
-             End If
-        End If
-        
-        Set GreatGrandParent = GrandParent
-        Set GrandParent = Parent
-        Set Parent = Current
-        
-        If Order < 0 Then
-            Set Current = Current.Left
-        Else
-            Set Current = Current.Right
-        End If
-
-    Loop While (Current Is Nothing) = False
+                Exit Function
+            End If
+            
+            Current.Size = Current.Size + 1
+            
+            If Split4Node(Current) Then
+                If (Parent Is Nothing) = False Then
+                    If Parent.IsRed Then
+                        Call EnsureBalance(Current, Parent, GrandParent, GreatGrandParent)
+                    End If
+                 End If
+            End If
+            
+            Set GreatGrandParent = GrandParent
+            Set GrandParent = Parent
+            Set Parent = Current
+            
+            If Order < 0 Then
+                Set Current = Current.Left
+            Else
+                Set Current = Current.Right
+            End If
     
+        Loop While (Current Is Nothing) = False
+    End With
 '    If (Parent Is Nothing) Then _
 '        Call Skynet.Throw(Me, "Private Sub InsertionBalance").NullPointer("Parent cannot be null here!")
 
@@ -965,10 +976,6 @@ End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    Call Skynet.Throw(Me, "Private Function IGeneric_Equals").NotImplemented
-End Function
-
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
     Call Skynet.Throw(Me, "Private Function IGeneric_Equals").NotImplemented
 End Function
 

@@ -7,53 +7,52 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-Attribute VB_Ext_KEY = "Rubberduck" ,"Predeclared Class Module"
 '@Folder("Database")
 Option Compare Database
 
 Option Explicit
 '@PredeclaredId
 
-Public Enum PortfolioField
+Public Enum PortfolioFields
     [_First]
-    Nummer
-    Name
-    Prüfer
-    Tranche
-    Prüfungsschwerpunkt
-    Auswahlgrund
-    Datum
-    Kundennummer
-    Kundenname
-    Ratingverfahren
-    Ratingnote
-    Ratingdatum
-    Risikovolumen
-    Inanspruchnahme
-    Blankovolumen
-    EWB
-    Kundennummer
-    Kontonummer
-    Produktgruppe
-    Produkttyp
-    Sollzins
-    Limit (extern)
-    Limit (intern)
-    Inanspruchnahme
-    Überziehungsdauer
-    Geber -Nummer
-    Geber -Name
-    Nummer
-    Sicherheitenart
-    Immobilien -Nummer
-    Objektart
-    BLW -Auslauf
-    Anrechnung
-    verfügbar
+'    Nummer
+'    Name
+'    Prüfer
+'    Tranche
+'    Prüfungsschwerpunkt
+'    Auswahlgrund
+'    Datum
+'    Kundennummer
+'    Kundenname
+'    Ratingverfahren
+'    Ratingnote
+'    Ratingdatum
+'    Risikovolumen
+'    Inanspruchnahme
+'    Blankovolumen
+'    EWB
+'    Kundennummer
+'    Kontonummer
+'    Produktgruppe
+'    Produkttyp
+'    Sollzins
+'    Limit (extern)
+'    Limit (intern)
+'    Inanspruchnahme
+'    Überziehungsdauer
+'    Geber -Nummer
+'    Geber -Name
+'    Nummer
+'    Sicherheitenart
+'    Immobilien -Nummer
+'    Objektart
+'    BLW -Auslauf
+'    Anrechnung
+'    verfügbar
     [_Last]
 End Enum
 
-Public Enum Normal
+Public Enum NormalFields
     [_First]
 
     [_Last]
@@ -68,11 +67,11 @@ Private myclass As Member
 
 Private Sub Class_Initialize()
     With myclass
-        ReDim Portfolio(PortfolioField.[_First] To PortfolioField.[_Last])
+        ReDim Portfolio(PortfolioFields.[_First] To PortfolioFields.[_Last])
     
     End With
 End Sub
 
-Public Property Get Portfolio(ByVal Field As PortfolioField) As String
+Public Property Get Portfolio(ByVal Field As PortfolioFields) As String
     Portfolio = myclass.Portfolio(Field)
 End Property

@@ -284,16 +284,6 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    
-    If Other Is Nothing Then _
-        IGeneric_CompareTo = IsGreater: Exit Function
-    
-    Dim S As GString: Set S = Other
-    IGeneric_CompareTo = StrComp(myclass.Value, S.Value, vbTextCompare)
-
-End Function
-
 Private Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 
 Private Function IGeneric_ToString() As String
@@ -330,7 +320,7 @@ End Function
 'IGenericValue
 Private Property Get IGenericValue_GetType() As VbVarType: IGenericValue_GetType = vbString: End Property
 Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
-Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Decimal_Type: End Property
+Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.VarWChar_Type: End Property
 Private Property Get IGenericValue_RawValue() As Variant: IGenericValue_RawValue = myclass.Value: End Property
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
 
@@ -348,7 +338,9 @@ Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As Compar
     
 End Function
 
-Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Variant
+Private Function IGenericValue_ToSqlParameter( _
+                                                 Optional ByVal Direction As ISqlParameterDirection = 1&, _
+                                                 Optional ByVal Name As String) As Variant
     
     Dim P As ADODB.Parameter
     Set P = New ADODB.Parameter

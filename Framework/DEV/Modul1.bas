@@ -261,34 +261,25 @@ End Sub
 Sub TestArrayIterator()
    
     Dim i As Long, N As Long
-    N = 10000
+    N = 100
     
     Dim x() As IGeneric
     ReDim x(1 To N)
     
-    For i = 1 To N
+    For i = N To 1 Step -1
         Set x(i) = GNumeric(i)
     Next
     
-    Dim Number As GNumeric
-    Dim GA As GenericArray
-    Set GA = GenericArray.BuildFrom(x)
-     
-    Dim t As CTimer
-    Set t = New CTimer
-    t.StartCounter
-    For i = GA.LowerBound To GA.Length
-        Set Number = GA(i)
-    Next
-    Debug.Print t.TimeElapsed
+    Call GenericArray.SortArray(x, LBound(x), UBound(x), Order:=Random)
+'    For i = 1 To N
+'        Debug.Print x(i)
+'    Next
     
-    t.StartCounter
-    With GA.Iterator
-        Do While .HasNext(Number) ' Fast
-'            Set Number = .Current
-        Loop
-    End With
-    Debug.Print t.TimeElapsed
+'    Call GenericArray.SortArray(x, LBound(x), UBound(x), New GenericValueComparer, Descending)
+    Call GenericArray.SortArray(x, LBound(x), UBound(x), Nothing, descending)
+    For i = 1 To N
+        Debug.Print x(i)
+    Next
     
 End Sub
 
@@ -306,10 +297,10 @@ Sub TestArraySort()
 '        Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Call List.Add(GNumeric(i))
     Next
-    Call List.Sort(random)
+    Call List.Sort(Random)
     
     t.StartCounter
-    Call List.Sort(Descending)
+    Call List.Sort(descending)
     Debug.Print t.TimeElapsed
     
     Dim Item As IGeneric
@@ -487,7 +478,7 @@ Sub TestMaps()
         For i = 1 To N
             Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Next
-        Call List.Sort(random)
+        Call List.Sort(Random)
     End If
  
     Dim P As GenericPair
@@ -694,14 +685,14 @@ Sub TestArray2()
         Call .SetValue(GString("f"), 89)
         Call .SetValue(GString("a"), 90)
         Call .SetValue(GString("a"), 100)
-        Call .Sort(Descending, GA.LowerBound, GA.Length)
+        Call .Sort(descending, GA.LowerBound, GA.Length, GenericValueComparer)
     
         For i = 1 To .Length
             If Not GA(i) Is Nothing Then _
                 Debug.Print "i: " & i & "  " & GA(i)
         Next
         
-        Debug.Print .BinarySearch(GString("a"), 1, .Length, Descending)
+        Debug.Print .BinarySearch(GString("zzz"), 1, .Length, descending)
         Call .Reverse
         Call .Clear
     End With
@@ -734,7 +725,7 @@ Public Sub ListTest()
     Debug.Print List2(500)
 
     Dim List3 As GenericList
-    Set List3 = List.GetRange(500, 503)
+    Set List3 = List.GetRange(500, 502)
     
     Dim readOnly As IGenericReadOnlyList
     Set readOnly = List3.AsReadOnly
@@ -754,7 +745,7 @@ Sub testMap()
     Dim t As CTimer
     Set t = New CTimer
    
-    For i = 1 To 50000
+    For i = 1 To 500
         Call hm.Add(GString("Key" & i), GNumeric(i))
     Next
     

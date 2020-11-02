@@ -289,7 +289,7 @@ End Function
 
 Public Sub Sort(ByVal Index As Long)
     myclass.SelectedColumn = Index
-    Call myclass.Rows.Sort(Order:=Ascending)
+    Call myclass.Rows.Sort(Order:=ascending)
 End Sub
 
 Public Sub Update(ByVal ID As Long)
@@ -381,10 +381,6 @@ Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     IGeneric_Equals = (Me Is Other)
-End Function
-
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    Call Skynet.Throw(Me, "IObject_CompareTo").NotSupported
 End Function
 
 Private Function IGeneric_ToString() As String

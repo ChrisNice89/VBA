@@ -61,8 +61,6 @@ Public Property Set Key(ByVal K As IGeneric): Set myclass.Key = K: End Property
 Public Property Get Value() As IGeneric: Set Value = myclass.Value: End Property
 Public Property Set Value(ByVal V As IGeneric): Set myclass.Value = V: End Property
 
-Public Function CompareTo(ByVal Other As IGeneric) As ComparerEnum: CompareTo = myclass.Key.CompareTo(Other): End Function
-
 Public Sub Clear()
     With myclass
         Set .Left = Nothing
@@ -157,18 +155,6 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
             IGeneric_Equals = otherPair.Value Is Nothing
         End If
     End If
-
-End Function
-
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    
-    Dim otherPair As GenericPair
-    
-    If Other Is Nothing Then _
-        IGeneric_CompareTo = IsGreater: Exit Function
-
-    Set otherPair = Other
-    IGeneric_CompareTo = myclass.Key.CompareTo(otherPair.Key): Exit Function
 
 End Function
 

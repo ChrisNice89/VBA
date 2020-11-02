@@ -11,6 +11,7 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Implements IGeneric
+Implements IGenericValue
 
 Private Const MaxLong As Long = 2 ^ 31 - 1
 
@@ -142,23 +143,6 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
      
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    
-    If Other Is Nothing Then _
-        IGeneric_CompareTo = IsGreater: Exit Function
-    
-    Dim N As GNumeric:  Set N = Other
-    Dim i As Currency
-    i = N.Value
-    
-    Select Case True
-        Case myclass.Value > i: IGeneric_CompareTo = IsGreater
-        Case myclass.Value < i: IGeneric_CompareTo = IsLower
-        Case Else: IGeneric_CompareTo = IsEqual
-    End Select
-
-End Function
-
 Private Function IGeneric_ToString() As String
 
     IGeneric_ToString = myclass.Value
@@ -166,6 +150,32 @@ Private Function IGeneric_ToString() As String
 End Function
     
 'IGenericValue
+Private Property Get IGenericValue_GetType() As VbVarType: IGenericValue_GetType = vbCurrency: End Property
+Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
+Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Decimal_Type: End Property
+Private Property Get IGenericValue_RawValue() As Variant: IGenericValue_RawValue = myclass.Value: End Property
+Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
+
+Private Function IGenericValue_Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = 1&) As IGenericValue
+    Set IGenericValue_Create = Me.Build(Value)
+End Function
+
+Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As ComparerEnum
+    
+    If Other Is Nothing Then _
+        IGenericValue_CompareTo = IsGreater: Exit Function
+    
+    Dim N As GNumeric:  Set N = Other
+    Dim i As Currency
+    i = N.Value
+    
+    Select Case True
+        Case myclass.Value > i: IGenericValue_CompareTo = IsGreater
+        Case myclass.Value < i: IGenericValue_CompareTo = IsLower
+        Case Else: IGenericValue_CompareTo = IsEqual
+    End Select
+    
+End Function
 Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Variant
     
     Dim P As ADODB.Parameter

@@ -658,10 +658,6 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
 End Function
  
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-
-End Function
-
 Private Sub IGeneric_Dispose()
 
 End Sub

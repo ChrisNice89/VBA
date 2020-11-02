@@ -68,24 +68,6 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
 End Function
 
-Private Function IGeneric_CompareTo(ByVal Other As IGeneric) As ComparerEnum
-    
-    If Other Is Nothing Then _
-        IGeneric_CompareTo = IsGreater: Exit Function
-    
-    Dim o As GObject: Set o = Other
-    
-    Dim i As LongPtr
-    i = ObjPtr(o.Object)
-    
-    Select Case True
-        Case ObjPtr(myclass.Object) > i: IGeneric_CompareTo = IsGreater
-        Case ObjPtr(myclass.Object) < i: IGeneric_CompareTo = IsLower
-        Case Else: IGeneric_CompareTo = IsEqual
-    End Select
-    
-End Function
-
 Private Function IGeneric_ToString() As String
     IGeneric_ToString = TypeName$(Me) & " :: " & TypeName$(myclass.Object)
 End Function
