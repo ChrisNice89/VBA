@@ -122,6 +122,8 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
+Public Property Get KeyList() As IGenericReadOnlyList: Set KeyList = myclass.Keys: End Property
+Public Property Get ValueList() As IGenericReadOnlyList: Set ValueList = myclass.Values: End Property
 Public Property Get BaseIndex() As Long: BaseIndex = myclass.Keys.LowerBound: End Property
 Public Property Get SortOrder() As SortOrder: SortOrder = myclass.SortOrder: End Property
 Public Property Get Last() As IGeneric: Set Last = myclass.Values(myclass.Size): End Property
@@ -258,8 +260,8 @@ Public Function BuildFrom(ByVal Dictionary As IGenericDictionary, Optional ByVal
         Set .Keys = GenericArray.Build(Dictionary.Count)
         Set .Values = GenericArray.Build(Dictionary.Count)
         
-        Call Dictionary.CopyOf(t:=Keys_, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
-        Call Dictionary.CopyOf(t:=Values_, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
+        Call Dictionary.CopyOf(t:=KeyData, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
+        Call Dictionary.CopyOf(t:=ValueData, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
         
         Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, Length:=.Keys.Length, Comparer:=myclass.Comparer, Order:=myclass.SortOrder)
         .Size = Dictionary.Count
@@ -279,8 +281,8 @@ Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
 
-'Public Function GetKeys() As GenericArray: Set GetKeys = CopyOf(Keys_, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetKeys"): End Function
-'Public Function GetValues() As GenericArray: Set GetValues = CopyOf(Values_, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetValues"): End Function
+'Public Function GetKeys() As GenericArray: Set GetKeys = CopyOf(KeyData, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetKeys"): End Function
+'Public Function GetValues() As GenericArray: Set GetValues = CopyOf(ValueData, GenericArray.Build(myClass.Size), GenericArray.LowerBound, "Public Property Get GetValues"): End Function
 
 Private Sub EnsureCapacity(ByVal Min As Long)
     
@@ -438,9 +440,9 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     Dim i As Long
      
     Select Case True
-        Case t = Keys_
+        Case t = KeyData
             Call GenericArray.Copy(SrcArray:=myclass.Keys, SrcIndex:=myclass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Size)
-        Case t = Values_
+        Case t = ValueData
             Call GenericArray.Copy(SrcArray:=myclass.Values, SrcIndex:=myclass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Size)
         Case Else
             For i = myclass.Keys.LowerBound To myclass.Size
@@ -472,12 +474,12 @@ Public Function Iterator(ByVal t As DictionaryData, Optional ByVal Index As Long
     Set Iterator = Skynet.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
 
 '    Select Case True
-'        Case t = Keys_
+'        Case t = KeyData
 '            Set Iterator = myClass.Keys.Iterator(StartIndex:=myClass.Keys.LowerBound, Count:=myClass.Size)
-'        Case t = Values_
+'        Case t = ValueData
 '            Set Iterator = myClass.Values.Iterator(StartIndex:=myClass.Values.LowerBound, Count:=myClass.Size)
 '        Case Else
-'            Call LoadIterator(c.Iterator, Pairs_, myClass.Keys, myClass.Values, Index, Count)
+'            Call LoadIterator(c.Iterator, PairData, myClass.Keys, myClass.Values, Index, Count)
 '            Set Iterator = Skynet.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
 '    End Select
 '
@@ -535,7 +537,9 @@ End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Other Is Nothing Then _
+        IGeneric_Equals = False: Exit Function
+    
     IGeneric_Equals = (Me Is Other)
 End Function
 
@@ -562,8 +566,8 @@ Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGen
 End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Value:=Item): End Function
 Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
-Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Values_, GArray, ArrayIndex, "Private Sub IGenericReadOnlyList_CopyTo"): End Sub
-Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(Values_): End Function
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(ValueData, GArray, ArrayIndex, "Private Sub IGenericReadOnlyList_CopyTo"): End Sub
+Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(ValueData): End Function
 
 'IGenericDictionary
 Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Set Me.Item(Key) = Value: End Property
@@ -576,16 +580,16 @@ Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 Private Sub IGenericDictionary_CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=t, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
 Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
-Private Function IGenericDictionary_Iterator(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(t:=t): End Function
+Private Function IGenericDictionary_IteratorOf(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_IteratorOf = Me.Iterator(t:=t): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = myclass.IsReadOnly: End Property
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(Pairs_, GenericArray.Build(myclass.Size), GenericArray.LowerBound, "Private Function IGenericCollection_ToArray"): End Function
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(PairData, GenericArray.Build(myclass.Size), GenericArray.LowerBound, "Private Function IGenericCollection_ToArray"): End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOfKey(Key:=Item): End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(PairData, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(Pairs_): End Function
+Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(PairData): End Function
 
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
@@ -605,10 +609,10 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
         
         Call InterlockedIncrement(.Index)
         
-        If .Type = Keys_ Then
+        If .Type = KeyData Then
             IGenericIterator_HasNext = (S_OK = SafeArrayGetElement(ByVal .DescriptorKeys, .Index, .Current))
 
-        ElseIf .Type = Values_ Then
+        ElseIf .Type = ValueData Then
             IGenericIterator_HasNext = (S_OK = SafeArrayGetElement(ByVal .DescriptorValues, .Index, .Current))
 
         Else

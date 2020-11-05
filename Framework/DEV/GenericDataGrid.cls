@@ -30,7 +30,8 @@ Option Explicit
 
 Implements IGeneric
 
-Public Event Update(ByVal Row As GenericArray)
+Public Event RowSelected(ByVal Row As GenericArray)
+Public Event FetchComplete()
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
@@ -92,9 +93,11 @@ Private Type Member
     ImageList As MSComctlLib.ImageList
     View As MSComctlLib.Listview
     RowMapper As IGenericIterator
-    Rows As GenericList
+    RowList As GenericList
+    RowMap As IGenericDictionary
     Columns As GenericOrderedMap
     SelectedColumn As Long
+    SortDirection As SortOrder
     HasFetchComplete As Boolean
     HasInitialized As Boolean
 End Type
@@ -106,11 +109,21 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get IndexOfColumn(ByVal Name As GString) As Long: IndexOfColumn = myclass.Columns.IndexOfKey(Name): End Property
-Public Property Get Rows() As IGenericReadOnlyList: Set Rows = myclass.Rows: End Property
+Private WithEvents ViewControl As MSComctlLib.Listview
+Attribute ViewControl.VB_VarHelpID = -1
+
+Public Property Get IndexOfColumn(ByVal Name As GString) As Long
+
+    Dim Column As IGenericValue
+    Set Column = myclass.Columns.Item(Name)
+    
+    IndexOfColumn = Column.RawValue
+    
+End Property
+Public Property Get Rows() As IGenericReadOnlyList: Set Rows = myclass.RowList: End Property
 Public Property Get Columns() As IGenericReadOnlyList: Set Columns = myclass.Columns: End Property
 Public Property Get SelectedColumn() As Long: SelectedColumn = myclass.SelectedColumn: End Property
-Public Property Get Row(ByVal Index As Long) As GenericArray: Set Row = myclass.Rows(Index): End Property
+Public Property Get Row(ByVal Index As Long) As GenericArray: Set Row = myclass.RowList.ElementAt(Index): End Property
 Public Property Get Column(ByVal Index As Long) As GenericPair: Set Column = myclass.Columns.Entry(Index): End Property
 
 Public Function Build( _
@@ -132,8 +145,10 @@ Public Function Build( _
         Set .View = .ViewControl.Object
         Call Style(.View, Setting)
         Set .ImageList = ImageList
-        Set .Rows = GenericList.Build(DEFAULT_CAPACITY_ROWS)
+        Set .RowMap = GenericTree.Build
+        Set .RowList = GenericList.Build(DEFAULT_CAPACITY_ROWS)
         Set .Columns = GenericOrderedMap.Build(DEFAULT_CAPACITY_COLUMNS)
+        .SortDirection = ascending
     End With
     
     Set Build = Skynet.CreateInstance(New GenericDataGrid, Virtual.Pointer, Virtual.Size)
@@ -149,47 +164,34 @@ Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
 
-Public Sub Initialize(ByVal Records As ADODB.Recordset)
-
-'    Dim Fields As ADODB.Fields
-'    Dim Field As ADODB.Field
-'    Dim i As Long
-    
-    Dim Field As IGeneric
-'    If (Records Is Nothing) Then _
-'        Call Skynet.Throw(Me, "Public Sub Initialize(").InvalidInput("(Records Is Nothing)")
-'
-'    Set myclass.Records = Records
-    myclass.HasFetchComplete = False
-    Set myclass.RowMapper = GenericSql.RowMapper(Records)
-    
-    Dim Row As GenericArray
-    Set Row = myclass.RowMapper.Current
-    With Row.Iterator
-        Do While .HasNext(Field)
-            Call Me.AddColumn(Field, vbString)
-        Loop
-    End With
-  
-'    With Records
-'        If .State = ISqlCommandState.StateClosed Then _
-'            .Open
-'
-'        For Each Field In .Fields
-'            Call Me.AddColumn(GString(Field.Name), vbString)
-'        Next
-'
-'        If (.EOF And .BOF) Then _
-'            myclass.HasFetchComplete = True
-'
-'    End With
-    
-    Call Me.Fetch(Autosize:=True)
-    myclass.HasInitialized = True
-    
+Private Sub ViewControl_ColumnClick(ByVal ColumnHeader As MSComctlLib.ColumnHeader)
+    Call Me.Sort(ColumnHeader.Index - 1, myclass.SortDirection)
 End Sub
 
-Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT, Optional ByVal Autosize As Boolean) As Boolean
+Public Sub Initialize(ByVal Records As ADODB.Recordset)
+
+    Dim Field As ADODB.Field
+    
+    myclass.HasFetchComplete = False
+    Set ViewControl = myclass.View
+    Set myclass.RowMapper = GenericSql.RowMapper(Records)
+    
+    With Records
+        For Each Field In .Fields
+            Call Me.AddColumn(GString(Field.Name), vbString)
+        Next
+
+        If (.EOF And .BOF) Then _
+            myclass.HasFetchComplete = True
+
+    End With
+
+    Call Me.ColumnAutoSize
+    myclass.HasInitialized = True
+   
+End Sub
+
+Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
     
     Dim i As Long
     Dim Row As GenericArray
@@ -198,50 +200,58 @@ Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT, Optional ByVal
         'Error
     End If
     
-    If myclass.RowMapper Is Nothing Then
+    If myclass.RowMapper Is Nothing Then _
         Exit Function
-    End If
+  
     
-    Call LockWindowUpdate(myclass.View.hwnd)
+    With myclass
+        Call LockWindowUpdate(.View.hwnd)
     
-    Do
-        If myclass.RowMapper.HasNext(Row) Then
-            Call myclass.Rows.Add(Row)
-            With myclass.View.ListItems.Add(Text:=myclass.View.ListItems.Count + 1)
-                For i = Row.LowerBound To Row.Length
-                    .SubItems(i) = Row.ElementAt(i).ToString
-                Next
-            End With
-        Else
-            Set myclass.RowMapper = Nothing
-            myclass.HasFetchComplete = True
-            Exit Do
-        End If
-        
-    Loop While Not (InterlockedDecrement(Limit) = 0)
-   
-    If Autosize Then _
-        Call Me.ColumnAutoSize
-
-    With myclass.View
-        If .ListItems.Count > 0 Then
-            Set .SelectedItem = .ListItems(.ListItems.Count)
-            .SelectedItem.Selected = True
-            .SelectedItem.EnsureVisible
-        End If
+        Do
+            If .RowMapper.HasNext(Row) Then
+                Call .RowList.Add(Row)
+                Call .RowMap.Add(GNumeric(.RowList.Count), Row)
+                
+                With .View.ListItems.Add(Text:=.View.ListItems.Count + 1)
+                    For i = Row.LowerBound To Row.Length
+                        .SubItems(i) = Row.ElementAt(i).ToString
+                    Next
+                End With
+                
+            Else
+            
+                Set .RowMapper = Nothing
+                .HasFetchComplete = True
+                Exit Do
+                
+            End If
+            
+        Loop While Not (InterlockedDecrement(Limit) = 0)
+    
+        With .View
+            If .ListItems.Count > 0 Then
+                Set .SelectedItem = .ListItems(.ListItems.Count)
+                .SelectedItem.Selected = True
+                .SelectedItem.EnsureVisible
+            End If
+        End With
     End With
     
     Call LockWindowUpdate(0&)
-    DoEvents
+   
     Fetch = True
     
 End Function
 
 Public Sub Clear()
+
     myclass.SelectedColumn = -1
     
-    If Not myclass.Rows Is Nothing Then _
-        myclass.Rows.Clear
+    If Not myclass.RowMap Is Nothing Then _
+        myclass.RowMap.Clear
+        
+    If Not myclass.RowList Is Nothing Then _
+        myclass.RowList.Clear
         
     If Not myclass.Columns Is Nothing Then _
         myclass.Columns.Clear
@@ -261,11 +271,15 @@ Public Sub AddColumn(ByVal Name As GString, ByVal Datatype As VbVarType)
     Dim RightAlign As Boolean
     
     Select Case Datatype
-        Case VbVarType.vbString: Call myclass.Columns.Add(Name, GString): RightAlign = True
-        Case VbVarType.vbLong: Call myclass.Columns.Add(Name, GNumeric): RightAlign = True
-        Case VbVarType.vbDate: Call myclass.Columns.Add(Name, GDate): RightAlign = True
+        Case VbVarType.vbString: RightAlign = True
+        Case VbVarType.vbLong: RightAlign = True
+        Case VbVarType.vbDate:  RightAlign = True
         Case Else
     End Select
+    
+    With myclass.Columns
+        Call .Add(Name, GNumeric(.Count + 1)):
+    End With
     
     If Not myclass.View Is Nothing Then
         With myclass.View.ColumnHeaders
@@ -287,42 +301,75 @@ Public Function AddRow() As GenericArray
  
 End Function
 
-Public Sub Sort(ByVal Index As Long)
-    myclass.SelectedColumn = Index
-    Call myclass.Rows.Sort(Order:=ascending)
-End Sub
-
-Public Sub Update(ByVal ID As Long)
-    RaiseEvent Update(myclass.Rows(ID))
+Public Sub Sort(ByVal Index As Long, ByVal SortDirection As SortOrder)
+    
+    Dim Rows As IGenericIterator
+    Dim Row As GenericArray
+    Dim i As Long, j As Long
+    
+    With myclass
+        If Index = 0 Then
+            Set Rows = .RowMap.IteratorOf(t:=ValueData)
+        Else
+            
+            If Not .SelectedColumn = Index Then
+                Call .RowList.Sort(SortDirection, GenericRowComparer.Default(Index))
+            Else
+                Call .RowList.Reverse
+            End If
+            
+            Set Rows = .RowList.Iterator
+        End If
+        .SortDirection = IIf(SortDirection = ascending, SortOrder.descending, SortOrder.ascending)
+        .SelectedColumn = Index
+    End With
+    
+    Call LockWindowUpdate(myclass.View.hwnd)
+    
+    With Rows
+        Do While .HasNext(Row)
+            With myclass.View.ListItems(InterlockedIncrement(i))
+                For j = 1 To .ListSubItems.Count: .SubItems(j) = Row.ElementAt(j).ToString: Next
+            End With
+        Loop
+    End With
+ 
+    Call LockWindowUpdate(0&)
+    
 End Sub
 
 Public Sub ColumnAutoSize(Optional ByVal Column As Variant)
 
     Dim i As Long
     Dim LstItm As MSComctlLib.ListItem
+
+    With myclass.View
     
-     With myclass.View
-         If .ColumnHeaders.Count = 0 Then Exit Sub
-         Set LstItm = .ListItems.Add(Text:=.ColumnHeaders.Item(1).Text & SOME_CHARS)
-
-         If IsMissing(Column) Then
+        If .ColumnHeaders.Count = 0 Then _
+            Exit Sub
+        
+        Call LockWindowUpdate(.hwnd)
+        
+        Set LstItm = .ListItems.Add(Text:=.ColumnHeaders.Item(1).Text & SOME_CHARS)
+        
+        If IsMissing(Column) Then
             Call SendMessage(.hwnd, LVM_SETCOLUMNWIDTH, 0&, ByVal LVSCW_AUTOSIZE_USEHEADER)
-
+            
             For i = 2 To .ColumnHeaders.Count
                 LstItm.SubItems(i - 1) = .ColumnHeaders.Item(i).Text & SOME_CHARS
                 Call SendMessage(.hwnd, LVM_SETCOLUMNWIDTH, i - 1, ByVal LVSCW_AUTOSIZE_USEHEADER)
             Next i
-
-         Else
+        
+        Else
             i = myclass.View.ColumnHeaders(Column).Index
-            LstItm.SubItems(i - 1) = .ColumnHeaders.Item(i).Text & SOME_CHARS
-            Call SendMessage(.hwnd, LVM_SETCOLUMNWIDTH, i - 1, ByVal LVSCW_AUTOSIZE_USEHEADER)
-         End If
-         Call .ListItems.Remove(LstItm.Index)
-     End With
-
-     Set LstItm = Nothing
-
+            LstItm.SubItems(i) = .ColumnHeaders.Item(i).Text & SOME_CHARS
+            Call SendMessage(.hwnd, LVM_SETCOLUMNWIDTH, i, ByVal LVSCW_AUTOSIZE_USEHEADER)
+        End If
+        
+        Call .ListItems.Remove(LstItm.Index): Set LstItm = Nothing
+        Call LockWindowUpdate(0&)
+    End With
+    
 End Sub
 
 Private Sub Style(ByVal Listview As MSComctlLib.Listview, ByVal Style As DataviewerStyle)
@@ -379,7 +426,9 @@ End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Other Is Nothing Then _
+        IGeneric_Equals = False: Exit Function
+    
     IGeneric_Equals = (Me Is Other)
 End Function
 
@@ -387,9 +436,8 @@ Private Function IGeneric_ToString() As String
     With myclass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Rows: " & .Rows.Count & vbNewLine & _
+                            "Rows: " & .RowList.Count & vbNewLine & _
                             "Columns: " & .Columns.Count
     
     End With
 End Function
-

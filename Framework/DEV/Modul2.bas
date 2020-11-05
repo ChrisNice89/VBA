@@ -1,4 +1,5 @@
 Attribute VB_Name = "Modul2"
+'@Folder "Entwicklung"
 Public Function HeapSort(Keys)
    Dim Base As Long: Base = LBound(Keys)                    ' array index base
    Dim N As Long: N = UBound(Keys) - LBound(Keys) + 1       ' array Size

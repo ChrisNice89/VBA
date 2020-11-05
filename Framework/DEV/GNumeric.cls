@@ -13,7 +13,8 @@ Option Explicit
 Implements IGeneric
 Implements IGenericValue
 
-Private Const MaxLong As Long = 2 ^ 31 - 1
+Private Const MAXVALUE As Double = 922337203685477#
+Private Const MAXLONG As Long = 2 ^ 31 - 1
 
 Public Enum TNumericFormat
     [_First]
@@ -47,48 +48,44 @@ Public Property Get Min() As Currency
 End Property
 
 Public Property Get Max() As Currency
-    Max = 922337203685477#
+    Max = MAXVALUE
 End Property
-
-Public Function ToLong() As Long
-    If myclass.Value > MaxLong Then
-        ToLong = MaxLong
-    Else
-        ToLong = CLng(myclass.Value)
-    End If
-End Function
-
-Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
-Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
-Public Function Modulo(ByVal m As Double) As GNumeric: Set Modulo = GNumeric((myclass.Value - (Int(myclass.Value / m) * m))): End Function
-Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(myclass.Value + Factor): End Function
 
 Public Property Get Format() As TNumericFormat: Format = myclass.Format: End Property
 Public Property Get Value() As Currency: Value = myclass.Value: End Property
 Public Property Get IsZero() As Boolean: IsZero = myclass.Value = 0: End Property
+Public Property Get Precision() As Long: Precision = myclass.Precision: End Property
+Public Property Get NumericScale() As Long: NumericScale = myclass.NumericScale: End Property
 Public Property Get IsEven() As Boolean: IsEven = (myclass.Value - (Int(myclass.Value / 2) * 2)) = 0: End Property
 
 Public Function Build( _
-                            ByVal Value As Currency, _
+                            ByVal Value As Variant, _
                             Optional ByVal Precision As Byte = 4, _
                             Optional ByVal NumericScale As Byte = 4, _
                             Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As GNumeric
 Attribute Build.VB_UserMemId = 0
     With myclass
-        .Value = Value
+        If Not IsNull(Value) Then _
+            .Value = Value
+         
         .Precision = Precision
         .NumericScale = NumericScale
         .Format = Format
     End With
     
-    'Set Build = Skynet.Create(GNumeric)
-    Set Build = Skynet.CreateInstance(New GNumeric, Virtual.Pointer, Virtual.Size)
+    Set Build = New GNumeric: myclass = EmptyStructure
 
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myclass)
     Virtual.Size = LenB(myclass)
+    With GNumeric
+        myclass.Value = .Value
+        myclass.Format = .Format
+        myclass.Precision = .Precision
+        myclass.NumericScale = .NumericScale
+    End With
 '    ReDim Formats(TNumericFormat.[_First] To TNumericFormat.[_Last])
 '    Formats(TNumericFormat.DefaultNumber) = "General Number"
 '
@@ -108,11 +105,12 @@ Private Sub Class_Initialize()
     
 End Sub
 
-Private Property Get IValue_Object() As IGeneric: Set IValue_Object = Me: End Property
-Private Property Get IValue_DatabaseType() As ISqlDataType
-
-End Property
-Private Property Get IValue_Value() As Variant: IValue_Value = myclass.Value: End Property
+Public Function Multiply(ByVal Other As GNumeric) As GNumeric: Set Multiply = GNumeric.Build(myclass.Value * Other.Value): End Function
+Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
+Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
+Public Function Modulo(ByVal m As Double) As GNumeric: Set Modulo = GNumeric((myclass.Value - (Int(myclass.Value / m) * m))): End Function
+Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(myclass.Value + Factor): End Function
+Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / MAXLONG) * MAXLONG)): End Function
 
 'IGeneric
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GNumeric: End Property
@@ -150,7 +148,7 @@ Private Function IGeneric_ToString() As String
 End Function
     
 'IGenericValue
-Private Property Get IGenericValue_GetType() As VbVarType: IGenericValue_GetType = vbCurrency: End Property
+Private Property Get IGenericValue_VarType() As VbVarType: IGenericValue_VarType = vbCurrency: End Property
 Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
 Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Decimal_Type: End Property
 Private Property Get IGenericValue_RawValue() As Variant: IGenericValue_RawValue = myclass.Value: End Property

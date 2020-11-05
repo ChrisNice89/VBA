@@ -32,7 +32,7 @@ Public Enum DateInterval
     Week
     Hour
     Minute
-    Second
+    second
     [_Last]
 End Enum
 
@@ -108,7 +108,7 @@ Private Sub Class_Initialize()
     Interval(DateInterval.Minute) = "n"
     Interval(DateInterval.month) = "m"
     Interval(DateInterval.Quarter) = "q"
-    Interval(DateInterval.Second) = "s"
+    Interval(DateInterval.second) = "s"
     Interval(DateInterval.Week) = "ww"
     Interval(DateInterval.Weekday) = "w"
     Interval(DateInterval.year) = "yyyy"

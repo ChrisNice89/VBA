@@ -48,7 +48,7 @@ Public Sub AddAll(ByVal Iterator As IGenericIterator)
     
 End Sub
 Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray: Set ToArray = myclass.Tree.GetValues(Reverse:=False): End Function
-Public Function Iterator(Optional ByVal Reverse As Boolean) As IGenericIterator: Set Iterator = myclass.Tree.Iterator(t:=Values_, Reverse:=Reverse): End Function
+Public Function Iterator(Optional ByVal Reverse As Boolean) As IGenericIterator: Set Iterator = myclass.Tree.IteratorOf(t:=ValueData, Reverse:=Reverse): End Function
 Public Function Remove(ByVal Item As IGeneric) As Boolean: Call myclass.Tree.Remove(Item): End Function
 Public Function Contains(ByVal Value As IGeneric) As Boolean: Contains = myclass.Tree.ContainsKey(Value): End Function
 

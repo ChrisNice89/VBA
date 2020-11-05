@@ -1,0 +1,33 @@
+﻿'@Folder "Sql"
+Option Explicit
+
+Private Grid As GenericDataGrid
+Private Sql As GenericSql
+
+Private Sub cmdFetch_Click()
+    Dim t As CTimer
+    Set t = New CTimer
+    t.StartCounter
+    
+    Do While Grid.Fetch(50)
+        DoEvents
+    Loop
+
+    Debug.Print t.TimeElapsed
+End Sub
+
+Private Sub Form_Load()
+
+    Dim Path As String
+    Path = "C:\Users\cnitz\Desktop\iCAT Neu\Backend\Vers. 2.5\2020-02-24 iCAT-Backend Vers. 2.5.accdb"
+    Dim PW As String
+    PW = "OpenSesame"
+    '[Stichtag],[KNE KNE-Nummer],[KNE KNE-Name],[RZBK],[KNE Datum Großkreditanzeige]
+    Set Sql = GenericSql.Build(SqlCredentials.AccessConnection(Path, PW), "SELECT * FROM tblG_00_Basis WHERE ID <=1000", 0, ReturnRecords)
+
+    Call Sql.Execute
+    
+    Set Grid = GenericDataGrid.Build(Me.ListView0)
+    Call Grid.Initialize(Sql.Result)
+
+End Sub

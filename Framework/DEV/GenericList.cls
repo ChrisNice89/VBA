@@ -179,10 +179,10 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     
     If (Me Is GenericList) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
-    
+
     If (Capacity < 0) Then _
         Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
-    
+
     With myclass
         .SortOrder = ascending
         Set .Items = GenericArray.Build(Capacity)
@@ -215,7 +215,7 @@ End Function
 
 Public Function BuildWith(ParamArray GenericValues() As Variant) As GenericList
     
-    Dim newList As GenericList, i As Long
+    Dim Items As GenericArray, i As Long, LB As Long: LB = GenericArray.LowerBound
     
     If (Me Is GenericList) = False Then _
         Call Skynet.Throw(Me, "Public Function BuildWith").BuildExeption
@@ -223,7 +223,7 @@ Public Function BuildWith(ParamArray GenericValues() As Variant) As GenericList
     If IsMissing(GenericValues) Then _
         Call Skynet.Throw(Me, "Public Function BuildWith").NullPointer("ParamArray GenericValues are missing")
     
-    Set newList = Me.Build(UBound(GenericValues) + 1)
+    Set Items = GenericArray.Build(UBound(GenericValues) + 1)
     
     For i = LBound(GenericValues) To UBound(GenericValues)
         
@@ -234,11 +234,17 @@ Public Function BuildWith(ParamArray GenericValues() As Variant) As GenericList
             Call Skynet.Throw(Me, "Public Function BuildWith").InvalidInput("Element is nothing")
         
         If TypeOf GenericValues(i) Is IGeneric Then _
-            Call newList.Add(GenericValues(i))
+            Set Items(i + LB) = GenericValues(i)
       
     Next
     
-    Set BuildWith = newList
+    With myclass
+        .SortOrder = ascending
+        Set .Items = Items
+        .Size = .Items.Length
+    End With
+    
+    Set BuildWith = Skynet.CreateInstance(New GenericList, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -445,12 +451,41 @@ End Sub
 'This requires copying the List, which is an O(n) operation.
 Public Function ToArray() As GenericArray
 
-    Dim GA As GenericArray
-    Set GA = GenericArray.Build(myclass.Size)
+    Dim ga As GenericArray
+    Set ga = GenericArray.Build(myclass.Size)
 
-    Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GA, ArrayIndex:=GA.LowerBound)
-    Set ToArray = GA
+    Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=ga, ArrayIndex:=ga.LowerBound)
+    Set ToArray = ga
 
+End Function
+
+Public Function IsEqual(ByVal first As IGenericReadOnlyList, ByVal second As IGenericReadOnlyList) As Boolean
+
+    If first Is Nothing Or second Is Nothing Then _
+        Call Skynet.Throw(Me, "Public Function IsEqual").InvalidInput("first Is Nothing Or second Is Nothing")
+    
+    If first Is second Then _
+        IsEqual = True: Exit Function
+            
+    If Not first.Count = second.Count Then _
+        Exit Function
+    
+    Dim a As IGenericIterator, b As IGenericIterator
+    Dim i As IGeneric, j As IGeneric
+    
+    Set a = first.Iterator: Set b = second.Iterator
+    
+    Do While (a.HasNext(i) And b.HasNext(j))
+        If Not i Is Nothing Then
+            If Not i.Equals(j) Then _
+                Exit Function
+        ElseIf Not j Is Nothing Then
+            Exit Function
+        End If
+    Loop
+    
+    IsEqual = True
+    
 End Function
 
 Public Sub Sort(ByVal Order As SortOrder, Optional ByVal Comparer As IGenericComparer)
@@ -461,6 +496,7 @@ Public Sub Clear():
     Call myclass.Items.Clear
     myclass.Size = 0
 End Sub
+
 Public Function Contains(Item As IGeneric) As Boolean: Contains = (Me.IndexOf(Item) > myclass.Items.LowerBound): End Function
 
 Public Function BinarySearch( _
@@ -593,10 +629,13 @@ End Function
 Private Sub IGeneric_Dispose()
     myclass = EmptyStructure
 End Sub
+
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Other Is Nothing Then _
+        IGeneric_Equals = False: Exit Function
+    
     IGeneric_Equals = (Me Is Other)
 End Function
 

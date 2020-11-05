@@ -203,7 +203,7 @@ Public Function Build( _
                             187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263, _
                             1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369)
         
-            .MaxVal = Skynet.MaxLong
+            .MaxVal = Skynet.MAXLONG
             .InitialSize = getMinPrime
             .HashPrime = 101
             .RehashBarrier = 100
@@ -218,7 +218,7 @@ Public Function Build( _
         .LoadFactor = LoadFactor
         .RawSize = Capacity / .LoadFactor
         
-        If (.RawSize > Skynet.MaxLong) Then _
+        If (.RawSize > Skynet.MAXLONG) Then _
            Call Skynet.Throw(Me, "Build").Overflow(".RawSize > Skynet.MaxArraySize")
         
         .Size = IIf(.RawSize > .Const.InitialSize, getPrime(.RawSize), .Const.InitialSize)
@@ -505,12 +505,12 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     Dim i As Long
     
     Select Case True
-        Case t = Keys_
+        Case t = KeyData
             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
                 If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myclass.Buckets(i).Key: Call InterlockedIncrement(ArrayIndex)
             Next
-        Case t = Values_
+        Case t = ValueData
             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
                 If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myclass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
@@ -526,14 +526,14 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     
 End Function
 
-Public Function Iterator(ByVal t As DictionaryData) As IGenericIterator
+Public Function IteratorOf(ByVal t As DictionaryData) As IGenericIterator
                      
     Dim c As Member
     
     Call Skynet.CopyData(ByVal VarPtr(c.Iterator.Descriptor), ByVal VarPtrArray(myclass.Buckets), Skynet.PointerLength)
     Call LoadIterator(c.Iterator, Me, c.Iterator.Descriptor, t, myclass.Size)
     
-    Set Iterator = Skynet.CreateInstance(New GenericMap, VarPtr(c), Virtual.Size)
+    Set IteratorOf = Skynet.CreateInstance(New GenericMap, VarPtr(c), Virtual.Size)
     
 End Function
 
@@ -627,12 +627,12 @@ Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, False): End Sub
 Private Sub IGenericDictionary_CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=t, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
 Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
-Private Function IGenericDictionary_Iterator(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(t:=t): End Function
+Private Function IGenericDictionary_IteratorOf(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_IteratorOf = Me.IteratorOf(t:=t): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(Pairs_, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=PairData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray
     
@@ -643,7 +643,7 @@ Private Function IGenericCollection_ToArray() As GenericArray
     Set IGenericCollection_ToArray = GArray
     
 End Function
-Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(Pairs_): End Function
+Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.IteratorOf(t:=PairData): End Function
 
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
@@ -656,10 +656,10 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedDecrement(.Index), b)) Then
                 If Not (b.Key Is Nothing) Then
                     
-                    If .Type = Keys_ Then
+                    If .Type = KeyData Then
                         Set .Current = b.Key: Call ZeroMemory(b, LenB(b))
 
-                    ElseIf .Type = Values_ Then
+                    ElseIf .Type = ValueData Then
                         Set .Current = b.Value: Call ZeroMemory(b, LenB(b))
 
                     Else

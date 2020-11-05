@@ -47,19 +47,16 @@ Attribute Build.VB_UserMemId = 0
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
     Set myclass.Key = Key: Set myclass.Value = Value
+'    Set Build = Skynet.CreateInstance(New GenericPair, Virtual.Pointer, Virtual.Size)
+    Set Build = New GenericPair: myclass = EmptyStructure
     
-'    Dim P As IPrototype
-'    Set P = New GenericPair
-'    Call CopyMemory(dst:=ByVal P.VirtualPointer, src:=ByVal Virtual.Pointer, Length:=Virtual.Size): Call ZeroMemory(src:=ByVal Virtual.Pointer, Length:=Virtual.Size)
-'
-'    Set Build = P
-    Set Build = Skynet.CreateInstance(New GenericPair, Virtual.Pointer, Virtual.Size)
-
 End Function
 
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myclass)
     Virtual.Size = LenB(myclass)
+    Set myclass.Key = GenericPair.Key
+    Set myclass.Value = GenericPair.Value
 End Sub
 
 Private Sub Class_Terminate()
@@ -70,7 +67,18 @@ End Sub
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericPair: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
-Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
+Private Property Get IGeneric_HashValue() As Long
+    
+    Const MAXLONG = 2 ^ 31 - 1
+    Dim Hash As Currency
+    
+    If myclass.Value Is Nothing Then _
+        IGeneric_HashValue = myclass.Key.HashValue: Exit Function
+   
+    Hash = (13 * CDbl(13 * 27 + myclass.Key.HashValue)) + myclass.Value.HashValue
+    IGeneric_HashValue = CLng(Hash - (Fix(Hash / MAXLONG) * MAXLONG))
+        
+End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPair):  End Property
 
@@ -89,7 +97,8 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
     Dim otherPair As GenericPair
     
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
+    If Other Is Nothing Then _
+        IGeneric_Equals = False: Exit Function
     
     Set otherPair = Other
     If myclass.Key.Equals(otherPair.Key) Then

@@ -88,7 +88,7 @@ Private Virtual As Internal
 
 Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End Property
 Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
-Public Property Get MaxLong() As Long: MaxLong = MAX_INT32: End Property
+Public Property Get MAXLONG() As Long: MAXLONG = MAX_INT32: End Property
 Public Property Get MaxHash() As Double: MaxHash = MAXVALUE: End Property
 
 Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIterator
@@ -340,20 +340,20 @@ Public Function HashValue( _
              
              For N = (Length / 2) To 1 Step -1
                 H = H + ascii(i)
-                H = Me.X0R(Me.X0R(LeftShift(H, 16), Me.LeftShift(ascii(i + 1), 11)), H)
+                H = Me.X0R(Me.X0R(leftShift(H, 16), Me.leftShift(ascii(i + 1), 11)), H)
                 H = H + Me.RightShift(H, 11)
                 i = i + 2
             Next
             
             If ((Length Mod 2) = 1) Then
                 H = H + ascii(i) + 1566083941
-                H = Me.X0R(H, LeftShift(H, 10))
+                H = Me.X0R(H, leftShift(H, 10))
                 H = H + Me.RightShift(H, 1)
             End If
             
-            H = Me.X0R(H, Me.LeftShift(H, 3)): H = H + Me.RightShift(H, 5)
-            H = Me.X0R(H, Me.LeftShift(H, 4)): H = H + Me.RightShift(H, 17)
-            H = Me.X0R(H, Me.LeftShift(H, 25)): H = H + Me.RightShift(H, 6)
+            H = Me.X0R(H, Me.leftShift(H, 3)): H = H + Me.RightShift(H, 5)
+            H = Me.X0R(H, Me.leftShift(H, 4)): H = H + Me.RightShift(H, 17)
+            H = Me.X0R(H, Me.leftShift(H, 25)): H = H + Me.RightShift(H, 6)
     End Select
     
     HashValue = CLng(H - (Fix(H / MAXVALUE) * MAXVALUE))
@@ -374,7 +374,7 @@ Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function
-Public Function LeftShift(ByVal Value As Long, Shift As Byte) As Double: LeftShift = Value * (2& ^ Shift): End Function
+Public Function leftShift(ByVal Value As Long, Shift As Byte) As Double: leftShift = Value * (2& ^ Shift): End Function
 Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 Public Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: Logn = Log(Value) / Log(Base): End Function

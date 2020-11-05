@@ -12,9 +12,9 @@ Option Explicit
 '@Folder "<T>Enumerable"
 
 Public Enum DictionaryData
-    Keys_ = 0
-    Values_
-    Pairs_
+    KeyData = 0
+    ValueData
+    PairData
 End Enum
 
 Public Property Get Count() As Long: End Property
@@ -30,7 +30,7 @@ Public Sub Remove(ByVal Key As IGeneric): End Sub
 Public Sub Clear(): End Sub
 
 Public Sub CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
-Public Function Iterator(ByVal t As DictionaryData) As IGenericIterator: End Function
+Public Function IteratorOf(ByVal t As DictionaryData) As IGenericIterator: End Function
     
 
 'Private Sub Class_Initialize()

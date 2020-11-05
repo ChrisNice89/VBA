@@ -70,7 +70,6 @@ Private Type Member
     Root As GenericTreeNode
     Comparer As IGenericComparer
     Iterator As Iterator
-    FindCounter As Long
 End Type
 Private myclass As Member
 
@@ -80,6 +79,8 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
+Public Property Get IsHeightBalanced(): IsHeightBalanced = CheckHeightBalance(myclass.Root): End Property
+Public Property Get IsBalanced(): IsBalanced = CheckRedBlackBalance(myclass.Root): End Property
 Public Property Get Count() As Long: Count = SizeOf(myclass.Root): End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
@@ -96,6 +97,7 @@ End Property
 
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric
 Attribute Item.VB_UserMemId = 0
+
     Dim Node As GenericTreeNode: Set Node = FindNode(Key)
     
     If (Node Is Nothing) Then _
@@ -111,8 +113,9 @@ Public Function Build(Optional ByVal Comparer As IGenericComparer) As GenericTre
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
     If Comparer Is Nothing Then _
-        Comparer = GenericValueComparer.Default
-        
+        Set Comparer = GenericValueComparer.Default
+    
+    Set myclass.Comparer = Comparer
     Set Build = Skynet.CreateInstance(New GenericTree, Virtual.Pointer, Virtual.Size)
     
 End Function
@@ -298,7 +301,7 @@ Public Sub AddAll(ByVal Map As IGenericDictionary)
     
     Dim P As GenericPair
 
-    With Map.Iterator(t:=Pairs_)
+    With Map.IteratorOf(PairData)
         Do While .HasNext(P): Call Me.Add(P.Key, P.Value): Loop
     End With
 
@@ -364,6 +367,55 @@ Private Sub AddKeysToArray(ByRef Node As GenericTreeNode, ByVal GArray As Generi
     
 End Sub
 
+Private Function CheckRedBlackBalance(ByVal Node As GenericTreeNode, Optional ByRef maxH As Long, Optional ByRef minH As Long) As Boolean
+    
+    Dim lmaxH As Long, lminH As Long
+    Dim rmaxH As Long, rminH As Long
+    
+    If Node Is Nothing Then
+        maxH = 0
+        minH = 0
+        CheckRedBlackBalance = True
+        Exit Function
+    End If
+
+    If Not CheckRedBlackBalance(Node.Left, lmaxH, lminH) Then _
+        Exit Function
+        
+    If Not CheckRedBlackBalance(Node.Right, rmaxH, rminH) Then _
+        Exit Function
+
+    maxH = IIf(lmaxH < rmaxH, rmaxH, lmaxH) + 1
+    minH = IIf(lminH > rminH, rminH, lminH) + 1
+    
+    If maxH <= 2 * minH Then
+        CheckRedBlackBalance = True
+        Exit Function
+    End If
+    
+End Function
+
+Private Function CheckHeightBalance(ByVal Node As GenericTreeNode) As Boolean
+
+    Dim lh As Long
+    Dim rh As Long
+    
+    If Node Is Nothing Then _
+        CheckHeightBalance = True: Exit Function
+        
+    lh = SizeOf(Node.Left)
+    rh = SizeOf(Node.Right)
+    
+    'High balanced
+    If Abs(lh - rh) <= 1 Then
+        If CheckHeightBalance(Node.Left) And CheckHeightBalance(Node.Left) Then
+            CheckHeightBalance = True
+        End If
+    End If
+
+End Function
+
+
 'Private Sub InOrderTreeWalk2( _
 '                                ByVal GArray As GenericArray, _
 '                                ByVal Index As Long, _
@@ -412,12 +464,12 @@ End Sub
 '    End If
 'End Sub
 
-Public Function Iterator(ByVal t As DictionaryData, Optional ByVal Reverse As Boolean) As IGenericIterator
+Public Function IteratorOf(ByVal t As DictionaryData, Optional ByVal Reverse As Boolean) As IGenericIterator
     
     Dim c As Member
 
     Call LoadIterator(c.Iterator, t, myclass.Root, Reverse)
-    Set Iterator = Skynet.CreateInstance(New GenericTree, VarPtr(c), LenB(c))
+    Set IteratorOf = Skynet.CreateInstance(New GenericTree, VarPtr(c), LenB(c))
     
 End Function
 
@@ -483,7 +535,7 @@ Private Function FindNode(ByVal Key As IGeneric) As GenericTreeNode
     With myclass.Comparer
         Do While (Current Is Nothing) = False
             Order = .Compare(Key, Current.Key)
-        
+           
             If (Order = 0) Then _
                 Set FindNode = Current: Exit Function
             
@@ -559,6 +611,43 @@ Private Sub ReplaceNode( _
     Call ReplaceChildOfNodeOrRoot(ParentOfMatch, Match, Succesor)
                    
 End Sub
+'leftleaning
+Private Function Insert(ByVal Node As GenericTreeNode, ByVal Key As IGeneric, ByVal Value As IGeneric) As GenericTreeNode
+    
+    If Node Is Nothing Then _
+        Set Insert = GenericTreeNode.Build(Key, Value, IsRed:=True): Exit Function
+    
+    With Node
+        .Size = .Size + 1
+        Select Case myclass.Comparer.Compare(Key, .Key)
+            Case Is < 0: Set .Left = Insert(.Left, Key, Value)
+            Case Is > 0: Set .Right = Insert(.Right, Key, Value)
+            Case Else: Set .Value = Value
+        End Select
+    End With
+    
+    If (IsRed(Node.Right)) Then _
+        Set Node = RotateLeft(Node): Node.IsRed = Node.Left.IsRed: Node.Left.IsRed = True
+    
+    If (IsRed(Node.Left)) Then _
+        If IsRed(Node.Left.Left) Then _
+            Set Node = RotateRight(Node): Node.IsRed = Node.Right.IsRed: Node.Right.IsRed = True
+    
+    With Node
+        If (IsRed(.Left)) Then _
+            If IsRed(.Right) Then _
+                .IsRed = Not .IsRed: .Left.IsRed = False: .Right.IsRed = False
+                'Call FlipColor(Node)
+    End With
+    
+    Set Insert = Node
+    
+End Function
+
+Public Sub AddLeftLeaning(ByVal Key As IGeneric, ByVal Value As IGeneric)
+    Set myclass.Root = Insert(myclass.Root, Key, Value)
+    myclass.Root.IsRed = False
+End Sub
 
 Public Function Add( _
                         ByVal Key As IGeneric, _
@@ -603,15 +692,13 @@ Public Function Add( _
             
             Current.Size = Current.Size + 1
             
-            If Split4Node(Current) Then
-                If (Parent Is Nothing) = False Then
-                    If Parent.IsRed Then
+            If Split4Node(Current) Then _
+                If (Parent Is Nothing) = False Then _
+                    If Parent.IsRed Then _
                         Call EnsureBalance(Current, Parent, GrandParent, GreatGrandParent)
-                    End If
-                 End If
-            End If
             
             Set GreatGrandParent = GrandParent
+            Set GrandParent = Parent
             Set GrandParent = Parent
             Set Parent = Current
             
@@ -756,10 +843,22 @@ Private Function Split4Node(ByVal Node As GenericTreeNode) As Boolean
     End With
 End Function
 
+Private Sub FlipColor(ByVal Node As GenericTreeNode)
+    
+    If Not Node Is Nothing Then
+        With Node
+            .IsRed = Not .IsRed
+            .Left.IsRed = Not .Left.IsRed
+            .Right.IsRed = Not .Right.IsRed
+        End With
+    End If
+
+End Sub
+
 Private Function RotateLeft(ByVal x As GenericTreeNode) As GenericTreeNode
 
     Dim y  As GenericTreeNode
-
+    
     With x
         Set y = .Right
         Set .Right = y.Left: Set y.Left = x
@@ -767,6 +866,11 @@ Private Function RotateLeft(ByVal x As GenericTreeNode) As GenericTreeNode
         Set y.Left.Parent = x
         y.Size = .Size: Call UpdateSizeOf(x)
     End With
+    'left leaning
+'    With y
+'        .IsRed = .Left.IsRed
+'        .Left.IsRed = True
+'    End With
     
     Set RotateLeft = y
     
@@ -783,7 +887,12 @@ Private Function RotateRight(ByVal x As GenericTreeNode) As GenericTreeNode
         Set y.Right.Parent = x
         y.Size = .Size: Call UpdateSizeOf(x)
     End With
-    
+     'left leaning
+'    With y
+'        .IsRed = .Right.IsRed
+'        .Right.IsRed = True
+'    End With
+'
     Set RotateRight = y
     
 End Function
@@ -915,12 +1024,12 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     Call LoadStack(Stack, myclass.Root, False)
 
     Select Case True
-        Case t = Keys_
+        Case t = KeyData
             Do While InOrderTreeWalk(Node, Stack)
                 Set GArray(ArrayIndex) = Node.Key
                 ArrayIndex = ArrayIndex + 1
             Loop
-        Case t = Values_
+        Case t = ValueData
             Do While InOrderTreeWalk(Node, Stack)
                 Set GArray(ArrayIndex) = Node.Value
                 ArrayIndex = ArrayIndex + 1
@@ -976,7 +1085,10 @@ End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-    Call Skynet.Throw(Me, "Private Function IGeneric_Equals").NotImplemented
+    If Other Is Nothing Then _
+        IGeneric_Equals = False: Exit Function
+    
+    IGeneric_Equals = (Me Is Other)
 End Function
 
 Private Function IGeneric_ToString() As String
@@ -1001,9 +1113,9 @@ Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_ElementAt = Me.ElementAt(Index): End Property
 
 Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
-Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=Values_, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="IGenericReadOnlyList_CopyTo"):  End Sub
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=ValueData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="IGenericReadOnlyList_CopyTo"):  End Sub
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = IndexOfValue(Item): End Function
-Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(t:=Values_): End Function
+Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.IteratorOf(t:=ValueData): End Function
 
 'IGenericDictionary
 Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Set Me.Item(Key) = Value: End Property
@@ -1016,16 +1128,16 @@ Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value): End Sub
 Private Sub IGenericDictionary_CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=t, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
 Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
-Private Function IGenericDictionary_Iterator(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(t:=t): End Function
+Private Function IGenericDictionary_IteratorOf(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_IteratorOf = Me.IteratorOf(t:=t): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.ContainsKey(Key:=Item): End Function
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(t:=Pairs_, GArray:=GenericArray.Build(Me.Count), ArrayIndex:=GenericArray.LowerBound, Caller:="Private Function IGenericCollection_ToArray() As GenericArray"): End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=Pairs_, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(t:=PairData, GArray:=GenericArray.Build(Me.Count), ArrayIndex:=GenericArray.LowerBound, Caller:="Private Function IGenericCollection_ToArray() As GenericArray"): End Function
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=PairData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(t:=Pairs_, Reverse:=False): End Function
+Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.IteratorOf(t:=PairData, Reverse:=False): End Function
 
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
@@ -1038,10 +1150,10 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             
             IGenericIterator_HasNext = True
             
-            If .Type = Keys_ Then
+            If .Type = KeyData Then
                 Set .Current = Node.Key
             
-            ElseIf .Type = Values_ Then
+            ElseIf .Type = ValueData Then
                 Set .Current = Node.Value
             
             Else
