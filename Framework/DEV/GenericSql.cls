@@ -20,6 +20,7 @@ Public Event Result(ByVal Data As ADODB.Recordset)
 Private Const ASYNC_OPTION As Long = 16&
 Private Const EXECUTE_ASYNC As Boolean = True
 Private Const CLOSE_CONNECTION_IMMEDIATELY  As Boolean = True
+Private Const DEBUG_MODE  As Boolean = False
 
 'Gibt an in welche Richtung der Parameter agiert. Die Konstanten stammen aus dem ParameterDirectoinEnum.
 Public Enum ISqlParameterDirection
@@ -777,12 +778,15 @@ Private Function Disconnect(ByVal Command As ADODB.Command) As Boolean
 End Function
 
 Private Sub Database_ConnectComplete(ByVal pError As ADODB.Error, adStatus As ADODB.EventStatusEnum, ByVal pConnection As ADODB.Connection)
-    Debug.Print "Database_ConnectComplete"
+    If DEBUG_MODE Then _
+        Debug.Print "Database_ConnectComplete"
 End Sub
 
 Private Sub Database_Disconnect(adStatus As ADODB.EventStatusEnum, ByVal pConnection As ADODB.Connection)
+    If DEBUG_MODE Then _
+        Debug.Print "Private Sub Database_Disconnect"
+    
     Set Database = Nothing
-    Debug.Print "Private Sub Database_Disconnect"
 End Sub
 
 'Private Sub Database_WillExecute(Source As String, CursorType As ADODB.CursorTypeEnum, LockType As ADODB.LockTypeEnum, Options As Long, adStatus As ADODB.EventStatusEnum, ByVal pCommand As ADODB.Command, ByVal pRecordset As ADODB.Recordset, ByVal pConnection As ADODB.Connection)
@@ -790,8 +794,9 @@ End Sub
 'End Sub
 
 Private Sub Database_ExecuteComplete(ByVal RecordsAffected As Long, ByVal pError As ADODB.Error, adStatus As ADODB.EventStatusEnum, ByVal pCommand As ADODB.Command, ByVal pRecordset As ADODB.Recordset, ByVal pConnection As ADODB.Connection)
-
-    Debug.Print "Database_ExecuteComplete"
+    
+    If DEBUG_MODE Then _
+        Debug.Print "Database_ExecuteComplete"
  
     If pError Is Nothing Then
         If Not pRecordset Is Nothing Then

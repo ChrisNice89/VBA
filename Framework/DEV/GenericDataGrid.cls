@@ -30,7 +30,7 @@ Option Explicit
 
 Implements IGeneric
 
-Public Event RowSelected(ByVal Row As GenericArray)
+Public Event RowSelected(ByVal RowID As Long, ByVal Row As GenericArray)
 Public Event FetchComplete()
 
 #If Win64 Then
@@ -164,8 +164,24 @@ Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
 
+Private Sub ViewControl_ItemClick(ByVal Item As MSComctlLib.ListItem)
+    RaiseEvent RowSelected(Item.Index, myclass.RowList(Item.Index))
+End Sub
+
 Private Sub ViewControl_ColumnClick(ByVal ColumnHeader As MSComctlLib.ColumnHeader)
     Call Me.Sort(ColumnHeader.Index - 1, myclass.SortDirection)
+End Sub
+
+Public Sub Update(ByVal RowID As Long)
+    
+    Dim i As Long
+    Dim Row As GenericArray
+    Set Row = myclass.RowList.ElementAt(RowID)
+    
+    With myclass.View.ListItems(RowID)
+        For i = Row.LowerBound To Row.Length: .SubItems(i) = Row.ElementAt(i).ToString: Next
+    End With
+        
 End Sub
 
 Public Sub Initialize(ByVal Records As ADODB.Recordset)
@@ -192,8 +208,7 @@ Public Sub Initialize(ByVal Records As ADODB.Recordset)
 End Sub
 
 Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
-    
-    Dim i As Long
+
     Dim Row As GenericArray
     
     If Not myclass.HasInitialized Then
@@ -203,21 +218,14 @@ Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
     If myclass.RowMapper Is Nothing Then _
         Exit Function
   
-    
     With myclass
         Call LockWindowUpdate(.View.hwnd)
-    
+
         Do
             If .RowMapper.HasNext(Row) Then
                 Call .RowList.Add(Row)
-                Call .RowMap.Add(GNumeric(.RowList.Count), Row)
-                
-                With .View.ListItems.Add(Text:=.View.ListItems.Count + 1)
-                    For i = Row.LowerBound To Row.Length
-                        .SubItems(i) = Row.ElementAt(i).ToString
-                    Next
-                End With
-                
+                Call .View.ListItems.Add(Text:=.RowList.Count)
+                Call Me.Update(.RowList.Count)
             Else
             
                 Set .RowMapper = Nothing
@@ -235,6 +243,8 @@ Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
                 .SelectedItem.EnsureVisible
             End If
         End With
+        
+        RaiseEvent FetchComplete
     End With
     
     Call LockWindowUpdate(0&)
@@ -296,44 +306,25 @@ Public Sub AddColumn(ByVal Name As GString, ByVal Datatype As VbVarType)
     
 End Sub
 
-Public Function AddRow() As GenericArray
-    
- 
-End Function
-
 Public Sub Sort(ByVal Index As Long, ByVal SortDirection As SortOrder)
     
-    Dim Rows As IGenericIterator
-    Dim Row As GenericArray
-    Dim i As Long, j As Long
+    Dim i As Long
     
     With myclass
-        If Index = 0 Then
-            Set Rows = .RowMap.IteratorOf(t:=ValueData)
+        If Not .SelectedColumn = Index Then
+            Call .RowList.Sort(SortDirection, GenericRowComparer.Default(Index))
         Else
-            
-            If Not .SelectedColumn = Index Then
-                Call .RowList.Sort(SortDirection, GenericRowComparer.Default(Index))
-            Else
-                Call .RowList.Reverse
-            End If
-            
-            Set Rows = .RowList.Iterator
+            Call .RowList.Reverse
         End If
+        
         .SortDirection = IIf(SortDirection = ascending, SortOrder.descending, SortOrder.ascending)
         .SelectedColumn = Index
     End With
     
     Call LockWindowUpdate(myclass.View.hwnd)
-    
-    With Rows
-        Do While .HasNext(Row)
-            With myclass.View.ListItems(InterlockedIncrement(i))
-                For j = 1 To .ListSubItems.Count: .SubItems(j) = Row.ElementAt(j).ToString: Next
-            End With
-        Loop
-    End With
- 
+    For i = myclass.RowList.BaseIndex To myclass.RowList.Count
+        Call Me.Update(i)
+    Next
     Call LockWindowUpdate(0&)
     
 End Sub

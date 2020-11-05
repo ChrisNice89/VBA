@@ -4,7 +4,7 @@ Option Explicit
 Private Grid As GenericDataGrid
 Private Sql As GenericSql
 
-Private Sub cmdFetch_Click()
+Private Sub cmdLoad_Click()
     Dim t As CTimer
     Set t = New CTimer
     t.StartCounter
