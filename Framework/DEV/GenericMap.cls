@@ -96,7 +96,7 @@ End Type
 Private Type HashItem
     Incr As Long
     Size As Long
-    Index As Long
+    index As Long
 End Type
 
 '
@@ -104,12 +104,12 @@ Private Type Bucket
     HashCode As Long
     Key As IGeneric
     Value As IGeneric
-    State As Byte
+    STATE As Byte
 End Type
 '
 Private Type Iterator
     Type As DictionaryData
-    Index As Long
+    index As Long
     Size As Long
     HasLoaded As Boolean
     Current As IGeneric
@@ -140,21 +140,21 @@ Private Virtual As Internal
 Public Property Get LoadSize() As Long: LoadSize = myclass.LoadSize: End Property
 Public Property Get LoadFactor() As Double: LoadFactor = myclass.LoadFactor: End Property
 Public Property Get Count() As Long: Count = myclass.Count: End Property
-Public Property Let Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
-Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
-Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myclass.Buckets(FindEntry(Key)).Value: End Property
-Attribute Item.VB_UserMemId = 0
+Public Property Let item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
+Public Property Set item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
+Public Property Get item(ByVal Key As IGeneric) As IGeneric: Set item = myclass.Buckets(FindEntry(Key)).Value: End Property
+Attribute item.VB_UserMemId = 0
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
 Public Function GetKeys() As GenericArray
 
     ReDim Keys(1 To myclass.Count) As IGeneric
-    Dim Index As Long
+    Dim index As Long
 
     Dim i As Long
     
     For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-        If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Keys(InterlockedIncrement(Index)) = myclass.Buckets(i).Key
+        If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
+            Set Keys(InterlockedIncrement(index)) = myclass.Buckets(i).Key
     Next
     
     Set GetKeys = GenericArray.BuildFrom(Keys)
@@ -164,13 +164,13 @@ End Function
 Public Function GetValues() As GenericArray
 
     ReDim Values(1 To myclass.Count) As IGeneric
-    Dim Index As Long
+    Dim index As Long
 
     Dim i As Long
     
     For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-        If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Values(InterlockedIncrement(Index)) = myclass.Buckets(i).Value
+        If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
+            Set Values(InterlockedIncrement(index)) = myclass.Buckets(i).Value
     Next
     
     Set GetValues = GenericArray.BuildFrom(Values)
@@ -252,19 +252,19 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
     Call LoadHash(Hash, Key.HashValue, myclass.Size)
     With Hash
         Do
-            With myclass.Buckets(.Index)
+            With myclass.Buckets(.index)
                 If Not (.Key Is Nothing) Then _
                     If .Key.Equals(Key) Then _
                         Set Value = .Value: TryGetValue = True: Exit Function
              
-                If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _
+                If (Not (.STATE And HAS_COLLISION) = HAS_COLLISION) Then _
                     Exit Function
             
             End With
             If ((InterlockedIncrement(Try)) > .Size) Then _
                 Exit Function
                 
-            .Index = Modulo(.Index + .Incr, .Size)
+            .index = Modulo(.index + .Incr, .Size)
         Loop
     End With
     
@@ -281,12 +281,12 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     Call LoadHash(Hash, Key.HashValue, myclass.Size)
   
     Do
-        With myclass.Buckets(Hash.Index)
+        With myclass.Buckets(Hash.index)
             If Not .Key Is Nothing Then _
                 If .Key.Equals(Key) Then _
-                    FindEntry = Hash.Index: Exit Function
+                    FindEntry = Hash.index: Exit Function
 
-            If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _
+            If (Not (.STATE And HAS_COLLISION) = HAS_COLLISION) Then _
                 FindEntry = -1: Exit Function
         
         End With
@@ -294,7 +294,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
             If ((InterlockedIncrement(Try)) > .Size) Then _
                 FindEntry = -1: Exit Function
     
-            .Index = Modulo(.Index + .Incr, .Size)
+            .index = Modulo(.index + .Incr, .Size)
         End With
     Loop
     
@@ -309,11 +309,12 @@ Public Sub Remove(ByVal Key As IGeneric)
     
     If (i >= 0) Then
         With myclass
-            S = (.Buckets(i).State And Not HAS_ENTRY)
-            .Buckets(i) = EmptyBucket: .Buckets(i).State = S
+            S = (.Buckets(i).STATE And Not HAS_ENTRY)
+            .Buckets(i) = EmptyBucket: .Buckets(i).STATE = S
             Call InterlockedDecrement(.Count)
         End With
     End If
+    
 End Sub
 
 Private Function getPrime(ByVal Min As Long) As Long
@@ -372,11 +373,11 @@ Private Sub Expand()
     Call Rehash(Expandprime(myclass.Size), False)
 End Sub
 
-Private Sub LoadHash(ByRef H As HashItem, ByVal HashValue As Long, ByVal Size As Long)
+Private Sub LoadHash(ByRef h As HashItem, ByVal HashValue As Long, ByVal Size As Long)
     
-    With H
+    With h
         .Size = Size
-        .Index = Modulo(HashValue, .Size)
+        .index = Modulo(HashValue, .Size)
         .Incr = 1 + Modulo((CDbl(HashValue) * myclass.Const.HashPrime), (.Size - 1))
     End With
     
@@ -417,17 +418,17 @@ Private Sub PutEntry( _
 
     Dim Hash As HashItem
     Call LoadHash(Hash, HashCode, Size)
-    Entry.State = HAS_ENTRY
+    Entry.STATE = HAS_ENTRY
     
     With Hash
         Do
-            If (Buckets(.Index).Key Is Nothing) Then _
-                Buckets(.Index) = Entry: Exit Sub
+            If (Buckets(.index).Key Is Nothing) Then _
+                Buckets(.index) = Entry: Exit Sub
             
-            If Not (Buckets(.Index).State And HAS_COLLISION) = HAS_COLLISION Then _
-                Buckets(.Index).State = (HAS_ENTRY + HAS_COLLISION): Call InterlockedIncrement(myclass.Occupancy)
+            If Not (Buckets(.index).STATE And HAS_COLLISION) = HAS_COLLISION Then _
+                Buckets(.index).STATE = (HAS_ENTRY + HAS_COLLISION): Call InterlockedIncrement(myclass.Occupancy)
                 
-            .Index = Modulo(.Index + .Incr, .Size)
+            .index = Modulo(.index + .Incr, .Size)
         Loop
     End With
 
@@ -458,9 +459,9 @@ Public Sub Add( _
     
     With Hash
         Do
-            With myclass.Buckets(.Index)
+            With myclass.Buckets(.index)
                 If .Key Is Nothing Then
-                    .State = HAS_ENTRY
+                    .STATE = HAS_ENTRY
                     .HashCode = HashValue
                     Set .Key = Key: Set .Value = Value
                     Call InterlockedIncrement(myclass.Count)
@@ -476,12 +477,12 @@ Public Sub Add( _
                     Exit Sub
                 End If
                 
-                If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _
-                    .State = (HAS_ENTRY Or HAS_COLLISION): Call InterlockedIncrement(myclass.Occupancy)
+                If (Not (.STATE And HAS_COLLISION) = HAS_COLLISION) Then _
+                    .STATE = (HAS_ENTRY Or HAS_COLLISION): Call InterlockedIncrement(myclass.Occupancy)
                 
             End With
             
-            .Index = Modulo(.Index + .Incr, .Size)
+            .index = Modulo(.index + .Incr, .Size)
         Loop While (InterlockedIncrement(Try) < .Size)
     End With
 
@@ -507,17 +508,17 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
     Select Case True
         Case t = KeyData
             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myclass.Buckets(i).Key: Call InterlockedIncrement(ArrayIndex)
             Next
         Case t = ValueData
             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myclass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
             Next
         Case Else
              For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = GenericPair(myclass.Buckets(i).Key, myclass.Buckets(i).Value): Call InterlockedIncrement(ArrayIndex)
             Next
     End Select
@@ -550,7 +551,7 @@ Private Sub LoadIterator( _
         Set .Current = Nothing
         .Descriptor = Descriptor
         .Size = Size
-        .Index = Size
+        .index = Size
         .HasLoaded = True
     End With
     
@@ -608,14 +609,14 @@ Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Bo
         
         If Not Value Is Nothing Then
             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
                     If (Value.Equals(myclass.Buckets(i).Value)) Then _
                         IGenericDictionary_ContainsValue = True: Exit Function
             Next
             
         Else
             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
                     If (myclass.Buckets(i).Value Is Nothing) Then _
                         IGenericDictionary_ContainsValue = True: Exit Function
             Next
@@ -631,7 +632,7 @@ Private Function IGenericDictionary_IteratorOf(ByVal t As DictionaryData) As IGe
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
+Private Function IGenericCollection_Contains(ByVal item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=item): End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=PairData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray
@@ -652,8 +653,8 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     Dim b As Bucket
 
     With myclass.Iterator
-        Do While .Index > 0
-            If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedDecrement(.Index), b)) Then
+        Do While .index > 0
+            If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedDecrement(.index), b)) Then
                 If Not (b.Key Is Nothing) Then
                     
                     If .Type = KeyData Then

@@ -333,9 +333,9 @@ Sub TestArraySort()
     Call List.Sort(descending)
     Debug.Print t.TimeElapsed
     
-    Dim Item As IGeneric
+    Dim item As IGeneric
     With List.Iterator
-        Do While .HasNext(Item)
+        Do While .HasNext(item)
           
         Loop
     End With
@@ -423,10 +423,10 @@ Sub TestOrderedMap()
     Dim c As GenericOrderedMap
     Set c = Skynet.Clone(Map)
     
-    Dim Item As GenericPair
+    Dim item As GenericPair
     t.StartCounter
     With c.IteratorOf(PairData)
-        Do While .HasNext(Item)
+        Do While .HasNext(item)
 '            Debug.Print Item.Key
         Loop
     End With
@@ -453,9 +453,9 @@ Sub TestListIterator()
     Set c = Skynet.Clone(L)
     
     t.StartCounter
-    Dim Item As IGeneric
+    Dim item As IGeneric
     With c.Iterator
-        Do While .HasNext(Item)
+        Do While .HasNext(item)
 '           Debug.Print Item
         Loop
     End With
@@ -482,10 +482,10 @@ Sub TestSortedListIterator()
     Set c = Skynet.Clone(sl)
     
     t.StartCounter
-    Dim Item As IGeneric
+    Dim item As IGeneric
     With c.Iterator(t:=KeyData)
-        Do While .HasNext(Item)
-           Debug.Print Item
+        Do While .HasNext(item)
+           Debug.Print item
         Loop
     End With
     Debug.Print t.TimeElapsed
@@ -511,7 +511,7 @@ Sub TestMaps()
     End If
  
     Dim P As GenericPair
-    Dim Item As IGeneric
+    Dim item As IGeneric
     
     Set t = New CTimer
     t.StartCounter
@@ -523,7 +523,7 @@ Sub TestMaps()
   
     For i = 1 To N
         Set P = RandomList(i)
-        Set Item = Map.Item(P.Key)
+        Set item = Map.item(P.Key)
     Next
   
     Dim ga As GenericArray
@@ -541,7 +541,7 @@ Sub TestMaps()
 '
     t.StartCounter
     With Map.IteratorOf(PairData)
-        Do While .HasNext(Item)
+        Do While .HasNext(item)
 '            Debug.Print Item
         Loop
     End With
@@ -569,10 +569,10 @@ Sub TestSortedList()
     Dim c As GenericSortedList
     Set c = Skynet.Clone(sl)
     
-    Dim Item As IGeneric
+    Dim item As IGeneric
 
     With c.Iterator(PairData)
-        Do While .HasNext(Item)
+        Do While .HasNext(item)
            
         Loop
     End With
@@ -600,13 +600,13 @@ Sub TestTree()
     
     Debug.Print c.IndexOf(GNumeric(99))
     Debug.Print c.IndexOf(GNumeric(1))
-    Dim Item As IGeneric
+    Dim item As IGeneric
     
     t.StartCounter
     
     With c.Iterator
-        Do While .HasNext(Item)
-            Debug.Print Item
+        Do While .HasNext(item)
+            Debug.Print item
         Loop
     End With
     
@@ -775,17 +775,17 @@ Sub testMap()
     Set Clone = Skynet.Clone(hm)
     Set hm = Nothing
     
-    Dim Item As IGeneric
+    Dim item As IGeneric
     t.StartCounter
     With Clone.IteratorOf(PairData)
-        Do While .HasNext(Item)
+        Do While .HasNext(item)
 '            Debug.Print Item
         Loop
     End With
     Debug.Print t.TimeElapsed
     
     With GenericSortedList.BuildFrom(Clone, GenericValueComparer).Iterator(PairData)
-        Do While .HasNext(Item)
+        Do While .HasNext(item)
 '            Debug.Print Item
         Loop
     End With

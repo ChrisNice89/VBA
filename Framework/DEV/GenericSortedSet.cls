@@ -33,15 +33,15 @@ Public Function Add(ByVal Value As IGeneric) As Boolean: Add = myclass.Tree.Add(
 Public Sub AddAll(ByVal Iterator As IGenericIterator)
 
     Dim P As GenericPair
-    Dim Item As IGeneric
+    Dim item As IGeneric
     
     With Iterator
-        Do While .HasNext(Item)
-            If TypeOf Item Is GenericPair Then
-                Set P = Item
+        Do While .HasNext(item)
+            If TypeOf item Is GenericPair Then
+                Set P = item
                 Call myclass.Tree.Add(P.Key, P)
             Else
-                Call myclass.Tree.Add(Item, Item)
+                Call myclass.Tree.Add(item, item)
             End If
         Loop
     End With
@@ -49,7 +49,7 @@ Public Sub AddAll(ByVal Iterator As IGenericIterator)
 End Sub
 Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray: Set ToArray = myclass.Tree.GetValues(Reverse:=False): End Function
 Public Function Iterator(Optional ByVal Reverse As Boolean) As IGenericIterator: Set Iterator = myclass.Tree.IteratorOf(t:=ValueData, Reverse:=Reverse): End Function
-Public Function Remove(ByVal Item As IGeneric) As Boolean: Call myclass.Tree.Remove(Item): End Function
+Public Function Remove(ByVal item As IGeneric) As Boolean: Call myclass.Tree.Remove(item): End Function
 Public Function Contains(ByVal Value As IGeneric) As Boolean: Contains = myclass.Tree.ContainsKey(Value): End Function
 
 Public Function Build() As GenericSortedSet
@@ -72,8 +72,8 @@ Public Sub Clear()
     Set myclass.Tree = Nothing
 End Sub
 
-Public Function ElementAt(ByVal Index As Long) As IGeneric
-    Set ElementAt = myclass.Tree.ElementAt(Index).Key
+Public Function ElementAt(ByVal index As Long) As IGeneric
+    Set ElementAt = myclass.Tree.ElementAt(index).Key
 End Function
 
 'IGeneric
@@ -118,7 +118,7 @@ End Sub
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsFixedSize() As Boolean: IGenericCollection_IsFixedSize = False: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Value:=Item): End Function
+Private Function IGenericCollection_Contains(ByVal item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Value:=item): End Function
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.ToArray(Reverse:=False): End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long):: End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub

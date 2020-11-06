@@ -40,7 +40,7 @@ Attribute VB_Exposed = True
 '*          List class can contain duplicate elements.
 '*          List class maintains insertion order.
 '*          List allows random access because array works at the index basis.
-'*          List, manipulation is little bit slower than the LinkedList because a lot of shifting needs
+'*          List, manipulation is little bit slower than a LinkedList because a lot of shifting needs
 '*          to occur if any element is removed from the list.
 '*
 '*
@@ -87,7 +87,7 @@ Private Type Iterator
     StartIndex As Long
     EndIndex As Long
     Count As Long
-    Index As Long
+    index As Long
     HasLoaded As Boolean
     Current As IGeneric
     Items As GenericArray
@@ -113,22 +113,22 @@ Public Property Get BaseIndex() As Long: BaseIndex = myclass.Items.LowerBound: E
 Public Property Get SortOrder() As SortOrder: SortOrder = myclass.SortOrder: End Property
 Public Property Let SortOrder(ByVal Order As SortOrder):    myclass.SortOrder = Order: End Property
 Public Property Get Last() As IGeneric: Set Last = myclass.Items(myclass.Size): End Property
-Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
+Public Property Set ElementAt(ByVal index As Long, ByVal item As IGeneric)
 
-    If (Index > myclass.Size) Then _
+    If (index > myclass.Size) Then _
         Call Skynet.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("Index not valid")
     
-    Set myclass.Items(Index) = Item
+    Set myclass.Items(index) = item
 
 End Property
 
-Public Property Get ElementAt(ByVal Index As Long) As IGeneric
+Public Property Get ElementAt(ByVal index As Long) As IGeneric
 Attribute ElementAt.VB_UserMemId = 0
 
-    If (Index > myclass.Size) Then _
+    If (index > myclass.Size) Then _
         Call Skynet.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("Index not valid")
     
-    Set ElementAt = myclass.Items(Index)
+    Set ElementAt = myclass.Items(index)
 
 End Property
 
@@ -259,15 +259,15 @@ End Sub
 
 Public Sub Swap(ByVal i As Long, ByVal j As Long)
 
-    Dim Item As IGeneric
+    Dim item As IGeneric
     
     If (i > myclass.Size) Or (j > myclass.Size) Then _
         Call Skynet.Throw(Me, "Public Sub Swap").IndexOutofRange("(i > myClass.Size) Or (j > myClass.Size)")
      
     With myclass.Items
-        Set Item = .ElementAt(i)
+        Set item = .ElementAt(i)
         Set .ElementAt(i) = .ElementAt(j)
-        Set .ElementAt(j) = Item
+        Set .ElementAt(j) = item
     End With
     
 End Sub
@@ -276,69 +276,69 @@ Public Function AsReadOnly() As IGenericReadOnlyList
     Set AsReadOnly = Me 'GenericReadOnlyList.Build(Internal:=myClass.Items, Size:=myClass.Size)
 End Function
 
-Public Function Iterator(Optional ByVal Index As Long, Optional ByVal Count As Long) As IGenericIterator
+Public Function Iterator(Optional ByVal index As Long, Optional ByVal Count As Long) As IGenericIterator
     
     Dim c As Member
     
-    If Index = 0 Then _
-        Index = myclass.Items.LowerBound
+    If index = 0 Then _
+        index = myclass.Items.LowerBound
         
     If Count = 0 Then _
         Count = myclass.Size
     
-    If (Index < myclass.Items.LowerBound) Or (Index > myclass.Size + myclass.Items.LowerBound) Then _
+    If (index < myclass.Items.LowerBound) Or (index > myclass.Size + myclass.Items.LowerBound) Then _
         Call Skynet.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myClass.Items.LowerBound) Or (Index > myClass.Size + myClass.Items.LowerBound)")
 
-    If (Count < 0) Or (Count > myclass.Size - Index + myclass.Items.LowerBound) Then _
+    If (Count < 0) Or (Count > myclass.Size - index + myclass.Items.LowerBound) Then _
         Call Skynet.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Size - Index + myClass.Items.LowerBound)")
         
-    Call LoadIterator(c.Iterator, myclass.Items, Index, Count)
+    Call LoadIterator(c.Iterator, myclass.Items, index, Count)
     Set Iterator = Skynet.CreateInstance(New GenericList, VarPtr(c), LenB(c))
 
 End Function
 
-Public Function Add(ByVal Item As IGeneric) As Long
+Public Function Add(ByVal item As IGeneric) As Long
 
     If (myclass.Size = Me.Capacity) Then _
         Call EnsureCapacity(myclass.Size + 1)
     
-    Set myclass.Items(InterlockedIncrement(myclass.Size)) = Item
+    Set myclass.Items(InterlockedIncrement(myclass.Size)) = item
     Add = myclass.Size
 
 End Function
 
 Public Sub AddAll(ByVal Collection As IGenericIterator)
-    Call Me.InsertAll(Index:=myclass.Size + myclass.Items.LowerBound, Enumerable:=Collection)
+    Call Me.InsertAll(index:=myclass.Size + myclass.Items.LowerBound, Enumerable:=Collection)
 End Sub
 
-Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
+Public Sub Insert(ByVal index As Long, ByVal item As IGeneric)
     
-    If (Index > myclass.Size + myclass.Items.LowerBound) Then _
+    If (index > myclass.Size + myclass.Items.LowerBound) Then _
         Call Skynet.Throw(Me, "Public Sub Insert").IndexOutofRange("Index > myClass.Size")
     
     If (myclass.Size = myclass.Items.Length) Then _
         Call EnsureCapacity(myclass.Size + 1)
         
     With myclass.Items
-        If (Index < myclass.Size + .LowerBound) Then _
-            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + 1), src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
+        If (index < myclass.Size + .LowerBound) Then _
+            Call CopyMemory(dst:=ByVal .AdressOf(Element:=index + 1), src:=ByVal .AdressOf(Element:=index), Length:=.SizeOf(myclass.Size - index + .LowerBound)): _
+            Call ZeroMemory(dst:=ByVal .AdressOf(Element:=index), Length:=.SizeOf(1))
          
-         Set .ElementAt(Index) = Item: Call InterlockedIncrement(myclass.Size)
+         Set .ElementAt(index) = item: Call InterlockedIncrement(myclass.Size)
     End With
 
 End Sub
 
-Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
+Public Sub InsertAll(ByVal index As Long, ByVal Enumerable As IGenericIterator)
     
     Dim c As IGenericCollection
     Dim N As Long
-    Dim Item As IGeneric
+    Dim item As IGeneric
     
     If (Enumerable Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Sub InsertAll").NullPointer("Enumerable Is Nothing")
     
-    If (Index > myclass.Size + myclass.Items.LowerBound) Then _
+    If (index > myclass.Size + myclass.Items.LowerBound) Then _
         Call Skynet.Throw(Me, "InsertAll").IndexOutofRange("Index > myClass.Size")
     
     If TypeOf Enumerable Is IGenericCollection Then _
@@ -348,77 +348,77 @@ Public Sub InsertAll(ByVal Index As Long, ByVal Enumerable As IGenericIterator)
         Call EnsureCapacity(myclass.Size + c.Count)
     
         With myclass.Items
-            If (Index < myclass.Size + .LowerBound) Then _
-                Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index + c.Count), src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-                Call ZeroMemory(dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(c.Count))
+            If (index < myclass.Size + .LowerBound) Then _
+                Call CopyMemory(dst:=ByVal .AdressOf(Element:=index + c.Count), src:=ByVal .AdressOf(Element:=index), Length:=.SizeOf(myclass.Size - index + .LowerBound)): _
+                Call ZeroMemory(dst:=ByVal .AdressOf(Element:=index), Length:=.SizeOf(c.Count))
                 
         End With
       
-        Call c.CopyTo(GArray:=myclass.Items, ArrayIndex:=Index)
+        Call c.CopyTo(GArray:=myclass.Items, ArrayIndex:=index)
         myclass.Size = myclass.Size + c.Count
     Else
         With Enumerable
-            Index = Index - 1
-            Do While .HasNext(Item): Call Me.Insert(InterlockedIncrement(Index), Item): Loop
+            index = index - 1
+            Do While .HasNext(item): Call Me.Insert(InterlockedIncrement(index), item): Loop
             Call .Reset
         End With
     End If
     
 End Sub
 
-Public Function Remove(ByVal Item As IGeneric) As Boolean
+Public Function Remove(ByVal item As IGeneric) As Boolean
     Dim i As Long
-    i = Me.IndexOf(Item:=Item)
+    i = Me.IndexOf(item:=item)
     
     If (i >= 0) Then _
         Call Me.RemoveAt(i): Remove = True: Exit Function
     
 End Function
 
-Public Sub RemoveAt(ByVal Index As Long)
+Public Sub RemoveAt(ByVal index As Long)
 
-    If (Index > myclass.Size) Then _
+    If (index > myclass.Size) Then _
         Call Skynet.Throw(Me, "Public Sub RemoveAt").IndexOutofRange("Index > myClass.Size")
     
     InterlockedDecrement myclass.Size
     
     With myclass.Items
-        Set .ElementAt(Index) = Nothing
+        Set .ElementAt(index) = Nothing
         
-        If (Index < myclass.Size + .LowerBound) Then _
-            Call CopyMemory(dst:=ByVal .AdressOf(Element:=Index), src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+        If (index < myclass.Size + .LowerBound) Then _
+            Call CopyMemory(dst:=ByVal .AdressOf(Element:=index), src:=ByVal .AdressOf(Element:=index + 1), Length:=.SizeOf(myclass.Size - index + .LowerBound)): _
             Call ZeroMemory(dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
             
     End With
     
 End Sub
 
-Public Sub RemoveRange(ByVal Index As Long, ByVal Count As Long)
+Public Sub RemoveRange(ByVal index As Long, ByVal Count As Long)
 
-    If (Index > myclass.Size) Then _
+    If (index > myclass.Size) Then _
         Call Skynet.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("Index > myClass.Size")
   
 End Sub
 
-Public Function GetRange(ByVal Index As Long, ByVal Count As Long) As GenericList
+Public Function GetRange(ByVal index As Long, ByVal Count As Long) As GenericList
     
     Dim c As Member
      
     With GenericArray
 
-        If (Index < .LowerBound) Or (Index > myclass.Size) Then _
+        If (index < .LowerBound) Or (index > myclass.Size) Then _
             Call Skynet.Throw(Me, "Public Function GetRange").IndexOutofRange("(Index < .LowerBound) Or (Index > myClass.Size)")
 
         If (Count < 1) Then _
             Call Skynet.Throw(Me, "Public Function GetRange").ArgOutOfRange("(Count < 1)")
         
-        If (myclass.Size < Index + Count) Then _
+        If (myclass.Size < index + Count) Then _
             Call Skynet.Throw(Me, "Public Function GetRange").InvalidInput("myClass.Size - Index < Count")
 
         Set c.Items = .Build(Count)
         c.Size = Count
     
-        Call .Copy(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=c.Items, DstIndex:=c.Items.LowerBound, Elements:=Count)
+        Call .Copy(SrcArray:=myclass.Items, SrcIndex:=index, DstArray:=c.Items, DstIndex:=c.Items.LowerBound, Elements:=Count)
     End With
     
     Set GetRange = Skynet.CreateInstance(New GenericList, VarPtr(c), Virtual.Size)
@@ -426,7 +426,7 @@ Public Function GetRange(ByVal Index As Long, ByVal Count As Long) As GenericLis
 End Function
 
 Public Sub CopyTo( _
-                    ByVal Index As Long, _
+                    ByVal index As Long, _
                     ByVal GArray As GenericArray, _
                     ByVal ArrayIndex As Long, _
                     Optional ByVal Elements As Long = 0)
@@ -443,7 +443,7 @@ Public Sub CopyTo( _
     If (GArray.Length - ArrayIndex + GArray.LowerBound < Elements) Then _
         Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < Elements)")
     
-    Call GenericArray.Copy(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Elements)
+    Call GenericArray.Copy(SrcArray:=myclass.Items, SrcIndex:=index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Elements)
 
 End Sub
 
@@ -454,7 +454,7 @@ Public Function ToArray() As GenericArray
     Dim ga As GenericArray
     Set ga = GenericArray.Build(myclass.Size)
 
-    Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=ga, ArrayIndex:=ga.LowerBound)
+    Call Me.CopyTo(index:=myclass.Items.LowerBound, GArray:=ga, ArrayIndex:=ga.LowerBound)
     Set ToArray = ga
 
 End Function
@@ -489,7 +489,7 @@ Public Function IsEqual(ByVal first As IGenericReadOnlyList, ByVal second As IGe
 End Function
 
 Public Sub Sort(ByVal Order As SortOrder, Optional ByVal Comparer As IGenericComparer)
-    Call myclass.Items.Sort(Order:=Order, Index:=myclass.Items.LowerBound, Length:=myclass.Size, Comparer:=Comparer)
+    Call myclass.Items.Sort(Order:=Order, index:=myclass.Items.LowerBound, Length:=myclass.Size, Comparer:=Comparer)
 End Sub
 
 Public Sub Clear():
@@ -497,18 +497,18 @@ Public Sub Clear():
     myclass.Size = 0
 End Sub
 
-Public Function Contains(Item As IGeneric) As Boolean: Contains = (Me.IndexOf(Item) > myclass.Items.LowerBound): End Function
+Public Function Contains(item As IGeneric) As Boolean: Contains = (Me.IndexOf(item) > myclass.Items.LowerBound): End Function
 
 Public Function BinarySearch( _
-                                ByVal Item As IGeneric, _
+                                ByVal item As IGeneric, _
                                 Optional ByVal Comparer As IGenericComparer, _
-                                Optional ByVal Index As Long, _
+                                Optional ByVal index As Long, _
                                 Optional ByVal Count As Long) As Long
     
-    If (Index = 0) Then
-        Index = myclass.Items.LowerBound
+    If (index = 0) Then
+        index = myclass.Items.LowerBound
     Else
-        If (Index < 0) Then _
+        If (index < 0) Then _
             Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Index < 0")
     End If
     
@@ -519,55 +519,55 @@ Public Function BinarySearch( _
             Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Count < 0")
     End If
     
-    If (myclass.Size - Index + myclass.Items.LowerBound < Count) Then _
+    If (myclass.Size - index + myclass.Items.LowerBound < Count) Then _
         Call Skynet.Throw(Me, "Public Function BinarySearch").InvalidInput("myClass.Size - Index < Count")
     
-    BinarySearch = myclass.Items.BinarySearch(Value:=Item, Index:=Index, Length:=Count, Order:=myclass.SortOrder, Comparer:=Comparer)
+    BinarySearch = myclass.Items.BinarySearch(Value:=item, index:=index, Length:=Count, Order:=myclass.SortOrder, Comparer:=Comparer)
     
 End Function
 
 Public Function IndexOf( _
-                            ByVal Item As IGeneric, _
-                            Optional ByVal Index As Long, _
+                            ByVal item As IGeneric, _
+                            Optional ByVal index As Long, _
                             Optional ByVal Count As Long) As Long
     
-    If (Index = 0) Then
-        Index = myclass.Items.LowerBound
+    If (index = 0) Then
+        index = myclass.Items.LowerBound
     Else
-        If (Index > myclass.Size) Or (Index < myclass.Items.LowerBound) Then _
+        If (index > myclass.Size) Or (index < myclass.Items.LowerBound) Then _
             Call Skynet.Throw(Me, "Public Function IndexOf").IndexOutofRange("(Index > myClass.Size) Or (Index < myClass.Items.LowerBound)")
     End If
     
     If (Count = 0) Then
-        Count = myclass.Size - Index + myclass.Items.LowerBound
+        Count = myclass.Size - index + myclass.Items.LowerBound
     Else
-        If (Count < 0) Or (Index > myclass.Size - Count + myclass.Items.LowerBound) Then _
+        If (Count < 0) Or (index > myclass.Size - Count + myclass.Items.LowerBound) Then _
             Call Skynet.Throw(Me, "Public Function IndexOf").InvalidInput("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
     End If
     
-    IndexOf = myclass.Items.IndexOf(Value:=Item, StartIndex:=Index, Count:=Count)
+    IndexOf = myclass.Items.IndexOf(Value:=item, StartIndex:=index, Count:=Count)
     
 End Function
 
 Public Sub Reverse( _
-                      Optional ByVal Index As Long, _
+                      Optional ByVal index As Long, _
                       Optional ByVal Count As Long)
     
-    If (Index = 0) Then
-        Index = myclass.Items.LowerBound
+    If (index = 0) Then
+        index = myclass.Items.LowerBound
     Else
-        If (Index > myclass.Size) Or (Index < myclass.Items.LowerBound) Then _
+        If (index > myclass.Size) Or (index < myclass.Items.LowerBound) Then _
             Call Skynet.Throw(Me, "Public Sub Reverse").IndexOutofRange("(Index > myClass.Size) Or (Index < myClass.Items.LowerBound)")
     End If
     
     If (Count = 0) Then
-        Count = myclass.Size - Index + myclass.Items.LowerBound
+        Count = myclass.Size - index + myclass.Items.LowerBound
     Else
-        If (Count < 0) Or (Index > myclass.Size - Count + myclass.Items.LowerBound) Then _
+        If (Count < 0) Or (index > myclass.Size - Count + myclass.Items.LowerBound) Then _
             Call Skynet.Throw(Me, "Public Sub Reverse").InvalidInput("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
     End If
     
-    Call myclass.Items.Reverse(Index:=Index, Length:=Count)
+    Call myclass.Items.Reverse(index:=index, Length:=Count)
     
 End Sub
 
@@ -598,8 +598,8 @@ Private Sub LoadIterator( _
         .Descriptor = Items.Descriptor
         .StartIndex = StartIndex
         .Count = Count
-        .Index = .StartIndex - 1
-        .EndIndex = .Index + .Count
+        .index = .StartIndex - 1
+        .EndIndex = .index + .Count
         .HasLoaded = True
     End With
     
@@ -652,27 +652,27 @@ End Function
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = myclass.Items.LowerBound: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Size: End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myclass.Items.IndexOf(Value:=Item, Count:=myclass.Size): End Function
-Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
+Private Function IGenericReadOnlyList_IndexOf(ByVal item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myclass.Items.IndexOf(Value:=item, Count:=myclass.Size): End Function
+Private Property Get IGenericReadOnlyList_ElementAt(ByVal index As Long) As IGeneric
     
-    If (Index > myclass.Size) Then _
+    If (index > myclass.Size) Then _
         Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("Index not valid")
 
-    Set IGenericReadOnlyList_ElementAt = myclass.Items(Index)
+    Set IGenericReadOnlyList_ElementAt = myclass.Items(index)
     
 End Property
 
 Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
-Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myclass.Size): End Sub
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myclass.Size): End Sub
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator: End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.ToArray: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Item:=Item): End Function
+Private Function IGenericCollection_Contains(ByVal item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(item:=item): End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator: End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myclass.Size): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myclass.Size): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 
 'IGenericIterator
@@ -680,7 +680,7 @@ Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterato
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     With myclass.Iterator
-        If .Index = .EndIndex Then
+        If .index = .EndIndex Then
             If .HasLoaded = False Then _
                 Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
             
@@ -689,7 +689,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             Exit Function
         End If
         
-        If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedIncrement(.Index), .Current)) Then
+        If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedIncrement(.index), .Current)) Then
             Set Out = .Current
             IGenericIterator_HasNext = True
         Else

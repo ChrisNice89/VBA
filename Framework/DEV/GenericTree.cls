@@ -83,7 +83,7 @@ Public Property Get IsHeightBalanced(): IsHeightBalanced = CheckHeightBalance(my
 Public Property Get IsBalanced(): IsBalanced = CheckRedBlackBalance(myclass.Root): End Property
 Public Property Get Count() As Long: Count = SizeOf(myclass.Root): End Property
 
-Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
+Public Property Set item(ByVal Key As IGeneric, ByVal Value As IGeneric)
 
     Dim Node As GenericTreeNode: Set Node = FindNode(Key)
     
@@ -95,15 +95,15 @@ Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
    
 End Property
 
-Public Property Get Item(ByVal Key As IGeneric) As IGeneric
-Attribute Item.VB_UserMemId = 0
+Public Property Get item(ByVal Key As IGeneric) As IGeneric
+Attribute item.VB_UserMemId = 0
 
     Dim Node As GenericTreeNode: Set Node = FindNode(Key)
     
     If (Node Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Property Get Item").NoSuchElement
     
-    Set Item = Node.Value
+    Set item = Node.Value
 
 End Property
 
@@ -133,12 +133,12 @@ Public Function GetMin() As GenericPair
     Set GetMin = FindMinOf(myclass.Root)
 End Function
 
-Public Function ElementAt(ByVal Index As Long) As GenericPair
+Public Function ElementAt(ByVal index As Long) As GenericPair
     
-    If (Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root)) Then _
+    If (index < BASE_INDEX) Or (index > SizeOf(myclass.Root)) Then _
         Call Skynet.Throw(Me, "Public Function ElementAt").IndexOutofRange("(Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root))")
 
-    Set ElementAt = FindSmallerOrEqual(myclass.Root, Index - BASE_INDEX)
+    Set ElementAt = FindSmallerOrEqual(myclass.Root, index - BASE_INDEX)
     
 End Function
 
@@ -310,7 +310,7 @@ End Sub
 Public Function GetValues(Optional ByVal Reverse As Boolean) As GenericArray
    
     ReDim Values(1 To Me.Count) As IGeneric
-    Dim Index As Long
+    Dim index As Long
     
     Dim Stack As InternalStack
     Dim Current As GenericTreeNode
@@ -318,7 +318,7 @@ Public Function GetValues(Optional ByVal Reverse As Boolean) As GenericArray
     Call LoadStack(Stack, myclass.Root, Reverse)
 
     Do While InOrderTreeWalk(Current, Stack)
-        Set Values(InterlockedIncrement(Index)) = Current.Value
+        Set Values(InterlockedIncrement(index)) = Current.Value
     Loop
     
     Set GetValues = GenericArray.BuildFrom(Values)
@@ -328,7 +328,7 @@ End Function
 Public Function GetKeys(Optional ByVal Reverse As Boolean) As GenericArray
    
     ReDim Keys(1 To Me.Count) As IGeneric
-    Dim Index As Long
+    Dim index As Long
 
     Dim Stack As InternalStack
     Dim Current As GenericTreeNode
@@ -336,34 +336,34 @@ Public Function GetKeys(Optional ByVal Reverse As Boolean) As GenericArray
     Call LoadStack(Stack, myclass.Root, Reverse)
 
     Do While InOrderTreeWalk(Current, Stack)
-        Set Keys(InterlockedIncrement(Index)) = Current.Key
+        Set Keys(InterlockedIncrement(index)) = Current.Key
     Loop
     
     Set GetKeys = GenericArray.BuildFrom(Keys)
     
 End Function
 
-Private Sub AddValuesToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
+Private Sub AddValuesToArray(ByVal Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef index As Long)
 
     If Not (Node.Left Is Nothing) Then _
-        Call AddValuesToArray(Node.Left, GArray, Index)
+        Call AddValuesToArray(Node.Left, GArray, index)
     
-    Set GArray(Index) = Node.Value: Index = Index + 1
+    Set GArray(index) = Node.Value: index = index + 1
     
     If Not (Node.Right Is Nothing) Then _
-        Call AddValuesToArray(Node.Right, GArray, Index)
+        Call AddValuesToArray(Node.Right, GArray, index)
     
 End Sub
 
-Private Sub AddKeysToArray(ByRef Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef Index As Long)
+Private Sub AddKeysToArray(ByRef Node As GenericTreeNode, ByVal GArray As GenericArray, ByRef index As Long)
     
     If Not (Node.Left Is Nothing) Then _
-        Call AddKeysToArray(Node.Left, GArray, Index)
+        Call AddKeysToArray(Node.Left, GArray, index)
     
-    Set GArray(Index) = Node.Key: Index = Index + 1
+    Set GArray(index) = Node.Key: index = index + 1
     
     If Not (Node.Right Is Nothing) Then _
-        Call AddKeysToArray(Node.Right, GArray, Index)
+        Call AddKeysToArray(Node.Right, GArray, index)
     
 End Sub
 
@@ -388,10 +388,8 @@ Private Function CheckRedBlackBalance(ByVal Node As GenericTreeNode, Optional By
     maxH = IIf(lmaxH < rmaxH, rmaxH, lmaxH) + 1
     minH = IIf(lminH > rminH, rminH, lminH) + 1
     
-    If maxH <= 2 * minH Then
+    If maxH <= 2 * minH Then _
         CheckRedBlackBalance = True
-        Exit Function
-    End If
     
 End Function
 
@@ -407,62 +405,11 @@ Private Function CheckHeightBalance(ByVal Node As GenericTreeNode) As Boolean
     rh = SizeOf(Node.Right)
     
     'High balanced
-    If Abs(lh - rh) <= 1 Then
-        If CheckHeightBalance(Node.Left) And CheckHeightBalance(Node.Left) Then
+    If Abs(lh - rh) <= 1 Then _
+        If CheckHeightBalance(Node.Left) And CheckHeightBalance(Node.Left) Then _
             CheckHeightBalance = True
-        End If
-    End If
-
+  
 End Function
-
-
-'Private Sub InOrderTreeWalk2( _
-'                                ByVal GArray As GenericArray, _
-'                                ByVal Index As Long, _
-'                                ByVal Reverse As Boolean)
-'
-'    Dim Stack As InternalStack
-'    ReDim Stack.Items(Me.MaxHeight)
-'    Dim Node As GenericTreeNode
-'    Dim Current As GenericTreeNode
-'    Set Node = myClass.Root
-'
-'    If Reverse Then
-'        Do While Not (Node Is Nothing)
-'            Call Push(Stack, Node)
-'            Set Node = Node.Right
-'        Loop
-'    Else
-'        Do While Not (Node Is Nothing)
-'            Call Push(Stack, Node)
-'            Set Node = Node.Left
-'        Loop
-'    End If
-'
-'    If Reverse Then
-'        Do While Not Stack.Size = 0
-'            Set Current = Pop(Stack)
-'            Set GArray(Index) = Current.CopyToPair
-'            Index = Index + 1
-'            Set Node = Current.Left
-'            Do While Not (Node Is Nothing)
-'                Call Push(Stack, Node)
-'                Set Node = Node.Right
-'            Loop
-'        Loop
-'    Else
-'        Do While Not Stack.Size = 0
-'            Set Current = Pop(Stack)
-'            Set GArray(Index) = Current.CopyToPair
-'            Index = Index + 1
-'            Set Node = Current.Right
-'            Do While Not (Node Is Nothing)
-'                Call Push(Stack, Node)
-'                Set Node = Node.Left
-'            Loop
-'        Loop
-'    End If
-'End Sub
 
 Public Function IteratorOf(ByVal t As DictionaryData, Optional ByVal Reverse As Boolean) As IGenericIterator
     
@@ -534,6 +481,7 @@ Private Function FindNode(ByVal Key As IGeneric) As GenericTreeNode
     
     With myclass.Comparer
         Do While (Current Is Nothing) = False
+        
             Order = .Compare(Key, Current.Key)
            
             If (Order = 0) Then _
@@ -555,7 +503,7 @@ Private Function MaxHeightOf(ByVal Root As GenericTreeNode) As Long
 End Function
 Private Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: Logn = Log(Value) / Log(Base): End Function
 
-Private Function IndexOfValue(ByVal Item As IGeneric) As Long
+Private Function IndexOfValue(ByVal item As IGeneric) As Long
     
     Dim i As Long
     Dim Stack As InternalStack
@@ -563,10 +511,10 @@ Private Function IndexOfValue(ByVal Item As IGeneric) As Long
     
     Call LoadStack(Stack, myclass.Root, False)
     
-    If Item Is Nothing = False Then
+    If item Is Nothing = False Then
         Do While InOrderTreeWalk(Node, Stack)
             i = i + 1
-            If Item.Equals(Node.Value) Then _
+            If item.Equals(Node.Value) Then _
                 IndexOfValue = i: Exit Function
         Loop
     Else
@@ -1110,16 +1058,16 @@ End Sub
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = BASE_INDEX: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Count: End Property
-Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_ElementAt = Me.ElementAt(Index): End Property
+Private Property Get IGenericReadOnlyList_ElementAt(ByVal index As Long) As IGeneric: Set IGenericReadOnlyList_ElementAt = Me.ElementAt(index): End Property
 
 Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=ValueData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="IGenericReadOnlyList_CopyTo"):  End Sub
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = IndexOfValue(Item): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = IndexOfValue(item): End Function
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.IteratorOf(t:=ValueData): End Function
 
 'IGenericDictionary
-Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Set Me.Item(Key) = Value: End Property
-Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = Me.Item(Key): End Property
+Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Set Me.item(Key) = Value: End Property
+Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = Me.item(Key): End Property
 Private Property Get IGenericDictionary_Count() As Long: IGenericDictionary_Count = Me.Count: End Property
 Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.ContainsKey(Key:=Key): End Function
 Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Boolean: IGenericDictionary_ContainsValue = Me.ContainsValue(Value:=Value): End Function
@@ -1133,7 +1081,7 @@ Private Function IGenericDictionary_IteratorOf(ByVal t As DictionaryData) As IGe
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.ContainsKey(Key:=Item): End Function
+Private Function IGenericCollection_Contains(ByVal item As IGeneric) As Boolean: IGenericCollection_Contains = Me.ContainsKey(Key:=item): End Function
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = CopyOf(t:=PairData, GArray:=GenericArray.Build(Me.Count), ArrayIndex:=GenericArray.LowerBound, Caller:="Private Function IGenericCollection_ToArray() As GenericArray"): End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=PairData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub

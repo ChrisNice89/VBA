@@ -219,14 +219,14 @@ End Function
 Public Function BinarySearch( _
                                 ByRef Objects() As IGenericValue, _
                                 ByVal Value As IGeneric, _
-                                ByVal Index As Long, _
+                                ByVal index As Long, _
                                 ByVal Length As Long, _
                                 ByVal Order As SortOrder) As Long
 
     Dim i As Long
     Dim c As ComparerEnum
-    Dim lo As Long: lo = Index
-    Dim hi As Long: hi = Index + Length - 1
+    Dim lo As Long: lo = index
+    Dim hi As Long: hi = index + Length - 1
     
     Do While (lo <= hi)
     
@@ -290,11 +290,11 @@ End Function
 'index index + (index + count - i - 1).
 Public Sub Reverse( _
                         ByRef Objects() As IGeneric, _
-                        ByVal Index As Long, _
+                        ByVal index As Long, _
                         ByVal Length As Long)
 
-    Dim i As Long: i = Index
-    Dim j As Long: j = Index + Length - 1
+    Dim i As Long: i = index
+    Dim j As Long: j = index + Length - 1
     Dim temp As IGeneric
     
     Do
@@ -316,7 +316,7 @@ Public Function HashValue( _
                             ByRef ascii() As Byte, _
                             Optional ByVal Hashfunction As Hashing = Hashing.Function1) As Long
     
-    Dim H As Double
+    Dim h As Double
     Dim i As Long
     
     Select Case Hashfunction
@@ -331,7 +331,7 @@ Public Function HashValue( _
                 Next
             End With
             
-            H = h1 + (h2 * 1566083941#)
+            h = h1 + (h2 * 1566083941#)
         
         Case Hashing.Function2
             
@@ -339,24 +339,24 @@ Public Function HashValue( _
              Dim N As Long
              
              For N = (Length / 2) To 1 Step -1
-                H = H + ascii(i)
-                H = Me.X0R(Me.X0R(leftShift(H, 16), Me.leftShift(ascii(i + 1), 11)), H)
-                H = H + Me.RightShift(H, 11)
+                h = h + ascii(i)
+                h = Me.X0R(Me.X0R(leftShift(h, 16), Me.leftShift(ascii(i + 1), 11)), h)
+                h = h + Me.RightShift(h, 11)
                 i = i + 2
             Next
             
             If ((Length Mod 2) = 1) Then
-                H = H + ascii(i) + 1566083941
-                H = Me.X0R(H, leftShift(H, 10))
-                H = H + Me.RightShift(H, 1)
+                h = h + ascii(i) + 1566083941
+                h = Me.X0R(h, leftShift(h, 10))
+                h = h + Me.RightShift(h, 1)
             End If
             
-            H = Me.X0R(H, Me.leftShift(H, 3)): H = H + Me.RightShift(H, 5)
-            H = Me.X0R(H, Me.leftShift(H, 4)): H = H + Me.RightShift(H, 17)
-            H = Me.X0R(H, Me.leftShift(H, 25)): H = H + Me.RightShift(H, 6)
+            h = Me.X0R(h, Me.leftShift(h, 3)): h = h + Me.RightShift(h, 5)
+            h = Me.X0R(h, Me.leftShift(h, 4)): h = h + Me.RightShift(h, 17)
+            h = Me.X0R(h, Me.leftShift(h, 25)): h = h + Me.RightShift(h, 6)
     End Select
     
-    HashValue = CLng(H - (Fix(H / MAXVALUE) * MAXVALUE))
+    HashValue = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
 
 End Function
 
@@ -381,9 +381,9 @@ Public Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: Logn
 
 Public Sub ForEach(ByVal Iterator As IGenericIterator)
     
-    Dim Item As IGeneric
+    Dim item As IGeneric
     With Iterator
-        Do While .HasNext(Item): RaiseEvent Delegate(Item): Loop
+        Do While .HasNext(item): RaiseEvent Delegate(item): Loop
     End With
 
 End Sub

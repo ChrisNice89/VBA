@@ -153,7 +153,7 @@ Private Type Iterator
     Count As Long
     Rank As Long
     Indices() As Long
-    Index As Long
+    index As Long
     ptrIndices As LongPtr
     Descriptor As LongPtr
     Values As GenericArray
@@ -187,8 +187,8 @@ Public Property Get LengthOf2(ByVal Dimension As Long) As Long: LengthOf2 = mycl
 Public Property Get Length() As Long: Length = myclass.Elements: End Property
 Public Property Get TotalSize() As LongPtr: TotalSize = Me.SizeOf(myclass.Elements): End Property
 Public Property Get Rank() As Long: Rank = SafeArrayGetDim(ByVal myclass.Descriptor): End Property
-Public Property Set ElementAt(ByVal Index As Long, ByVal Value As IGeneric): Set myclass.Internal(Index) = Value: End Property
-Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myclass.Internal(Index): End Property
+Public Property Set ElementAt(ByVal index As Long, ByVal Value As IGeneric): Set myclass.Internal(index) = Value: End Property
+Public Property Get ElementAt(ByVal index As Long) As IGeneric: Set ElementAt = myclass.Internal(index): End Property
 Attribute ElementAt.VB_UserMemId = 0
 ' Todo ' At Array.Length=1000 is Breakeven to BuildFrom
 Public Function Build(ParamArray Indices() As Variant) As GenericArray
@@ -385,14 +385,14 @@ Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
     
     Dim i As Long
 
-    ReDim Index(0 To UBound(Indices)) As Long
+    ReDim index(0 To UBound(Indices)) As Long
     With myclass
         For i = 0 To UBound(Indices)
-            Index(i) = Indices(i)
+            index(i) = Indices(i)
         Next
     End With
     
-    Call Catch(SafeArrayPtrOfIndex(ByVal Descriptor, Index(0), AdressOfIndex))
+    Call Catch(SafeArrayPtrOfIndex(ByVal Descriptor, index(0), AdressOfIndex))
     
 End Function
 
@@ -428,7 +428,7 @@ Public Sub Clear()
     
 End Sub
 
-Public Function SlizeColumn(ByVal Index As Long) As GenericArray
+Public Function SlizeColumn(ByVal index As Long) As GenericArray
     
     Dim Overlay As SAFEARRAYSTRUCT
     Dim Column As GenericArray
@@ -436,7 +436,7 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     If (Me.Rank <> 2) Then _
         Call Skynet.Throw(Me, "Public Function SlizeColumn").NotSupported("Me.Rank != 2")
             
-    If (Index < 1) Or (Index > Me.LengthOf(2)) Then _
+    If (index < 1) Or (index > Me.LengthOf(2)) Then _
         Call Skynet.Throw(Me, "Public Function SlizeColumn").IndexOutofRange("Index not valid")
     
     If (Me.IsEmpty) Then _
@@ -445,7 +445,7 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     Set Column = GenericArray.Build(Me.LengthOf(1))
   
     Call LoadArrayStructure(Overlay, Column.Descriptor)
-    Overlay.pvData = Me.AdressOf(Element:=(Me.LengthOf(1) * (Index - 1) + MIN_INDEX))
+    Overlay.pvData = Me.AdressOf(Element:=(Me.LengthOf(1) * (index - 1) + MIN_INDEX))
     
     Call SwitchTo(Me.Descriptor, Overlay)
     Call Catch(SafeArrayCopyData(ByVal Me.Descriptor, ByVal Column.Descriptor))
@@ -647,7 +647,7 @@ End Sub
 
 Public Function BinarySearch( _
                                 ByVal Value As IGeneric, _
-                                ByVal Index As Long, _
+                                ByVal index As Long, _
                                 ByVal Length As Long, _
                                 ByVal Order As SortOrder, _
                                 Optional ByVal Comparer As IGenericComparer) As Long
@@ -655,10 +655,10 @@ Public Function BinarySearch( _
     If Not Me.Rank = 1 Then _
         Call Skynet.Throw(Me, "Public Function BinarySearch").NotSupported("Me.Rank != 1")
 
-    If (Index < MIN_INDEX Or Length < 0) Then _
+    If (index < MIN_INDEX Or Length < 0) Then _
         Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
 
-    If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
+    If (myclass.Elements - (index - MIN_INDEX) < Length) Then _
         Call Skynet.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Argument_InvalidOffLen")
     
 '    If Comparer Is Nothing Then _
@@ -667,7 +667,7 @@ Public Function BinarySearch( _
     If Comparer Is Nothing Then _
         Set Comparer = GenericValueComparer '.Default
     
-    BinarySearch = Me.BinarySearchWithComparer(Objects:=myclass.Internal, Value:=Value, Index:=Index, Length:=Length, Order:=Order, Comparer:=Comparer)
+    BinarySearch = Me.BinarySearchWithComparer(Objects:=myclass.Internal, Value:=Value, index:=index, Length:=Length, Order:=Order, Comparer:=Comparer)
     
 End Function
 
@@ -694,7 +694,7 @@ Public Function IndexOf( _
     
 End Function
 
-Public Sub Reverse(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Length As Long)
+Public Sub Reverse(Optional ByVal index As Long = MIN_INDEX, Optional ByVal Length As Long)
     
     If Length = 0 Then _
         Length = Me.Length
@@ -702,19 +702,19 @@ Public Sub Reverse(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Leng
     If Not Me.Rank = 1 Then _
         Call Skynet.Throw(Me, "Public Sub Reverse").NotSupported("Me.Rank != 1")
         
-    If (Index < MIN_INDEX Or Length < 0) Then _
+    If (index < MIN_INDEX Or Length < 0) Then _
         Call Skynet.Throw(Me, "Public Sub Reverse").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
     
-    If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
+    If (myclass.Elements - (index - MIN_INDEX) < Length) Then _
         Call Skynet.Throw(Me, "Public Sub Reverse").ArgOutOfRange("Argument_InvalidOffLen")
 
-    Call Me.ReverseArray(Objects:=myclass.Internal, Index:=Index, Length:=Length)
+    Call Me.ReverseArray(Objects:=myclass.Internal, index:=index, Length:=Length)
     
 End Sub
 
 Public Sub Sort( _
                     Optional ByVal Order As SortOrder = DEFAULT_SORTORDER, _
-                    Optional ByVal Index As Long = MIN_INDEX, _
+                    Optional ByVal index As Long = MIN_INDEX, _
                     Optional ByVal Length As Long, _
                     Optional ByVal Comparer As IGenericComparer)
     
@@ -724,13 +724,13 @@ Public Sub Sort( _
     If Not Me.Rank = 1 Then _
         Call Skynet.Throw(Me, "Public Sub Sort").NotSupported("Me.Rank != 1")
         
-    If (Index < MIN_INDEX Or Length < 0) Then _
+    If (index < MIN_INDEX Or Length < 0) Then _
         Call Skynet.Throw(Me, "Public Sub Sort").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
     
-    If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
+    If (myclass.Elements - (index - MIN_INDEX) < Length) Then _
         Call Skynet.Throw(Me, "Public Sub Sort").ArgOutOfRange("Argument_InvalidOffLen")
         
-    Call Me.SortArray(Objects:=myclass.Internal, Index:=Index, Length:=Length, Order:=Order, Comparer:=Comparer)
+    Call Me.SortArray(Objects:=myclass.Internal, index:=index, Length:=Length, Order:=Order, Comparer:=Comparer)
 
 End Sub
 
@@ -823,7 +823,7 @@ Private Sub Catch(ByVal hResult As Long)
 End Sub
 
 'Todo new instance
-Public Function AsReadOnly(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Count As Long) As IGenericReadOnlyList
+Public Function AsReadOnly(Optional ByVal index As Long = MIN_INDEX, Optional ByVal Count As Long) As IGenericReadOnlyList
   
     If Count = 0 Then _
         Count = myclass.Elements
@@ -831,10 +831,10 @@ Public Function AsReadOnly(Optional ByVal Index As Long = MIN_INDEX, Optional By
     If Not Me.Rank = 1 Then _
         Call Skynet.Throw(Me, "Public Function AsReadOnly").NotSupported("Me.Rank != 1")
         
-    If (Index < MIN_INDEX Or Count < 0) Then _
+    If (index < MIN_INDEX Or Count < 0) Then _
         Call Skynet.Throw(Me, "Public Function AsReadOnly").ArgOutOfRange("Index < MIN_INDEX Or Count < 0")
     
-    If (myclass.Elements - (Index - MIN_INDEX) < Count) Then _
+    If (myclass.Elements - (index - MIN_INDEX) < Count) Then _
         Call Skynet.Throw(Me, "Public Function AsReadOnly").ArgOutOfRange("Argument_InvalidOffLen")
     
     If (Me.IsEmpty) Then _
@@ -882,7 +882,7 @@ Private Sub LoadIterator( _
         .Count = Count
        
         If (.Rank = 1) Then
-            .Index = StartIndex - 1
+            .index = StartIndex - 1
         Else
             ReDim .Indices(.Rank - 1)
             .ptrIndices = VarPtr(.Indices(0))
@@ -910,14 +910,14 @@ End Sub
 Public Function BinarySearchArray( _
                                     ByRef Objects() As IGenericValue, _
                                     ByVal Value As IGeneric, _
-                                    ByVal Index As Long, _
+                                    ByVal index As Long, _
                                     ByVal Length As Long, _
                                     ByVal Order As SortOrder) As Long
 
     Dim i As Long
     Dim c As ComparerEnum
-    Dim lo As Long: lo = Index
-    Dim hi As Long: hi = Index + Length - 1
+    Dim lo As Long: lo = index
+    Dim hi As Long: hi = index + Length - 1
     
     Do While (lo <= hi)
     
@@ -947,15 +947,15 @@ End Function
 Public Function BinarySearchWithComparer( _
                                             ByRef Objects() As IGeneric, _
                                             ByVal Value As IGeneric, _
-                                            ByVal Index As Long, _
+                                            ByVal index As Long, _
                                             ByVal Length As Long, _
                                             ByVal Order As SortOrder, _
                                             ByVal Comparer As IGenericComparer) As Long
 
     Dim i As Long
     Dim c As ComparerEnum
-    Dim lo As Long: lo = Index
-    Dim hi As Long: hi = Index + Length - 1
+    Dim lo As Long: lo = index
+    Dim hi As Long: hi = index + Length - 1
     
     With Comparer
         Do While (lo <= hi)
@@ -1021,11 +1021,11 @@ End Function
 'index index + (index + count - i - 1).
 Public Sub ReverseArray( _
                             ByRef Objects() As IGeneric, _
-                            ByVal Index As Long, _
+                            ByVal index As Long, _
                             ByVal Length As Long)
 
-    Dim i As Long: i = Index
-    Dim j As Long: j = Index + Length - 1
+    Dim i As Long: i = index
+    Dim j As Long: j = index + Length - 1
     Dim temp As IGeneric
     
     Do
@@ -1040,17 +1040,17 @@ End Sub
 '@Ignore ProcedureCanBeWrittenAsFunction
 Public Sub SortArray( _
                         ByRef Objects() As IGeneric, _
-                        ByVal Index As Long, ByVal Length As Long, _
+                        ByVal index As Long, ByVal Length As Long, _
                         Optional ByVal Comparer As IGenericComparer, _
                         Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
     
     If Order = Random Then
-        Call Shuffle(Objects, Index, Length)
+        Call Shuffle(Objects, index, Length)
     Else
         If Comparer Is Nothing Then
-            Call DepthLimitedQuicksort(Objects, Index, Length, QUICKSORT_DEPTH_THRESHOLD, Order) 'Try Convert to GenericValue
+            Call DepthLimitedQuicksort(Objects, index, Length, QUICKSORT_DEPTH_THRESHOLD, Order) 'Try Convert to GenericValue
         Else
-            Call DepthLimitedQuicksort_Comparer(Objects, Index, Length, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
+            Call DepthLimitedQuicksort_Comparer(Objects, index, Length, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
         End If
     End If
    
@@ -1059,18 +1059,18 @@ End Sub
 Public Sub SortArrayWithItems( _
                                 ByRef Keys() As IGeneric, _
                                 ByRef Items() As Object, _
-                                ByVal Index As Long, _
+                                ByVal index As Long, _
                                 ByVal Length As Long, _
                                 Optional ByVal Comparer As IGenericComparer, _
                                 Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
  
     If Order = Random Then
-        Call ShuffleWithItems(Keys, Items, Index, Length)
+        Call ShuffleWithItems(Keys, Items, index, Length)
     Else
         If Comparer Is Nothing Then
-            Call DepthLimitedQuicksortWithItems(Keys, Items, Index, Length, QUICKSORT_DEPTH_THRESHOLD, Order) 'Try Convert to GenericValue
+            Call DepthLimitedQuicksortWithItems(Keys, Items, index, Length, QUICKSORT_DEPTH_THRESHOLD, Order) 'Try Convert to GenericValue
         Else
-            Call DepthLimitedQuicksortWithItems_Comparer(Keys, Items, Index, Length, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
+            Call DepthLimitedQuicksortWithItems_Comparer(Keys, Items, index, Length, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
         End If
     End If
    
@@ -1079,7 +1079,7 @@ End Sub
 Public Sub SortGenericArrays( _
                                 ByVal Keys As GenericArray, _
                                 ByVal Items As GenericArray, _
-                                ByVal Index As Long, _
+                                ByVal index As Long, _
                                 ByVal Length As Long, _
                                 Optional ByVal Comparer As IGenericComparer, _
                                 Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
@@ -1103,28 +1103,28 @@ Public Sub SortGenericArrays( _
     ptrItems = VarPtrArray(ItemArray)
 
     Call CopyMemory(dst:=ByVal ptrKeys, src:=ByVal VarPtr(d1), Length:=POINTERSIZE): Call CopyMemory(dst:=ByVal ptrItems, src:=ByVal VarPtr(d2), Length:=POINTERSIZE)
-    Call Me.SortArrayWithItems(Keys:=KeyArray, Items:=ItemArray, Index:=Index, Length:=Length, Comparer:=Comparer, Order:=Order)
+    Call Me.SortArrayWithItems(Keys:=KeyArray, Items:=ItemArray, index:=index, Length:=Length, Comparer:=Comparer, Order:=Order)
     Call ZeroMemory(dst:=ByVal ptrKeys, Length:=POINTERSIZE): Call ZeroMemory(dst:=ByVal ptrItems, Length:=POINTERSIZE)
 
 End Sub
 
-Private Sub Shuffle(ByRef Element() As IGeneric, ByVal Index As Long, ByVal Length As Long)
+Private Sub Shuffle(ByRef Element() As IGeneric, ByVal index As Long, ByVal Length As Long)
 
     Dim i As Long
     Randomize VBA.Timer
     
-    For i = Length To Index Step -1
+    For i = Length To index Step -1
         Call Swap_2(Element, i, (i * Rnd + 0.5))
     Next
     
 End Sub
 
-Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal Index As Long, ByVal Length As Long)
+Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal index As Long, ByVal Length As Long)
 
     Dim i As Long
     Randomize VBA.Timer
     
-    For i = Length To Index Step -1
+    For i = Length To index Step -1
         Call SwapWithItem(Keys, Items, i, (i * Rnd + 0.5))
     Next
 
@@ -1143,7 +1143,7 @@ Private Sub DepthLimitedQuicksort_Comparer( _
     Dim middle As Long
 
     Dim Pivot As IGeneric
-    Dim tmp As IGeneric
+    Dim Tmp As IGeneric
 
     If (Left > Right) Then _
         Exit Sub
@@ -1171,9 +1171,9 @@ Private Sub DepthLimitedQuicksort_Comparer( _
                         Exit Do
         
                     If (i < j) Then _
-                        Set tmp = Element(i): _
+                        Set Tmp = Element(i): _
                         Set Element(i) = Element(j): _
-                        Set Element(j) = tmp
+                        Set Element(j) = Tmp
         
                     i = i + 1: j = j - 1
         
@@ -1218,7 +1218,7 @@ Private Sub DepthLimitedQuicksort_Comparer( _
                         Exit Do
                 
                     If (i < j) Then _
-                        Set tmp = Element(i): Set Element(i) = Element(j): Set Element(j) = tmp
+                        Set Tmp = Element(i): Set Element(i) = Element(j): Set Element(j) = Tmp
                 
                     i = i + 1: j = j - 1
                     
@@ -1341,7 +1341,7 @@ Private Sub DepthLimitedQuicksort( _
     Dim middle As Long
 
     Dim Pivot As IGenericValue
-    Dim tmp As IGeneric
+    Dim Tmp As IGeneric
 
     If (Left > Right) Then _
         Exit Sub
@@ -1373,9 +1373,9 @@ Private Sub DepthLimitedQuicksort( _
                         Exit Do
         
                     If (i < j) Then _
-                        Set tmp = Element(i): _
+                        Set Tmp = Element(i): _
                         Set Element(i) = Element(j): _
-                        Set Element(j) = tmp
+                        Set Element(j) = Tmp
         
                     i = i + 1: j = j - 1
         
@@ -1424,7 +1424,7 @@ Private Sub DepthLimitedQuicksort( _
                         Exit Do
                 
                     If (i < j) Then _
-                        Set tmp = Element(i): Set Element(i) = Element(j): Set Element(j) = tmp
+                        Set Tmp = Element(i): Set Element(i) = Element(j): Set Element(j) = Tmp
                 
                     i = i + 1: j = j - 1
                     
@@ -1547,7 +1547,7 @@ Private Sub DepthLimitedQuicksortWithItems( _
     Dim middle As Long
 
     Dim Pivot As IGenericValue
-    Dim tmp As IGeneric
+    Dim Tmp As IGeneric
 
     If (Left > Right) Then _
         Exit Sub
@@ -1579,8 +1579,8 @@ Private Sub DepthLimitedQuicksortWithItems( _
                         Exit Do
                 
                     If (i < j) Then _
-                        Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
-                        Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                        Set Tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = Tmp: _
+                        Set Tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = Tmp
                 
                     i = i + 1: j = j - 1
                     
@@ -1629,8 +1629,8 @@ Private Sub DepthLimitedQuicksortWithItems( _
                         Exit Do
                 
                     If (i < j) Then _
-                        Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
-                        Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                        Set Tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = Tmp: _
+                        Set Tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = Tmp
                 
                     i = i + 1: j = j - 1
                     
@@ -1773,7 +1773,7 @@ Private Sub DepthLimitedQuicksortWithItems_Comparer( _
     Dim middle As Long
 
     Dim Pivot As IGeneric
-    Dim tmp As IGeneric
+    Dim Tmp As IGeneric
 
     If (Left > Right) Then _
         Exit Sub
@@ -1801,8 +1801,8 @@ Private Sub DepthLimitedQuicksortWithItems_Comparer( _
                         Exit Do
                 
                     If (i < j) Then _
-                        Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
-                        Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                        Set Tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = Tmp: _
+                        Set Tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = Tmp
                 
                     i = i + 1: j = j - 1
                     
@@ -1847,8 +1847,8 @@ Private Sub DepthLimitedQuicksortWithItems_Comparer( _
                         Exit Do
                 
                     If (i < j) Then _
-                        Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
-                        Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                        Set Tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = Tmp: _
+                        Set Tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = Tmp
                 
                     i = i + 1: j = j - 1
                     
@@ -2119,15 +2119,15 @@ End Function
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = MIN_INDEX: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Elements: End Property
-Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
+Private Property Get IGenericReadOnlyList_ElementAt(ByVal index As Long) As IGeneric
     
 '    If (Index > myClass.Elements) Or Index < MIN_INDEX Then _
 '        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("Index not valid") '!
 '
-    Set IGenericReadOnlyList_ElementAt = myclass.Internal(Index)
+    Set IGenericReadOnlyList_ElementAt = myclass.Internal(index)
         
 End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=myclass.Iterator.StartIndex, Count:=myclass.Iterator.Count): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=item, StartIndex:=myclass.Iterator.StartIndex, Count:=myclass.Iterator.Count): End Function
 Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=myclass.Iterator.StartIndex, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Iterator.Count): End Sub 'TODO CopyTo as Vector
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(): End Function
@@ -2137,7 +2137,7 @@ Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Coun
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myclass.Elements) >= 0: End Function
+Private Function IGenericCollection_Contains(ByVal item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=item, StartIndex:=MIN_INDEX, Count:=myclass.Elements) >= 0: End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(MIN_INDEX, Me.Length): End Function
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
@@ -2145,7 +2145,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     With myclass.Iterator
         If (.Rank = 1) Then
-            If .Index = .EndIndex Then
+            If .index = .EndIndex Then
                 If .HasLoaded = False Then _
                     Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
             
@@ -2154,7 +2154,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
                 Exit Function
             End If
             
-            If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedIncrement(.Index), .Current)) Then
+            If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedIncrement(.index), .Current)) Then
                 Set Out = .Current
                 IGenericIterator_HasNext = True
             Else

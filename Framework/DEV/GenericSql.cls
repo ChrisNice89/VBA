@@ -369,7 +369,7 @@ Public Sub Execute()
     If Not myclass.IsPrepared Then _
         Call Me.Prepare(myclass.Sql)
     
-    Do While Database.State And ISqlConnectionState.Connection_IsConnecting
+    Do While Database.STATE And ISqlConnectionState.Connection_IsConnecting
     Loop
     
     Set myclass.Command.ActiveConnection = Database
@@ -467,7 +467,7 @@ Private Function TableStructure(ByVal Table As String) As ADODB.Recordset
     Set TableStructure = Me.ExecuteSchema(SchemaColumns, Empty, Empty, Table, Empty) '.ToArray("COLUMN_NAME"))
 End Function
 
-Public Function Update(ByVal Index As Variant, ByVal NewValue As IGenericValue) As GenericSql
+Public Function Update(ByVal index As Variant, ByVal NewValue As IGenericValue) As GenericSql
     
     Dim Parameter As ADODB.Parameter
     
@@ -476,18 +476,18 @@ Public Function Update(ByVal Index As Variant, ByVal NewValue As IGenericValue) 
     End If
     
     With myclass.ParameterList
-        If VarType(Index) = vbString Then _
-            Index = .IndexOfKey(GString(Index))
+        If VarType(index) = vbString Then _
+            index = .IndexOfKey(GString(index))
         
-        If Not .ElementAt(Index).IsRelatedTo(NewValue) Then
+        If Not .ElementAt(index).IsRelatedTo(NewValue) Then
             'Error false type
         End If
         
-        Set .ElementAt(Index) = NewValue
+        Set .ElementAt(index) = NewValue
     End With
     
     If myclass.IsPrepared Then
-        Set Parameter = myclass.Command.Parameters(Index - 1)
+        Set Parameter = myclass.Command.Parameters(index - 1)
         With NewValue
 '            If Not .IsNumeric Then _
 '                Parameter.Size = Len(.Primitive)
@@ -721,9 +721,9 @@ Private Function Connect(ByVal Command As ADODB.Command, ByVal Credentials As Sq
 End Function
 
 Private Function IsConnected(ByVal Connection As ADODB.Connection) As Boolean
-    Debug.Print Connection.State
+    Debug.Print Connection.STATE
     If Not Connection Is Nothing Then _
-        IsConnected = (Connection.State And ISqlConnectionState.Connection_IsOpen) = ISqlConnectionState.Connection_IsOpen
+        IsConnected = (Connection.STATE And ISqlConnectionState.Connection_IsOpen) = ISqlConnectionState.Connection_IsOpen
 
 End Function
 
@@ -734,7 +734,7 @@ Private Function IsFetching(ByVal Command As ADODB.Command) As Boolean
     
     If Not Command Is Nothing Then
         If Not Command.ActiveConnection Is Nothing Then
-            Do While (Command.State And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting 'Do While Connection.State = ISqlConnectionState.Connection_IsOpen + ISqlConnectionState.Connection_IsExecuting
+            Do While (Command.STATE And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting 'Do While Connection.State = ISqlConnectionState.Connection_IsOpen + ISqlConnectionState.Connection_IsExecuting
 '                If Counter Mod BREAK = 0 Then
 '                    Debug.Print ("Command is executing ...")
 '                    DoEvents
@@ -858,22 +858,20 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
     If (Records Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function RowMapper").InvalidInput("(Records Is Nothing)")
     
-    If (Records.State = ISqlCommandState.StateClosed) Then _
+    If (Records.STATE = ISqlCommandState.StateClosed) Then _
         Call Skynet.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
     
     With myclass.Iterator
         Set .Records = Records
         .HasFetchComplete = .Records.BOF And .Records.EOF
         
-        Do While (.Records.State And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting
+        Do While (.Records.STATE And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting
             Debug.Print "Records fetching...."
         Loop
 
         ReDim .Converter(.Records.Fields.Count - 1)
-        ReDim Columns(.Records.Fields.Count - 1) As IGeneric
         
         For i = 0 To .Records.Fields.Count - 1
-            Set Columns(i) = GString(.Records.Fields(i).Name)
             Select Case .Records.Fields(i).Type
                 Case Is = ISqlDataType.Boolean_Type: Set .Converter(i) = GString '("Yes/No")
                 Case Is = ISqlDataType.Binary_Type: Set .Converter(i) = GString
@@ -893,9 +891,6 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
                     Set .Converter(i) = GString
             End Select
         Next
-        
-        Set .Current = GenericArray.BuildFrom(Columns)
-        
     End With
     
     Set RowMapper = Skynet.CreateInstance(New GenericSql, Virtual.Pointer, Virtual.Size)
@@ -922,7 +917,7 @@ Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
         End If
         
         Set Row = GenericArray.Build(.Records.Fields.Count)
-
+        
         For i = 0 To .Records.Fields.Count - 1
             Set Row.ElementAt(i + 1) = .Converter(i).Create(.Records.Fields(i).Value)
         Next

@@ -1,0 +1,62 @@
+﻿'---------------------------------------------------------------------------------------------------------------------------------
+' Module      :
+' Author      :
+' Last Change :
+' Purpose     :
+'---------------------------------------------------------------------------------------------------------------------------------
+
+Option Explicit
+
+Private Type FormProperties
+    Form As Form_LDRS_Navigation
+
+End Type
+
+Private mThisForm As FormProperties
+
+Private Function Blank() As FormProperties: End Function
+Private Sub Form_Unload(Cancel As Integer)
+    mThisForm = Blank
+   
+End Sub
+
+Public Sub Show(ByVal KNE As Long)
+
+    Screen.MousePointer = 11
+    
+    Set mThisForm.Form = Me
+    
+    With mThisForm.Form
+        .Modal = True
+        .Visible = False
+    End With
+
+
+
+
+    Screen.MousePointer = 0
+    mThisForm.Form.Visible = True
+
+End Sub
+
+'Public Sub LoadSubform(ByVal Form As Access.Form)
+'
+'    Dim ctlSubform As Access.SubForm
+'    Set ctlSubform = Me.Controls(Me.Navigation.SubForm)
+'
+'    Call SetLanguage
+'
+'    If Form.Name = "Overview" Then
+'        Select Case iCAT.Layout
+'            Case Sparkassen
+'                ctlSubform.SourceObject = "Overview"
+'            Case Genossenschaften
+'                ctlSubform.SourceObject = "Overview"
+'            Case SI
+'                ctlSubform.SourceObject = "Overview_SI"
+'        End Select
+'    Else
+'        ctlSubform.SourceObject = Form.Name
+'    End If
+'
+'End Sub

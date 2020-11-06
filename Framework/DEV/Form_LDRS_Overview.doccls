@@ -21,7 +21,7 @@ Private Sub Form_Load()
 
     Call Sql.Execute
     
-    Set Grid = GenericDataGrid.Build(Me.ListView0)
+    Set Grid = GenericDataGrid.Build(Me.lv_KNE)
     Call Grid.Initialize(Sql.Result)
 
 End Sub

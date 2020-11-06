@@ -79,11 +79,11 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get ElementAt(ByVal Index As Long) As GString: Set ElementAt = GString(VBA.Mid$(myclass.Value, Index, 1)): End Property
+Public Property Get ElementAt(ByVal index As Long) As GString: Set ElementAt = GString(VBA.Mid$(myclass.Value, index, 1)): End Property
 Public Property Get Length() As Long: Length = Len(myclass.Value): End Property
 Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myclass.Value, 1, 1): End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myclass.Value, Len(myclass.Value), 1): End Property
-Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myclass.Value, Index, 1): End Property
+Public Property Get Character(ByVal index As Long) As String: Character = VBA.Mid$(myclass.Value, index, 1): End Property
 Public Property Get Format() As TStringFormat: Format = myclass.Format: End Property
 Public Property Get IsNullOrEmpty() As Boolean
     
@@ -112,9 +112,9 @@ Public Property Get Value() As String: Value = myclass.Value: End Property
 Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myclass.Value, Find, ReplaceWith), myclass.Format): End Function
 Public Function ToByteArray() As Byte(): ToByteArray = StrConv(myclass.Value, vbFromUnicode): End Function
 Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myclass.Value Like Pattern): End Function
-Public Function StartsWith(ByVal Text As String) As Boolean: StartsWith = (myclass.Value Like ("%" & Text)): End Function
-Public Function EndsWith(ByVal Text As String) As Boolean: EndsWith = (myclass.Value Like (Text & "%")): End Function
-Public Function Contains(ByVal Text As String) As Boolean: Contains = Not (InStr(1, myclass.Value, Text, vbTextCompare) = 0): End Function
+Public Function StartsWith(ByVal TEXT As String) As Boolean: StartsWith = (myclass.Value Like ("%" & TEXT)): End Function
+Public Function EndsWith(ByVal TEXT As String) As Boolean: EndsWith = (myclass.Value Like (TEXT & "%")): End Function
+Public Function Contains(ByVal TEXT As String) As Boolean: Contains = Not (InStr(1, myclass.Value, TEXT, vbTextCompare) = 0): End Function
 Public Function CompareWithString(ByRef S As String) As ComparerEnum: CompareWithString = StrComp(myclass.Value, S, vbBinaryCompare): End Function
 
 Public Function CountChar(ByVal c As String) As Long
@@ -134,27 +134,27 @@ Public Function CountChar(ByVal c As String) As Long
     
 End Function
 
-Public Function Concat(ByVal Item As IGeneric, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
+Public Function Concat(ByVal item As IGeneric, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
     Dim Other As GString
     
-    If Item Is Nothing Then _
+    If item Is Nothing Then _
         Set Concat = Me: Exit Function
     
-    If TypeOf Item Is GString Then _
-        Set Other = Item
+    If TypeOf item Is GString Then _
+        Set Other = item
             
     If Not Me Is GString Then
         If Not Other Is Nothing Then
             Set Concat = GString(myclass.Value & Delimiter & Other.Value, myclass.Format)
         Else
-            Set Concat = GString(myclass.Value & Delimiter & Item.ToString, myclass.Format)
+            Set Concat = GString(myclass.Value & Delimiter & item.ToString, myclass.Format)
         End If
     Else 'Static default call
         If Not Other Is Nothing Then
-            Set Concat = Item.Clone ' must be a Gstring ;)
+            Set Concat = item.Clone ' must be a Gstring ;)
         Else
-            Set Concat = GString(Item.ToString, myclass.Format)
+            Set Concat = GString(item.ToString, myclass.Format)
         End If
     End If
     
@@ -219,21 +219,21 @@ Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DE
     
 End Function
 
-Public Function HashValueOf(ByRef Text As String) As Long
+Public Function HashValueOf(ByRef TEXT As String) As Long
 
     Const leftShift As Long = 2& ^ 5
     Const rigthShift As Long = 2& ^ 27
     
     Dim ascii() As Byte
      
-    Dim H As Currency 'Double
+    Dim h As Currency 'Double
     Dim i As Long
     Dim h1 As Double, h2 As Double
     
-    If LenB(Text) = 0 Then _
+    If LenB(TEXT) = 0 Then _
         Exit Function
     
-    ascii() = StrConv(Text, vbFromUnicode)
+    ascii() = StrConv(TEXT, vbFromUnicode)
 
     h1 = 352654597#
     h2 = h1 'LeftShift(5381,16))+5381
@@ -243,9 +243,9 @@ Public Function HashValueOf(ByRef Text As String) As Long
        h2 = (h2 * leftShift) + h2 + (h2 / rigthShift): h2 = CLng(h2 - (Fix(h2 / MAXVALUE) * MAXVALUE)) Xor ascii(i + 1)
     Next
     
-    H = h1 + h2 'h1 + (h2 * 1566083941#)
+    h = h1 + h2 'h1 + (h2 * 1566083941#)
 
-    HashValueOf = CLng(H - (Fix(H / MAXVALUE) * MAXVALUE))
+    HashValueOf = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
 
 End Function
 
