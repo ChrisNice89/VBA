@@ -21,26 +21,22 @@ Public Property Get SelectedIndex() As Long
     SelectedIndex = myclass.SelectedIndex
 End Property
 Public Property Get ElementComparer() As IGenericComparer
-    If myclass.ElementComparer Is Nothing Then
-        Set ElementComparer = GenericValueComparer.Default
-    Else
-        Set ElementComparer = myclass.ElementComparer
-    End If
+    Set ElementComparer = myclass.ElementComparer
 End Property
 
-Public Property Get Default(ByVal SortByIndex As Long, Optional ByVal ElementComparer As IGenericComparer) As IGenericComparer
-    
-    If ElementComparer Is Nothing = False Then _
-        Set myclass.ElementComparer = ElementComparer
+Public Function Build(ByVal SortByIndex As Long, Optional ByVal ElementComparer As IGenericComparer) As IGenericComparer
     
     myclass.SelectedIndex = SortByIndex
-    Set Default = New GenericRowComparer
+    Set myclass.ElementComparer = ElementComparer
+    Set Build = New GenericRowComparer
     
-End Property
+End Function
 
 Private Sub Class_Initialize()
     myclass.SelectedIndex = GenericRowComparer.SelectedIndex
     Set myclass.ElementComparer = GenericRowComparer.ElementComparer
+    If myclass.ElementComparer Is Nothing = False Then _
+        Set myclass.ElementComparer = IGenericValue.Comparer
 End Sub
 
 Public Function Compare(ByVal x As IGenericReadOnlyList, ByVal y As IGenericReadOnlyList) As ComparerEnum: Compare = myclass.ElementComparer.Compare(x.ElementAt(myclass.SelectedIndex), y.ElementAt(myclass.SelectedIndex)): End Function

@@ -10,11 +10,11 @@ Attribute VB_Exposed = True
 '@Folder("<T>Enumerable")
 
 Public Property Get BaseIndex() As Long: End Property
-Public Property Get ElementAt(ByVal index As Long) As IGeneric: End Property
+Public Property Get ElementAt(ByVal Index As Long) As IGeneric: End Property
 Attribute ElementAt.VB_UserMemId = 0
 Public Property Get Count() As Long: End Property
 
-Public Function IndexOf(ByVal item As IGeneric) As Long: End Function
+Public Function IndexOf(ByVal Item As IGeneric) As Long: End Function
 Public Function Iterator() As IGenericIterator: End Function
 
 Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub

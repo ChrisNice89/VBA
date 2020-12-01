@@ -42,7 +42,7 @@ Private Type Iterator
     StartIndex As Long
     EndIndex As Long
     Count As Long
-    index As Long
+    Index As Long
     HasLoaded As Boolean
     Current As IGeneric
     Entries As GenericList
@@ -62,38 +62,41 @@ End Type
 Private Virtual As Internal
 
 Public Property Get BaseIndex() As Long: BaseIndex = myclass.Internal.BaseIndex: End Property
-Public Property Get Entry(ByVal index As Long) As GenericPair: Set Entry = myclass.Internal(index): End Property
-Public Property Get Count() As Long: Count = myclass.Internal.Count: End Property
-Public Property Get GetKey(ByVal index As Long) As IGeneric
+Public Property Get Entry(ByVal Index As Long) As GenericPair: Set Entry = myclass.Internal(Index): End Property
+Public Property Get Count() As Long
+    If Not myclass.Internal Is Nothing Then _
+        Count = myclass.Internal.Count
+End Property
+Public Property Get GetKey(ByVal Index As Long) As IGeneric
     
-    If (index > myclass.Internal.Count) Then _
+    If (Index > myclass.Internal.Count) Then _
         Call Skynet.Throw(Me, "Public Property Get GetKey").IndexOutofRange("Index not valid")
     
-    Set GetKey = Me.Entry(index).Key
+    Set GetKey = Me.Entry(Index).Key
 
 End Property
 
-Public Property Get item(ByVal Key As IGeneric) As IGeneric: Set item = myclass.HashTable(Key): End Property
-Attribute item.VB_UserMemId = 0
-Public Property Set item(ByVal Key As IGeneric, ByVal item As IGeneric)
+Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myclass.HashTable(Key): End Property
+Attribute Item.VB_UserMemId = 0
+Public Property Set Item(ByVal Key As IGeneric, ByVal Item As IGeneric)
     With myclass
         If (.HashTable.ContainsKey(Key)) Then _
-            Set .Internal(IndexOfKey(Key)) = GenericPair(Key, item)
+            Set .Internal(IndexOfKey(Key)) = GenericPair(Key, Item)
 
-        Set .HashTable(Key) = item
+        Set .HashTable(Key) = Item
     End With
 End Property
-Public Property Get ElementAt(ByVal index As Long): Set ElementAt = Me.Entry(index).Value: End Property
-Public Property Set ElementAt(ByVal index As Long, ByVal item As IGeneric)
+Public Property Get ElementAt(ByVal Index As Long): Set ElementAt = Me.Entry(Index).Value: End Property
+Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
     
     Dim Key As IGeneric
     
-    If (index > myclass.Internal.Count) Then _
+    If (Index > myclass.Internal.Count) Then _
         Call Skynet.Throw(Me, "Public Property Set ElementAt").IndexOutofRange("Index not valid")
     
-    Set Key = Me.Entry(index).Key
-    Set myclass.HashTable(Key) = item
-    Set myclass.Internal(index) = GenericPair(Key, item)
+    Set Key = Me.Entry(Index).Key
+    Set myclass.HashTable(Key) = Item
+    Set myclass.Internal(Index) = GenericPair(Key, Item)
     
 End Property
 
@@ -104,7 +107,7 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     
     With myclass
         Set .Internal = GenericList.Build(Capacity)
-        Set .HashTable = GenericMap.Build(Capacity * 2) 'GenericTree.Build
+        Set .HashTable = GenericMap.Build(Capacity * 2) 'GenericSortedSet.Build
     End With
 
     Set Build = Skynet.CreateInstance(New GenericOrderedMap, Virtual.Pointer, Virtual.Size)
@@ -148,10 +151,10 @@ Public Function GetValues() As GenericArray
 
 End Function
 
-Public Sub Add(ByVal Key As IGeneric, ByVal item As IGeneric)
+Public Sub Add(ByVal Key As IGeneric, ByVal Item As IGeneric)
     With myclass
-        Call .HashTable.Add(Key, item)
-        Call .Internal.Add(GenericPair(Key, item))
+        Call .HashTable.Add(Key, Item)
+        Call .Internal.Add(GenericPair(Key, Item))
     End With
 End Sub
 
@@ -202,31 +205,35 @@ Public Function IndexOfValue(ByVal Value As IGeneric) As Long
 
 End Function
 
-Public Sub Insert(ByVal index As Long, ByVal Key As IGeneric, ByVal Value As IGeneric)
+Public Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IGeneric)
     
-    If (index > myclass.Internal.Count) Or (index < 0) Then _
+    If (Index > myclass.Internal.Count) Or (Index < 0) Then _
         Call Skynet.Throw(Me, "Public Sub Insert").IndexOutofRange("(Index > myClass.Internal.Count) Or (Index < 0)")
         
     With myclass
         Call .HashTable.Add(Key, Value)
-        Call .Internal.Insert(index, GenericPair(Key, Value))
+        Call .Internal.Insert(Index, GenericPair(Key, Value))
     End With
     
 End Sub
 
 Public Sub Clear()
-    Call myclass.Internal.Clear
-    Call myclass.HashTable.Clear
+    
+    With myclass
+        Call .Internal.Clear
+        Call .HashTable.Clear
+    End With
+    
 End Sub
 
-Public Sub RemoveAt(ByVal index As Long)
+Public Sub RemoveAt(ByVal Index As Long)
     
-    If (index < 0) Then _
+    If (Index < 0) Then _
         Exit Sub
         
     With myclass
-        Call .HashTable.Remove(Me.Entry(index).Key)
-        Call .Internal.RemoveAt(index)
+        Call .HashTable.Remove(Me.Entry(Index).Key)
+        Call .Internal.RemoveAt(Index)
     End With
 
 End Sub
@@ -262,35 +269,34 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
                 Set GArray(ArrayIndex) = Me.Entry(i).Value: Call InterlockedIncrement(ArrayIndex)
             Next
         Case Else
-            Call myclass.Internal.CopyTo(index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myclass.Internal.Count)
+            Call myclass.Internal.CopyTo(Index:=GenericArray.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Elements:=myclass.Internal.Count)
     End Select
     
     Set CopyOf = GArray
     
 End Function
 
-Public Function IteratorOf(ByVal t As DictionaryData, Optional ByVal index As Long, Optional ByVal Count As Long) As IGenericIterator
+Public Function IteratorOf(ByVal t As DictionaryData, Optional ByVal Index As Long, Optional ByVal Count As Long) As IGenericIterator
     
     Dim c As Member
     
-    If index = 0 Then _
-        index = myclass.Internal.BaseIndex
+    If Index = 0 Then _
+        Index = myclass.Internal.BaseIndex
         
     If Count = 0 Then _
         Count = myclass.Internal.Count
     
-    If (index < myclass.Internal.BaseIndex) Or (index > myclass.Internal.Count + myclass.Internal.BaseIndex) Then _
+    If (Index < myclass.Internal.BaseIndex) Or (Index > myclass.Internal.Count + myclass.Internal.BaseIndex) Then _
         Call Skynet.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myClass.Internal.BaseIndex) Or (Index > myClass.Internal.Count + myClass.Internal.BaseIndex)")
 
-    If (Count < 0) Or (Count > myclass.Internal.Count - index + myclass.Internal.BaseIndex) Then _
+    If (Count < 0) Or (Count > myclass.Internal.Count - Index + myclass.Internal.BaseIndex) Then _
         Call Skynet.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Internal.Count - Index + myClass.Internal.BaseIndex)")
     
-    If t = PairData Then
-        Set IteratorOf = myclass.Internal.Iterator(index:=index, Count:=Count)
-    Else
-        Call LoadIterator(c.Iterator, t, myclass.Internal, index, Count)
-        Set IteratorOf = Skynet.CreateInstance(New GenericOrderedMap, VarPtr(c), LenB(c))
-    End If
+'    If t = PairData Then
+'        Set IteratorOf = myclass.Internal.Iterator(Index:=Index, Count:=Count)
+'    Else
+     Call LoadIterator(c.Iterator, t, myclass.Internal, Index, Count)
+     Set IteratorOf = Skynet.CreateInstance(New GenericOrderedMap, VarPtr(c), LenB(c))
     
 End Function
 
@@ -307,8 +313,8 @@ Private Sub LoadIterator( _
         Set .Entries = Entries
         .StartIndex = StartIndex
         .Count = Count
-        .index = .StartIndex - 1
-        .EndIndex = .index + .Count
+        .Index = .StartIndex - 1
+        .EndIndex = .Index + .Count
         .HasLoaded = True
     End With
     
@@ -354,15 +360,15 @@ End Function
 
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = myclass.Internal.BaseIndex: End Property
-Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Internal.Count: End Property
-Private Property Get IGenericReadOnlyList_ElementAt(ByVal index As Long) As IGeneric
+Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Count: End Property
+Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
     Dim P As GenericPair
     
-    If (index > myclass.Internal.Count) Then _
+    If (Index > myclass.Internal.Count) Then _
         Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("Index not valid")
     
-    Set P = myclass.Internal(index)
+    Set P = myclass.Internal(Index)
     
     Set IGenericReadOnlyList_ElementAt = P.Value
 
@@ -371,10 +377,10 @@ End Property
 Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=ValueData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericReadOnlyList_CopyTo"): End Sub
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.IteratorOf(t:=ValueData): End Function
-Private Function IGenericReadOnlyList_IndexOf(ByVal item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(item): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Item): End Function
 
 'IGenericDictionary
-Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal item As IGeneric): Set Me.item(Key) = item: End Property
+Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set Me.Item(Key) = Item: End Property
 Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = myclass.HashTable(Key): End Property
 Private Property Get IGenericDictionary_Count() As Long: IGenericDictionary_Count = myclass.HashTable.Count: End Property
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean:  IGenericDictionary_TryGetValue = myclass.HashTable.TryGetValue(Key, Value): End Function
@@ -392,7 +398,7 @@ Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollect
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=PairData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myclass.Internal.ToArray: End Function
-Private Function IGenericCollection_Contains(ByVal item As IGeneric) As Boolean: IGenericCollection_Contains = myclass.HashTable.ContainsKey(item): End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = myclass.HashTable.ContainsKey(Item): End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.IteratorOf(t:=PairData): End Function
 
 'IGenericIterator
@@ -402,29 +408,33 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     Dim P As GenericPair
     
     With myclass.Iterator
-        If .index = .EndIndex Then
-            If .HasLoaded = False Then _
-                Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+        Do
+            If .Index = .EndIndex Then
+                If .HasLoaded = False Then _
+                    Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+                
+                Set Out = Nothing
+                Set .Current = Nothing
+                Exit Function
+            End If
             
-            Set Out = Nothing
-            Set .Current = Nothing
-            Exit Function
-        End If
+            Set P = .Entries(InterlockedIncrement(.Index))
+            
+            If .Type = KeyData Then
+                Set .Current = P.Key
+            
+            ElseIf .Type = ValueData Then
+                Set .Current = P.Value
+            
+            Else
+                Set .Current = P
+            End If
         
-        Set P = .Entries(InterlockedIncrement(.index))
-        
-        If .Type = KeyData Then
-            Set .Current = P.Key
-        
-        ElseIf .Type = ValueData Then
-            Set .Current = P.Value
-        
-        Else
-            Set .Current = P
-        End If
+        Loop While .Current Is Nothing
         
         Set Out = .Current
         IGenericIterator_HasNext = True
+        
     End With
 
 End Function

@@ -20,8 +20,9 @@ Private Sub Form_Load()
     Set Sql = GenericSql.Build(SqlCredentials.AccessConnection(Path, PW), "SELECT * FROM tblG_00_Basis WHERE ID <=10000", 0, ReturnRecords)
 
     Call Sql.Execute
-    
+
     Set Grid = GenericDataGrid.Build(Me.ListView0)
     Call Grid.Initialize(Sql.Result)
+    
 
 End Sub

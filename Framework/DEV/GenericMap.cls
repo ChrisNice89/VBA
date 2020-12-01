@@ -60,16 +60,12 @@ Implements IGenericIterator
     Private Const POINTERSIZE As LongPtr = 8
     Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
     Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
-    Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
     Private Const POINTERSIZE As Long = 4
     Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
     Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As Long)
-    Private Declare PtrSafe Function SafeArrayGetElement Lib "oleaut32.dll" (ByVal psa As Any, ByRef rgIndices As Long, ByRef pv As Any) As LongPtr
-    Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
@@ -96,7 +92,7 @@ End Type
 Private Type HashItem
     Incr As Long
     Size As Long
-    index As Long
+    Index As Long
 End Type
 
 '
@@ -109,12 +105,11 @@ End Type
 '
 Private Type Iterator
     Type As DictionaryData
-    index As Long
+    Index As Long
     Size As Long
     HasLoaded As Boolean
     Current As IGeneric
     Map As GenericMap
-    Descriptor As LongPtr
 End Type
 '
 Private Type Member
@@ -140,21 +135,21 @@ Private Virtual As Internal
 Public Property Get LoadSize() As Long: LoadSize = myclass.LoadSize: End Property
 Public Property Get LoadFactor() As Double: LoadFactor = myclass.LoadFactor: End Property
 Public Property Get Count() As Long: Count = myclass.Count: End Property
-Public Property Let item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
-Public Property Set item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
-Public Property Get item(ByVal Key As IGeneric) As IGeneric: Set item = myclass.Buckets(FindEntry(Key)).Value: End Property
-Attribute item.VB_UserMemId = 0
+Public Property Let Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
+Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
+Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myclass.Buckets(FindEntry(Key)).Value: End Property
+Attribute Item.VB_UserMemId = 0
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
 Public Function GetKeys() As GenericArray
 
     ReDim Keys(1 To myclass.Count) As IGeneric
-    Dim index As Long
+    Dim Index As Long
 
     Dim i As Long
     
     For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
         If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Keys(InterlockedIncrement(index)) = myclass.Buckets(i).Key
+            Set Keys(InterlockedIncrement(Index)) = myclass.Buckets(i).Key
     Next
     
     Set GetKeys = GenericArray.BuildFrom(Keys)
@@ -164,13 +159,13 @@ End Function
 Public Function GetValues() As GenericArray
 
     ReDim Values(1 To myclass.Count) As IGeneric
-    Dim index As Long
+    Dim Index As Long
 
     Dim i As Long
     
     For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
         If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Values(InterlockedIncrement(index)) = myclass.Buckets(i).Value
+            Set Values(InterlockedIncrement(Index)) = myclass.Buckets(i).Value
     Next
     
     Set GetValues = GenericArray.BuildFrom(Values)
@@ -241,6 +236,16 @@ Public Sub Clear()
     myclass.Occupancy = 0
 End Sub
 
+Public Function TryByIndex(ByVal Index As Long, ByRef Key As IGeneric, ByRef Value As IGeneric) As Boolean
+    With myclass.Buckets(Index)
+        If (.STATE And HAS_ENTRY) = HAS_ENTRY Then
+            Set Key = .Key
+            Set Value = .Value
+            TryByIndex = True
+        End If
+    End With
+End Function
+
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
              
     Dim Try As Long
@@ -252,7 +257,7 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
     Call LoadHash(Hash, Key.HashValue, myclass.Size)
     With Hash
         Do
-            With myclass.Buckets(.index)
+            With myclass.Buckets(.Index)
                 If Not (.Key Is Nothing) Then _
                     If .Key.Equals(Key) Then _
                         Set Value = .Value: TryGetValue = True: Exit Function
@@ -264,7 +269,7 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
             If ((InterlockedIncrement(Try)) > .Size) Then _
                 Exit Function
                 
-            .index = Modulo(.index + .Incr, .Size)
+            .Index = Modulo(.Index + .Incr, .Size)
         Loop
     End With
     
@@ -281,10 +286,10 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     Call LoadHash(Hash, Key.HashValue, myclass.Size)
   
     Do
-        With myclass.Buckets(Hash.index)
+        With myclass.Buckets(Hash.Index)
             If Not .Key Is Nothing Then _
                 If .Key.Equals(Key) Then _
-                    FindEntry = Hash.index: Exit Function
+                    FindEntry = Hash.Index: Exit Function
 
             If (Not (.STATE And HAS_COLLISION) = HAS_COLLISION) Then _
                 FindEntry = -1: Exit Function
@@ -294,7 +299,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
             If ((InterlockedIncrement(Try)) > .Size) Then _
                 FindEntry = -1: Exit Function
     
-            .index = Modulo(.index + .Incr, .Size)
+            .Index = Modulo(.Index + .Incr, .Size)
         End With
     Loop
     
@@ -377,7 +382,7 @@ Private Sub LoadHash(ByRef h As HashItem, ByVal HashValue As Long, ByVal Size As
     
     With h
         .Size = Size
-        .index = Modulo(HashValue, .Size)
+        .Index = Modulo(HashValue, .Size)
         .Incr = 1 + Modulo((CDbl(HashValue) * myclass.Const.HashPrime), (.Size - 1))
     End With
     
@@ -422,13 +427,13 @@ Private Sub PutEntry( _
     
     With Hash
         Do
-            If (Buckets(.index).Key Is Nothing) Then _
-                Buckets(.index) = Entry: Exit Sub
+            If (Buckets(.Index).Key Is Nothing) Then _
+                Buckets(.Index) = Entry: Exit Sub
             
-            If Not (Buckets(.index).STATE And HAS_COLLISION) = HAS_COLLISION Then _
-                Buckets(.index).STATE = (HAS_ENTRY + HAS_COLLISION): Call InterlockedIncrement(myclass.Occupancy)
+            If Not (Buckets(.Index).STATE And HAS_COLLISION) = HAS_COLLISION Then _
+                Buckets(.Index).STATE = (HAS_ENTRY + HAS_COLLISION): Call InterlockedIncrement(myclass.Occupancy)
                 
-            .index = Modulo(.index + .Incr, .Size)
+            .Index = Modulo(.Index + .Incr, .Size)
         Loop
     End With
 
@@ -459,7 +464,7 @@ Public Sub Add( _
     
     With Hash
         Do
-            With myclass.Buckets(.index)
+            With myclass.Buckets(.Index)
                 If .Key Is Nothing Then
                     .STATE = HAS_ENTRY
                     .HashCode = HashValue
@@ -482,7 +487,7 @@ Public Sub Add( _
                 
             End With
             
-            .index = Modulo(.index + .Incr, .Size)
+            .Index = Modulo(.Index + .Incr, .Size)
         Loop While (InterlockedIncrement(Try) < .Size)
     End With
 
@@ -531,8 +536,7 @@ Public Function IteratorOf(ByVal t As DictionaryData) As IGenericIterator
                      
     Dim c As Member
     
-    Call Skynet.CopyData(ByVal VarPtr(c.Iterator.Descriptor), ByVal VarPtrArray(myclass.Buckets), Skynet.PointerLength)
-    Call LoadIterator(c.Iterator, Me, c.Iterator.Descriptor, t, myclass.Size)
+    Call LoadIterator(c.Iterator, Me, t, myclass.Size)
     
     Set IteratorOf = Skynet.CreateInstance(New GenericMap, VarPtr(c), Virtual.Size)
     
@@ -541,7 +545,6 @@ End Function
 Private Sub LoadIterator( _
                             ByRef Iterator As Iterator, _
                             ByVal Map As GenericMap, _
-                            ByVal Descriptor As Long, _
                             ByVal t As DictionaryData, _
                             ByVal Size As Long)
     
@@ -549,9 +552,8 @@ Private Sub LoadIterator( _
         .Type = t
         Set .Map = Map
         Set .Current = Nothing
-        .Descriptor = Descriptor
         .Size = Size
-        .index = Size
+        .Index = Size
         .HasLoaded = True
     End With
     
@@ -632,7 +634,7 @@ Private Function IGenericDictionary_IteratorOf(ByVal t As DictionaryData) As IGe
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
-Private Function IGenericCollection_Contains(ByVal item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=item): End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=PairData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray
@@ -651,22 +653,23 @@ Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterato
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     Dim b As Bucket
-
+    
     With myclass.Iterator
-        Do While .index > 0
-            If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedDecrement(.index), b)) Then
-                If Not (b.Key Is Nothing) Then
-                    
-                    If .Type = KeyData Then
-                        Set .Current = b.Key: Call ZeroMemory(b, LenB(b))
-
-                    ElseIf .Type = ValueData Then
-                        Set .Current = b.Value: Call ZeroMemory(b, LenB(b))
-
-                    Else
-                        Set .Current = GenericPair(b.Key, b.Value): Call ZeroMemory(b, LenB(b))
-                    End If
-
+        Do While InterlockedDecrement(.Index) > -1
+            If .Map.TryByIndex(.Index, b.Key, b.Value) Then
+               
+                If .Type = KeyData Then
+                    Set .Current = b.Key
+        
+                ElseIf .Type = ValueData Then
+                    Set .Current = b.Value
+                
+                Else
+                    Set .Current = GenericPair(b.Key, b.Value)
+                
+                End If
+                
+                If Not .Current Is Nothing Then
                     Set Out = .Current
                     IGenericIterator_HasNext = True
                     Exit Function
@@ -688,7 +691,7 @@ Private Sub IGenericIterator_Reset()
          If .HasLoaded = False Then _
             Call Skynet.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
             
-        Call LoadIterator(myclass.Iterator, .Map, .Descriptor, .Type, .Size)
+        Call LoadIterator(myclass.Iterator, .Map, .Type, .Size)
     End With
 End Sub
 

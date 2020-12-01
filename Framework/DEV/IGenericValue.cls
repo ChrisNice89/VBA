@@ -9,6 +9,9 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@Folder "<T>Class"
 
+Implements IGeneric
+Implements IGenericComparer
+
 Public Enum ISqlDataType
     AUTOINCREMENT = -1
     Empty_Type = 0 'No value
@@ -53,12 +56,13 @@ Public Enum ISqlDataType
     'AdArray = 0x2000 'A flag value combined with another data
 End Enum
 
-Public Property Get RawValue() As Variant: End Property
-Attribute RawValue.VB_UserMemId = 0
+Public Property Get ToValue() As Variant: End Property
+Attribute ToValue.VB_UserMemId = 0
 Public Property Get SqlType() As ISqlDataType: End Property
 Public Property Get VarType() As VbVarType: End Property
 Public Property Get Size() As Byte: End Property
 Public Property Get Instance() As IGeneric: End Property
+Public Property Get Comparer() As IGenericComparer: Set Comparer = IGenericValue: End Property
 
 Public Function Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As IGenericValue: End Function
 Public Function CompareTo(ByVal Other As IGenericValue) As ComparerEnum: End Function
@@ -67,3 +71,32 @@ Public Function ToSqlParameter(Optional ByVal Direction As ISqlParameterDirectio
 'Private Sub Class_Initialize()
 '    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub
+
+'IGenericCompare
+Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As ComparerEnum
+    
+    Dim x As IGenericValue, y As IGenericValue
+    
+    Set x = a: Set y = b
+    
+    If x Is Nothing = False Then _
+        IGenericComparer_Compare = x.CompareTo(y): Exit Function
+
+    If y Is Nothing = False Then _
+        IGenericComparer_Compare = -1: Exit Function
+
+    IGenericComparer_Compare = 0: Exit Function
+
+End Function
+
+'IGeneric
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = IGenericValue: End Property
+Private Property Get IGeneric_VirtualPointer() As LongPtr: IGeneric_VirtualPointer = ObjPtr(IGenericValue): End Property
+Private Property Get IGeneric_VirtualSize() As Long: End Property
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Property Get IGeneric_HashValue() As Long: End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = True: End Property
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_Equals = Other Is IGeneric: End Function
+Private Function IGeneric_ToString() As String: IGeneric_ToString = "Class: " & TypeName$(IGenericValue) & " :: Default": End Function
+Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = IGeneric: End Function
+Private Sub IGeneric_Dispose(): End Sub

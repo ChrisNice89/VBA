@@ -14,9 +14,9 @@ Implements IGeneric
 Implements IGenericValue
 
 #If Win64 Then
-    Declare PtrSafe Function CompareString Lib "kernel32" Alias "CompareStringA" (ByVal Locale As Long, ByVal dwCmpFlags As Long, ByVal lpString1 As String, ByVal cchCount1 As Long, ByVal lpString2 As String, ByVal cchCount2 As Long) As Long
-    Declare PtrSafe Function lstrcmpi Lib "kernel32" Alias "lstrcmpiA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
-    Declare PtrSafe Function lstrcmp Lib "kernel32" Alias "lstrcmpA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
+    Private Declare PtrSafe Function CompareString Lib "kernel32" Alias "CompareStringA" (ByVal Locale As Long, ByVal dwCmpFlags As Long, ByVal lpString1 As String, ByVal cchCount1 As Long, ByVal lpString2 As String, ByVal cchCount2 As Long) As Long
+    Private Declare PtrSafe Function lstrcmpi Lib "kernel32" Alias "lstrcmpiA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
+    Private Declare PtrSafe Function lstrcmp Lib "kernel32" Alias "lstrcmpA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
@@ -56,7 +56,9 @@ Private Const SORT_STRINGSORT = &H1000 ' Benutzt eine String-Sort-Methode
 
 Private Const DEFAULT_DELIMITER As String = ","
 Private Const MAXVALUE As Double = 2 ^ 31
-
+Private Const LEFTSHIFT As Long = 2& ^ 5
+Private Const RIGHTSHIFT As Long = 2& ^ 27
+    
 Public Enum TStringFormat
     [_First] = -1
     DefaultString = 0
@@ -79,11 +81,11 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get ElementAt(ByVal index As Long) As GString: Set ElementAt = GString(VBA.Mid$(myclass.Value, index, 1)): End Property
+Public Property Get ElementAt(ByVal Index As Long) As GString: Set ElementAt = GString(VBA.Mid$(myclass.Value, Index, 1)): End Property
 Public Property Get Length() As Long: Length = Len(myclass.Value): End Property
 Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myclass.Value, 1, 1): End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myclass.Value, Len(myclass.Value), 1): End Property
-Public Property Get Character(ByVal index As Long) As String: Character = VBA.Mid$(myclass.Value, index, 1): End Property
+Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myclass.Value, Index, 1): End Property
 Public Property Get Format() As TStringFormat: Format = myclass.Format: End Property
 Public Property Get IsNullOrEmpty() As Boolean
     
@@ -134,27 +136,27 @@ Public Function CountChar(ByVal c As String) As Long
     
 End Function
 
-Public Function Concat(ByVal item As IGeneric, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
+Public Function Concat(ByVal Item As IGeneric, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
     Dim Other As GString
     
-    If item Is Nothing Then _
+    If Item Is Nothing Then _
         Set Concat = Me: Exit Function
     
-    If TypeOf item Is GString Then _
-        Set Other = item
+    If TypeOf Item Is GString Then _
+        Set Other = Item
             
     If Not Me Is GString Then
         If Not Other Is Nothing Then
             Set Concat = GString(myclass.Value & Delimiter & Other.Value, myclass.Format)
         Else
-            Set Concat = GString(myclass.Value & Delimiter & item.ToString, myclass.Format)
+            Set Concat = GString(myclass.Value & Delimiter & Item.ToString, myclass.Format)
         End If
     Else 'Static default call
         If Not Other Is Nothing Then
-            Set Concat = item.Clone ' must be a Gstring ;)
+            Set Concat = Item.Clone ' must be a Gstring ;)
         Else
-            Set Concat = GString(item.ToString, myclass.Format)
+            Set Concat = GString(Item.ToString, myclass.Format)
         End If
     End If
     
@@ -196,7 +198,7 @@ Public Function ToArray() As GenericArray
     
 End Function
 
-Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
+Public Function Join(ByVal Values As IGenericReadOnlyList, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
     Dim S As IGeneric
     Dim i As Long
@@ -204,15 +206,14 @@ Public Function Join(ByVal Values As GenericArray, Optional ByVal Delimiter = DE
     If (Values Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Join").NullPointer("Values is nothing")
     
-    ReDim strings(Values.LowerBound To Values.Length) As String
-    i = Values.LowerBound
-    
-    With Values.Iterator
-        Do While .HasNext(S)
+    With Values
+        ReDim strings(.Count - .BaseIndex) As String
+        
+        For i = .BaseIndex To .Count
+            Set S = .ElementAt(i)
             If Not S Is Nothing Then _
-                strings(i) = S.ToString
-            i = i + 1
-        Loop
+                strings(i - .BaseIndex) = S.ToString
+        Next
     End With
     
     Set Join = Me.Concat(GString(VBA.Join$(strings, Delimiter), myclass.Format))
@@ -221,9 +222,6 @@ End Function
 
 Public Function HashValueOf(ByRef TEXT As String) As Long
 
-    Const leftShift As Long = 2& ^ 5
-    Const rigthShift As Long = 2& ^ 27
-    
     Dim ascii() As Byte
      
     Dim h As Currency 'Double
@@ -239,8 +237,8 @@ Public Function HashValueOf(ByRef TEXT As String) As Long
     h2 = h1 'LeftShift(5381,16))+5381
     
     For i = 0 To UBound(ascii) - 1
-       h1 = (h1 * leftShift) + h1 + (h1 / rigthShift): h1 = CLng(h1 - (Fix(h1 / MAXVALUE) * MAXVALUE)) Xor ascii(i)
-       h2 = (h2 * leftShift) + h2 + (h2 / rigthShift): h2 = CLng(h2 - (Fix(h2 / MAXVALUE) * MAXVALUE)) Xor ascii(i + 1)
+       h1 = (h1 * LEFTSHIFT) + h1 + (h1 / RIGHTSHIFT): h1 = CLng(h1 - (Fix(h1 / MAXVALUE) * MAXVALUE)) Xor ascii(i)
+       h2 = (h2 * LEFTSHIFT) + h2 + (h2 / RIGHTSHIFT): h2 = CLng(h2 - (Fix(h2 / MAXVALUE) * MAXVALUE)) Xor ascii(i + 1)
     Next
     
     h = h1 + h2 'h1 + (h2 * 1566083941#)
@@ -354,8 +352,9 @@ End Function
 Private Property Get IGenericValue_VarType() As VbVarType: IGenericValue_VarType = vbString: End Property
 Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
 Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.VarWChar_Type: End Property
-Private Property Get IGenericValue_RawValue() As Variant: IGenericValue_RawValue = myclass.Value: End Property
+Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue = myclass.Value: End Property
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
+Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericValue.Comparer: End Property
 
 Private Function IGenericValue_Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = 1&) As IGenericValue: Set IGenericValue_Create = Me.Build(Value): End Function
 Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As ComparerEnum

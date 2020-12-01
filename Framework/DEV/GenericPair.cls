@@ -13,14 +13,7 @@ Option Explicit
 '@PredeclaredId
 
 Implements IGeneric
-
-#If Win64 Then
-    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
-#Else
-    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef src As Any, ByVal Length As Long)
-#End If
+Implements IGenericComparer
 
 Private Type Member
     Key As IGeneric
@@ -40,14 +33,13 @@ Public Property Get Value() As Object: Set Value = myclass.Value: End Property
 Public Function Build(ByVal Key As IGeneric, ByVal Value As IGeneric) As GenericPair
 Attribute Build.VB_UserMemId = 0
     
-    If (Key Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function Build").NullPointer("Key is nothing")
-    
     If (Me Is GenericPair) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
+    If (Key Is Nothing) Or (Value Is Nothing) Then _
+        Call Skynet.Throw(Me, "Public Function Build").NullPointer("(Key Is Nothing) Or (Value Is Nothing)")
+        
     Set myclass.Key = Key: Set myclass.Value = Value
-'    Set Build = Skynet.CreateInstance(New GenericPair, Virtual.Pointer, Virtual.Size)
     Set Build = New GenericPair: myclass = EmptyStructure
     
 End Function
@@ -55,59 +47,74 @@ End Function
 Private Sub Class_Initialize()
     Virtual.Pointer = VarPtr(myclass)
     Virtual.Size = LenB(myclass)
-    Set myclass.Key = GenericPair.Key
-    Set myclass.Value = GenericPair.Value
+    With GenericPair
+        Set myclass.Key = .Key: Set myclass.Value = .Value
+    End With
 End Sub
 
 Private Sub Class_Terminate()
     myclass = EmptyStructure
 End Sub
 
+Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As ComparerEnum
+
+    Dim x As GenericPair, y As GenericPair
+    Set x = a: Set y = b
+    'default comparer
+    IGenericComparer_Compare = IGenericValue.Comparer.Compare(x.Key, y.Key)
+    
+End Function
+
 'IGeneric
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericPair: End Property
+Private Property Get IGeneric_Default() As IGeneric
+    With New IGeneric 'Bug, caused while GenericPair implements IGeneric
+        Set IGeneric_Default = GenericPair.Build(.Default, .Default)
+    End With
+End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
 Private Property Get IGeneric_HashValue() As Long
     
     Const MAXLONG = 2 ^ 31 - 1
-    Dim Hash As Currency
+    Static Hash As Currency
     
-    If myclass.Value Is Nothing Then _
-        IGeneric_HashValue = myclass.Key.HashValue: Exit Function
-   
-    Hash = (13 * CDbl(13 * 27 + myclass.Key.HashValue)) + myclass.Value.HashValue
+    If Hash = 0 Then _
+        Hash = (13 * CDbl(13 * 27 + myclass.Key.HashValue)) + myclass.Value.HashValue
+    
     IGeneric_HashValue = CLng(Hash - (Fix(Hash / MAXLONG) * MAXLONG))
         
 End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
-Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericPair):  End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean
+    
+    Dim otherPair As GenericPair
+    
+    If Other Is Nothing Then _
+        Exit Sub
+        
+    Set otherPair = Other
+    
+    If myclass.Key.IsRelatedTo(otherPair.Key) Then _
+        IGeneric_IsRelatedTo = myclass.Value.IsRelatedTo(otherPair.Value)
+    
+End Property
 
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Clone() As IGeneric
-    
-    Dim c As Member: c = myclass 'hardcopy
-
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericMap, VarPtr(c), Virtual.Size)
-  
-End Function
+Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = GenericPair.Build(myclass.Key, myclass.Value): End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
     Dim otherPair As GenericPair
     
     If Other Is Nothing Then _
-        IGeneric_Equals = False: Exit Function
-    
+        Exit Function
+        
     Set otherPair = Other
-    If myclass.Key.Equals(otherPair.Key) Then
-        If (myclass.Value Is Nothing) = False Then
-            IGeneric_Equals = myclass.Value.Equals(otherPair.Value)
-        Else
-            IGeneric_Equals = otherPair.Value Is Nothing
-        End If
-    End If
+    
+    If myclass.Key.Equals(otherPair.Key) Then _
+        IGeneric_Equals = myclass.Value.Equals(otherPair.Value)
 
 End Function
 
@@ -116,13 +123,6 @@ Private Function IGeneric_ToString() As String
     IGeneric_ToString = "Class: " & TypeName$(Me) & " :: " & _
                         "[" & _
                             myclass.Key.ToString & _
-                            ", "
-                         
-                        If (myclass.Value Is Nothing) = False Then
-                            IGeneric_ToString = IGeneric_ToString & myclass.Value.ToString & "]"
-                        Else
-                            IGeneric_ToString = IGeneric_ToString & " NULL]"
-                        End If
- 
+                            "," & myclass.Value.ToString & "]"
+                                               
 End Function
-

@@ -53,13 +53,13 @@ Public Event FetchComplete()
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
 
-Private Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByRef lParam As Any) As Long
-Private Declare Function GetScrollPos Lib "user32" (ByVal hwnd As Long, ByVal nBar As Long) As Long
+Private Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hWnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByRef lParam As Any) As Long
+Private Declare Function GetScrollPos Lib "user32" (ByVal hWnd As Long, ByVal nBar As Long) As Long
 Private Declare Function LockWindowUpdate Lib "user32" (ByVal hwndLock As Long) As Long
 
 ' VB equivilent of Screen.TwipsPerPixel in Access
-Private Declare Function GetDC Lib "user32" (ByVal hwnd As Long) As Long
-Private Declare Function ReleaseDC Lib "user32" (ByVal hwnd As Long, ByVal hdc As Long) As Long
+Private Declare Function GetDC Lib "user32" (ByVal hWnd As Long) As Long
+Private Declare Function ReleaseDC Lib "user32" (ByVal hWnd As Long, ByVal hdc As Long) As Long
 Private Declare Function GetDeviceCaps Lib "gdi32" (ByVal hdc As Long, ByVal nIndex As Long) As Long
 
 Private Declare Function GetAsyncKeyState Lib "user32" (ByVal vKey As Long) As Long
@@ -85,25 +85,6 @@ Private Const LVM_FIRST As Long = &H1000
 Private Const LVM_SETCOLUMNWIDTH As Long = LVM_FIRST + 30
 Private Const LVSCW_AUTOSIZE As Long = -1
 Private Const LVSCW_AUTOSIZE_USEHEADER As Long = -2
-Private Const LVM_INSERTITEM = (LVM_FIRST + 7)
-Private Const LVM_SCROLL As Long = &H1014
-Private Const LVIF_IMAGE = &H2
-Private Const LVIF_TEXT = &H1
-Private Const LVIF_STATE = &H8&
-Private Const LVM_GETITEM As Long = (LVM_FIRST + 5)
-Private Const LVM_GETITEMCOUNT = (LVM_FIRST + 4)
-Private Const LVM_GETITEMSTATE = (LVM_FIRST + 44)
-Private Const LVIS_SELECTED = &H2
-Private Const LVM_SETITEMSTATE = (LVM_FIRST + 43)
-Private Const LVIS_STATEIMAGEMASK As Long = &HF000
-
-Private Const LVM_GETITEMTEXT As Long = (LVM_FIRST + 45)
-Private Const LVM_SETEXTENDEDLISTVIEWSTYLE As Long = (LVM_FIRST + 54)
-Private Const LVM_GETEXTENDEDLISTVIEWSTYLE As Long = (LVM_FIRST + 55)
-
-Private Const LVS_EX_GRIDLINES As Long = &H1
-Private Const LVS_EX_CHECKBOXES As Long = &H4
-Private Const LVS_EX_FULLROWSELECT As Long = &H20  'applies to report mode only
 
 Private Const SOME_CHARS As String = "XXXXXX"
 '
@@ -117,30 +98,6 @@ Public Enum DataViewerColumnView
     Hide
     Show
 End Enum
-
-Private Type LVITEM
-    Mask As Long
-    iItem As Long
-    iSubItem As Long
-    STATE As Long
-    statemask As Long
-    pszText As String 'Stringpointer Long
-    cchTextMax As Long
-    iImage As Long
-    lParam As Long
-    iIndent As Long
-End Type
-Private Type LVCOLUMN
-    Mask As Long
-    fmt As Long
-    cx As Long
-    pszText  As String
-    cchTextMax As Long
-    iSubItem As Long
-    iImage As Long
-    iOrder As Long
-End Type
-
 
 Private Type Member
     ViewControl As CustomControl
@@ -169,16 +126,16 @@ Attribute ViewControl.VB_VarHelpID = -1
 Public Property Get IndexOfColumn(ByVal Name As GString) As Long
 
     Dim Column As IGenericValue
-    Set Column = myclass.Columns.item(Name)
+    Set Column = myclass.Columns.Item(Name)
     
-    IndexOfColumn = Column.RawValue
+    IndexOfColumn = Column.ToValue
     
 End Property
 Public Property Get Rows() As IGenericReadOnlyList: Set Rows = myclass.RowList: End Property
 Public Property Get Columns() As IGenericReadOnlyList: Set Columns = myclass.Columns: End Property
 Public Property Get SelectedColumn() As Long: SelectedColumn = myclass.SelectedColumn: End Property
-Public Property Get Row(ByVal index As Long) As GenericArray: Set Row = myclass.RowList.ElementAt(index): End Property
-Public Property Get Column(ByVal index As Long) As GenericPair: Set Column = myclass.Columns.Entry(index): End Property
+Public Property Get Row(ByVal Index As Long) As GenericArray: Set Row = myclass.RowList.ElementAt(Index): End Property
+Public Property Get Column(ByVal Index As Long) As GenericPair: Set Column = myclass.Columns.Entry(Index): End Property
 
 Public Function Build( _
                             ByVal ListViewControl As CustomControl, _
@@ -199,7 +156,7 @@ Public Function Build( _
         Set .View = .ViewControl.Object
         Call style(.View, Setting)
         Set .ImageList = ImageList
-        Set .RowMap = GenericTree.Build
+        Set .RowMap = GenericSortedSet.Build
         Set .RowList = GenericList.Build(DEFAULT_CAPACITY_ROWS)
         Set .Columns = GenericOrderedMap.Build(DEFAULT_CAPACITY_COLUMNS)
         .SortDirection = ascending
@@ -218,12 +175,12 @@ Private Sub Class_Terminate()
     Call Skynet.Dispose(Me)
 End Sub
 
-Private Sub ViewControl_ItemClick(ByVal item As MSComctlLib.ListItem)
+Private Sub ViewControl_ItemClick(ByVal Item As MSComctlLib.ListItem)
 '    RaiseEvent RowSelected(item.index, myclass.RowList(item.index))
 End Sub
 
 Private Sub ViewControl_ColumnClick(ByVal ColumnHeader As MSComctlLib.ColumnHeader)
-    Call Me.Sort(ColumnHeader.index - 1, myclass.SortDirection)
+    Call Me.Sort(ColumnHeader.Index - 1, myclass.SortDirection)
 End Sub
 
 Public Sub Update(ByVal RowID As Long)
@@ -273,7 +230,7 @@ End Sub
 
 Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
 
-    Dim Row As GenericArray, i As Long
+    Dim Row As IGenericReadOnlyList, i As Long
     
     If Not myclass.HasInitialized Then
         'Error
@@ -284,7 +241,7 @@ Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
   
     With myclass
 
-        Call SendMessage(.View.hwnd, WM_SETREDRAW, SR_OFF, ByVal 0&)
+        Call SendMessage(.View.hWnd, WM_SETREDRAW, SR_OFF, ByVal 0&)
 
         Do
             .HasFetchComplete = Not .RowMapper.HasNext(Row)
@@ -299,7 +256,7 @@ Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
             Call .RowList.Add(Row)
          
             With .View.ListItems.Add(TEXT:=.RowList.Count)
-                For i = Row.LowerBound To Row.Length
+                For i = Row.BaseIndex To Row.Count
                     .SubItems(i) = Row.ElementAt(i).ToString
                 Next
             End With
@@ -322,12 +279,10 @@ Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
             End With
         End If
         
-        Call SendMessage(.View.hwnd, WM_SETREDRAW, SR_ON, ByVal 0&)
+        Call SendMessage(.View.hWnd, WM_SETREDRAW, SR_ON, ByVal 0&)
         RaiseEvent FetchComplete
     End With
-    
 
-    
     Fetch = Not myclass.HasFetchComplete
     
 End Function
@@ -375,39 +330,39 @@ Public Sub AddColumn(ByVal Name As GString, ByVal Datatype As VbVarType)
     If Not myclass.View Is Nothing Then
         With myclass.View.ColumnHeaders
             If .Count = 0 Then _
-                Call .Add(index:=1, TEXT:=vbNullString)
+                Call .Add(Index:=1, TEXT:=vbNullString)
     
             Call .Add(TEXT:=Name.Value)
     
             If RightAlign Then _
-                .item(.Count).Alignment = lvwColumnRight
+                .Item(.Count).Alignment = lvwColumnRight
         
         End With
     End If
     
 End Sub
 
-Public Sub Sort(ByVal index As Long, ByVal SortDirection As SortOrder)
+Public Sub Sort(ByVal Index As Long, ByVal SortDirection As SortOrder)
     
     Dim i As Long
     
     With myclass
-        If Not .SelectedColumn = index Then
-            Call .RowList.Sort(SortDirection, GenericRowComparer.Default(index))
+        If Not .SelectedColumn = Index Then
+            Call .RowList.Sort(SortDirection, GenericRowComparer.Build(Index))
         Else
             Call .RowList.Reverse
         End If
         
         .SortDirection = IIf(SortDirection = ascending, SortOrder.descending, SortOrder.ascending)
-        .SelectedColumn = index
+        .SelectedColumn = Index
     
-        Call SendMessage(.View.hwnd, WM_SETREDRAW, SR_OFF, ByVal 0&)
+        Call SendMessage(.View.hWnd, WM_SETREDRAW, SR_OFF, ByVal 0&)
         
         For i = .RowList.BaseIndex To .RowList.Count
            Call Me.Update(i)
         Next
         
-        Call SendMessage(.View.hwnd, WM_SETREDRAW, SR_ON, ByVal 0&)
+        Call SendMessage(.View.hWnd, WM_SETREDRAW, SR_ON, ByVal 0&)
    
    End With
     
@@ -423,75 +378,30 @@ Public Sub ColumnAutoSize(Optional ByVal Column As Variant)
         If .ColumnHeaders.Count = 0 Then _
             Exit Sub
         
-        Call SendMessage(.hwnd, WM_SETREDRAW, SR_OFF, ByVal 0&)
+        Call SendMessage(.hWnd, WM_SETREDRAW, SR_OFF, ByVal 0&)
         
-        Set LstItm = .ListItems.Add(TEXT:=.ColumnHeaders.item(1).TEXT & SOME_CHARS)
+        Set LstItm = .ListItems.Add(TEXT:=.ColumnHeaders.Item(1).TEXT & SOME_CHARS)
         
         If IsMissing(Column) Then
-            Call SendMessage(.hwnd, LVM_SETCOLUMNWIDTH, 0&, ByVal LVSCW_AUTOSIZE_USEHEADER)
+            Call SendMessage(.hWnd, LVM_SETCOLUMNWIDTH, 0&, ByVal LVSCW_AUTOSIZE_USEHEADER)
             
             For i = 2 To .ColumnHeaders.Count
-                LstItm.SubItems(i - 1) = .ColumnHeaders.item(i).TEXT & SOME_CHARS
-                Call SendMessage(.hwnd, LVM_SETCOLUMNWIDTH, i - 1, ByVal LVSCW_AUTOSIZE_USEHEADER)
+                LstItm.SubItems(i - 1) = .ColumnHeaders.Item(i).TEXT & SOME_CHARS
+                Call SendMessage(.hWnd, LVM_SETCOLUMNWIDTH, i - 1, ByVal LVSCW_AUTOSIZE_USEHEADER)
             Next i
         
         Else
-            i = myclass.View.ColumnHeaders(Column).index
-            LstItm.SubItems(i) = .ColumnHeaders.item(i).TEXT & SOME_CHARS
-            Call SendMessage(.hwnd, LVM_SETCOLUMNWIDTH, i, ByVal LVSCW_AUTOSIZE_USEHEADER)
+            i = myclass.View.ColumnHeaders(Column).Index
+            LstItm.SubItems(i) = .ColumnHeaders.Item(i).TEXT & SOME_CHARS
+            Call SendMessage(.hWnd, LVM_SETCOLUMNWIDTH, i, ByVal LVSCW_AUTOSIZE_USEHEADER)
         End If
         
-        Call .ListItems.Remove(LstItm.index): Set LstItm = Nothing
-        Call SendMessage(.hwnd, WM_SETREDRAW, SR_ON, ByVal 0&)
+        Call .ListItems.Remove(LstItm.Index): Set LstItm = Nothing
+        Call SendMessage(.hWnd, WM_SETREDRAW, SR_ON, ByVal 0&)
     End With
     
 End Sub
 
-Private Function GetListViewCount(ByVal hwnd As Long) As Long
-    GetListViewCount = SendMessage(hwnd, LVM_GETITEMCOUNT, 0, ByVal 0)
-End Function
-Private Function GetItemSelected(ByVal hwnd As Long) As Long
-    Dim i As Long, index As Long
-    For i = 1 To GetListViewCount(hwnd)
-        index = SendMessage(hwnd, LVM_GETITEMSTATE, i - 1, ByVal LVIS_SELECTED)
-        If index > 0 Then
-            GetItemSelected = i
-            Exit For
-        End If
-    Next
-End Function
-
-Private Function AddItem(ByVal hwnd As Long, ByVal TEXT As String, Optional ByVal indent As Integer, Optional ByVal Icon As Integer) As Long
-    
-    Dim lvi As LVITEM
-    
-    With lvi
-        .iItem = GetListViewCount(hwnd) + 1
-        .lParam = 0 'item
-        .pszText = TEXT & vbNullChar
-        .cchTextMax = Len(TEXT) + 1
-        .iIndent = 0
-        .iImage = Icon
-        .Mask = LVIF_TEXT Or LVIF_IMAGE
-        
-    End With
-    
-    AddItem = SendMessage(hwnd, LVM_INSERTITEM, 0, lvi) ' (SendMessage(LView.hWnd, LVM_INSERTITEM, 0, uLV) > -1)
-    
-End Function
-
-Private Sub InsertByAPI(ByVal hwnd As Long, ByVal TEXT As String)
-
-    Dim lvi As LVITEM
-
-    lvi.iItem = GetListViewCount(hwnd) + 1
-    lvi.Mask = LVIF_IMAGE Or LVIF_TEXT
-    'lvi.iImage = uRecord.licon 'GetFileIconIndex(ParseFileOut(rfFile), SHGFI_SMALLICON)
-    lvi.cchTextMax = Len(TEXT) + 1
-    lvi.pszText = "Item1"
-
-    Debug.Print SendMessage(hwnd, LVM_INSERTITEM, 0, lvi)
-End Sub
 Private Sub style(ByVal Listview As MSComctlLib.Listview, ByVal style As DataviewerStyle)
     
     If Listview Is Nothing Then _

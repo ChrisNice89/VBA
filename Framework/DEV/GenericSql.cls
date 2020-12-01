@@ -467,7 +467,7 @@ Private Function TableStructure(ByVal Table As String) As ADODB.Recordset
     Set TableStructure = Me.ExecuteSchema(SchemaColumns, Empty, Empty, Table, Empty) '.ToArray("COLUMN_NAME"))
 End Function
 
-Public Function Update(ByVal index As Variant, ByVal NewValue As IGenericValue) As GenericSql
+Public Function Update(ByVal Index As Variant, ByVal NewValue As IGenericValue) As GenericSql
     
     Dim Parameter As ADODB.Parameter
     
@@ -476,18 +476,18 @@ Public Function Update(ByVal index As Variant, ByVal NewValue As IGenericValue) 
     End If
     
     With myclass.ParameterList
-        If VarType(index) = vbString Then _
-            index = .IndexOfKey(GString(index))
+        If VarType(Index) = vbString Then _
+            Index = .IndexOfKey(GString(Index))
         
-        If Not .ElementAt(index).IsRelatedTo(NewValue) Then
+        If Not .ElementAt(Index).IsRelatedTo(NewValue) Then
             'Error false type
         End If
         
-        Set .ElementAt(index) = NewValue
+        Set .ElementAt(Index) = NewValue
     End With
     
     If myclass.IsPrepared Then
-        Set Parameter = myclass.Command.Parameters(index - 1)
+        Set Parameter = myclass.Command.Parameters(Index - 1)
         With NewValue
 '            If Not .IsNumeric Then _
 '                Parameter.Size = Len(.Primitive)
@@ -521,7 +521,7 @@ Public Function CreateParameter( _
 '        End If
         
         .Type = Value.SqlType
-        .Value = Value.RawValue
+        .Value = Value.ToValue
         
     End With
     

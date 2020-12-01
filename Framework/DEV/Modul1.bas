@@ -6,8 +6,43 @@ Option Explicit
 
 Private Sql As GenericSql
 Private RandomList As GenericList
+Sub TestRange()
+    
 
-Sub testHashing()
+    Dim i As Long
+    Dim t As CTimer
+    Set t = New CTimer
+    t.StartCounter
+    
+    Dim List As GenericList
+    Set List = GenericList.Build2(IGeneric)
+    
+    Debug.Print List.Interfaces.IndexOf(IGeneric)
+    For i = 1 To 10
+        Call List.Add(GNumeric(1))
+    Next
+    Debug.Print t.TimeElapsed
+
+End Sub
+
+Sub TestCreaet()
+    
+    Dim Result As Boolean
+    Dim t As CTimer
+    Set t = New CTimer
+    Dim i As Long
+    Dim G As IGeneric
+    Set G = GenericPair
+    t.StartCounter
+
+    For i = 1 To 10000
+        Set G = GenericPair(IGenericValue, IGenericValue)
+        Result = G.IsRelatedTo(G)
+    Next
+
+    Debug.Print t.TimeElapsed
+End Sub
+Sub TestListEquals()
     
     Dim t As CTimer
     Set t = New CTimer
@@ -15,25 +50,25 @@ Sub testHashing()
     Dim SortedList As GenericSortedList
     Set SortedList = GenericSortedList.Build
     
-    Dim Tree As GenericTree
-    Set Tree = GenericTree.Build
+    Dim tree As GenericSortedSet
+    Set tree = GenericSortedSet.Build
     
     Dim S As GString
     
     Dim i As Long
     t.StartCounter
-    For i = 1 To 10000
+    For i = 1 To 10
         Set S = GString("Key: " & i)
-        Call Tree.Add(S, S)
+        Call tree.Add(S)
         Call SortedList.Add(S, S)
 '        Call GString.HashValueOf("asfethzrnasx fvfcsc" & i)
     Next
     Debug.Print t.TimeElapsed
 '    Call List.Sort(ascending)
     
-    Debug.Print GenericList.IsEqual(SortedList, Tree)
+    Debug.Print GenericList.IsEqual(SortedList, tree)
     
-    Debug.Print Skynet.Generic(Tree).ToString
+    Debug.Print GString.Join(tree, ";").Value
 End Sub
 
 Sub CreateTables()
@@ -46,46 +81,46 @@ Sub CreateTables()
     Dim Abwicklung As Stringbuilder: Set Abwicklung = New Stringbuilder
     Dim Paar As Stringbuilder: Set Paar = New Stringbuilder
     
-'    With Portfolio
-'        .Append "CREATE TABLE LDRS_PORTFOLIO ( "
-'        .Append "[ID] AUTOINCREMENT,"
-'        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
-'        .Append "[NUMMER] TEXT,"
-'        .Append "[NAME] TEXT,"
-'        .Append "[PRÜFER] TEXT,"
-'        .Append "[TRANCHE] TEXT,"
-'        .Append "[PRÜFUNGSSCHWERPUNKT] BYTE,"
-'        .Append "[AUSWAHLGRUND] TEXT,"
-'        .Append "[DATUM] DATE,"
-'        .Append "[KUNDENNUMMER] TEXT,"
-'        .Append "[RATINGVERFAHREN] TEXT,"
-'        .Append "[RATINGNOTE] TEXT,"
-'        .Append "[RATINGDATUM] DATE,"
-'        .Append "[RISIKOVOLUMEN] CURRENCY,"
-'        .Append "[INANSPRUCHNAHME] CURRENCY,"
-'        .Append "[BLANKOVOLUMEN] CURRENCY,"
-'        .Append "[EWB] CURRENCY,"
-'        .Append "[KONTONUMMER] TEXT,"
-'        .Append "[PRODUKTGRUPPE] TEXT,"
-'        .Append "[PRODUKTTYP] TEXT,"
-'        .Append "[SOLLZINS] SINGLE,"
-'        .Append "[LIMIT (EXTERN)] CURRENCY,"
-'        .Append "[LIMIT (INTERN)] CURRENCY,"
-'        .Append "[INANSPRUCHNAHME] CURRENCY,"
-'        .Append "[ÜBERZIEHUNGSDAUER] BYTE,"
-'        .Append "[GEBER-NUMMER] TEXT,"
-'        .Append "[GEBER-NAME] TEXT,"
-'        .Append "[NUMMER] BYTE,"
-'        .Append "[SICHERHEITENART] TEXT,"
-'        .Append "[IMMOBILIEN-NUMMER] BYTE,"
-'        .Append "[OBJEKTART] TEXT,"
-'        .Append "[BLW-AUSLAUF] CURRENCY,"
-'        .Append "[ANRECHNUNG] CURRENCY,"
-'        .Append "[VERFÜGBAR] CURRENCY"
-'        .Append " )"
-'    End With
-'
-'    Call TestSql(Portfolio.ToString)
+    With Portfolio
+        .Append "CREATE TABLE LDRS_PORTFOLIO ( "
+        .Append "[ID] AUTOINCREMENT,"
+        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
+        .Append "[NUMMER] TEXT,"
+        .Append "[NAME] TEXT,"
+        .Append "[PRÜFER] TEXT,"
+        .Append "[TRANCHE] TEXT,"
+        .Append "[PRÜFUNGSSCHWERPUNKT] BYTE,"
+        .Append "[AUSWAHLGRUND] TEXT,"
+        .Append "[DATUM] DATE,"
+        .Append "[KUNDENNUMMER] TEXT,"
+        .Append "[RATINGVERFAHREN] TEXT,"
+        .Append "[RATINGNOTE] TEXT,"
+        .Append "[RATINGDATUM] DATE,"
+        .Append "[RISIKOVOLUMEN] CURRENCY,"
+        .Append "[INANSPRUCHNAHME] CURRENCY,"
+        .Append "[BLANKOVOLUMEN] CURRENCY,"
+        .Append "[EWB] CURRENCY,"
+        .Append "[KONTONUMMER] TEXT,"
+        .Append "[PRODUKTGRUPPE] TEXT,"
+        .Append "[PRODUKTTYP] TEXT,"
+        .Append "[SOLLZINS] SINGLE,"
+        .Append "[LIMIT (EXTERN)] CURRENCY,"
+        .Append "[LIMIT (INTERN)] CURRENCY,"
+        .Append "[INANSPRUCHNAHME] CURRENCY,"
+        .Append "[ÜBERZIEHUNGSDAUER] BYTE,"
+        .Append "[GEBER-NUMMER] TEXT,"
+        .Append "[GEBER-NAME] TEXT,"
+        .Append "[NUMMER] BYTE,"
+        .Append "[SICHERHEITENART] TEXT,"
+        .Append "[IMMOBILIEN-NUMMER] BYTE,"
+        .Append "[OBJEKTART] TEXT,"
+        .Append "[BLW-AUSLAUF] CURRENCY,"
+        .Append "[ANRECHNUNG] CURRENCY,"
+        .Append "[VERFÜGBAR] CURRENCY"
+        .Append " )"
+    End With
+
+    Call TestSql(Portfolio.ToString)
     
     With Normal
         .Append "CREATE TABLE LDRS_NORMAL ( "
@@ -288,29 +323,42 @@ Sub TestArrayIterator2()
     Debug.Print S.ElementAt(1).Contains("i")
     
 End Sub
-Sub TestArrayIterator()
+Sub TestArrayGetter()
+    
+    Dim t As CTimer
+    Set t = New CTimer
+    
+    Dim List As GenericArray
+    Dim Element As IGeneric
    
     Dim i As Long, N As Long
-    N = 100
+    N = 1000
+        
+    Set List = GenericArray.Build(N)
+    ReDim x(1 To N) As IGeneric
     
-    Dim x() As IGeneric
-    ReDim x(1 To N)
+    t.StartCounter
+    For i = 1 To N
+        Set List(i) = GNumeric(i)
+    Next
+    Debug.Print t.TimeElapsed
     
-    For i = N To 1 Step -1
+    t.StartCounter
+    For i = 1 To N
         Set x(i) = GNumeric(i)
     Next
+    Debug.Print t.TimeElapsed
     
-    Call GenericArray.SortArray(x, LBound(x), UBound(x), Order:=Random)
-'    For i = 1 To N
-'        Debug.Print x(i)
-'    Next
     
-'    Call GenericArray.SortArray(x, LBound(x), UBound(x), New GenericValueComparer, Descending)
-    Call GenericArray.SortArray(x, LBound(x), UBound(x), Nothing, descending)
-    For i = 1 To N
-        Debug.Print x(i)
-    Next
-    
+'
+'    With List.Iterator
+'        t.StartCounter
+'        Do While .HasNext(Element)
+'
+'        Loop
+'        Debug.Print t.TimeElapsed
+'   End With
+
 End Sub
 
 Sub TestArraySort()
@@ -333,9 +381,9 @@ Sub TestArraySort()
     Call List.Sort(descending)
     Debug.Print t.TimeElapsed
     
-    Dim item As IGeneric
+    Dim Item As IGeneric
     With List.Iterator
-        Do While .HasNext(item)
+        Do While .HasNext(Item)
           
         Loop
     End With
@@ -406,7 +454,7 @@ Sub TestOrderedMap()
     Set Map = GenericOrderedMap.Build
     
     Dim Imap As IGenericDictionary
-    Set Imap = GenericTree.Build
+    Set Imap = GenericSortedSet.Build
     
     Dim i As Long, N As Long
     
@@ -423,10 +471,10 @@ Sub TestOrderedMap()
     Dim c As GenericOrderedMap
     Set c = Skynet.Clone(Map)
     
-    Dim item As GenericPair
+    Dim Item As GenericPair
     t.StartCounter
     With c.IteratorOf(PairData)
-        Do While .HasNext(item)
+        Do While .HasNext(Item)
 '            Debug.Print Item.Key
         Loop
     End With
@@ -453,9 +501,9 @@ Sub TestListIterator()
     Set c = Skynet.Clone(L)
     
     t.StartCounter
-    Dim item As IGeneric
+    Dim Item As IGeneric
     With c.Iterator
-        Do While .HasNext(item)
+        Do While .HasNext(Item)
 '           Debug.Print Item
         Loop
     End With
@@ -482,10 +530,10 @@ Sub TestSortedListIterator()
     Set c = Skynet.Clone(sl)
     
     t.StartCounter
-    Dim item As IGeneric
-    With c.Iterator(t:=KeyData)
-        Do While .HasNext(item)
-           Debug.Print item
+    Dim Item As IGeneric
+    With c.IteratorOf(t:=KeyData)
+        Do While .HasNext(Item)
+           Debug.Print Item
         Loop
     End With
     Debug.Print t.TimeElapsed
@@ -497,10 +545,10 @@ Sub TestMaps()
     Dim t As CTimer
     
     Dim Map As IGenericDictionary
-    Set Map = GenericSortedList.Build ' GenericOrderedMap.Build 'GenericSortedList.Build() 'GenericTree.Build '
+    Set Map = GenericOrderedMap.Build 'GenericSortedList.Build()
     
     Dim i As Long, N As Long, j As Long
-    N = 10000
+    N = 30
     
     If RandomList Is Nothing Then
         Set RandomList = GenericList.Build
@@ -511,7 +559,7 @@ Sub TestMaps()
     End If
  
     Dim P As GenericPair
-    Dim item As IGeneric
+    Dim Item As IGeneric
     
     Set t = New CTimer
     t.StartCounter
@@ -520,29 +568,39 @@ Sub TestMaps()
         Call Map.Add(P.Key, P.Value)
     Next
     Debug.Print N & " :: "; t.TimeElapsed
-  
+
+'
+'    Dim tree As GenericSortedSet
+'    Set tree = Map
+'    Dim Node As GenericNode
+'    Set Node = tree.ElementAt(N)
+'
+'    Do While Node Is Nothing = False
+'        Debug.Print Node.Key
+'        Set Node = Node.InOrderPrevious
+'    Loop
+'    Exit Sub
+'
     For i = 1 To N
         Set P = RandomList(i)
-        Set item = Map.item(P.Key)
+        Set Item = Map.Item(P.Key)
     Next
   
     Dim ga As GenericArray
     Set ga = GenericArray.Build(Map.Count)
     Call Map.CopyOf(PairData, ga, ga.LowerBound)
     
-    Dim Comparer As IGenericComparer
-    Set Comparer = GenericPairComparer.Default
+    Dim GenericPairComparer As IGenericComparer
+    Set GenericPairComparer = GenericPair
     
     For i = ga.LowerBound + 1 To ga.Length
-        If GenericPairComparer.Compare(ga(i - 1), ga(i)) = IsGreater Then
-            Debug.Print "Error"
-        End If
+        Debug.Print ga.ElementAt(i)
     Next
 '
     t.StartCounter
     With Map.IteratorOf(PairData)
-        Do While .HasNext(item)
-'            Debug.Print Item
+        Do While .HasNext(Item)
+            Debug.Print Item
         Loop
     End With
     Debug.Print t.TimeElapsed
@@ -569,11 +627,11 @@ Sub TestSortedList()
     Dim c As GenericSortedList
     Set c = Skynet.Clone(sl)
     
-    Dim item As IGeneric
+    Dim Item As IGeneric
 
-    With c.Iterator(PairData)
-        Do While .HasNext(item)
-           
+    With c.IteratorOf(PairData)
+        Do While .HasNext(Item)
+           Debug.Print Item
         Loop
     End With
     Debug.Print t.TimeElapsed
@@ -586,27 +644,31 @@ Sub TestTree()
     Set t = New CTimer
     t.StartCounter
     
-    Dim Tree As GenericTree
-    Set Tree = GenericTree.Build
+    Dim tree As GenericSortedSet
+    Set tree = GenericSortedSet.Build
     
     Dim i As Long
     
-    For i = 1 To 100
-        Call Tree.Add(GNumeric(i), GNumeric(i))
+    For i = 100 To 1 Step -1
+        Call tree.Add(GNumeric(i))
     Next
-
+    
+    Dim N As IGeneric
+    Set N = tree.ElementAt(1)
+    
+    Debug.Print N.ToString
     Dim c As IGenericReadOnlyList
-    Set c = Skynet.Clone(Tree)
+    Set c = Skynet.Clone(tree)
     
     Debug.Print c.IndexOf(GNumeric(99))
     Debug.Print c.IndexOf(GNumeric(1))
-    Dim item As IGeneric
+    Dim Item As IGeneric
     
     t.StartCounter
     
     With c.Iterator
-        Do While .HasNext(item)
-            Debug.Print item
+        Do While .HasNext(Item)
+'            Debug.Print Item.ToString
         Loop
     End With
     
@@ -709,14 +771,14 @@ Sub TestArray2()
         Call .Sort(descending)
         Debug.Print t.TimeElapsed
         
-'        For i = 1 To .Length
-'            If Not GA(i) Is Nothing Then _
-'                Debug.Print "i: " & i & "  " & GA(i)
-'        Next
-'
-'        Debug.Print .BinarySearch(GString("zzz"), 1, .Length, descending)
-'        Call .Reverse
-'        Call .Clear
+        For i = 1 To .Length
+            If Not ga(i) Is Nothing Then _
+                Debug.Print "i: " & i & "  " & ga(i)
+        Next
+
+        Debug.Print .BinarySearch(GString("zzz"), 1, .Length, descending, IGenericValue.Comparer)
+        Call .Reverse
+        Call .Clear
     End With
     
 End Sub
@@ -767,26 +829,26 @@ Sub testMap()
     Dim t As CTimer
     Set t = New CTimer
    
-    For i = 1 To 500
-        Call hm.Add(GString("Key" & i), GNumeric(i))
+    For i = 1 To 35
+        Call hm.Add(GNumeric(i), GNumeric(i))
     Next
     
     Dim Clone As IGenericDictionary
     Set Clone = Skynet.Clone(hm)
     Set hm = Nothing
     
-    Dim item As IGeneric
+    Dim Item As IGeneric
     t.StartCounter
     With Clone.IteratorOf(PairData)
-        Do While .HasNext(item)
-'            Debug.Print Item
+        Do While .HasNext(Item)
+            Debug.Print Item
         Loop
     End With
     Debug.Print t.TimeElapsed
     
-    With GenericSortedList.BuildFrom(Clone, GenericValueComparer).Iterator(PairData)
-        Do While .HasNext(item)
-'            Debug.Print Item
+    With GenericSortedList.BuildFrom(Clone, IGenericValue.Comparer).IteratorOf(PairData)
+        Do While .HasNext(Item)
+            Debug.Print Item
         Loop
     End With
 

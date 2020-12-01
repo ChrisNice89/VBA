@@ -12,6 +12,15 @@ Option Explicit
 
 Implements IGeneric
 Implements IGenericValue
+Implements IGenericIterator
+
+#If Win64 Then
+    Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
+    Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
+#Else
+    Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
+    Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
+#End If
 
 Private Const MAXVALUE As Double = 922337203685477#
 Private Const MAXLONG As Long = 2 ^ 31 - 1
@@ -28,10 +37,18 @@ Public Enum TNumericFormat
 End Enum
 
 '
+Private Type Range
+    Start As Long
+    Last As Long
+    i As Long
+    Current As IGeneric
+End Type
+
 Private Type Member
     Value As Currency
     Precision As Byte
     NumericScale As Byte
+    Range As Range
     Format As TNumericFormat
 End Type
 Private myclass As Member
@@ -49,6 +66,23 @@ End Property
 
 Public Property Get Max() As Currency
     Max = MAXVALUE
+End Property
+
+Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIterator
+    
+    Dim c As Member
+    
+    If Start > Last Then _
+        Call Skynet.Throw(Me, "Public Property Get Range").InvalidInput("Start > Last")
+        
+    With c.Range
+        .Start = Start
+        .Last = Last
+        .i = .Start - 1
+    End With
+   
+    Set Range = Skynet.CreateInstance(New GNumeric, VarPtr(c), LenB(c))
+
 End Property
 
 Public Property Get Format() As TNumericFormat: Format = myclass.Format: End Property
@@ -105,6 +139,7 @@ Private Sub Class_Initialize()
     
 End Sub
 
+Public Function LOGn(ByVal Value As Long, Optional ByVal Base As Byte = 2) As Long: LOGn = Log(Value) / Log(Base): End Function
 Public Function Multiply(ByVal Other As GNumeric) As GNumeric: Set Multiply = GNumeric.Build(myclass.Value * Other.Value): End Function
 Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
 Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
@@ -142,17 +177,18 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 End Function
 
 Private Function IGeneric_ToString() As String
-
+    
     IGeneric_ToString = myclass.Value
     
 End Function
-    
+
 'IGenericValue
 Private Property Get IGenericValue_VarType() As VbVarType: IGenericValue_VarType = vbCurrency: End Property
 Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
 Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Decimal_Type: End Property
-Private Property Get IGenericValue_RawValue() As Variant: IGenericValue_RawValue = myclass.Value: End Property
+Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue = myclass.Value: End Property
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
+Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericValue.Comparer: End Property
 
 Private Function IGenericValue_Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = 1&) As IGenericValue
     Set IGenericValue_Create = Me.Build(Value)
@@ -192,3 +228,24 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
     Set IGenericValue_ToSqlParameter = P
     
 End Function
+
+'IGenericIterator
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Range.Current: End Property
+Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
+    
+    With myclass.Range
+        If .i = .Last Then _
+            Set .Current = Nothing: Set Out = Nothing: Exit Function
+            
+        Set .Current = GNumeric(InterlockedIncrement(.i)): Set Out = .Current
+        IGenericIterator_HasNext = True
+      
+    End With
+    
+End Function
+
+Private Sub IGenericIterator_Reset()
+    Set myclass.Range.Current = Nothing
+    myclass.Range.i = myclass.Range.Start
+End Sub
+

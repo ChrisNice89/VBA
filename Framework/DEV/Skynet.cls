@@ -219,14 +219,14 @@ End Function
 Public Function BinarySearch( _
                                 ByRef Objects() As IGenericValue, _
                                 ByVal Value As IGeneric, _
-                                ByVal index As Long, _
+                                ByVal Index As Long, _
                                 ByVal Length As Long, _
                                 ByVal Order As SortOrder) As Long
 
     Dim i As Long
     Dim c As ComparerEnum
-    Dim lo As Long: lo = index
-    Dim hi As Long: hi = index + Length - 1
+    Dim lo As Long: lo = Index
+    Dim hi As Long: hi = Index + Length - 1
     
     Do While (lo <= hi)
     
@@ -290,11 +290,11 @@ End Function
 'index index + (index + count - i - 1).
 Public Sub Reverse( _
                         ByRef Objects() As IGeneric, _
-                        ByVal index As Long, _
+                        ByVal Index As Long, _
                         ByVal Length As Long)
 
-    Dim i As Long: i = index
-    Dim j As Long: j = index + Length - 1
+    Dim i As Long: i = Index
+    Dim j As Long: j = Index + Length - 1
     Dim temp As IGeneric
     
     Do
@@ -309,7 +309,7 @@ Public Function Median(ByVal lo As Long, ByVal hi As Long) As Single
     If (lo >= hi) Then _
         Call Me.Throw(Me, "Public Function Median").ArgOutOfRange("lo <= hi")
     
-    Median = lo + (Me.RightShift(hi - lo, 1))
+    Median = lo + (Me.RIGHTSHIFT(hi - lo, 1))
 End Function
 
 Public Function HashValue( _
@@ -340,20 +340,20 @@ Public Function HashValue( _
              
              For N = (Length / 2) To 1 Step -1
                 h = h + ascii(i)
-                h = Me.X0R(Me.X0R(leftShift(h, 16), Me.leftShift(ascii(i + 1), 11)), h)
-                h = h + Me.RightShift(h, 11)
+                h = Me.X0R(Me.X0R(LEFTSHIFT(h, 16), Me.LEFTSHIFT(ascii(i + 1), 11)), h)
+                h = h + Me.RIGHTSHIFT(h, 11)
                 i = i + 2
             Next
             
             If ((Length Mod 2) = 1) Then
                 h = h + ascii(i) + 1566083941
-                h = Me.X0R(h, leftShift(h, 10))
-                h = h + Me.RightShift(h, 1)
+                h = Me.X0R(h, LEFTSHIFT(h, 10))
+                h = h + Me.RIGHTSHIFT(h, 1)
             End If
             
-            h = Me.X0R(h, Me.leftShift(h, 3)): h = h + Me.RightShift(h, 5)
-            h = Me.X0R(h, Me.leftShift(h, 4)): h = h + Me.RightShift(h, 17)
-            h = Me.X0R(h, Me.leftShift(h, 25)): h = h + Me.RightShift(h, 6)
+            h = Me.X0R(h, Me.LEFTSHIFT(h, 3)): h = h + Me.RIGHTSHIFT(h, 5)
+            h = Me.X0R(h, Me.LEFTSHIFT(h, 4)): h = h + Me.RIGHTSHIFT(h, 17)
+            h = Me.X0R(h, Me.LEFTSHIFT(h, 25)): h = h + Me.RIGHTSHIFT(h, 6)
     End Select
     
     HashValue = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
@@ -373,17 +373,17 @@ Public Function Generic(ByRef Instance As IGeneric) As IGeneric: Set Generic = I
 Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Public Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Public Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
-Public Function RightShift(ByVal Value As Long, Shift As Byte) As Double: RightShift = Value / (2& ^ Shift): End Function
-Public Function leftShift(ByVal Value As Long, Shift As Byte) As Double: leftShift = Value * (2& ^ Shift): End Function
+Public Function RIGHTSHIFT(ByVal Value As Long, Shift As Byte) As Double: RIGHTSHIFT = Value / (2& ^ Shift): End Function
+Public Function LEFTSHIFT(ByVal Value As Long, Shift As Byte) As Double: LEFTSHIFT = Value * (2& ^ Shift): End Function
 Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
-Public Function Logn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: Logn = Log(Value) / Log(Base): End Function
+Public Function LOGn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: LOGn = Log(Value) / Log(Base): End Function
 
 Public Sub ForEach(ByVal Iterator As IGenericIterator)
     
-    Dim item As IGeneric
+    Dim Item As IGeneric
     With Iterator
-        Do While .HasNext(item): RaiseEvent Delegate(item): Loop
+        Do While .HasNext(Item): RaiseEvent Delegate(Item): Loop
     End With
 
 End Sub
