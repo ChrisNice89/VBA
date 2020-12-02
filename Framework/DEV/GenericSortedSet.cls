@@ -744,21 +744,6 @@ Private Function RotateRight(ByVal x As GenericNode) As GenericNode
 End Function
 
 Private Function RotateLeftRight(ByVal Node As GenericNode) As GenericNode
-
-'    Dim Child  As GenericNode: Set Child = Node.Left
-'    Dim GrandChild  As GenericNode: Set GrandChild = Child.Right
-'
-'    With GrandChild
-'        Set Node.Left = .Right: Set .Right = Node
-'        Set Child.Right = .Left: Set .Left = Child
-'    End With
-'
-'    Set RotateLeftRight = GrandChild
-    
-'    With Child
-'        GrandChild.Size = .Size
-'        .Size = SizeOf(.Left) + SizeOf(.Right) + 1
-'    End With
     
     Set Node.Left = RotateLeft(Node.Left)
     Set RotateLeftRight = RotateRight(Node)
@@ -767,19 +752,9 @@ End Function
 
 Private Function RotateRightLeft(ByVal Node As GenericNode) As GenericNode
 
-'    Dim Child  As GenericNode: Set Child = Node.Right
-'    Dim GrandChild  As GenericNode: Set GrandChild = Child.Left
-'
-'    With GrandChild
-'        Set Node.Right = .Left: Set .Left = Node
-'        Set Child.Left = .Right: Set .Right = Child
-'    End With
-'
-'    Set RotateRightLeft = GrandChild
-
     Set Node.Right = RotateRight(Node.Right)
     Set RotateRightLeft = RotateLeft(Node)
-'
+
 End Function
 
 Private Function InOrderTreeWalk( _

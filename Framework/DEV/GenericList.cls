@@ -189,23 +189,6 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     
 End Function
 
-Public Function Build2(ByVal TClass As IGeneric, Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As GenericList
-    
-    If (Me Is GenericList) = False Then _
-        Call Skynet.Throw(Me, "Public Function Build").BuildExeption
-
-    If (Capacity < 0) Then _
-        Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
-
-    With myclass
-        .SortOrder = ascending
-        Set .Items = GenericArray.Build(Capacity)
-    End With
-    
-    Set Build2 = Skynet.CreateInstance(New GenericList, Virtual.Pointer, Virtual.Size)
-    
-End Function
-
 Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
     
     If (Me Is GenericList) = False Then _

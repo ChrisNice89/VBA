@@ -12,15 +12,31 @@ Sub TestRange()
     Dim i As Long
     Dim t As CTimer
     Set t = New CTimer
-    t.StartCounter
     
-    Dim List As GenericList
-    Set List = GenericList.Build2(IGeneric)
-
-    For i = 1 To 10
-        Call List.Add(GNumeric(i))
+    Dim N As Long
+    N = 1000
+    ReDim g(N) As IGeneric
+    ReDim iunk(N) As Object
+    
+    Dim oNumber As Object
+    Dim INumber As IGeneric
+    Dim Number As GNumeric
+    Set Number = GNumeric
+    Set INumber = Number
+    Set oNumber = Number
+    
+    t.StartCounter
+    For i = LBound(iunk) To UBound(iunk)
+        Set iunk(i) = Number
+        Set INumber = iunk(i)
     Next
-    Debug.Print List.IndexOf(GNumeric(i - 1))
+    Debug.Print t.TimeElapsed
+    
+    t.StartCounter
+    For i = LBound(g) To UBound(g)
+        Set g(i) = Number
+        Set INumber = g(i)
+    Next
     Debug.Print t.TimeElapsed
 
 End Sub
@@ -31,13 +47,13 @@ Sub TestCreaet()
     Dim t As CTimer
     Set t = New CTimer
     Dim i As Long
-    Dim G As IGeneric
-    Set G = GenericPair
+    Dim g As IGeneric
+    Set g = GenericPair
     t.StartCounter
 
     For i = 1 To 10000
-        Set G = GenericPair(IGenericValue, IGenericValue)
-        Result = G.IsRelatedTo(G)
+        Set g = GenericPair(IGenericValue, IGenericValue)
+        Result = g.IsRelatedTo(g)
     Next
 
     Debug.Print t.TimeElapsed
