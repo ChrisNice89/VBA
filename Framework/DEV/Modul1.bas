@@ -16,11 +16,11 @@ Sub TestRange()
     
     Dim List As GenericList
     Set List = GenericList.Build2(IGeneric)
-    
-    Debug.Print List.Interfaces.IndexOf(IGeneric)
+
     For i = 1 To 10
-        Call List.Add(GNumeric(1))
+        Call List.Add(GNumeric(i))
     Next
+    Debug.Print List.IndexOf(GNumeric(i - 1))
     Debug.Print t.TimeElapsed
 
 End Sub
@@ -67,6 +67,9 @@ Sub TestListEquals()
 '    Call List.Sort(ascending)
     
     Debug.Print GenericList.IsEqual(SortedList, tree)
+    Debug.Print tree.IndexOf(GString("Key: " & i - 1))
+    Debug.Print SortedList.IndexOfKey(GString("Key: " & i - 1))
+    
     
     Debug.Print GString.Join(tree, ";").Value
 End Sub

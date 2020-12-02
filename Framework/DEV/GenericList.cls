@@ -189,10 +189,6 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     
 End Function
 
-Public Property Get Interfaces() As IGenericReadOnlyList
-    Set Interfaces = GenericArray.BuildWith(IGeneric)
-End Property
-
 Public Function Build2(ByVal TClass As IGeneric, Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As GenericList
     
     If (Me Is GenericList) = False Then _

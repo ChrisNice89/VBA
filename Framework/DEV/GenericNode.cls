@@ -150,7 +150,7 @@ Private Sub Class_Initialize()
 End Sub
 
 Private Sub Class_Terminate()
-    Debug.Print "Node_Terminate"
+'    Debug.Print "Node_Terminate"
 End Sub
 
 'IGeneric

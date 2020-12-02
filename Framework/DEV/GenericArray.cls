@@ -211,7 +211,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
         ReDim SAB(LB To UB)
     
         For i = LB To UB
-            If (Indices(i) < 0) Then _
+            If Not (Indices(i) > 0) Then _
                 Call Skynet.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
             
             With SAB(i)
@@ -914,7 +914,7 @@ Public Function BinarySearchArray( _
     Dim lo As Long: lo = Index
     Dim hi As Long: hi = Index + Length - 1
     
-    If Comparer Is Nothing Then
+    If Comparer Is Nothing Or Comparer Is IGenericValue.Comparer Then
     
         Dim Element As IGenericValue
         
@@ -1030,7 +1030,7 @@ Public Sub SortArray( _
     If Order = Random Then
         Call Shuffle(Objects, Index, Length)
     Else
-        If Comparer Is Nothing Then
+        If Comparer Is Nothing Or Comparer Is IGenericValue.Comparer Then
             Call DepthLimitedQuicksort(Objects, Index, Length, QUICKSORT_DEPTH_THRESHOLD, Order) 'Try Convert to GenericValue
         Else
             Call DepthLimitedQuicksort_Comparer(Objects, Index, Length, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
@@ -1050,7 +1050,7 @@ Public Sub SortArrayWithItems( _
     If Order = Random Then
         Call ShuffleWithItems(Keys, Items, Index, Length)
     Else
-        If Comparer Is Nothing Then
+        If Comparer Is Nothing Or Comparer Is IGenericValue.Comparer Then
             Call DepthLimitedQuicksortWithItems(Keys, Items, Index, Length, QUICKSORT_DEPTH_THRESHOLD, Order) 'Try Convert to GenericValue
         Else
             Call DepthLimitedQuicksortWithItems_Comparer(Keys, Items, Index, Length, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)

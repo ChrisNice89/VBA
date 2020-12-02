@@ -124,6 +124,7 @@ Public Property Get BaseIndex() As Long: BaseIndex = myclass.Keys.LowerBound: En
 Public Property Get SortOrder() As SortOrder: SortOrder = myclass.SortOrder: End Property
 Public Property Get Last() As IGeneric: Set Last = myclass.Values(myclass.Size): End Property
 Public Property Get Count() As Long: Count = myclass.Size: End Property
+Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
 
 Public Property Get GetKey(ByVal Index As Long) As IGeneric
     
@@ -158,12 +159,12 @@ Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
         Call Skynet.Throw(Me, "Public Property set Item").KeyIsNothing
        
     Dim i As Long
-    i = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
+    i = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
  
     If (i >= 0) Then _
         Set myclass.Values(i) = Value: Exit Property
     
-    Call Insert(Index:=i, Key:=Key, Value:=Value)
+    Call Insert(Index:=Not i, Key:=Key, Value:=Value)
     
  End Property
  
@@ -224,8 +225,7 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY, Option
     
     If (Comparer Is Nothing) Then _
         Set Comparer = IGenericValue.Comparer
-        'Call Skynet.Throw(Me, "Build").NullPointer("(Comparer Is Nothing)")
-        
+    
     With myclass
         .SortOrder = ascending
         Set .Comparer = Comparer
@@ -244,7 +244,10 @@ Public Function BuildFrom(ByVal Dictionary As IGenericDictionary, Optional ByVal
     
     If (Dictionary Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Dictionary Is Nothing)")
-      
+    
+    If Comparer Is Nothing Then _
+        Set Comparer = IGenericValue.Comparer
+        
     With myclass
         .SortOrder = ascending
         
@@ -352,12 +355,12 @@ Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
         Call Skynet.Throw(Me, "Public Function Add").KeyIsNothing
        
     Dim i As Long
-    i = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
+    i = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
     
     If (i >= 0) Then _
         Call Skynet.Throw(Me, "Public Sub Add").InvalidInput("Key duplicated")
 
-    Call Insert(Index:=i, Key:=Key, Value:=Value)
+    Call Insert(Index:=Not i, Key:=Key, Value:=Value)
 
 End Sub
 
@@ -395,7 +398,7 @@ Public Function IndexOfKey(ByVal Key As IGeneric) As Long
         Call Skynet.Throw(Me, "Public Function IndexOfKey").KeyIsNothing
     
     Dim ret As Long
-    ret = myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
+    ret = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
 
     IndexOfKey = IIf(ret >= 0, ret, -1)
     

@@ -79,6 +79,7 @@ Private Virtual As Internal
 Public Property Get IsHeightBalanced(): IsHeightBalanced = CheckHeightBalance(myclass.Root): End Property
 Public Property Get IsBalanced(): IsBalanced = CheckRedBlackBalance(myclass.Root): End Property
 Public Property Get Count() As Long: Count = SizeOf(myclass.Root): End Property
+Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
 
 Public Function Build(Optional ByVal Comparer As IGenericComparer) As GenericSortedSet
     
@@ -115,8 +116,8 @@ Attribute ElementAt.VB_UserMemId = 0
     
 End Property
 
-Public Function GetRank(ByVal Value As IGeneric) As Long
-    GetRank = RankOf(Value, myclass.Root) + 1
+Public Function IndexOf(ByVal Value As IGeneric) As Long
+    IndexOf = RankOf(Value, myclass.Root) + 1
 End Function
 
 Public Function GetHigherThan(ByVal Value As IGeneric) As IGeneric
@@ -927,7 +928,7 @@ Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_ElementAt = Me.ElementAt(Index): End Property
 Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="IGenericReadOnlyList_CopyTo"):   End Sub
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.GetRank(Value:=Item): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item): End Function
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(Reverse:=False): End Function
 
 'IGenericCollection
