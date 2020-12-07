@@ -104,15 +104,38 @@ Public Static Property Get AsciiCharacter(ByVal Ascii As Byte) As GString
     Set AsciiCharacter = AsciiCharacters(Ascii)
     
 End Property
+Public Static Property Get UnicodeCharacter(ByVal Code As Integer) As GString
+
+    Dim i As Long
+    Dim Char As GString
+    
+    If i = 0 Then
+        ReDim Characters(2 ^ 16)
+        For i = 0 To 255 'Initialize Ascii
+            Set Characters(AscW(Chr$(i))) = GString(Chr$(i))
+        Next
+        '...Add here some special chars and extend Ascii to Int16
+    End If
+    
+    Set Char = Characters(Code)
+    
+    If Char Is Nothing Then
+        Set Char = GString(ChrW$(Code))
+        Set Characters(Code) = Char
+    End If
+    
+    Set UnicodeCharacter = Char
+    
+End Property
 Public Property Get Pointer() As LongPtr: Pointer = myclass.Pointer: End Property
 Public Property Get Bytes() As Byte(): Bytes = myclass.Bytes: End Property 'StrConv(myclass.Value, vbFromUnicode)
 Public Property Get CharAt(ByVal Index As Long) As GString: Set CharAt = GString.AsciiCharacter(myclass.Bytes(Index - 1)): End Property
 Public Property Get ElementAt(ByVal Index As Long) As GString
-
+    
     If myclass.Length = 0 Then
          Set ElementAt = GString 'Default emptystring
     Else
-        Set ElementAt = GString.AsciiCharacter(Ascii:=Asc(Mid$(myclass.Value, Index, 1)))
+        Set ElementAt = GString.UnicodeCharacter(Code:=AscW(Mid$(myclass.Value, Index, 1)))
     End If
 
 End Property
@@ -291,7 +314,7 @@ Attribute Build.VB_UserMemId = 0
         
     If Not IsNull(Value) Then
         With myclass
-'            .Value = Value
+            .Value = Value
            .Bytes = StrConv(Value, vbFromUnicode)
             .Format = Format
         End With
@@ -306,7 +329,7 @@ End Function
 
 Private Sub Class_Initialize()
     With GString
-'        myclass.Value = .Value
+        myclass.Value = .Value
         myclass.Bytes = .Bytes
         myclass.Pointer = StrPtr(myclass.Value)
         myclass.Length = Len(myclass.Value)

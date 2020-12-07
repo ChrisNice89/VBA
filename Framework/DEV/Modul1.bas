@@ -24,6 +24,7 @@ Sub TestString()
     t.StartCounter
     For i = 1 To N
         Set newText = GString.Build("€tastatstastastsa" & i)
+        Debug.Print newText.ElementAt(5).Value
     Next
     Debug.Print t.TimeElapsed
     
