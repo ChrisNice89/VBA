@@ -35,20 +35,20 @@ Public Event FetchComplete()
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
-    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal Length As LongPtr, ByVal Fill As Byte)
-    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As LongPtr, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
-    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Src As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef Dst As Any, ByVal Length As LongPtr, ByVal Fill As Byte)
+    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As LongPtr, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
     Private Const POINTERSIZE As Long = 4
-    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dst As Any, ByRef src As Any, ByVal Length As Long)
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Length As Long)
-    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef dst As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As Long, ByRef dst As Long, ByVal src As Long) As Long
-    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef dst As Long, ByVal src As Long) As Long
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Src As Any, ByVal Length As Long)
+    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Length As Long)
+    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef Dst As Any, ByVal Length As Long, ByVal Fill As Byte)
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As Long, ByRef Dst As Long, ByVal Src As Long) As Long
+    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef Dst As Long, ByVal Src As Long) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
@@ -105,7 +105,7 @@ Private Type Member
     View As MSComctlLib.IListView
     RowMapper As IGenericIterator
     RowList As GenericList
-    RowMap As IGenericDictionary
+    RowSet As GenericSortedSet
     Columns As GenericOrderedMap
     SelectedColumn As Long
     SortDirection As SortOrder
@@ -156,7 +156,7 @@ Public Function Build( _
         Set .View = .ViewControl.Object
         Call style(.View, Setting)
         Set .ImageList = ImageList
-        Set .RowMap = GenericSortedSet.Build
+        Set .RowSet = GenericSortedSet.Build
         Set .RowList = GenericList.Build(DEFAULT_CAPACITY_ROWS)
         Set .Columns = GenericOrderedMap.Build(DEFAULT_CAPACITY_COLUMNS)
         .SortDirection = ascending
@@ -255,7 +255,7 @@ Public Function Fetch(Optional ByVal Limit As Long = FETCH_LIMIT) As Boolean
             
             Call .RowList.Add(Row)
          
-            With .View.ListItems.Add(TEXT:=.RowList.Count)
+            With .View.ListItems.Add(Text:=.RowList.Count)
                 For i = Row.BaseIndex To Row.Count
                     .SubItems(i) = Row.ElementAt(i).ToString
                 Next
@@ -292,8 +292,8 @@ Public Sub Clear()
     With myclass
         .SelectedColumn = -1
         
-        If Not .RowMap Is Nothing Then _
-            .RowMap.Clear
+        If Not .RowSet Is Nothing Then _
+            .RowSet.Clear
             
         If Not .RowList Is Nothing Then _
             .RowList.Clear
@@ -330,9 +330,9 @@ Public Sub AddColumn(ByVal Name As GString, ByVal Datatype As VbVarType)
     If Not myclass.View Is Nothing Then
         With myclass.View.ColumnHeaders
             If .Count = 0 Then _
-                Call .Add(Index:=1, TEXT:=vbNullString)
+                Call .Add(Index:=1, Text:=vbNullString)
     
-            Call .Add(TEXT:=Name.Value)
+            Call .Add(Text:=Name.Value)
     
             If RightAlign Then _
                 .Item(.Count).Alignment = lvwColumnRight
@@ -380,19 +380,19 @@ Public Sub ColumnAutoSize(Optional ByVal Column As Variant)
         
         Call SendMessage(.hWnd, WM_SETREDRAW, SR_OFF, ByVal 0&)
         
-        Set LstItm = .ListItems.Add(TEXT:=.ColumnHeaders.Item(1).TEXT & SOME_CHARS)
+        Set LstItm = .ListItems.Add(Text:=.ColumnHeaders.Item(1).Text & SOME_CHARS)
         
         If IsMissing(Column) Then
             Call SendMessage(.hWnd, LVM_SETCOLUMNWIDTH, 0&, ByVal LVSCW_AUTOSIZE_USEHEADER)
             
             For i = 2 To .ColumnHeaders.Count
-                LstItm.SubItems(i - 1) = .ColumnHeaders.Item(i).TEXT & SOME_CHARS
+                LstItm.SubItems(i - 1) = .ColumnHeaders.Item(i).Text & SOME_CHARS
                 Call SendMessage(.hWnd, LVM_SETCOLUMNWIDTH, i - 1, ByVal LVSCW_AUTOSIZE_USEHEADER)
             Next i
         
         Else
             i = myclass.View.ColumnHeaders(Column).Index
-            LstItm.SubItems(i) = .ColumnHeaders.Item(i).TEXT & SOME_CHARS
+            LstItm.SubItems(i) = .ColumnHeaders.Item(i).Text & SOME_CHARS
             Call SendMessage(.hWnd, LVM_SETCOLUMNWIDTH, i, ByVal LVSCW_AUTOSIZE_USEHEADER)
         End If
         

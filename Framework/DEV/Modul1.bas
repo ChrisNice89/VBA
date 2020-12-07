@@ -6,39 +6,41 @@ Option Explicit
 
 Private Sql As GenericSql
 Private RandomList As GenericList
-Sub TestRange()
-    
 
-    Dim i As Long
+Sub TestString()
+    
+    Dim Char As IGeneric
+    
+    Dim S As String
     Dim t As CTimer
     Set t = New CTimer
-    
-    Dim N As Long
+    Dim i As Long, N As Long
     N = 1000
-    ReDim g(N) As IGeneric
-    ReDim iunk(N) As Object
     
-    Dim oNumber As Object
-    Dim INumber As IGeneric
-    Dim Number As GNumeric
-    Set Number = GNumeric
-    Set INumber = Number
-    Set oNumber = Number
+    Dim Text As IGeneric, newText As GString
+    Dim Map As IGenericDictionary
+    Set Map = GenericMap.Build()
     
     t.StartCounter
-    For i = LBound(iunk) To UBound(iunk)
-        Set iunk(i) = Number
-        Set INumber = iunk(i)
+    For i = 1 To N
+        Set newText = GString.Build("€tastatstastastsa" & i)
     Next
     Debug.Print t.TimeElapsed
     
+    Set Text = GString.Build(newText.Value)
+    
     t.StartCounter
-    For i = LBound(g) To UBound(g)
-        Set g(i) = Number
-        Set INumber = g(i)
+    For i = 1 To N
+       Call Text.Equals(newText)
     Next
     Debug.Print t.TimeElapsed
-
+    
+'    With GString.Build("abcdefgh").ToArray.Reverse.Iterator
+'        Do While .HasNext(Char)
+'            Debug.Print Char.ToString
+'        Loop
+'    End With
+    
 End Sub
 
 Sub TestCreaet()
@@ -323,19 +325,19 @@ Sub testArrayConstructor()
 End Sub
 Sub TestArrayIterator2()
     
-    Dim char As IGeneric
+    Dim Char As IGeneric
     Dim S As GString
     Set S = GString("Ich bin ein Fuchs")
     
     With S.ToArray.Iterator
-        Do While .HasNext(char)
-            Debug.Print char
+        Do While .HasNext(Char)
+            Debug.Print Char
         Loop
     End With
     
     With S.Split(" ").Iterator
-        Do While .HasNext(char)
-            Debug.Print char
+        Do While .HasNext(Char)
+            Debug.Print Char
         Loop
     End With
     
@@ -687,7 +689,7 @@ Sub TestTree()
     
     With c.Iterator
         Do While .HasNext(Item)
-'            Debug.Print Item.ToString
+            Debug.Print Item.ToString
         Loop
     End With
     

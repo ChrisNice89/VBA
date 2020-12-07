@@ -24,12 +24,6 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Private Type Internal
-    Size As Long
-    Pointer As LongPtr
-End Type
-Private Virtual As Internal
-
 Public Property Get IsRed() As Boolean: IsRed = myclass.IsRed: End Property
 Public Property Let IsRed(ByVal Value As Boolean):  myclass.IsRed = Value: End Property
 
@@ -120,34 +114,26 @@ Public Function Build( _
                         Optional ByVal Parent As GenericNode, _
                         Optional ByVal IsRed As Boolean = True, _
                         Optional ByVal Size As Long = 1) As GenericNode
-    
+Attribute Build.VB_UserMemId = 0
     If (Me Is GenericNode) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
     If (Value Is Nothing) Then _
         Call Skynet.Throw(Me, "Public Function Build").NullPointer("(Value Is Nothing)")
-        
-    With myclass
+    
+    Dim newNode As GenericNode
+    Set newNode = New GenericNode
+    
+    With newNode
         Set .Value = Value
         Set .Parent = Parent
-        .Size = Size
         .IsRed = IsRed
+        .Size = Size
     End With
-   
-    Set Build = New GenericNode: myclass = EmptyStructure
+    
+    Set Build = newNode
     
 End Function
-
-Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myclass)
-    Virtual.Size = LenB(myclass)
-    With GenericNode
-        Set myclass.Value = .Value
-        Set myclass.Parent = .Parent
-        myclass.Size = .Size
-        myclass.IsRed = .IsRed
-    End With
-End Sub
 
 Private Sub Class_Terminate()
 '    Debug.Print "Node_Terminate"
@@ -155,8 +141,8 @@ End Sub
 
 'IGeneric
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericNode: End Property
-Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
-Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long
     
       Const MAXLONG = 2 ^ 31 - 1
@@ -189,7 +175,23 @@ End Sub
 
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = GenericNode(myclass.Value, myclass.Parent, myclass.IsRed, myclass.Size): End Function
+Private Function IGeneric_Clone() As IGeneric
+
+    Dim newNode As GenericNode
+    Set newNode = New GenericNode
+    
+    With newNode
+        Set .Value = myclass.Value
+        Set .Left = myclass.Left
+        Set .Right = myclass.Right
+        Set .Parent = myclass.Parent
+        .IsRed = myclass.IsRed
+        .Size = myclass.Size
+    End With
+    
+    Set IGeneric_Clone = newNode
+    
+End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 

@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 Option Compare Text
 Option Explicit
 
-Private Declare Sub CopyMemory Lib "kernel32.dll" Alias "RtlMoveMemory" (ByVal dst As Long, ByVal src As Long, ByVal Length As Long)
+Private Declare Sub CopyMemory Lib "kernel32.dll" Alias "RtlMoveMemory" (ByVal Dst As Long, ByVal Src As Long, ByVal Length As Long)
 
 Private Const InitialCharCount As Long = 16
 ' Define members

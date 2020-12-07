@@ -18,7 +18,6 @@ Public Function IndexOf(ByVal Item As IGeneric) As Long: End Function
 Public Function Iterator() As IGenericIterator: End Function
 
 Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
-Public Sub Clear(): End Sub
 
 'Private Sub Class_Initialize()
 '    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation

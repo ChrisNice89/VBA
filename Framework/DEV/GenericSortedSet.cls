@@ -862,10 +862,28 @@ Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True:
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedSet):  End Property
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member
-    c = myclass
+    Dim Clone As Member
+    Clone = myclass
+    Set Clone.Root = CloneTree(myclass.Root)
+        
+    Set IGeneric_Clone = Skynet.CreateInstance(New GenericSortedSet, VarPtr(Clone), LenB(Clone))
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericSortedSet, VarPtr(c), LenB(c))
+End Function
+
+Private Function CloneTree(ByVal Node As GenericNode) As GenericNode
+    
+    Dim newNode As GenericNode
+    
+    If Node Is Nothing Then _
+        Exit Function
+    
+    With Node
+        Set newNode = GenericNode.Build(Value:=.Value, Parent:=.Parent, IsRed:=.IsRed, Size:=.Size)
+        Set newNode.Left = CloneTree(.Left)
+        Set newNode.Right = CloneTree(.Right)
+    End With
+    
+    Set CloneTree = newNode
     
 End Function
 
@@ -901,7 +919,6 @@ End Sub
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = BASE_INDEX: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Count: End Property
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_ElementAt = Me.ElementAt(Index): End Property
-Private Sub IGenericReadOnlyList_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="IGenericReadOnlyList_CopyTo"):   End Sub
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item): End Function
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(Reverse:=False): End Function

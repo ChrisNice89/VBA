@@ -21,12 +21,6 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Private Type Internal
-    Size As Long
-    Pointer As LongPtr
-End Type
-Private Virtual As Internal
-
 Public Property Get Key() As IGeneric: Set Key = myclass.Key: End Property
 Public Property Get Value() As Object: Set Value = myclass.Value: End Property
 
@@ -45,8 +39,6 @@ Attribute Build.VB_UserMemId = 0
 End Function
 
 Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myclass)
-    Virtual.Size = LenB(myclass)
     With GenericPair
         Set myclass.Key = .Key: Set myclass.Value = .Value
     End With
@@ -71,8 +63,8 @@ Private Property Get IGeneric_Default() As IGeneric
         Set IGeneric_Default = GenericPair.Build(.Default, .Default)
     End With
 End Property
-Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
-Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long
     
     Const MAXLONG = 2 ^ 31 - 1

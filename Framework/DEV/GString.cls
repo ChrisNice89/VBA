@@ -12,6 +12,8 @@ Option Explicit
 
 Implements IGeneric
 Implements IGenericValue
+Implements IGenericReadOnlyList
+Implements IGenericIterator
 
 #If Win64 Then
     Private Declare PtrSafe Function CompareString Lib "kernel32" Alias "CompareStringA" (ByVal Locale As Long, ByVal dwCmpFlags As Long, ByVal lpString1 As String, ByVal cchCount1 As Long, ByVal lpString2 As String, ByVal cchCount2 As Long) As Long
@@ -54,6 +56,7 @@ Private Const SORT_STRINGSORT = &H1000 ' Benutzt eine String-Sort-Methode
 ' anstatt einer Wort Sortierung. In einer String-Sort-Sortierung kommen
 ' Sonderzeichen wie "?,#;*..." vor den Buchstaben
 
+Private Const INTERNAL_POOL_SIZE As Long = 2 ^ 10
 Private Const DEFAULT_DELIMITER As String = ","
 Private Const MAXVALUE As Double = 2 ^ 31
 Private Const LEFTSHIFT As Long = 2& ^ 5
@@ -68,24 +71,55 @@ Public Enum TStringFormat
     [_Last]
 End Enum
 
+Private Type Iterator
+    Current As GString
+    Index As Long
+End Type
+
 Private Type Member
+    Length As Long
     Value As String
+    FirstChar As GString
+    Pointer As LongPtr
+    Bytes() As Byte
     Hash As Long
+    Iterator As Iterator
     Format As TStringFormat
 End Type
 Private myclass As Member
+'Singelton
+Public Static Property Get AsciiCharacter(ByVal Ascii As Byte) As GString
 
-Private Type Internal
-    Size As Long
-    Pointer As LongPtr
-End Type
-Private Virtual As Internal
+    Dim i As Long
+    Dim AsciiCharacters() As GString
+    
+    If i = 0 Then
+        ReDim AsciiCharacters(255)
+        For i = 0 To 255
+            Set AsciiCharacters(Asc(Chr$(i))) = GString(Chr$(i))
+        Next
+        '...Add here some special chars and extend Ascii to Int16
+    End If
+    
+    Set AsciiCharacter = AsciiCharacters(Ascii)
+    
+End Property
+Public Property Get Pointer() As LongPtr: Pointer = myclass.Pointer: End Property
+Public Property Get Bytes() As Byte(): Bytes = myclass.Bytes: End Property 'StrConv(myclass.Value, vbFromUnicode)
+Public Property Get CharAt(ByVal Index As Long) As GString: Set CharAt = GString.AsciiCharacter(myclass.Bytes(Index - 1)): End Property
+Public Property Get ElementAt(ByVal Index As Long) As GString
 
-Public Property Get ElementAt(ByVal Index As Long) As GString: Set ElementAt = GString(VBA.Mid$(myclass.Value, Index, 1)): End Property
+    If myclass.Length = 0 Then
+         Set ElementAt = GString 'Default emptystring
+    Else
+        Set ElementAt = GString.AsciiCharacter(Ascii:=Asc(Mid$(myclass.Value, Index, 1)))
+    End If
+
+End Property
+
 Public Property Get Length() As Long: Length = Len(myclass.Value): End Property
-Public Property Get FirstChar() As String: FirstChar = VBA.Mid$(myclass.Value, 1, 1): End Property
+Public Property Get FirstChar() As GString: Set FirstChar = myclass.FirstChar: End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myclass.Value, Len(myclass.Value), 1): End Property
-Public Property Get Character(ByVal Index As Long) As String: Character = VBA.Mid$(myclass.Value, Index, 1): End Property
 Public Property Get Format() As TStringFormat: Format = myclass.Format: End Property
 Public Property Get IsNullOrEmpty() As Boolean
     
@@ -112,25 +146,25 @@ End Function
 Public Property Get Value() As String: Value = myclass.Value: End Property
 
 Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myclass.Value, Find, ReplaceWith), myclass.Format): End Function
-Public Function ToByteArray() As Byte(): ToByteArray = StrConv(myclass.Value, vbFromUnicode): End Function
 Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myclass.Value Like Pattern): End Function
-Public Function StartsWith(ByVal TEXT As String) As Boolean: StartsWith = (myclass.Value Like ("%" & TEXT)): End Function
-Public Function EndsWith(ByVal TEXT As String) As Boolean: EndsWith = (myclass.Value Like (TEXT & "%")): End Function
-Public Function Contains(ByVal TEXT As String) As Boolean: Contains = Not (InStr(1, myclass.Value, TEXT, vbTextCompare) = 0): End Function
-Public Function CompareWithString(ByRef S As String) As ComparerEnum: CompareWithString = StrComp(myclass.Value, S, vbBinaryCompare): End Function
-
+Public Function StartsWith(ByVal Text As String) As Boolean: StartsWith = (myclass.Value Like ("%" & Text)): End Function
+Public Function EndsWith(ByVal Text As String) As Boolean: EndsWith = (myclass.Value Like (Text & "%")): End Function
+Public Function Contains(ByRef Text As String) As Boolean: Contains = Not (Me.IndexOf(Text:=Text) = 0): End Function
+Public Function CompareToString(ByRef S As String) As ComparerEnum: CompareToString = StrComp(myclass.Value, S, vbBinaryCompare): End Function
+Public Function IndexOf(ByRef Text As String) As Long: IndexOf = InStr(1, myclass.Value, Text, vbTextCompare): End Function
+Public Function Iterator() As IGenericIterator: Set Iterator = GString.Build(myclass.Value): End Function
 Public Function CountChar(ByVal c As String) As Long
     
     Dim i As Long
-    Dim ascii As Integer
+    Dim Ascii As Integer
     
     If Len(c) > 1 Then _
         Skynet.Throw(Me, "Private Function GetArrayStructure").NotSupported ("Len(C) > 1")
 
-    ascii = AscW(c)
+    Ascii = AscW(c)
     
     For i = 1 To Me.Length
-        If AscW(Mid$(myclass.Value, i, 1)) = ascii Then _
+        If AscW(Mid$(myclass.Value, i, 1)) = Ascii Then _
             CountChar = CountChar + 1
     Next
     
@@ -183,18 +217,18 @@ End Function
 
 Public Function ToArray() As GenericArray
     
-    Dim chars As GenericArray
+    Dim Chars As GenericArray
     Dim i As Long
     
-    Set chars = GenericArray.Build(Len(myclass.Value))
+    Set Chars = GenericArray.Build(myclass.Length)
      
-    With chars
+    With Chars
         For i = .LowerBound To .Length
-            Set .ElementAt(i) = GString(VBA.Mid$(myclass.Value, i, 1))
+            Set .ElementAt(i) = Me.ElementAt(i)
         Next
     End With
     
-    Set ToArray = chars
+    Set ToArray = Chars
     
 End Function
 
@@ -220,25 +254,25 @@ Public Function Join(ByVal Values As IGenericReadOnlyList, Optional ByVal Delimi
     
 End Function
 
-Public Function HashValueOf(ByRef TEXT As String) As Long
+Public Function HashValueOf(ByRef Text As String) As Long
 
-    Dim ascii() As Byte
+    Dim Ascii() As Byte
      
     Dim h As Currency 'Double
     Dim i As Long
     Dim h1 As Double, h2 As Double
     
-    If LenB(TEXT) = 0 Then _
+    If LenB(Text) = 0 Then _
         Exit Function
     
-    ascii() = StrConv(TEXT, vbFromUnicode)
+    Ascii() = StrConv(Text, vbFromUnicode)
 
     h1 = 352654597#
     h2 = h1 'LeftShift(5381,16))+5381
     
-    For i = 0 To UBound(ascii) - 1
-       h1 = (h1 * LEFTSHIFT) + h1 + (h1 / RIGHTSHIFT): h1 = CLng(h1 - (Fix(h1 / MAXVALUE) * MAXVALUE)) Xor ascii(i)
-       h2 = (h2 * LEFTSHIFT) + h2 + (h2 / RIGHTSHIFT): h2 = CLng(h2 - (Fix(h2 / MAXVALUE) * MAXVALUE)) Xor ascii(i + 1)
+    For i = 0 To UBound(Ascii) - 1 'For i = 1 To Len(Text) - 1 'For i = 0 To UBound(Ascii) - 1
+       h1 = (h1 * LEFTSHIFT) + h1 + (h1 / RIGHTSHIFT): h1 = CLng(h1 - (Fix(h1 / MAXVALUE) * MAXVALUE)) Xor Ascii(i) 'AscW(Mid$(Text, i, 1))
+       h2 = (h2 * LEFTSHIFT) + h2 + (h2 / RIGHTSHIFT): h2 = CLng(h2 - (Fix(h2 / MAXVALUE) * MAXVALUE)) Xor Ascii(i + 1) 'AscW(Mid$(Text, i + 1, 1))
     Next
     
     h = h1 + h2 'h1 + (h2 * 1566083941#)
@@ -255,31 +289,35 @@ Attribute Build.VB_UserMemId = 0
     If (Me Is GString) = False Then _
         Call Skynet.Throw(Me, "Public Function Build").BuildExeption
         
-    With myclass
-        If Not IsNull(Value) Then _
-            .Value = Value
-     
-        .Format = Format
-    End With
+    If Not IsNull(Value) Then
+        With myclass
+'            .Value = Value
+           .Bytes = StrConv(Value, vbFromUnicode)
+            .Format = Format
+        End With
+        Set Build = New GString: myclass = EmptyStructure
+    Else
+        Set Build = GString
+    End If
     
-    Set Build = New GString: myclass = EmptyStructure
-'    Set Build = Skynet.CreateInstance(New GString, Virtual.Pointer, Virtual.Size)
+'    Set Build = Skynet.CreateInstanceOf(Me)
  
 End Function
 
 Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myclass)
-    Virtual.Size = LenB(myclass)
     With GString
-        myclass.Value = .Value
+'        myclass.Value = .Value
+        myclass.Bytes = .Bytes
+        myclass.Pointer = StrPtr(myclass.Value)
+        myclass.Length = Len(myclass.Value)
         myclass.Format = .Format
     End With
 End Sub
 
 'IGeneric
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GString: End Property
-Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
-Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long
     
     If myclass.Hash = 0 Then _
@@ -294,25 +332,24 @@ Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: I
 
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
-
-Private Function IGeneric_Clone() As IGeneric
-    
-    Dim c As Member: c = myclass 'hardcopy
-
-    Set IGeneric_Clone = Skynet.CreateInstance(New GString, VarPtr(c), Virtual.Size)
-   
-End Function
+Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = GString.Build(myclass.Value, myclass.Format): End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
     If Other Is Nothing Then _
         IGeneric_Equals = False: Exit Function
-    
+
     Dim S As GString: Set S = Other
-    If (Len(myclass.Value) = S.Length) = False Then _
+'   Stack overflow when used in initialize event - infinite loop
+'    If (myclass.FirstChar Is S.FirstChar) = False Then _
+'        Exit Function
+        
+    If (myclass.Length = S.Length) = False Then _
         Exit Function
 
+'    IGeneric_Equals = (StrComp(myclass.Pointer, S.Pointer, vbBinaryCompare) = 0)
     IGeneric_Equals = (StrComp(myclass.Value, S.Value, vbBinaryCompare) = 0)
+'    IGeneric_Equals = (StrComp(myclass.Bytes, myclass.Bytes, vbBinaryCompare) = 0)
 '    IGeneric_Equals = CSTR_EQUAL = CompareString(0&, NORM_IGNORESYMBOLS Or SORT_STRINGSORT, myclass.Value, myclass.Length, S.Value, S.Length)
 
 End Function
@@ -327,6 +364,7 @@ Private Function IGeneric_ToString() As String
     End Select
     
 End Function
+
 'IGenericValue
 Private Function IGenericValue_ToParameter( _
                                           Optional ByVal Name As GString, _
@@ -364,6 +402,7 @@ Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As Compar
     
     Dim S As GString: Set S = Other
     IGenericValue_CompareTo = StrComp(myclass.Value, S.Value, vbBinaryCompare)
+   
 '    IGenericValue_CompareTo = lstrcmpi(myclass.Value, S.Value)
     
 End Function
@@ -387,3 +426,60 @@ Private Function IGenericValue_ToSqlParameter( _
     Set IGenericValue_ToSqlParameter = P
     
 End Function
+
+'IGenericReadOnlyList
+Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = GenericArray.LowerBound: End Property
+Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Length: End Property
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Text:=Item.ToString): End Function
+Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
+    
+    If (Index > myclass.Length) Then _
+        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("Index not valid")
+
+    Set IGenericReadOnlyList_ElementAt = Me.ElementAt(Index)
+    
+End Property
+
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+
+    If (GArray Is Nothing) Then _
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").NullPointer("GArray Is Nothing")
+    
+    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
+
+    If (GArray.Length - ArrayIndex + GArray.LowerBound < Me.Length) Then _
+        Call Skynet.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < String.Length)")
+    
+    Dim i As Long
+    For i = IGenericReadOnlyList_BaseIndex To Me.Length
+        Set GArray(ArrayIndex) = Me.ElementAt(i)
+        ArrayIndex = ArrayIndex + 1
+    Next
+
+End Sub
+Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator: End Function
+
+'IGenericIterator
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
+Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
+    
+    With myclass.Iterator
+        If .Index = Me.Length Then
+            Set Out = Nothing
+            Set .Current = Nothing
+            Exit Function
+        End If
+
+        Set .Current = Me.ElementAt(InterlockedIncrement(.Index))
+       
+        Set Out = .Current
+        IGenericIterator_HasNext = True
+    End With
+    
+End Function
+
+Private Sub IGenericIterator_Reset()
+   myclass.Iterator.Index = IGenericReadOnlyList_BaseIndex
+End Sub
+

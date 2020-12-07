@@ -24,24 +24,28 @@ Private Const NullPointer As Long = 0
 
 #If Win64 Then
     Private Const POINTERSIZE As LongPtr = 8
-    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As LongPtr)
-    Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
-    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef dst As LongPtr, ByVal src As LongPtr) As Long
+    Private Declare PtrSafe Function LoadLibrary Lib "kernel32.dll" Alias "LoadLibraryA" (ByVal lpLibFileName As String) As LongPtr
+    Private Declare PtrSafe Function GetModuleHandle Lib "kernel32.dll" Alias "GetModuleHandleA" (ByVal GetModuleHandle As String) As LongPtr
+    Private Declare PtrSafe Sub CopyMemory_byVar Lib "kernel32.dll" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Sub FillMemory Lib "kernel32.dll" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
+    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As Any, ByVal Src As Any) As Long
+    Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60" Alias "__vbaCopyBytesZero" (ByVal Length As Long, Dst As Any, Src As Any) As Long
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
-    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Size As LongPtr)
-    Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
-    Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
+    Private Declare PtrSafe Sub ZeroMemory Lib "kernel32.dll" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Size As LongPtr)
+    Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32.dll" (lpAddend As Long) As Long
+    Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32.dll" (lpAddend As Long) As Long
 #Else
     Private Const POINTERSIZE As Long = 4
-    Private Declare Sub CopyMemory_byVar Lib "kernel32" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As Long)
-    Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef dst As Long, ByVal src As Long) As Long
-    Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Size As Long, ByRef dst As Long, ByVal src As Long) As Long
+    Private Declare Function LoadLibrary Lib "kernel32.dll" Alias "LoadLibraryA" (ByVal strFilePath As String) As Long
+    Private Declare Function GetModuleHandle Lib "kernel32.dll" Alias "GetModuleHandleA" (ByVal GetModuleHandle As String) As Long
+    Private Declare Sub CopyMemory_byVar Lib "kernel32.dll" Alias "RtlMoveMemory" (ByRef pDestination As Any, ByRef pSource As Any, ByVal Length As Long)
+    Private Declare Sub FillMemory Lib "kernel32.dll" Alias "RtlFillMemory" (ByRef pDestination As Any, ByVal Length As Long, ByVal Fill As Byte)
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Size As Long, ByRef Dst As Any, ByVal Src As Any) As Long
+    Private Declare Function CopyBytesZero Lib "msvbvm60" Alias "__vbaCopyBytesZero" (ByVal Length As Long, Dst As Any, Src As Any) As Long
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
-    Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef dst As Any, ByVal Size As Long)
-    Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
-    Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
+    Private Declare Sub ZeroMemory Lib "kernel32.dll" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Size As Long)
+    Private Declare Function InterlockedIncrement Lib "kernel32.dll" (ByRef lpAddend As Long) As Long
+    Private Declare Function InterlockedDecrement Lib "kernel32.dll" (ByRef lpAddend As Long) As Long
 #End If
 '#If Mac Then
 '  #If Win64 Then
@@ -86,6 +90,11 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
+Public Property Get Number(ByVal Value As Currency) As GNumeric
+
+
+End Property
+
 Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End Property
 Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
 Public Property Get MAXLONG() As Long: MAXLONG = MAX_INT32: End Property
@@ -112,42 +121,34 @@ Public Function Throw(ByVal Source As Object, ByVal Method As String) As Object
     Set Throw = GenericThrowhelper.Build(Source, Method)
 End Function
 
-Public Sub ClearData(ByVal dst As LongPtr, ByVal Bytes As Long)
-    Call FillMemory(ByVal dst, Bytes, 0) 'Call ZeroMemory(ByVal dst, Bytes)
+Public Sub ClearData(ByVal Dst As LongPtr, ByVal Bytes As Long)
+    Call FillMemory(ByVal Dst, Bytes, 0) 'Call ZeroMemory(ByVal dst, Bytes)
 End Sub
 
-Public Sub CopyData(ByVal dst As LongPtr, ByVal src As LongPtr, ByVal Bytes As Long, Optional ByVal ClearSource As Boolean = False)
+Public Sub CopyData(ByVal Dst As LongPtr, ByVal Src As LongPtr, ByVal Bytes As Long, Optional ByVal ClearSource As Boolean = False)
     
-    Call CopyMemory_byVar(ByVal dst, ByVal src, Bytes) 'Works
+    Call CopyMemory_byVar(ByVal Dst, ByVal Src, Bytes) 'Works
     'Call CopyBytes(Bytes, ByVal dst, ByVal src) 'works
     If ClearSource Then _
-        Call ZeroMemory(ByVal src, Bytes) 'FillMemory(ByVal Src, Bytes, 0)
+        Call ZeroMemory(ByVal Src, Bytes) 'FillMemory(ByVal Src, Bytes, 0)
 End Sub
 
-Public Function CreateInstance(ByVal Prototype As IGeneric, ByVal Source As LongPtr, ByVal Size As Long) As Object
+Public Function CreateInstance(ByVal Prototype As IGeneric, ByVal Source As LongPtr, ByVal Size As Long) As IGeneric
         
-    With Prototype
-'        If (Prototype Is .StaticInstance) Then _
-'            Set Prototype = .CreateDefault
-        'Call CopyBytes(.Size, ByVal Clone.VirtualPointer, ByVal .VirtualPointer) 'works
-        Call CopyMemory_byVar(ByVal .VirtualPointer, ByVal Source, Size): Call ZeroMemory(ByVal Source, Size)
-    End With
-
+    Call CopyBytesZero(Size, ByVal Prototype.VirtualPointer, ByVal Source) 'works
+'    Call CopyMemory_byVar(ByVal Prototype.VirtualPointer, ByVal Source, Size): Call ZeroMemory(ByVal Source, Size)
     Set CreateInstance = Prototype
-
 End Function
 
-Public Function CreateInstanceOf(ByVal Prototype As IGeneric) As Object
-    
-    Dim Instance As IGeneric
+Public Function CreateInstanceOf(ByVal Prototype As IGeneric) As IGeneric
     
     With Prototype
-        Set Instance = .Default
-        'Call CopyBytes(.Size, ByVal Clone.VirtualPointer, ByVal .VirtualPointer) 'works
-        Call CopyMemory_byVar(ByVal Instance.VirtualPointer, ByVal .VirtualPointer, .VirtualSize): Call ZeroMemory(ByVal .VirtualPointer, .VirtualSize)
-    End With
+        Set CreateInstanceOf = .Default
+'        If Instance.IsRelatedTo(Prototype) Then
 
-    Set CreateInstanceOf = Prototype
+            Call CopyBytesZero(.VirtualSize, ByVal CreateInstanceOf.VirtualPointer, ByVal .VirtualPointer) 'works
+'            Call CopyMemory_byVar(ByVal CreateInstanceOf.VirtualPointer, ByVal .VirtualPointer, .VirtualSize): Call ZeroMemory(ByVal .VirtualPointer, .VirtualSize)
+    End With
 
 End Function
 
@@ -160,12 +161,12 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
         If Not (VarType(SomeArray) And VbVarType.vbArray) = VbVarType.vbArray Then _
             .Throw(Me, "ArrayPointer").InvalidInput ("Not (IsArray(SomeArray))")
 
-        Call .CopyData(dst:=ByVal VarPtr(vType), src:=ByVal VarPtr(SomeArray), Bytes:=2&)
-        Call .CopyData(dst:=ByVal VarPtr(PointerOf), src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSIZE)
+        Call .CopyData(Dst:=ByVal VarPtr(vType), Src:=ByVal VarPtr(SomeArray), Bytes:=2&)
+        Call .CopyData(Dst:=ByVal VarPtr(PointerOf), Src:=ByVal VarPtr(SomeArray) + 8&, Bytes:=POINTERSIZE)
 
         'if SomeArray is defined x() as ...
         If (vType And VT_BYREF) = VT_BYREF Then _
-            Call .CopyData(dst:=ByVal VarPtr(PointerOf), src:=ByVal PointerOf, Bytes:=POINTERSIZE)
+            Call .CopyData(Dst:=ByVal VarPtr(PointerOf), Src:=ByVal PointerOf, Bytes:=POINTERSIZE)
     End With
 
 End Function
@@ -313,7 +314,7 @@ Public Function Median(ByVal lo As Long, ByVal hi As Long) As Single
 End Function
 
 Public Function HashValue( _
-                            ByRef ascii() As Byte, _
+                            ByRef Ascii() As Byte, _
                             Optional ByVal Hashfunction As Hashing = Hashing.Function1) As Long
     
     Dim h As Double
@@ -326,8 +327,8 @@ Public Function HashValue( _
             Dim h1 As Double: h1 = 352654597# 'LeftShift(5381,16))+5381
             Dim h2 As Double: h2 = h1
             With Me
-                For i = LBound(ascii) To UBound(ascii) - 1
-                    h1 = .X0R((h1 * Shift) + h1, ascii(i)): h2 = .X0R((h2 * Shift) + h2, ascii(i + 1))
+                For i = LBound(Ascii) To UBound(Ascii) - 1
+                    h1 = .X0R((h1 * Shift) + h1, Ascii(i)): h2 = .X0R((h2 * Shift) + h2, Ascii(i + 1))
                 Next
             End With
             
@@ -335,18 +336,18 @@ Public Function HashValue( _
         
         Case Hashing.Function2
             
-             Dim Length As Long: Length = UBound(ascii) + 1
+             Dim Length As Long: Length = UBound(Ascii) + 1
              Dim N As Long
              
              For N = (Length / 2) To 1 Step -1
-                h = h + ascii(i)
-                h = Me.X0R(Me.X0R(LEFTSHIFT(h, 16), Me.LEFTSHIFT(ascii(i + 1), 11)), h)
+                h = h + Ascii(i)
+                h = Me.X0R(Me.X0R(LEFTSHIFT(h, 16), Me.LEFTSHIFT(Ascii(i + 1), 11)), h)
                 h = h + Me.RIGHTSHIFT(h, 11)
                 i = i + 2
             Next
             
             If ((Length Mod 2) = 1) Then
-                h = h + ascii(i) + 1566083941
+                h = h + Ascii(i) + 1566083941
                 h = Me.X0R(h, LEFTSHIFT(h, 10))
                 h = h + Me.RIGHTSHIFT(h, 1)
             End If
@@ -360,10 +361,12 @@ Public Function HashValue( _
 
 End Function
 
-Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myclass)
-    Virtual.Size = LenB(myclass)
-End Sub
+'Private Sub Class_Initialize()
+'    Virtual.Pointer = VarPtr(myclass)
+'    Virtual.Size = LenB(myclass)
+'    Debug.Print GetModuleHandle("kernel32.dll")
+'    Debug.Print LoadLibrary("kernel32.dll")
+'End Sub
 
 Public Function IteratorOf(ByVal c As IGenericCollection) As IGenericIterator: Set IteratorOf = c.Iterator: End Function
 Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<" & TypeName$(Instance) & ">": End Function

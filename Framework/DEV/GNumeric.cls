@@ -54,12 +54,6 @@ End Type
 Private myclass As Member
 Private Formats() As String
 
-Private Type Internal
-    Size As Long
-    Pointer As LongPtr
-End Type
-Private Virtual As Internal
-
 Public Property Get Min() As Currency
     Min = -922337203685477#
 End Property
@@ -112,8 +106,6 @@ Attribute Build.VB_UserMemId = 0
 End Function
 
 Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myclass)
-    Virtual.Size = LenB(myclass)
     With GNumeric
         myclass.Value = .Value
         myclass.Format = .Format
@@ -149,22 +141,15 @@ Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / 
 
 'IGeneric
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GNumeric: End Property
-Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
-Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = myclass.Value: End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GNumeric):  End Property
 
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
-
-Private Function IGeneric_Clone() As IGeneric
-    
-    Dim c As Member: c = myclass 'hardcopy
-
-    Set IGeneric_Clone = Skynet.CreateInstance(New GNumeric, VarPtr(c), Virtual.Size)
-   
-End Function
+Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = GNumeric.Build(myclass.Value, myclass.Precision, myclass.NumericScale, myclass.Format): End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
