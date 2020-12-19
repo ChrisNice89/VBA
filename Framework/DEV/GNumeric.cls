@@ -67,7 +67,7 @@ Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIt
     Dim c As Member
     
     If Start > Last Then _
-        Call Skynet.Throw(Me, "Public Property Get Range").InvalidInput("Start > Last")
+        Call System.Throw(Me, "Public Property Get Range").InvalidInput("Start > Last")
         
     With c.Range
         .Start = Start
@@ -75,7 +75,7 @@ Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIt
         .i = .Start - 1
     End With
    
-    Set Range = Skynet.CreateInstance(New GNumeric, VarPtr(c), LenB(c))
+    Set Range = System.CreateInstance(New GNumeric, VarPtr(c), LenB(c))
 
 End Property
 
@@ -150,22 +150,8 @@ Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: I
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = GNumeric.Build(myclass.Value, myclass.Precision, myclass.NumericScale, myclass.Format): End Function
-
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
-
-    If Other Is Nothing Then IGeneric_Equals = False: Exit Function
-
-    Dim N As GNumeric: Set N = Other
-
-    IGeneric_Equals = (myclass.Value = N.Value)
-     
-End Function
-
-Private Function IGeneric_ToString() As String
-    
-    IGeneric_ToString = myclass.Value
-    
-End Function
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_Equals = IGenericValue_Equals(Other): End Function
+Private Function IGeneric_ToString() As String: IGeneric_ToString = myclass.Value: End Function
 
 'IGenericValue
 Private Property Get IGenericValue_VarType() As VbVarType: IGenericValue_VarType = vbCurrency: End Property
@@ -179,7 +165,7 @@ Private Function IGenericValue_Create(ByVal Value As Variant, Optional ByVal Dir
     Set IGenericValue_Create = Me.Build(Value)
 End Function
 
-Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As ComparerEnum
+Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
     
     If Other Is Nothing Then _
         IGenericValue_CompareTo = IsGreater: Exit Function
@@ -195,6 +181,14 @@ Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As Compar
     End Select
     
 End Function
+
+Private Function IGenericValue_Equals(ByVal Other As IGenericValue) As Boolean
+    
+    If Other Is Nothing Then IGenericValue_Equals = False: Exit Function
+    IGenericValue_Equals = (myclass.Value = Other.ToValue)
+    
+End Function
+
 Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Variant
     
     Dim P As ADODB.Parameter

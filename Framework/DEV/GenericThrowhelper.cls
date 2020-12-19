@@ -27,8 +27,7 @@ Public Enum ErrorNumber
     NotImplemented_
     NotSupported_
     NoNegativ_
-    NullPointer_
-    KeyIsNothing_
+    IsNothing_
     DuplicateNotAllowed_
     NoSuchElement_
     InvalidIndex_
@@ -64,7 +63,7 @@ Public Function Build(ByVal Source As Object, ByVal Method As String) As Generic
         myclass.Method = Method
     End With
    
-    Set Build = Skynet.CreateInstance(New GenericThrowhelper, Virtual.Pointer, Virtual.Size)
+    Set Build = System.CreateInstance(New GenericThrowhelper, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -105,11 +104,11 @@ Public Function DuplicateNotAllowed(Optional ByVal Element As IGeneric) As Gener
     Set DuplicateNotAllowed = Me
 End Function
 
-Public Function KeyIsNothing(Optional ByVal Message As String = "Key is nothing") As GenericThrowhelper
-    myclass.Number = KeyIsNothing_
-    myclass.Type = "Key is nothing"
-    Call Me.Raise(Message)
-    Set KeyIsNothing = Me
+Public Function IsNothing(Optional ByVal Message As String) As GenericThrowhelper
+    myclass.Number = IsNothing_
+    myclass.Type = "IsNothing"
+    Call Me.Raise(Message & " is nothing")
+    Set IsNothing = Me
 End Function
 
 Public Function Overflow(Optional ByVal Message As String) As GenericThrowhelper
@@ -137,13 +136,6 @@ Public Function NoNegativ(Optional ByVal Message As String) As GenericThrowhelpe
     myclass.Number = NoNegativ_
     myclass.Type = "NoNegativ"
     Set NoNegativ = Me
-End Function
-
-Public Function NullPointer(Optional ByVal Message As String) As GenericThrowhelper
-    myclass.Number = NullPointer_
-    myclass.Type = "NullPointer"
-    Call Me.Raise(Message)
-    Set NullPointer = Me
 End Function
 
 Public Function NotSupported(Optional ByVal Message As String) As GenericThrowhelper
@@ -205,7 +197,7 @@ Public Sub Raise(Optional ByVal Message As String)
     RaiseEvent Failed(raiseVBA)
     
     If raiseVBA Then _
-        Call Err.Raise(myclass.Number, TypeName$(myclass.Source), Skynet.Generic(Me).ToString)
+        Call Err.Raise(myclass.Number, TypeName$(myclass.Source), IGeneric_ToString)
         
 End Sub
 
@@ -218,7 +210,7 @@ CleanExit:
     Exit Sub
 
 CleanFail:
-    Debug.Print Skynet.Generic(Me).ToString
+    Debug.Print IGeneric_ToString
 End Sub
 
 'IGeneric
@@ -235,7 +227,7 @@ Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member: c = myclass 'hardcopy
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericThrowhelper, VarPtr(c), Virtual.Size)
+    Set IGeneric_Clone = System.CreateInstance(New GenericThrowhelper, VarPtr(c), Virtual.Size)
 
 End Function
 

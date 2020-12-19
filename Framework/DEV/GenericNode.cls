@@ -20,15 +20,15 @@ Private Type Member
     Left As GenericNode
     Right As GenericNode
     IsRed As Boolean
-    Size As Long
+    Count As Long
 End Type
 Private myclass As Member
 
 Public Property Get IsRed() As Boolean: IsRed = myclass.IsRed: End Property
 Public Property Let IsRed(ByVal Value As Boolean):  myclass.IsRed = Value: End Property
 
-Public Property Get Size() As Long: Size = myclass.Size: End Property
-Public Property Let Size(ByVal Value As Long):  myclass.Size = Value: End Property
+Public Property Get Count() As Long: Count = myclass.Count: End Property
+Public Property Let Count(ByVal Value As Long):  myclass.Count = Value: End Property
 
 Public Property Get Left() As GenericNode: Set Left = myclass.Left: End Property
 Public Property Set Left(ByVal L As GenericNode): Set myclass.Left = L: End Property
@@ -113,13 +113,11 @@ Public Function Build( _
                         ByVal Value As IGeneric, _
                         Optional ByVal Parent As GenericNode, _
                         Optional ByVal IsRed As Boolean = True, _
-                        Optional ByVal Size As Long = 1) As GenericNode
+                        Optional ByVal Count As Long = 1) As GenericNode
 Attribute Build.VB_UserMemId = 0
-    If (Me Is GenericNode) = False Then _
-        Call Skynet.Throw(Me, "Public Function Build").BuildExeption
     
-    If (Value Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function Build").NullPointer("(Value Is Nothing)")
+    If (Me Is GenericNode) = False Then _
+        Call System.Throw(Me, "Public Function Build").BuildExeption
     
     Dim newNode As GenericNode
     Set newNode = New GenericNode
@@ -128,7 +126,7 @@ Attribute Build.VB_UserMemId = 0
         Set .Value = Value
         Set .Parent = Parent
         .IsRed = IsRed
-        .Size = Size
+        .Count = Count
     End With
     
     Set Build = newNode
@@ -145,7 +143,7 @@ Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer 
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long
     
-      Const MAXLONG = 2 ^ 31 - 1
+    Const MAXLONG = 2 ^ 31 - 1
     Static Hash As Currency
     
     If Hash = 0 Then _
@@ -186,7 +184,7 @@ Private Function IGeneric_Clone() As IGeneric
         Set .Right = myclass.Right
         Set .Parent = myclass.Parent
         .IsRed = myclass.IsRed
-        .Size = myclass.Size
+        .Count = myclass.Count
     End With
     
     Set IGeneric_Clone = newNode

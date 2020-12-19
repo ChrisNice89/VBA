@@ -90,11 +90,6 @@ Private Type Internal
 End Type
 Private Virtual As Internal
 
-Public Property Get Number(ByVal Value As Currency) As GNumeric
-
-
-End Property
-
 Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End Property
 Public Property Get PointerLength() As Byte: PointerLength = POINTERSIZE: End Property
 Public Property Get MAXLONG() As Long: MAXLONG = MAX_INT32: End Property
@@ -172,7 +167,7 @@ Public Function PointerOf(ByRef SomeArray As Variant) As LongPtr
 End Function
 
 'SequenceCompare
-Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGenericReadOnlyList) As ComparerEnum
+Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGenericReadOnlyList) As CompareResult
     
     If (a Is b) Then SequenceCompare = IsEqual: Exit Function
     
@@ -184,7 +179,7 @@ Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGen
         If Not (a.Count = b.Count) Then _
             Me.Throw(Me, "CompareLists").InvalidInput ("a.Count != b.Count")
         
-        Dim i As Long, c As ComparerEnum
+        Dim i As Long, c As CompareResult
         Do While (InterlockedIncrement(i) < a.Count And c = IsEqual)
             If Not a(i) Is Nothing Then _
                 c = a(i).Equals(b(i))
@@ -195,10 +190,10 @@ Public Function SequenceCompare(ByVal a As IGenericReadOnlyList, ByVal b As IGen
     
 End Function
 
-Public Function GetRefCount(ByRef obj As IUnknown) As Long
-    If obj Is Nothing Then _
+Public Function GetRefCount(ByRef Obj As IUnknown) As Long
+    If Obj Is Nothing Then _
         Exit Function
-    CopyMemory_byVar GetRefCount, ByVal (ObjPtr(obj)) + 4&, 4&
+    CopyMemory_byVar GetRefCount, ByVal (ObjPtr(Obj)) + 4&, 4&
     GetRefCount = GetRefCount - 2
 End Function
 
@@ -225,7 +220,7 @@ Public Function BinarySearch( _
                                 ByVal Order As SortOrder) As Long
 
     Dim i As Long
-    Dim c As ComparerEnum
+    Dim c As CompareResult
     Dim lo As Long: lo = Index
     Dim hi As Long: hi = Index + Length - 1
     
@@ -236,7 +231,7 @@ Public Function BinarySearch( _
         If (Objects(i) Is Nothing) = False Then
             c = Objects(i).CompareTo(Value) * Order
         Else
-            c = IIf(Value Is Nothing, ComparerEnum.IsEqual, ComparerEnum.IsLower * Order)
+            c = IIf(Value Is Nothing, CompareResult.IsEqual, CompareResult.IsLower * Order)
         End If
         
         If (c = IsEqual) Then _

@@ -47,7 +47,7 @@ Attribute Build.VB_UserMemId = 0
         .Format = Format
     End With
     
-    Set Build = Skynet.CreateInstance(New GBoolean, Virtual.Pointer, Virtual.Size)
+    Set Build = System.CreateInstance(New GBoolean, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -77,7 +77,7 @@ Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member: c = myclass
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New GBoolean, VarPtr(c), Virtual.Size)
+    Set IGeneric_Clone = System.CreateInstance(New GBoolean, VarPtr(c), Virtual.Size)
    
 End Function
 

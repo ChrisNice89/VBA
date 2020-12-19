@@ -16,53 +16,65 @@ Implements IGeneric
 Implements IGenericComparer
 
 Private Type Member
+    Comparer As IGenericComparer
     Key As IGeneric
     Value As IGeneric
 End Type
 Private myclass As Member
 
 Public Property Get Key() As IGeneric: Set Key = myclass.Key: End Property
-Public Property Get Value() As Object: Set Value = myclass.Value: End Property
+Public Property Get Value() As IGeneric: Set Value = myclass.Value: End Property
 
 Public Function Build(ByVal Key As IGeneric, ByVal Value As IGeneric) As GenericPair
 Attribute Build.VB_UserMemId = 0
     
     If (Me Is GenericPair) = False Then _
-        Call Skynet.Throw(Me, "Public Function Build").BuildExeption
+        Call System.Throw(Me, "Public Function Build").BuildExeption
     
-    If (Key Is Nothing) Or (Value Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function Build").NullPointer("(Key Is Nothing) Or (Value Is Nothing)")
-        
+'    If (Key Is Nothing) Or (Value Is Nothing) Then _
+'        Call System.Throw(Me, "Public Function Build").IsNothing("(Key Is Nothing) Or (Value Is Nothing)")
+'
     Set myclass.Key = Key: Set myclass.Value = Value
-    Set Build = New GenericPair: myclass = EmptyStructure
+    Set Build = New GenericPair: Set myclass.Key = Nothing: Set myclass.Value = Nothing
     
 End Function
 
 Private Sub Class_Initialize()
     With GenericPair
-        Set myclass.Key = .Key: Set myclass.Value = .Value
+        Set myclass.Key = .Key: Set myclass.Value = .Value: Set myclass.Comparer = System.DefaultComparer
     End With
 End Sub
 
 Private Sub Class_Terminate()
     myclass = EmptyStructure
 End Sub
+'IGenericComparer -Key comparer
+Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long
+    Dim pair As GenericPair
+    Set pair = Obj
+    IGenericComparer_GetHashCode = myclass.Comparer.GetHashCode(pair.Key)
+End Function
 
-Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As ComparerEnum
+Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As CompareResult
 
     Dim x As GenericPair, y As GenericPair
     Set x = a: Set y = b
-    'default comparer
-    IGenericComparer_Compare = IGenericValue.Comparer.Compare(x.Key, y.Key)
     
+    IGenericComparer_Compare = myclass.Comparer.Compare(x.Key, y.Key)
+    
+End Function
+'
+Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal b As IGeneric) As Boolean
+
+    Dim x As GenericPair, y As GenericPair
+    Set x = a: Set y = b
+
+    IGenericComparer_Equals = myclass.Comparer.Equals(x.Key, y.Key)
+
 End Function
 
 'IGeneric
-Private Property Get IGeneric_Default() As IGeneric
-    With New IGeneric 'Bug, caused while GenericPair implements IGeneric
-        Set IGeneric_Default = GenericPair.Build(.Default, .Default)
-    End With
-End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericPair: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long
@@ -105,8 +117,21 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
         
     Set otherPair = Other
     
-    If myclass.Key.Equals(otherPair.Key) Then _
-        IGeneric_Equals = myclass.Value.Equals(otherPair.Value)
+    If myclass.Key Is Nothing = False Then
+        If myclass.Key.Equals(otherPair.Key) = False Then _
+            Exit Function
+    Else
+        If otherPair.Key Is Nothing Then _
+            IGeneric_Equals = True: Exit Function
+    End If
+    
+    If myclass.Value Is Nothing = False Then
+        If myclass.Value.Equals(otherPair.Value) = False Then _
+            Exit Function
+    Else
+        If otherPair.Value Is Nothing Then _
+            IGeneric_Equals = True: Exit Function
+    End If
 
 End Function
 

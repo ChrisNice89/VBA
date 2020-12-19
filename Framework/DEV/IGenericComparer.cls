@@ -5,26 +5,54 @@ END
 Attribute VB_Name = "IGenericComparer"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@Folder "Base"
 Option Compare Database
 
 Public Enum SortOrder
-    descending = -1
+    Descending = -1
     Random = 0
-    ascending = 1
+    Ascending = 1
 End Enum
 
-Public Enum ComparerEnum
+Public Enum CompareResult
     IsLower = -1
     IsEqual = 0
     IsGreater = 1
 End Enum
 
-Public Function Compare(ByVal a As IGeneric, ByVal b As IGeneric) As ComparerEnum: End Function
+'IGenericCompare Default comparer
+Public Function GetHashCode(ByVal Obj As IGeneric) As Long: GetHashCode = Obj.HashValue: End Function
+Public Function Compare(ByVal a As IGeneric, ByVal b As IGeneric) As CompareResult
+    
+    If a Is Nothing Then _
+        IGenericComparer_Compare = IIf(b Is Nothing, CompareResult.IsEqual, CompareResult.IsLower): Exit Function
+    
+    If b Is Nothing Then _
+        IGenericComparer_Compare = CompareResult.IsGreater: Exit Function
+        
+    Dim x As IGenericValue, y As IGenericValue
+    'try cast
+    Set x = a: Set y = b
+    Compare = x.CompareTo(y): Exit Function
 
-'Private Sub Class_Initialize()
-'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
-'End Sub
+End Function
+
+Public Function Equals(ByVal a As IGeneric, ByVal b As IGeneric) As Boolean
+    
+    If a Is Nothing = False Then _
+        IGenericComparer_Equals = a.Equals(b): Exit Function
+    
+    If b Is Nothing = False Then _
+        IGenericComparer_Equals = False: Exit Function
+    
+    Equals = True
+    
+End Function
+
+Private Sub Class_Initialize()
+    If Not Me Is IGenericComparer Then _
+        Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+End Sub
 

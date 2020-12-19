@@ -143,13 +143,13 @@ Public Function Build( _
                             Optional ByVal ImageList As MSComctlLib.ImageList = Nothing) As GenericDataGrid
     
     If (Me Is GenericDataGrid) = False Then _
-        Call Skynet.Throw(Me, "Public Function Build").BuildExeption
+        Call System.Throw(Me, "Public Function Build").BuildExeption
         
     If (ListViewControl Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function Build").InvalidInput("(Records Is Nothing)")
+        Call System.Throw(Me, "Public Function Build").InvalidInput("(Records Is Nothing)")
     
     If Not TypeOf ListViewControl.Object Is MSComctlLib.Listview Then _
-        Call Skynet.Throw(Me, "Public Function Build").InvalidInput("False Access.CustomControl: " & TypeName$(ListViewControl.Object))
+        Call System.Throw(Me, "Public Function Build").InvalidInput("False Access.CustomControl: " & TypeName$(ListViewControl.Object))
         
     With myclass
         Set .ViewControl = ListViewControl
@@ -159,10 +159,10 @@ Public Function Build( _
         Set .RowSet = GenericSortedSet.Build
         Set .RowList = GenericList.Build(DEFAULT_CAPACITY_ROWS)
         Set .Columns = GenericOrderedMap.Build(DEFAULT_CAPACITY_COLUMNS)
-        .SortDirection = ascending
+        .SortDirection = Ascending
     End With
     
-    Set Build = Skynet.CreateInstance(New GenericDataGrid, Virtual.Pointer, Virtual.Size)
+    Set Build = System.CreateInstance(New GenericDataGrid, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -172,7 +172,7 @@ Private Sub Class_Initialize()
 End Sub
 
 Private Sub Class_Terminate()
-    Call Skynet.Dispose(Me)
+    Call System.Dispose(Me)
 End Sub
 
 Private Sub ViewControl_ItemClick(ByVal Item As MSComctlLib.ListItem)
@@ -353,7 +353,7 @@ Public Sub Sort(ByVal Index As Long, ByVal SortDirection As SortOrder)
             Call .RowList.Reverse
         End If
         
-        .SortDirection = IIf(SortDirection = ascending, SortOrder.descending, SortOrder.ascending)
+        .SortDirection = IIf(SortDirection = Ascending, SortOrder.Descending, SortOrder.Ascending)
         .SelectedColumn = Index
     
         Call SendMessage(.View.hWnd, WM_SETREDRAW, SR_OFF, ByVal 0&)
@@ -404,8 +404,8 @@ End Sub
 
 Private Sub style(ByVal Listview As MSComctlLib.Listview, ByVal style As DataviewerStyle)
     
-    If Listview Is Nothing Then _
-        Call Skynet.Throw(Me, "Private Sub Style").NullPointer("Listview Is Nothing")
+    If (Listview Is Nothing) Then _
+        Call System.Throw(Me, "Private Sub Style").IsNothing("(Listview Is Nothing)")
         
     With Listview
         Select Case style
@@ -447,7 +447,7 @@ Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True:
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericDataGrid):  End Property
 
 Private Function IGeneric_Clone() As IGeneric
-     Call Skynet.Throw(Me, "Private Function IGeneric_Clone").NotImplemented
+     Call System.Throw(Me, "Private Function IGeneric_Clone").NotImplemented
 End Function
 
 Private Sub IGeneric_Dispose()

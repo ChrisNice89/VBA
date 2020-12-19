@@ -10,7 +10,7 @@ Attribute VB_Exposed = True
 '@Folder "<T>Class"
 
 Implements IGeneric
-Implements IGenericComparer
+'Implements IGenericComparer
 
 Public Enum ISqlDataType
     AUTOINCREMENT = -1
@@ -62,23 +62,25 @@ Public Property Get SqlType() As ISqlDataType: End Property
 Public Property Get VarType() As VbVarType: End Property
 Public Property Get Size() As Byte: End Property
 Public Property Get Instance() As IGeneric: End Property
-Public Property Get Comparer() As IGenericComparer: Set Comparer = IGenericValue: End Property
+Public Property Get Comparer() As IGenericComparer: Set Comparer = IGenericComparer: End Property
 
 Public Function Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As IGenericValue: End Function
-Public Function CompareTo(ByVal Other As IGenericValue) As ComparerEnum: End Function
+Public Function CompareTo(ByVal Other As IGenericValue) As CompareResult: End Function
+Public Function Equals(ByVal Other As IGenericValue) As Boolean: Equals = Other Is Me: End Function
 Public Function ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput, Optional ByVal Name As String): End Function
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+'    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub
 
-'IGenericCompare
-Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As ComparerEnum
-    
+'IGenericCompare IGenericValue comparer
+Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long: IGenericComparer_GetHashCode = Obj.HashValue: End Function
+Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As CompareResult
+
     Dim x As IGenericValue, y As IGenericValue
-    
+
     Set x = a: Set y = b
-    
+
     If x Is Nothing = False Then _
         IGenericComparer_Compare = x.CompareTo(y): Exit Function
 
@@ -86,6 +88,21 @@ Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGener
         IGenericComparer_Compare = -1: Exit Function
 
     IGenericComparer_Compare = 0: Exit Function
+
+End Function
+
+Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal b As IGeneric) As Boolean
+
+    Dim x As IGenericValue, y As IGenericValue
+    Set x = a: Set y = b
+
+    If x Is Nothing = False Then _
+        IGenericComparer_Equals = x.Equals(y): Exit Function
+
+    If y Is Nothing = False Then _
+        IGenericComparer_Equals = False: Exit Function
+
+    IGenericComparer_Equals = True: Exit Function
 
 End Function
 
@@ -100,3 +117,4 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_E
 Private Function IGeneric_ToString() As String: IGeneric_ToString = "Class: " & TypeName$(IGenericValue) & " :: Default": End Function
 Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = IGeneric: End Function
 Private Sub IGeneric_Dispose(): End Sub
+

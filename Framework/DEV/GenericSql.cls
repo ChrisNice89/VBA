@@ -287,7 +287,7 @@ Public Function Build( _
         .Parameter = Parameter
     End With
     
-    Set Build = Skynet.CreateInstance(New GenericSql, Virtual.Pointer, Virtual.Size)
+    Set Build = System.CreateInstance(New GenericSql, Virtual.Pointer, Virtual.Size)
  
 End Function
 
@@ -319,7 +319,7 @@ Public Sub Prepare(ByVal Sql As String)
         End If
     End With
     
-    Dim Pair As GenericPair
+    Dim pair As GenericPair
     Dim Value As IGenericValue
     
     If myclass.Parameter > 0 Then
@@ -328,8 +328,8 @@ Public Sub Prepare(ByVal Sql As String)
         End If
         
         With myclass.ParameterList.IteratorOf(t:=PairData)
-            Do While .HasNext(Pair)
-                Set Value = Pair.Value
+            Do While .HasNext(pair)
+                Set Value = pair.Value
                 Call myclass.Command.Parameters.Append(Value.ToSqlParameter)
             Loop
         End With
@@ -856,10 +856,10 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
     Dim i As Long
   
     If (Records Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function RowMapper").InvalidInput("(Records Is Nothing)")
+        Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records Is Nothing)")
     
     If (Records.STATE = ISqlCommandState.StateClosed) Then _
-        Call Skynet.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
+        Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
     
     With myclass.Iterator
         Set .Records = Records
@@ -893,7 +893,7 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
         Next
     End With
     
-    Set RowMapper = Skynet.CreateInstance(New GenericSql, Virtual.Pointer, Virtual.Size)
+    Set RowMapper = System.CreateInstance(New GenericSql, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -919,7 +919,7 @@ Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
         Set Row = GenericArray.Build(.Records.Fields.Count)
         
         For i = 0 To .Records.Fields.Count - 1
-            Set Row.ElementAt(i + 1) = .Converter(i).Create(.Records.Fields(i).Value)
+            Set Row.ElementAt(i) = .Converter(i).Create(.Records.Fields(i).Value)
         Next
         
         Set .Current = Row

@@ -34,6 +34,6 @@ Public Function IteratorOf(ByVal t As DictionaryData) As IGenericIterator: End F
     
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+'    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub
 

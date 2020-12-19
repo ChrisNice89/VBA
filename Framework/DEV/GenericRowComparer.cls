@@ -39,11 +39,13 @@ Private Sub Class_Initialize()
         Set myclass.ElementComparer = IGenericValue.Comparer
 End Sub
 
-Public Function Compare(ByVal x As IGenericReadOnlyList, ByVal y As IGenericReadOnlyList) As ComparerEnum: Compare = myclass.ElementComparer.Compare(x.ElementAt(myclass.SelectedIndex), y.ElementAt(myclass.SelectedIndex)): End Function
-Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As ComparerEnum: IGenericComparer_Compare = Me.Compare(a, b): End Function
+Public Function Compare(ByVal x As IGenericReadOnlyList, ByVal y As IGenericReadOnlyList) As CompareResult: Compare = myclass.ElementComparer.Compare(x.ElementAt(myclass.SelectedIndex), y.ElementAt(myclass.SelectedIndex)): End Function
+Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As CompareResult: IGenericComparer_Compare = Me.Compare(a, b): End Function
 
+Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal b As IGeneric) As Boolean
 
+End Function
 
+Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long
 
-
-
+End Function

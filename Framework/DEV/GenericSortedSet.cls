@@ -48,7 +48,7 @@ Implements IGenericIterator
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
 
-Private Const BASE_INDEX As Long = 1
+Private Const BASE_INDEX As Long = 0
 
 Private Type InternalStack
     Size As Long
@@ -70,12 +70,6 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Private Type Internal
-    Size As Long
-    Pointer As LongPtr
-End Type
-Private Virtual As Internal
-
 Public Property Get IsHeightBalanced(): IsHeightBalanced = CheckHeightBalance(myclass.Root): End Property
 Public Property Get IsBalanced(): IsBalanced = CheckRedBlackBalance(myclass.Root): End Property
 Public Property Get Count() As Long: Count = SizeOf(myclass.Root): End Property
@@ -84,20 +78,15 @@ Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Compa
 Public Function Build(Optional ByVal Comparer As IGenericComparer) As GenericSortedSet
     
     If (Me Is GenericSortedSet) = False Then _
-        Call Skynet.Throw(Me, "Public Function Build").BuildExeption
+        Call System.Throw(Me, "Public Function Build").BuildExeption
     
     If Comparer Is Nothing Then _
-        Set Comparer = IGenericValue.Comparer
+        Set Comparer = IGenericComparer
     
     Set myclass.Comparer = Comparer
-    Set Build = Skynet.CreateInstance(New GenericSortedSet, Virtual.Pointer, Virtual.Size)
+    Set Build = System.CreateInstance(New GenericSortedSet, VarPtr(myclass), LenB(myclass))
     
 End Function
-
-Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myclass)
-    Virtual.Size = LenB(myclass)
-End Sub
 
 Public Function GetMax() As IGeneric
     Set GetMax = FindMaxOf(myclass.Root)
@@ -109,15 +98,69 @@ End Function
 
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric
 Attribute ElementAt.VB_UserMemId = 0
+
     If (Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root)) Then _
-        Call Skynet.Throw(Me, "Public Function ElementAt").IndexOutofRange("(Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root))")
+        Call System.Throw(Me, "Public Function ElementAt").IndexOutofRange("(Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root))")
 
     Set ElementAt = SelectKth(myclass.Root, Index - BASE_INDEX).Value
     
 End Property
 
+Public Function GetRankOf(ByVal Value As IGeneric) As Long
+    GetRankOf = RankOf(Value, myclass.Root) + BASE_INDEX
+End Function
+
 Public Function IndexOf(ByVal Value As IGeneric) As Long
-    IndexOf = RankOf(Value, myclass.Root) + 1
+    
+    Dim Current As GenericNode: Set Current = myclass.Root
+    Dim Order As CompareResult
+    
+    Do While Current Is Nothing = False
+        Order = myclass.Comparer.Compare(Value, Current.Value)
+        
+        If (Order = 0) Then _
+            IndexOf = IndexOf + SizeOf(Current.Left) + BASE_INDEX: Exit Function
+            
+        If Order < 0 Then
+            Set Current = Current.Left
+        Else
+            IndexOf = IndexOf + 1 + SizeOf(Current.Left): Set Current = Current.Right
+        End If
+    Loop
+   
+    IndexOf = -1
+        
+End Function
+
+Private Function RankOf(ByVal Value As IGeneric, ByVal Node As GenericNode) As Long
+    
+    Dim Order As CompareResult
+    
+    Do While Node Is Nothing = False
+        Order = myclass.Comparer.Compare(Value, Node.Value)
+        
+        If (Order = 0) Then _
+            RankOf = RankOf + SizeOf(Node.Left): Exit Function
+            
+        If Order < 0 Then
+            Set Node = Node.Left
+        Else
+            RankOf = RankOf + 1 + SizeOf(Node.Left): Set Node = Node.Right
+        End If
+    Loop
+    
+'    If Node Is Nothing Then _
+'        Exit Function
+'
+'    Select Case myclass.Comparer.Compare(Value, Node.Value)
+'        Case Is < 0
+'            RankOf = RankOf(Value, Node.Left)
+'        Case Is > 0
+'            RankOf = 1 + SizeOf(Node.Left) + RankOf(Value, Node.Right)
+'        Case Else
+'            RankOf = SizeOf(Node.Left)
+'    End Select
+
 End Function
 
 Public Function GetHigherThan(ByVal Value As IGeneric) As IGeneric
@@ -160,24 +203,6 @@ Public Function GetLowerThan(ByVal Value As IGeneric) As IGeneric
     
 End Function
 
-Private Function RankOf(ByVal Value As IGeneric, ByVal Node As GenericNode) As Long
-    
-    Dim Order As Long
-    
-    If Node Is Nothing Then _
-        Exit Function
-    
-    Select Case myclass.Comparer.Compare(Value, Node.Value)
-        Case Is < 0
-            RankOf = RankOf(Value, Node.Left)
-        Case Is > 0
-            RankOf = 1 + SizeOf(Node.Left) + RankOf(Value, Node.Right)
-        Case Else
-            RankOf = SizeOf(Node.Left)
-    End Select
-
-End Function
-
 Private Function SelectKth(ByVal Node As GenericNode, ByVal Rank As Long) As GenericNode
     
     Dim leftSize As Long
@@ -186,7 +211,7 @@ Private Function SelectKth(ByVal Node As GenericNode, ByVal Rank As Long) As Gen
         Set SelectKth = Nothing: Exit Function
 
     If Node.Left Is Nothing = False Then _
-        leftSize = Node.Left.Size
+        leftSize = Node.Left.Count
     
     Select Case True
         Case leftSize > Rank
@@ -283,19 +308,19 @@ End Sub
 
 Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray
    
-    ReDim Values(1 To Me.Count) As IGeneric
-    Dim Index As Long
+    Dim Values As GenericArray
+    Set Values = GenericArray.Build(Me.Count)
+    
+    Dim Index As Long: Index = Values.LowerBound - 1
     
     Dim Stack As InternalStack
     Dim Current As GenericNode
 
     Call LoadStack(Stack, myclass.Root, Reverse)
 
-    Do While InOrderTreeWalk(Current, Stack)
-        Set Values(InterlockedIncrement(Index)) = Current.Value
-    Loop
+    Do While InOrderTreeWalk(Current, Stack): Set Values.ElementAt(InterlockedIncrement(Index)) = Current.Value: Loop
     
-    Set ToArray = GenericArray.BuildFrom(Values)
+    Set ToArray = Values
     
 End Function
 
@@ -360,7 +385,7 @@ Public Function Iterator(Optional ByVal Reverse As Boolean) As IGenericIterator
     Dim c As Member
 
     Call LoadIterator(c.Iterator, myclass.Root, Reverse)
-    Set Iterator = Skynet.CreateInstance(New GenericSortedSet, VarPtr(c), LenB(c))
+    Set Iterator = System.CreateInstance(New GenericSortedSet, VarPtr(c), LenB(c))
     
 End Function
 
@@ -393,7 +418,7 @@ Private Function FindNode(ByVal Value As IGeneric) As GenericNode
     Dim Order As Long
     
     If (Value Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function FindNode")
+        Call System.Throw(Me, "Private Function FindNode").IsNothing("(Value Is Nothing)")
     
     With myclass.Comparer
         Do While (Current Is Nothing) = False
@@ -427,7 +452,7 @@ Private Sub ReplaceNode( _
 
     If (Succesor Is Match) Then
         If Not (Match.Right Is Nothing) Then _
-            Call Skynet.Throw(Me, "Private Sub ReplaceNode").NullPointer("Right child must be null!")
+            Call System.Throw(Me, "Private Sub ReplaceNode").InvalidOperation("Right child must be null!")
 
         Set Succesor = Match.Left
     Else
@@ -456,7 +481,7 @@ Private Function Insert(ByVal Node As GenericNode, ByVal Value As IGeneric) As G
         Set Insert = GenericNode.Build(Value:=Value, IsRed:=True): Exit Function
     
     With Node
-        .Size = .Size + 1
+        .Count = .Count + 1
         Select Case myclass.Comparer.Compare(Value, .Value)
             Case Is < 0: Set .Left = Insert(.Left, Value)
             Case Is > 0: Set .Right = Insert(.Right, Value)
@@ -498,8 +523,8 @@ Public Function Add( _
     Dim GreatGrandParent As GenericNode
     Dim Order As Long, i As Long
     
-'    If (Value Is Nothing) Then _
-'        Call Skynet.Throw(Me, "Public Function Add").NullPointer("(Value Is Nothing)")
+    If (Value Is Nothing) Then _
+        Call System.Throw(Me, "Public Function Add").IsNothing("(Value Is Nothing)")
     
     If (myclass.Root Is Nothing) Then _
         Set myclass.Root = GenericNode.Build(Value:=Value, Parent:=Nothing, IsRed:=False): _
@@ -515,17 +540,17 @@ Public Function Add( _
                 myclass.Root.IsRed = False
                 Add = False
                 Do While Parent Is Nothing = False
-                    Parent.Size = Parent.Size - 1
+                    Parent.Count = Parent.Count - 1
                     Set Parent = Parent.Parent
                 Loop
                 
                 If (Overwrite) = False Then _
-                    Call Skynet.Throw(Me, "Public Function Add").DuplicateNotAllowed(Value)
+                    Call System.Throw(Me, "Public Function Add").DuplicateNotAllowed(Value)
         
                 Exit Function
             End If
             
-            Current.Size = Current.Size + 1
+            Current.Count = Current.Count + 1
             
             If Split4Node(Current) Then _
                 If (Parent Is Nothing) = False Then _
@@ -546,7 +571,7 @@ Public Function Add( _
         Loop While (Current Is Nothing) = False
     End With
 '    If (Parent Is Nothing) Then _
-'        Call Skynet.Throw(Me, "Private Sub InsertionBalance").NullPointer("Parent cannot be null here!")
+'        Call System.Throw(Me, "Private Sub InsertionBalance").NullPointer("Parent cannot be null here!")
 
     Set Node = GenericNode.Build(Value:=Value, Parent:=Parent, IsRed:=True)
     
@@ -571,7 +596,7 @@ Private Sub EnsureBalance( _
                                 ByVal GreatGrandParent As GenericNode)
 
 '    If (GrandParent Is Nothing) Then _
-'        Call Skynet.Throw(Me, "Private Sub InsertionBalance").NullPointer("Grand parent cannot be null here!")
+'        Call System.Throw(Me, "Private Sub InsertionBalance").NullPointer("Grand parent cannot be null here!")
 
     Dim CurrentIsOnRight As Boolean: CurrentIsOnRight = Parent.Right Is Current
     Dim NewChildOfGreatGrandParent As GenericNode
@@ -624,7 +649,7 @@ End Sub
 
 Private Function SizeOf(ByVal Node As GenericNode) As Long:
     If Node Is Nothing = False Then _
-        SizeOf = Node.Size
+        SizeOf = Node.Count
 End Function
 
 Private Sub UpdateSizeOf(ByVal Node As GenericNode)
@@ -633,12 +658,12 @@ Private Sub UpdateSizeOf(ByVal Node As GenericNode)
     
     With Node
         If .Left Is Nothing = False Then _
-            i = .Left.Size
+            i = .Left.Count
         
         If .Right Is Nothing = False Then _
-            j = .Right.Size
+            j = .Right.Count
         
-        .Size = 1 + i + j
+        .Count = 1 + i + j
     End With
 
 End Sub
@@ -704,7 +729,7 @@ Private Function RotateLeft(ByVal x As GenericNode) As GenericNode
         Set y.Parent = .Parent
         Set y.Left = x: Set .Parent = y
         
-        y.Size = .Size: Call UpdateSizeOf(x)
+        y.Count = .Count: Call UpdateSizeOf(x)
     End With
     
     'left leaning
@@ -731,7 +756,7 @@ Private Function RotateRight(ByVal x As GenericNode) As GenericNode
         Set y.Parent = .Parent
         Set y.Right = x: Set .Parent = y
         
-        y.Size = .Size: Call UpdateSizeOf(x)
+        y.Count = .Count: Call UpdateSizeOf(x)
     End With
      'left leaning
 '    With y
@@ -815,8 +840,8 @@ End Sub
 
 Private Sub LoadIterator(ByRef e As Iterator, ByVal Root As GenericNode, ByVal Reverse As Boolean)
     
-    If Root Is Nothing Then _
-        Call Skynet.Throw(Me, "Private Sub LoadIterator").NullPointer("Root Is Nothing")
+    If (Root Is Nothing) Then _
+        Call System.Throw(Me, "Private Sub LoadIterator").IsNothing("(Root Is Nothing)")
     
     With e
         Set .Current = Nothing
@@ -830,13 +855,13 @@ End Sub
 Private Function CopyOf(ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
     
     If (GArray Is Nothing) Then _
-        Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
+        Call System.Throw(Me, Caller).IsNothing("(GArray Is Nothing)")
     
     If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
+        Call System.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
     If (GArray.Length - ArrayIndex + GArray.LowerBound < SizeOf(myclass.Root)) Then _
-        Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Count)")
+        Call System.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Count)")
     
     Dim Stack As InternalStack
     Dim Node As GenericNode
@@ -855,8 +880,8 @@ End Function
 
 'IGeneric
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSortedSet: End Property
-Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
-Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedSet):  End Property
@@ -866,7 +891,7 @@ Private Function IGeneric_Clone() As IGeneric
     Clone = myclass
     Set Clone.Root = CloneTree(myclass.Root)
         
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericSortedSet, VarPtr(Clone), LenB(Clone))
+    Set IGeneric_Clone = System.CreateInstance(New GenericSortedSet, VarPtr(Clone), LenB(Clone))
     
 End Function
 
@@ -878,7 +903,7 @@ Private Function CloneTree(ByVal Node As GenericNode) As GenericNode
         Exit Function
     
     With Node
-        Set newNode = GenericNode.Build(Value:=.Value, Parent:=.Parent, IsRed:=.IsRed, Size:=.Size)
+        Set newNode = GenericNode.Build(Value:=.Value, Parent:=.Parent, IsRed:=.IsRed, Count:=.Count)
         Set newNode.Left = CloneTree(.Left)
         Set newNode.Right = CloneTree(.Right)
     End With
@@ -909,7 +934,7 @@ End Function
 
 Private Sub Class_Terminate()
     If Not myclass.Root Is Nothing Then _
-        Call Skynet.Dispose(myclass.Root)
+        Call System.Dispose(myclass.Root)
     
     myclass = EmptyStructure
     
@@ -946,7 +971,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
         End If
         
         If .HasLoaded = False Then _
-            Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
         
         Set Out = Nothing
         Set .Current = Nothing
@@ -958,7 +983,7 @@ End Function
 Private Sub IGenericIterator_Reset()
     With myclass.Iterator
          If .HasLoaded = False Then _
-            Call Skynet.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
+            Call System.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
           
         Call LoadIterator(myclass.Iterator, .Root, .Stack.Reverse)
     End With

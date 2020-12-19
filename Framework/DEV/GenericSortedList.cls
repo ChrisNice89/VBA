@@ -69,7 +69,7 @@ Implements IGenericIterator
     Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Src As Any, ByVal Length As LongPtr)
     Private Declare PtrSafe Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Length As LongPtr)
     Private Declare PtrSafe Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef Dst As Any, ByVal Length As LongPtr, ByVal Fill As Byte)
-    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As LongPtr, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
+    Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As LongPtr, ByRef Dst As LongPtr, ByRef Src As LongPtr) As Long
     Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
     Private Declare PtrSafe Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As LongPtr
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
@@ -79,7 +79,7 @@ Implements IGenericIterator
     Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef Dst As Any, ByRef Src As Any, ByVal Length As Long)
     Private Declare Sub ZeroMemory Lib "kernel32" Alias "RtlZeroMemory" (ByRef Dst As Any, ByVal Length As Long)
     Private Declare Sub FillMemory Lib "kernel32" Alias "RtlFillMemory" (ByRef Dst As Any, ByVal Length As Long, ByVal Fill As Byte)
-    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As Long, ByRef Dst As Long, ByVal Src As Long) As Long
+    Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As Long, ByRef Dst As Long, ByRef Src As Long) As Long
     Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef Dst As Long, ByVal Src As Long) As Long
     Private Declare Function VarPtrArray Lib "msvbvm60.dll" Alias "VarPtr" (Var() As Any) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
@@ -112,12 +112,6 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Private Type Internal
-    Size As Long
-    Pointer As LongPtr
-End Type
-Private Virtual As Internal
-
 Public Property Get KeyList() As IGenericReadOnlyList: Set KeyList = myclass.Keys: End Property
 Public Property Get ValueList() As IGenericReadOnlyList: Set ValueList = myclass.Values: End Property
 Public Property Get BaseIndex() As Long: BaseIndex = myclass.Keys.LowerBound: End Property
@@ -129,25 +123,28 @@ Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Compa
 Public Property Get GetKey(ByVal Index As Long) As IGeneric
     
     If (Index > myclass.Size) Then _
-        Call Skynet.Throw(Me, "Public Property Get GetKey").IndexOutofRange("Index not valid")
+        Call System.Throw(Me, "Public Property Get GetKey").IndexOutofRange("(Index > myclass.Size)")
     
     Set GetKey = myclass.Keys(Index)
 
 End Property
 
-Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
+Public Property Set ElementAt(ByVal Index As Long, ByVal Value As IGeneric)
     
     If (Index > myclass.Size) Then _
-        Call Skynet.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("Index not valid")
+        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > myclass.Size)")
     
-    Set myclass.Values(Index) = Item
+    If (Value Is Nothing) Then _
+        Call System.Throw(Me, "Public Property Set ElementAt").IsNothing("(Value Is Nothing)")
+    
+    Set myclass.Values(Index) = Value
     
 End Property
 
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric
 
     If (Index > myclass.Size) Then _
-        Call Skynet.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("Index not valid")
+        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > myclass.Size)")
     
     Set ElementAt = myclass.Values(Index)
     
@@ -155,8 +152,8 @@ End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
 
-    If (Key Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Property set Item").KeyIsNothing
+    If (Key Is Nothing) Or (Value Is Nothing) Then _
+        Call System.Throw(Me, "Public Property Set Item").IsNothing("(Key Is Nothing) Or (Value Is Nothing)")
        
     Dim i As Long
     i = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
@@ -174,10 +171,10 @@ Attribute Item.VB_UserMemId = 0
     Dim i As Long
     i = Me.IndexOfKey(Key)
     
-    If (i >= 0) Then _
-        Set Item = myclass.Values(i): Exit Property
-        
-    Call Skynet.Throw(Me, "Public Property Get Item").NoSuchElement
+    If (i < 0) Then _
+        Call System.Throw(Me, "Public Property Get Item").NoSuchElement
+    
+    Set Item = myclass.Values(i)
         
 End Property
 
@@ -185,27 +182,28 @@ Public Property Get Capacity() As Long: Capacity = myclass.Keys.Length: End Prop
 Public Property Let Capacity(ByVal Value As Long)
     
     If (Value < myclass.Size) Then _
-        Call Skynet.Throw(Me, "Public Property Let Capacity").ArgOutOfRange("Value < myClass.Size")
+        Call System.Throw(Me, "Public Property Let Capacity").ArgOutOfRange("(Value < myclass.Size)")
     
     If (myclass.Keys Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Property Let Capacity").NullPointer("myClass.Keys Is Nothing")
+        Call System.Throw(Me, "Public Property Let Capacity").IsNothing("(myclass.Keys Is Nothing)")
     
     If Not (Value = myclass.Keys.Length) Then
         If (Value > 0) Then
+            
             Dim newKeys As GenericArray: Set newKeys = GenericArray.Build(Value)
             Dim newValues As GenericArray: Set newValues = GenericArray.Build(Value)
             
             If (myclass.Size > 0) Then
                 With myclass.Keys
-                    Call CopyMemory(Dst:=ByVal newKeys.AdressOf(Element:=1), Src:=ByVal .AdressOf(Element:=1), Length:=.TotalSize): _
-                    Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=1), Length:=.TotalSize)
+                    Call CopyMemory(Dst:=ByVal newKeys.AdressOf(Element:=.LowerBound), Src:=ByVal .AdressOf(Element:=.LowerBound), Length:=.Size): _
+                    Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=.LowerBound), Length:=.Size)
                 End With
                 With myclass.Values
-                    Call CopyMemory(Dst:=ByVal newValues.AdressOf(Element:=1), Src:=ByVal .AdressOf(Element:=1), Length:=.TotalSize): _
-                    Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=1), Length:=.TotalSize)
+                    Call CopyMemory(Dst:=ByVal newValues.AdressOf(Element:=.LowerBound), Src:=ByVal .AdressOf(Element:=.LowerBound), Length:=.Size): _
+                    Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=.LowerBound), Length:=.Size)
                 End With
             End If
-            
+           
             Set myclass.Keys = newKeys
             Set myclass.Values = newValues
         Else
@@ -218,38 +216,38 @@ End Property
 Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY, Optional ByVal Comparer As IGenericComparer) As GenericSortedList
     
     If (Me Is GenericSortedList) = False Then _
-        Call Skynet.Throw(Me, "Public Function Build").BuildExeption
+        Call System.Throw(Me, "Public Function Build").BuildExeption
     
     If (Capacity < 0) Then _
-        Call Skynet.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
+        Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
-    If (Comparer Is Nothing) Then _
-        Set Comparer = IGenericValue.Comparer
+    If Comparer Is Nothing Then _
+        Set Comparer = IGenericComparer
     
     With myclass
-        .SortOrder = ascending
+        .SortOrder = Ascending
         Set .Comparer = Comparer
         Set .Keys = GenericArray.Build(Capacity)
         Set .Values = GenericArray.Build(Capacity)
     End With
    
-    Set Build = Skynet.CreateInstance(New GenericSortedList, Virtual.Pointer, Virtual.Size)
+    Set Build = System.CreateInstance(New GenericSortedList, VarPtr(myclass), LenB(myclass))
     
 End Function
 
 Public Function BuildFrom(ByVal Dictionary As IGenericDictionary, Optional ByVal Comparer As IGenericComparer) As GenericSortedList
     
     If (Me Is GenericSortedList) = False Then _
-        Call Skynet.Throw(Me, "Public Function BuildFrom").BuildExeption
+        Call System.Throw(Me, "Public Function BuildFrom").BuildExeption
     
     If (Dictionary Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function BuildFrom").NullPointer("(Dictionary Is Nothing)")
+        Call System.Throw(Me, "Public Function BuildFrom").IsNothing("(Dictionary Is Nothing)")
     
     If Comparer Is Nothing Then _
         Set Comparer = IGenericValue.Comparer
         
     With myclass
-        .SortOrder = ascending
+        .SortOrder = Ascending
         
         Set .Comparer = Comparer
         Set .Keys = GenericArray.Build(Dictionary.Count)
@@ -263,17 +261,12 @@ Public Function BuildFrom(ByVal Dictionary As IGenericDictionary, Optional ByVal
     
     End With
    
-    Set BuildFrom = Skynet.CreateInstance(New GenericSortedList, Virtual.Pointer, Virtual.Size)
+    Set BuildFrom = System.CreateInstance(New GenericSortedList, VarPtr(myclass), LenB(myclass))
     
 End Function
 
-Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myclass)
-    Virtual.Size = LenB(myclass)
-End Sub
-
 Private Sub Class_Terminate()
-    Call Skynet.Dispose(Me)
+    Call System.Dispose(Me)
 End Sub
 
 Private Sub EnsureCapacity(ByVal Min As Long)
@@ -329,7 +322,7 @@ End Function
 Public Sub RemoveAt(ByVal Index As Long)
 
     If (Index < myclass.Keys.LowerBound) Or (Index > myclass.Size) Then _
-        Call Skynet.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("Index < myClass.Keys.LowerBound) Or (Index > myClass.Size)")
+        Call System.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("Index < myClass.Keys.LowerBound) Or (Index > myClass.Size)")
    
     Set myclass.Keys(Index) = Nothing
     Set myclass.Values(Index) = Nothing
@@ -349,20 +342,20 @@ Public Sub RemoveAt(ByVal Index As Long)
     
 End Sub
 
-Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric)
-
-    If (Key Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function Add").KeyIsNothing
+Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Long
+   
+    If (Key Is Nothing) Or (Value Is Nothing) Then _
+        Call System.Throw(Me, "Public Function Add").IsNothing
        
     Dim i As Long
     i = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
-    
+   
     If (i >= 0) Then _
-        Call Skynet.Throw(Me, "Public Sub Add").InvalidInput("Key duplicated")
+        Call System.Throw(Me, "Public Sub Add").InvalidInput("Key duplicated")
 
     Call Insert(Index:=Not i, Key:=Key, Value:=Value)
 
-End Sub
+End Function
 
 Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IGeneric)
 
@@ -374,6 +367,7 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
             Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
         End With
+        
         With myclass.Values
             Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
@@ -382,7 +376,7 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
     
     Set myclass.Keys(Index) = Key
     Set myclass.Values(Index) = Value
-    Call InterlockedIncrement(myclass.Size)
+    myclass.Size = myclass.Size + 1
 
 End Sub
 
@@ -395,7 +389,7 @@ End Sub
 Public Function IndexOfKey(ByVal Key As IGeneric) As Long
      
     If (Key Is Nothing) Then _
-        Call Skynet.Throw(Me, "Public Function IndexOfKey").KeyIsNothing
+        Call System.Throw(Me, "Public Function IndexOfKey").IsNothing("(Key Is Nothing)")
     
     Dim ret As Long
     ret = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
@@ -421,13 +415,13 @@ End Sub
 Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
     
     If (GArray Is Nothing) Then _
-        Call Skynet.Throw(Me, Caller).NullPointer("GArray Is Nothing")
+        Call System.Throw(Me, Caller).IsNothing("(GArray Is Nothing)")
     
     If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-        Call Skynet.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
+        Call System.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
 
     If (GArray.Length - ArrayIndex + GArray.LowerBound < myclass.Size) Then _
-        Call Skynet.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Size)")
+        Call System.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Size)")
     
     Dim i As Long
      
@@ -437,8 +431,8 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
         Case t = ValueData
             Call GenericArray.Copy(SrcArray:=myclass.Values, SrcIndex:=myclass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Size)
         Case Else
-            For i = myclass.Keys.LowerBound To myclass.Size
-                Set GArray(ArrayIndex) = GenericPair(myclass.Keys(i), myclass.Values(i)): Call InterlockedIncrement(ArrayIndex)
+            For i = myclass.Keys.LowerBound To myclass.Size - 1 + myclass.Keys.LowerBound
+                Set GArray(ArrayIndex) = GenericPair(myclass.Keys(i), myclass.Values(i)): ArrayIndex = ArrayIndex + 1
             Next
     End Select
     
@@ -457,13 +451,13 @@ Public Function IteratorOf(ByVal t As DictionaryData, Optional ByVal Index As Lo
         Count = myclass.Size
     
     If (Index < myclass.Keys.LowerBound) Or (Index > myclass.Size + myclass.Keys.LowerBound) Then _
-        Call Skynet.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myClass.Keys.LowerBound) Or (Index > myClass.Size + myClass.Keys.LowerBound)")
+        Call System.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myClass.Keys.LowerBound) Or (Index > myClass.Size + myClass.Keys.LowerBound)")
 
     If (Count < 0) Or (Count > myclass.Size - Index + myclass.Keys.LowerBound) Then _
-        Call Skynet.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Size - Index + myClass.Keys.LowerBound)")
+        Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Size - Index + myClass.Keys.LowerBound)")
     
     Call LoadIterator(c.Iterator, t, myclass.Keys, myclass.Values, Index, Count)
-    Set IteratorOf = Skynet.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
+    Set IteratorOf = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
 
 '    Select Case True
 '        Case t = KeyData
@@ -472,7 +466,7 @@ Public Function IteratorOf(ByVal t As DictionaryData, Optional ByVal Index As Lo
 '            Set Iterator = myClass.Values.Iterator(StartIndex:=myClass.Values.LowerBound, Count:=myClass.Size)
 '        Case Else
 '            Call LoadIterator(c.Iterator, PairData, myClass.Keys, myClass.Values, Index, Count)
-'            Set Iterator = Skynet.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
+'            Set Iterator = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
 '    End Select
 '
 End Function
@@ -500,8 +494,8 @@ Private Sub LoadIterator( _
 End Sub
 'IGeneric
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSortedList: End Property
-Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
-Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSortedList):  End Property
@@ -511,13 +505,13 @@ Private Function IGeneric_Clone() As IGeneric
     Dim c As Member
     
     With c
-        Set .Keys = Skynet.Clone(myclass.Keys)
-        Set .Values = Skynet.Clone(myclass.Values)
+        Set .Keys = System.Clone(myclass.Keys)
+        Set .Values = System.Clone(myclass.Values)
         .Size = myclass.Size
         .SortOrder = myclass.SortOrder
     End With
     
-    Set IGeneric_Clone = Skynet.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
+    Set IGeneric_Clone = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
   
 End Function
 
@@ -539,7 +533,7 @@ Private Function IGeneric_ToString() As String
                             "Class: " & TypeName$(Me) & vbNewLine & _
                             "Capacity: " & .Keys.Length & vbNewLine & _
                             "Elements: " & .Size & vbNewLine & _
-                            "Sortorder: " & IIf(.SortOrder = ascending, "Ascending", "Descending")
+                            "Sortorder: " & IIf(.SortOrder = Ascending, "Ascending", "Descending")
     End With
 End Function
 
@@ -549,7 +543,7 @@ Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
     If (Index > myclass.Size) Then _
-        Call Skynet.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("Index not valid")
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index > myclass.Size)")
     
     Set IGenericReadOnlyList_ElementAt = myclass.Values(Index)
     
@@ -585,31 +579,28 @@ Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterato
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
      
     With myclass.Iterator
-        Do
-            If .Index = .EndIndex Then
-                If .HasLoaded = False Then _
-                    Call Skynet.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-                
-                Set Out = Nothing
-                Set .Current = Nothing
-                Exit Function
-            End If
+        If .Index = .EndIndex Then
+            If .HasLoaded = False Then _
+                Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
             
-            Call InterlockedIncrement(.Index)
-            
-            If .Type = KeyData Then
-                Set .Current = .Keys(.Index)
-    
-            ElseIf .Type = ValueData Then
-                Set .Current = .Values(.Index)
-            
-            Else
-                Set .Current = GenericPair(.Keys(.Index), .Values(.Index))
-            
-            End If
+            Set Out = Nothing
+            Set .Current = Nothing
+            Exit Function
+        End If
         
-        Loop While .Current Is Nothing
+        .Index = .Index + 1
         
+        If .Type = KeyData Then
+            Set .Current = .Keys(.Index)
+
+        ElseIf .Type = ValueData Then
+            Set .Current = .Values(.Index)
+        
+        Else
+            Set .Current = GenericPair(.Keys(.Index), .Values(.Index))
+        
+        End If
+
         Set Out = .Current
         IGenericIterator_HasNext = True
             
@@ -620,7 +611,7 @@ End Function
 Private Sub IGenericIterator_Reset()
     With myclass.Iterator
         If .HasLoaded = False Then _
-            Call Skynet.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
+            Call System.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
                 
         Call LoadIterator(myclass.Iterator, .Type, .Keys, .Values, .StartIndex, .Count)
     End With

@@ -18,12 +18,13 @@ Public Property Get IsMutable() As Boolean: IsMutable = False: End Property
 Public Property Get HashValue() As Long: End Property
 Public Property Get IsRelatedTo(ByVal Other As IGeneric) As Boolean: IsRelatedTo = True: End Property
 
-Public Function Equals(ByVal Other As IGeneric) As Boolean: Equals = Other Is IGeneric: End Function
+Public Function Equals(ByVal Other As IGeneric) As Boolean: Equals = Other Is Me: End Function
 Public Function ToString() As String: ToString = "Class: " & TypeName$(Me) & " :: Default": End Function
 Attribute ToString.VB_UserMemId = 0
 Public Function Clone() As IGeneric: Set Clone = IGeneric: End Function
 Public Sub Dispose(): End Sub
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+'    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub
+

@@ -36,6 +36,6 @@ Public Sub Reset(): End Sub
 
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Throw(Me, "Private Sub Class_Initialize").Instantiation
+'    Call System.Throw(Me, "Private Sub Class_Initialize").Instantiation
 'End Sub
 

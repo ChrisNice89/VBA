@@ -20,5 +20,5 @@ Public Function Iterator() As IGenericIterator: End Function
 Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
 
 'Private Sub Class_Initialize()
-'    Call Skynet.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+'    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 'End Sub

@@ -95,7 +95,7 @@ Public Function SqlConnection(ByVal Path As String, ByVal InitialCatalog As Stri
         .Prompt = PromptNever
     End With
    
-    Set SqlConnection = Skynet.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
+    Set SqlConnection = System.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
 
 End Function
 
@@ -109,7 +109,7 @@ Public Function AccessConnection(ByVal Path As String, Optional ByVal Password A
         .UserID = "Admin"
     End With
    
-    Set AccessConnection = Skynet.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
+    Set AccessConnection = System.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
 
 End Function
 
@@ -122,7 +122,7 @@ Public Function CsvConnection(ByVal File As String, Optional ByVal Password As S
         .Prompt = PromptNever
     End With
     
-    Set CsvConnection = Skynet.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
+    Set CsvConnection = System.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
 
 End Function
 
@@ -135,7 +135,7 @@ Public Function ExcelConnection(ByVal File As String, Optional ByVal Password As
         .Prompt = PromptNever
     End With
     
-    Set ExcelConnection = Skynet.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
+    Set ExcelConnection = System.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
     
 End Function
 
@@ -159,7 +159,7 @@ Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member: c = myclass 'hardcopy
 
-    Set IGeneric_Clone = Skynet.CreateInstance(New SqlCredentials, VarPtr(c), Virtual.Size)
+    Set IGeneric_Clone = System.CreateInstance(New SqlCredentials, VarPtr(c), Virtual.Size)
    
 End Function
 
