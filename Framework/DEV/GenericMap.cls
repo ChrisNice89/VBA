@@ -123,11 +123,9 @@ Private Type Member
     LoadFactor As Double
     Buckets() As Bucket
     Iterator As Iterator
-    Comparer As IGenericComparer
 End Type
 Private myclass As Member
 
-Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
 Public Property Get LoadSize() As Long: LoadSize = myclass.LoadSize: End Property
 Public Property Get LoadFactor() As Double: LoadFactor = myclass.LoadFactor: End Property
 Public Property Get Count() As Long: Count = myclass.Count: End Property
@@ -184,8 +182,7 @@ Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment =
 
 Public Function Build( _
                         Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
-                        Optional ByVal LoadFactor As Double = DEFAULT_LOADFACTOR, _
-                        Optional ByVal Comparer As IGenericComparer) As GenericMap
+                        Optional ByVal LoadFactor As Double = DEFAULT_LOADFACTOR) As GenericMap
     
     If (Me Is GenericMap) = False Then _
         Call System.Throw(Me, "Public Function Build").BuildExeption
@@ -210,11 +207,6 @@ Public Function Build( _
             .HashPrime = 101
             .RehashBarrier = 100
         End With
-        
-        If Comparer Is Nothing Then _
-            Set Comparer = IGenericComparer
-        
-        Set myclass.Comparer = Comparer
         
         .LoadFactor = LoadFactor
         .RawSize = Capacity / .LoadFactor
@@ -270,13 +262,13 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     If (Key Is Nothing) Then _
         Call System.Throw(Me, "FindEntry").IsNothing("(Key Is Nothing)")
 
-    Call LoadHash(Hash, myclass.Comparer.GetHashCode(Key), myclass.Size)
+    Call LoadHash(Hash, Key.HashValue, myclass.Size)
   
     Do
         With myclass.Buckets(Hash.Index)
             If ((.STATE And HAS_ENTRY) = HAS_ENTRY) Then _
                 If .HashCode = Hash.Code Then _
-                    If myclass.Comparer.Equals(.Key, Key) Then _
+                    If Key.Equals(.Key) Then _
                         FindEntry = Hash.Index: Exit Function
 
             If (Not (.STATE And HAS_COLLISION) = HAS_COLLISION) Then _
@@ -392,7 +384,7 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
                 If Not ForceNewHashing Then
                     Call LoadHash(Hash, .Buckets(i).HashCode, Size)
                 Else
-                    Call LoadHash(Hash, .Comparer.GetHashCode(.Buckets(i).Key), Size)
+                    Call LoadHash(Hash, .Buckets(i).Key.HashValue, Size)
                 End If
               
                 Do
@@ -442,7 +434,7 @@ Public Sub Add( _
             Call Rehash(.Size, False)
         End If
         
-        Call LoadHash(Hash, .Comparer.GetHashCode(Key), .Size)
+        Call LoadHash(Hash, Key.HashValue, .Size)
    
         Do
             With myclass.Buckets(Hash.Index)
@@ -455,7 +447,7 @@ Public Sub Add( _
                 End If
                 
                 If .HashCode = Hash.Code Then
-                    If myclass.Comparer.Equals(.Key, Key) Then
+                    If Key.Equals(.Key) Then
                         If (Overwrite) Then
                             Set .Value = Value
                         Else

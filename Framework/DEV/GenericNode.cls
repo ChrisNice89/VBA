@@ -24,6 +24,11 @@ Private Type Member
 End Type
 Private myclass As Member
 
+Public Property Get IsLeaf() As Boolean
+    If myclass.Left Is Nothing Then _
+        If myclass.Right Is Nothing Then _
+            IsLeaf = True
+End Property
 Public Property Get IsRed() As Boolean: IsRed = myclass.IsRed: End Property
 Public Property Let IsRed(ByVal Value As Boolean):  myclass.IsRed = Value: End Property
 
@@ -44,6 +49,9 @@ Public Property Set Value(ByVal V As IGeneric): Set myclass.Value = V: End Prope
 
 Public Sub Clear()
     With myclass
+        .Count = 1
+        IsRed = False
+        Set .Value = Nothing
         Set .Parent = Nothing
         
         If myclass.Left Is Nothing = False Then _

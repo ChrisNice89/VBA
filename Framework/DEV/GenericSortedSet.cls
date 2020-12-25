@@ -405,7 +405,110 @@ Public Sub Clear()
     
 End Sub
 
-Public Function Remove(ByVal Key As IGeneric) As Boolean
+Public Sub IntersectWith(ByVal Collection As IGenericCollection)
+    
+    Dim Value As IGeneric
+    Dim NodesToSave As GenericList
+    Dim Node As GenericNode
+    Dim Current As GenericNode
+    Dim Parent  As GenericNode
+    Dim GrandParent As GenericNode
+    Dim GreatGrandParent As GenericNode
+    Dim Order As Long
+    
+    If Collection Is Nothing Then
+    'Error
+    End If
+    
+    If Collection.Count = 0 Then
+        Exit Sub
+    End If
+    
+    If IGeneric_IsRelatedTo(Collection) Then
+        'Special handling:exit sub
+    End If
+    
+    Set NodesToSave = GenericList.Build(Me.Count)
+    
+    With Collection.Iterator
+    
+        Do While .HasNext(Value)
+            Set Node = FindNode(Value)
+            If Node Is Nothing = False Then
+                Call Me.Remove(Value)
+                With Node 'reset
+                    '  Set .Value = Value 'not necessary -if not reference equal?!
+                    Set .Parent = Nothing
+                    Set .Left = Nothing
+                    Set .Right = Nothing
+                    .Count = 1
+                    .IsRed = False
+                End With
+                Call NodesToSave.Add(Node)
+            End If
+        Loop
+        
+    End With
+    
+    Call Me.Clear
+    
+    With NodesToSave.Iterator
+    
+        If .HasNext(Node) Then _
+            Set myclass.Root = Node
+        
+        Do While .HasNext(Node)
+            Set Current = myclass.Root
+            Set Value = Node.Value
+            
+            With myclass.Comparer
+            
+                Do
+                    Order = .Compare(Value, Current.Value)
+        
+                    Current.Count = Current.Count + 1
+                    
+                    If Split4Node(Current) Then _
+                        If (Parent Is Nothing) = False Then _
+                            If Parent.IsRed Then _
+                                Call EnsureBalance(Current, Parent, GrandParent, GreatGrandParent)
+                    
+                    Set GreatGrandParent = GrandParent
+                    Set GrandParent = Parent
+                    Set Parent = Current
+                    
+                    If Order < 0 Then
+                        Set Current = Current.Left
+                    Else
+                        Set Current = Current.Right
+                    End If
+            
+                Loop While (Current Is Nothing) = False
+                
+            End With
+        '    If (Parent Is Nothing) Then _
+        '        Call System.Throw(Me, "Private Sub InsertionBalance").NullPointer("Parent cannot be null here!")
+            
+            If (Order < 0) Then
+                Set Parent.Left = Node
+            Else
+                Set Parent.Right = Node
+            End If
+            
+            Set Node.Parent = Parent
+            Node.IsRed = True
+            
+            If (Parent.IsRed) Then _
+                Call EnsureBalance(Node, Parent, GrandParent, GreatGrandParent)
+            
+            myclass.Root.IsRed = False
+        Loop
+        
+    End With
+    
+End Sub
+
+Public Function Remove(ByVal Value As IGeneric) As Boolean
 
 
 End Function
@@ -475,16 +578,16 @@ Private Sub ReplaceNode( _
                    
 End Sub
 'leftleaning
-Private Function Insert(ByVal Node As GenericNode, ByVal Value As IGeneric) As GenericNode
+Private Function InsertLeftLeaning(ByVal Node As GenericNode, ByVal Value As IGeneric) As GenericNode
     
     If Node Is Nothing Then _
-        Set Insert = GenericNode.Build(Value:=Value, IsRed:=True): Exit Function
+        Set InsertLeftLeaning = GenericNode.Build(Value:=Value, IsRed:=True): Exit Function
     
     With Node
         .Count = .Count + 1
         Select Case myclass.Comparer.Compare(Value, .Value)
-            Case Is < 0: Set .Left = Insert(.Left, Value)
-            Case Is > 0: Set .Right = Insert(.Right, Value)
+            Case Is < 0: Set .Left = InsertLeftLeaning(.Left, Value)
+            Case Is > 0: Set .Right = InsertLeftLeaning(.Right, Value)
             Case Else: Set .Value = Value
         End Select
     End With
@@ -503,12 +606,12 @@ Private Function Insert(ByVal Node As GenericNode, ByVal Value As IGeneric) As G
                 'Call FlipColor(Node)
     End With
     
-    Set Insert = Node
+    Set InsertLeftLeaning = Node
     
 End Function
 
 Public Sub AddLeftLeaning(ByVal Value As IGeneric)
-    Set myclass.Root = Insert(myclass.Root, Value)
+    Set myclass.Root = InsertLeftLeaning(myclass.Root, Value)
     myclass.Root.IsRed = False
 End Sub
 
@@ -558,7 +661,6 @@ Public Function Add( _
                         Call EnsureBalance(Current, Parent, GrandParent, GreatGrandParent)
             
             Set GreatGrandParent = GrandParent
-            Set GrandParent = Parent
             Set GrandParent = Parent
             Set Parent = Current
             
@@ -933,6 +1035,7 @@ Private Function IGeneric_ToString() As String
 End Function
 
 Private Sub Class_Terminate()
+
     If Not myclass.Root Is Nothing Then _
         Call System.Dispose(myclass.Root)
     

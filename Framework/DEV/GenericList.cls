@@ -362,19 +362,19 @@ End Function
 Public Sub RemoveAt(ByVal Index As Long)
 
     If (Index > myclass.Size) Then _
-        Call System.Throw(Me, "Public Sub RemoveAt").IndexOutofRange("Index > myClass.Size")
-    
-    InterlockedDecrement myclass.Size
+        Call System.Throw(Me, "Public Sub RemoveAt").IndexOutofRange("(Index > myclass.Size)")
     
     With myclass.Items
         Set .ElementAt(Index) = Nothing
+        
+        InterlockedDecrement myclass.Size
         
         If (Index < myclass.Size + .LowerBound) Then _
             Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
             
     End With
-    
+
 End Sub
 
 Public Sub RemoveRange(ByVal Index As Long, ByVal Count As Long)
