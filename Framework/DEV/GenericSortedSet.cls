@@ -308,19 +308,18 @@ End Sub
 
 Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray
    
-    Dim Values As GenericArray
-    Set Values = GenericArray.Build(Me.Count)
+    ReDim Values(GenericArray.LowerBound To Me.Count - GenericArray.LowerBound + 1) As IGeneric
     
-    Dim Index As Long: Index = Values.LowerBound - 1
+    Dim Index As Long: Index = GenericArray.LowerBound - 1
     
     Dim Stack As InternalStack
     Dim Current As GenericNode
 
     Call LoadStack(Stack, myclass.Root, Reverse)
 
-    Do While InOrderTreeWalk(Current, Stack): Set Values.ElementAt(InterlockedIncrement(Index)) = Current.Value: Loop
+    Do While InOrderTreeWalk(Current, Stack): Set Values(InterlockedIncrement(Index)) = Current.Value: Loop
     
-    Set ToArray = Values
+    Set ToArray = GenericArray.BuildFrom(Values)
     
 End Function
 
@@ -626,8 +625,8 @@ Public Function Add( _
     Dim GreatGrandParent As GenericNode
     Dim Order As Long, i As Long
     
-    If (Value Is Nothing) Then _
-        Call System.Throw(Me, "Public Function Add").IsNothing("(Value Is Nothing)")
+'    If (Value Is Nothing) Then _
+'        Call System.Throw(Me, "Public Function Add").IsNothing("(Value Is Nothing)")
     
     If (myclass.Root Is Nothing) Then _
         Set myclass.Root = GenericNode.Build(Value:=Value, Parent:=Nothing, IsRed:=False): _

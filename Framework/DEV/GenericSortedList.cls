@@ -112,6 +112,15 @@ Private Type Member
 End Type
 Private myclass As Member
 
+Private Property Get UpperBound() As Long
+    
+    UpperBound = myclass.Keys.LowerBound
+    
+    If myclass.Size > 0 Then _
+        UpperBound = UpperBound + myclass.Size - 1
+   
+End Property
+
 Public Property Get KeyList() As IGenericReadOnlyList: Set KeyList = myclass.Keys: End Property
 Public Property Get ValueList() As IGenericReadOnlyList: Set ValueList = myclass.Values: End Property
 Public Property Get BaseIndex() As Long: BaseIndex = myclass.Keys.LowerBound: End Property
@@ -122,8 +131,11 @@ Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Compa
 
 Public Property Get GetKey(ByVal Index As Long) As IGeneric
     
-    If (Index > myclass.Size) Then _
-        Call System.Throw(Me, "Public Property Get GetKey").IndexOutofRange("(Index > myclass.Size)")
+    If (myclass.Size = 0) Then _
+        Call System.Throw(Me, "Public Property Get GetKey").InvalidOperation("(myclass.Size = 0)")
+        
+    If (Index > UpperBound) Then _
+        Call System.Throw(Me, "Public Property Get GetKey").IndexOutofRange("(Index > UpperBound)")
     
     Set GetKey = myclass.Keys(Index)
 
@@ -131,11 +143,11 @@ End Property
 
 Public Property Set ElementAt(ByVal Index As Long, ByVal Value As IGeneric)
     
-    If (Index > myclass.Size) Then _
-        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > myclass.Size)")
-    
-    If (Value Is Nothing) Then _
-        Call System.Throw(Me, "Public Property Set ElementAt").IsNothing("(Value Is Nothing)")
+    If (myclass.Size = 0) Then _
+        Call System.Throw(Me, "Public Property Set ElementAt").InvalidOperation("(myclass.Size = 0)")
+        
+    If (Index > UpperBound) Then _
+        Call System.Throw(Me, "Public Property Set ElementAt").IndexOutofRange("(Index > UpperBound)")
     
     Set myclass.Values(Index) = Value
     
@@ -143,8 +155,11 @@ End Property
 
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric
 
-    If (Index > myclass.Size) Then _
-        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > myclass.Size)")
+    If (myclass.Size = 0) Then _
+        Call System.Throw(Me, "Public Property Get ElementAt").InvalidOperation("(myclass.Size = 0)")
+        
+    If (Index > UpperBound) Then _
+        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > UpperBound)")
     
     Set ElementAt = myclass.Values(Index)
     
@@ -152,8 +167,8 @@ End Property
 
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric)
 
-    If (Key Is Nothing) Or (Value Is Nothing) Then _
-        Call System.Throw(Me, "Public Property Set Item").IsNothing("(Key Is Nothing) Or (Value Is Nothing)")
+    If (Key Is Nothing) Then _
+        Call System.Throw(Me, "Public Property Set Item").IsNothing("(Key Is Nothing)")
        
     Dim i As Long
     i = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
@@ -311,6 +326,7 @@ Public Function ContainsKey(ByVal Key As IGeneric) As Long: ContainsKey = Me.Ind
 Public Function ContainsValue(ByVal Value As IGeneric) As Long: ContainsValue = Me.IndexOfValue(Value) > -1: End Function
 
 Public Function Remove(ByVal Key As IGeneric) As Boolean
+
     Dim i As Long
     i = Me.IndexOfKey(Key)
     
@@ -321,15 +337,13 @@ End Function
 
 Public Sub RemoveAt(ByVal Index As Long)
 
-    If (Index < myclass.Keys.LowerBound) Or (Index > myclass.Size) Then _
-        Call System.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("Index < myClass.Keys.LowerBound) Or (Index > myClass.Size)")
+    If (Index > UpperBound) Then _
+        Call System.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("(Index > UpperBound)")
    
     Set myclass.Keys(Index) = Nothing
     Set myclass.Values(Index) = Nothing
     
-    InterlockedDecrement myclass.Size
-    
-    If (Index < myclass.Size + myclass.Keys.LowerBound) Then
+    If (Index < UpperBound) Then
         With myclass.Keys
             Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
@@ -340,12 +354,14 @@ Public Sub RemoveAt(ByVal Index As Long)
         End With
     End If
     
+    Call InterlockedDecrement(myclass.Size)
+    
 End Sub
 
 Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Long
    
-    If (Key Is Nothing) Or (Value Is Nothing) Then _
-        Call System.Throw(Me, "Public Function Add").IsNothing
+    If (Key Is Nothing) Then _
+        Call System.Throw(Me, "Public Function Add").IsNothing("(Key Is Nothing)")
        
     Dim i As Long
     i = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
@@ -362,7 +378,7 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
     If (myclass.Size = myclass.Keys.Length) Then _
         Call EnsureCapacity(myclass.Size + 1)
 
-    If (Index < myclass.Size + myclass.Keys.LowerBound) Then
+    If (Index < UpperBound) Then
         With myclass.Keys
             Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
@@ -376,7 +392,7 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
     
     Set myclass.Keys(Index) = Key
     Set myclass.Values(Index) = Value
-    myclass.Size = myclass.Size + 1
+    Call InterlockedIncrement(myclass.Size)
 
 End Sub
 

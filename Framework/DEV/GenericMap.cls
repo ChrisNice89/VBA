@@ -144,7 +144,7 @@ End Property
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
 Public Function GetKeys() As GenericArray
 
-    ReDim Keys(1 To myclass.Count) As IGeneric
+    ReDim Keys(GenericArray.LowerBound To myclass.Count - GenericArray.LowerBound + 1) As IGeneric
     Dim Index As Long
 
     Dim i As Long
@@ -160,7 +160,7 @@ End Function
 
 Public Function GetValues() As GenericArray
 
-    ReDim Values(1 To myclass.Count) As IGeneric
+    ReDim Values(GenericArray.LowerBound To myclass.Count - GenericArray.LowerBound + 1) As IGeneric
     Dim Index As Long
 
     Dim i As Long
@@ -260,7 +260,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     Dim Hash As HashItem
     
     If (Key Is Nothing) Then _
-        Call System.Throw(Me, "FindEntry").IsNothing("(Key Is Nothing)")
+        Call System.Throw(Me, "Private Function FindEntry").IsNothing("(Key Is Nothing)")
 
     Call LoadHash(Hash, Key.HashValue, myclass.Size)
   
@@ -423,8 +423,8 @@ Public Sub Add( _
     Dim Try As Long
     Dim Hash As HashItem
     
-    If (Key Is Nothing) Or (Value Is Nothing) Then _
-        Call System.Throw(Me, "Public Function Add").IsNothing("(Key Is Nothing) Or (Value Is Nothing)")
+    If (Key Is Nothing) Then _
+        Call System.Throw(Me, "Public Function Add").IsNothing("(Key Is Nothing)")
         
     With myclass
     

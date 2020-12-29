@@ -30,9 +30,6 @@ Attribute Build.VB_UserMemId = 0
     
     If (Me Is GenericPair) = False Then _
         Call System.Throw(Me, "Public Function Build").BuildExeption
-    
-'    If (Key Is Nothing) Or (Value Is Nothing) Then _
-'        Call System.Throw(Me, "Public Function Build").IsNothing("(Key Is Nothing) Or (Value Is Nothing)")
 '
     Set myclass.Key = Key: Set myclass.Value = Value
     Set Build = New GenericPair: Set myclass.Key = Nothing: Set myclass.Value = Nothing

@@ -99,15 +99,25 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Private Property Get UpperBound() As Long: UpperBound = IIf(myclass.Size = 0, 0, myclass.Size - 1 + myclass.Items.LowerBound): End Property
+Private Property Get UpperBound() As Long
+    
+    UpperBound = myclass.Items.LowerBound
+    
+    If myclass.Size > 0 Then _
+        UpperBound = UpperBound + myclass.Size - 1
+   
+End Property
 Public Property Get Count() As Long: Count = myclass.Size: End Property
 Public Property Get BaseIndex() As Long: BaseIndex = myclass.Items.LowerBound: End Property
 Public Property Get SortOrder() As SortOrder: SortOrder = myclass.SortOrder: End Property
 Public Property Let SortOrder(ByVal Order As SortOrder):    myclass.SortOrder = Order: End Property
 Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
-
-    If (Index > UpperBound) Or (myclass.Size = 0) Then _
-        Call System.Throw(Me, "Public Property Set ElementAt").IndexOutofRange("(Index > UpperBound) Or (myclass.Size = 0)")
+    
+    If (myclass.Size = 0) Then _
+        Call System.Throw(Me, "Public Property Set ElementAt").InvalidOperation("(myclass.Size = 0)")
+        
+    If (Index > UpperBound) Then _
+        Call System.Throw(Me, "Public Property Set ElementAt").IndexOutofRange("(Index > UpperBound)")
     
     Set myclass.Items(Index) = Item
 
@@ -115,9 +125,12 @@ End Property
 
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric
 Attribute ElementAt.VB_UserMemId = 0
-
-    If (Index > UpperBound) Or (myclass.Size = 0) Then _
-        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > UpperBound) Or (myclass.Size = 0)")
+    
+    If (myclass.Size = 0) Then _
+        Call System.Throw(Me, "Public Property Get ElementAt").InvalidOperation("(myclass.Size = 0)")
+        
+    If (Index > UpperBound) Then _
+        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > UpperBound)")
     
     Set ElementAt = myclass.Items(Index)
 
@@ -270,19 +283,24 @@ Public Function Iterator(Optional ByVal Index As Long, Optional ByVal Count As L
 
 End Function
 'Pops an item from the top of the stack.  If the stack is empty, Pop
-'throws an IndexOutofRangeException.
+'throws an InvalidOperationException.
 Public Function Pop() As IGeneric
+    
+    Dim i As Long: i = UpperBound
+    
     With Me
-        Set Pop = .ElementAt(UpperBound)
-        Call .RemoveAt(UpperBound)
+        Set Pop = .ElementAt(i)
+        Call .RemoveAt(i)
     End With
+    
 End Function
 'Pushes an item to the top of the stack.
-Public Function Push(ByVal Value As IGeneric) As IGeneric
-    Set Push = myclass.Items(Me.Add(Value))
+Public Function Push(ByVal Value As IGeneric) As GenericList
+    Call Me.Add(Value)
+    Set Push = Me
 End Function
 'Returns the top object on the stack without removing it.  If the stack
-'is empty, Peek throws an IndexOutofRangeException.
+'is empty, Peek throws an InvalidOperationException.
 Public Function Peek() As IGeneric
     With Me
         Set Peek = .ElementAt(UpperBound)
@@ -293,10 +311,11 @@ Public Function Add(ByVal Item As IGeneric) As Long
     
     If (myclass.Size = Me.Capacity) Then _
         Call EnsureCapacity(myclass.Size + 1)
-        
-    Set myclass.Items.ElementAt(UpperBound) = Item
-    myclass.Size = myclass.Size + 1
-    Add = myclass.Size
+    
+    Add = UpperBound
+    
+    Set myclass.Items.ElementAt(Add) = Item
+    Call InterlockedIncrement(myclass.Size)
 
 End Function
 
@@ -363,7 +382,8 @@ Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
             Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
          
-         Set .ElementAt(Index) = Item: Call InterlockedIncrement(myclass.Size)
+         Set .ElementAt(Index) = Item
+         Call InterlockedIncrement(myclass.Size)
          
     End With
 
@@ -382,17 +402,17 @@ End Function
 Public Sub RemoveAt(ByVal Index As Long)
 
     If (Index > UpperBound) Then _
-            Call System.Throw(Me, "Public Sub RemoveAt").IndexOutofRange("(Index > UpperBound")
+        Call System.Throw(Me, "Public Sub RemoveAt").IndexOutofRange("(Index > UpperBound")
         
     With myclass.Items
+    
         Set .ElementAt(Index) = Nothing
-        
-        InterlockedDecrement myclass.Size
         
         If (Index < UpperBound) Then _
             Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
-            
+        
+        Call InterlockedDecrement(myclass.Size)
     End With
 
 End Sub
@@ -475,11 +495,13 @@ Public Function IsEqual(ByVal first As IGenericReadOnlyList, ByVal second As IGe
     Set a = first.Iterator: Set b = second.Iterator
     
     Do While (a.HasNext(i) And b.HasNext(j))
-        If Not i Is Nothing Then
-            If Not i.Equals(j) Then _
+
+        If Not (i Is Nothing) Then
+            If i.Equals(j) = False Then _
                 Exit Function
-        ElseIf Not j Is Nothing Then
-            Exit Function
+        Else
+            If Not (j Is Nothing) Then _
+                Exit Function
         End If
     Loop
     
@@ -512,7 +534,7 @@ Public Function BinarySearch( _
     End If
     
     If (Count = 0) Then
-        Count = Me.Count
+        Count = myclass.Size
     Else
         If (Count < 0) Then _
             Call System.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Count < 0")

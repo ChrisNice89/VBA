@@ -2154,19 +2154,18 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     With myclass.Iterator
         If (.Rank = 1) Then
-            Do
-                If .Index = .EndIndex Then
-                    If .HasLoaded = False Then _
-                        Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-                
-                    Set Out = Nothing
-                    Set .Current = Nothing
-                    Exit Function
-                End If
-                Set .Current = .Values(InterlockedIncrement(.Index))
-            Loop While .Current Is Nothing
+            If .Index = .EndIndex Then
+                If .HasLoaded = False Then _
+                    Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
             
+                Set Out = Nothing
+                Set .Current = Nothing
+                Exit Function
+            End If
+            
+            Set .Current = .Values(InterlockedIncrement(.Index))
             Set Out = .Current
+            
             IGenericIterator_HasNext = True
            
         Else

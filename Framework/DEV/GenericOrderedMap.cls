@@ -112,13 +112,13 @@ End Function
 
 Public Function GetKeys() As GenericArray
 
-    ReDim Keys(myclass.Internal.BaseIndex To myclass.Internal.Count) As IGeneric
+    ReDim Keys(myclass.Internal.BaseIndex To myclass.Internal.Count - myclass.Internal.BaseIndex + 1) As IGeneric
 
     Dim i As Long
     
     With Me
         For i = LBound(Keys) To UBound(Keys)
-            Set Keys(i) = .Entry(i).Key
+            Set Keys(i) = Me.Entry(i).Key
         Next
     End With
     
@@ -128,7 +128,7 @@ End Function
 
 Public Function GetValues() As GenericArray
 
-    ReDim Values(myclass.Internal.BaseIndex To myclass.Internal.Count) As IGeneric
+    ReDim Values(myclass.Internal.BaseIndex To myclass.Internal.Count - myclass.Internal.BaseIndex + 1) As IGeneric
 
     Dim i As Long
     
