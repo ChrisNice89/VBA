@@ -194,7 +194,7 @@ Attribute ElementAt.VB_UserMemId = 0
 Public Function Build(ParamArray Indices() As Variant) As GenericArray
     
     Dim SAB() As SAFEARRAYBOUND
-    Dim i As Long, UB As Long, LB As Long
+    Dim i As Long, ub As Long, LB As Long
     
     If (Me Is GenericArray) = False Then _
         Call System.Throw(Me, "Public Function Build").BuildExeption
@@ -202,15 +202,15 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     If IsMissing(Indices) Then _
         Call System.Throw(Me, "Public Function Build").InvalidInput("ParamArray Indices are missing")
     
-    LB = LBound(Indices): UB = UBound(Indices)
+    LB = LBound(Indices): ub = UBound(Indices)
     
     With myclass
         .Elements = 1
-        ReDim .Indices(LB To UB)
-        ReDim .Struct.Bounds(LB To UB)
-        ReDim SAB(LB To UB)
+        ReDim .Indices(LB To ub)
+        ReDim .Struct.Bounds(LB To ub)
+        ReDim SAB(LB To ub)
     
-        For i = LB To UB
+        For i = LB To ub
             If Not (Indices(i) > 0) Then _
                 Call System.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
             
@@ -221,7 +221,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
             
             .Elements = .Elements * SAB(i).cElements
             .Indices(i) = SAB(i).lLbound
-            .Struct.Bounds(UB - i) = SAB(i)
+            .Struct.Bounds(ub - i) = SAB(i)
             .Struct.cDims = .Struct.cDims + 1
            
         Next i
