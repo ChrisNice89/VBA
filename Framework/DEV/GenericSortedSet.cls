@@ -99,8 +99,8 @@ End Function
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric
 Attribute ElementAt.VB_UserMemId = 0
 
-    If (Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root)) Then _
-        Call System.Throw(Me, "Public Function ElementAt").IndexOutofRange("(Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root))")
+    If (Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root) - BASE_INDEX + 1) Then _
+        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root) - BASE_INDEX + 1)")
 
     Set ElementAt = SelectKth(myclass.Root, Index - BASE_INDEX).Value
     
@@ -1045,7 +1045,14 @@ End Sub
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = BASE_INDEX: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Count: End Property
-Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric: Set IGenericReadOnlyList_ElementAt = Me.ElementAt(Index): End Property
+Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
+
+    If (Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root) - BASE_INDEX + 1) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root) - BASE_INDEX + 1)")
+
+    Set IGenericReadOnlyList_ElementAt = SelectKth(myclass.Root, Index - BASE_INDEX).Value
+
+End Property
 Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="IGenericReadOnlyList_CopyTo"):   End Sub
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item): End Function
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(Reverse:=False): End Function

@@ -116,7 +116,7 @@ Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
     If (myclass.Size = 0) Then _
         Call System.Throw(Me, "Public Property Set ElementAt").InvalidOperation("(myclass.Size = 0)")
         
-    If (Index > UpperBound) Then _
+    If (Index > myclass.Items.LowerBound + myclass.Size - 1) Then _
         Call System.Throw(Me, "Public Property Set ElementAt").IndexOutofRange("(Index > UpperBound)")
     
     Set myclass.Items(Index) = Item
@@ -129,7 +129,7 @@ Attribute ElementAt.VB_UserMemId = 0
     If (myclass.Size = 0) Then _
         Call System.Throw(Me, "Public Property Get ElementAt").InvalidOperation("(myclass.Size = 0)")
         
-    If (Index > UpperBound) Then _
+    If (Index > myclass.Items.LowerBound + myclass.Size - 1) Then _
         Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > UpperBound)")
     
     Set ElementAt = myclass.Items(Index)
@@ -675,8 +675,11 @@ Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myclass.Items.IndexOf(Value:=Item, Count:=myclass.Size): End Function
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
-    If (Index > myclass.Size) Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index > myclass.Size) ")
+    If (myclass.Size = 0) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").InvalidOperation("(myclass.Size = 0)")
+        
+    If (Index > myclass.Items.LowerBound + myclass.Size - 1) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index > UpperBound)")
 
     Set IGenericReadOnlyList_ElementAt = myclass.Items(Index)
     

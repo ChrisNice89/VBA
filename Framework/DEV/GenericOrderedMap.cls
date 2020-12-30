@@ -399,29 +399,27 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     Dim P As GenericPair
     
     With myclass.Iterator
-        Do
-            If .Index = .EndIndex Then
-                If .HasLoaded = False Then _
-                    Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-                
-                Set Out = Nothing
-                Set .Current = Nothing
-                Exit Function
-            End If
+       
+        If .Index = .EndIndex Then
+            If .HasLoaded = False Then _
+                Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
             
-            Set P = .Entries(InterlockedIncrement(.Index))
+            Set Out = Nothing
+            Set .Current = Nothing
+            Exit Function
+        End If
             
-            If .Type = KeyData Then
-                Set .Current = P.Key
-            
-            ElseIf .Type = ValueData Then
-                Set .Current = P.Value
-            
-            Else
-                Set .Current = P
-            End If
+        Set P = .Entries(InterlockedIncrement(.Index))
         
-        Loop While .Current Is Nothing
+        If .Type = KeyData Then
+            Set .Current = P.Key
+        
+        ElseIf .Type = ValueData Then
+            Set .Current = P.Value
+        
+        Else
+            Set .Current = P
+        End If
         
         Set Out = .Current
         IGenericIterator_HasNext = True

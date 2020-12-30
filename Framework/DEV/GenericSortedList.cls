@@ -558,8 +558,11 @@ Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyL
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Size: End Property
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
-    If (Index > myclass.Size) Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index > myclass.Size)")
+    If (myclass.Size = 0) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").InvalidOperation("(myclass.Size = 0)")
+        
+    If (Index > myclass.Keys.LowerBound + myclass.Size - 1) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index > UpperBound)")
     
     Set IGenericReadOnlyList_ElementAt = myclass.Values(Index)
     

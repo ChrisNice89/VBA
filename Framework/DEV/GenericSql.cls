@@ -98,12 +98,12 @@ Public Enum ISqlConnectionMode
     ShareDenyNone_ConnectionMode = 16   '"Other users cannot do anything with data."
 End Enum
 '
-Public Enum ISqlConnectionState
-    Connection_IsClosed = 0        'Indicates that the object is closed.
-    Connection_IsOpen = 1          'Indicates that the object is open.
-    Connection_IsConnecting = 2    'Indicates that the object is connecting.
-    Connection_IsExecuting = 4     'Indicates that the object is executing a command.
-    Connection_IsFetching = 8      'Indicates that the rows of the object are being retrieved.
+Public Enum ISqlObjectState
+    IsClosed_State = 0        'Indicates that the object is closed.
+    IsOpen_State = 1          'Indicates that the object is open.
+    IsConnecting_State = 2    'Indicates that the object is connecting.
+    IsExecuting_State = 4     'Indicates that the object is executing a command.
+    IsFetching_State = 8      'Indicates that the rows of the object are being retrieved.
 End Enum
 '
 Public Enum ISqlConnectionCursorLocation
@@ -207,8 +207,8 @@ Private Type Iterator
     Records As ADODB.Recordset
     Converter() As IGenericValue
     Current As IGeneric
-    HasFetchComplete As Boolean
-    HasInitialized As Boolean
+    HasRows As Boolean
+    HasLoaded  As Boolean
 End Type
 
 Private Type Member
@@ -369,7 +369,7 @@ Public Sub Execute()
     If Not myclass.IsPrepared Then _
         Call Me.Prepare(myclass.Sql)
     
-    Do While Database.STATE And ISqlConnectionState.Connection_IsConnecting
+    Do While Database.STATE And ISqlObjectState.IsConnecting_State
     Loop
     
     Set myclass.Command.ActiveConnection = Database
@@ -723,7 +723,7 @@ End Function
 Private Function IsConnected(ByVal Connection As ADODB.Connection) As Boolean
     Debug.Print Connection.STATE
     If Not Connection Is Nothing Then _
-        IsConnected = (Connection.STATE And ISqlConnectionState.Connection_IsOpen) = ISqlConnectionState.Connection_IsOpen
+        IsConnected = (Connection.STATE And ISqlObjectState.IsOpen_State) = ISqlObjectState.IsOpen_State
 
 End Function
 
@@ -863,12 +863,13 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
     
     With myclass.Iterator
         Set .Records = Records
-        .HasFetchComplete = .Records.BOF And .Records.EOF
         
         Do While (.Records.STATE And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting
             Debug.Print "Records fetching...."
         Loop
-
+        
+        .HasRows = Not (.Records.BOF Or .Records.EOF)
+        
         ReDim .Converter(.Records.Fields.Count - 1)
         
         For i = 0 To .Records.Fields.Count - 1
@@ -891,49 +892,62 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
                     Set .Converter(i) = GString
             End Select
         Next
+        
+        .HasLoaded = True
     End With
     
     Set RowMapper = System.CreateInstance(New GenericSql, Virtual.Pointer, Virtual.Size)
     
 End Function
 
-Private Property Get IGenericIterator_Current() As IGeneric
-    Set IGenericIterator_Current = myclass.Iterator.Current
-End Property
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
 
 Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
     
     Dim Row As GenericArray
-    Dim i As Long
+    Dim i As Long, LB As Long
     
-    With myclass.Iterator
-       .HasFetchComplete = .Records.EOF
-       
-        If .HasFetchComplete Then
-            'Close clear ect all records fetched
-            Call .Records.Close
-            Set .Records = Nothing
-            Exit Function
-        End If
+    If myclass.Iterator.HasRows Then
+        With myclass.Iterator.Records
+            With .Fields
+                Set Row = GenericArray.Build(.Count)
+                LB = Row.LowerBound
+                
+                For i = 0 To .Count - 1
+                    Set Row.ElementAt(LB + i) = myclass.Iterator.Converter(i).Create(.Item(i).Value)
+                Next
+            End With
+            
+            Call .MoveNext
+            myclass.Iterator.HasRows = Not .EOF
+            
+        End With
         
-        Set Row = GenericArray.Build(.Records.Fields.Count)
+    Else
         
-        For i = 0 To .Records.Fields.Count - 1
-            Set Row.ElementAt(i) = .Converter(i).Create(.Records.Fields(i).Value)
-        Next
-        
-        Set .Current = Row
-        Set Out = .Current
-        
-        .Records.MoveNext
-        
-        IGenericIterator_HasNext = Not .HasFetchComplete
-        
-    End With
+        If myclass.Iterator.HasLoaded = False Then _
+            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+
+    End If
     
+    Set myclass.Iterator.Current = Row
+    Set Out = myclass.Iterator.Current 'Avoid converting twice
+    
+    IGenericIterator_HasNext = Not Row Is Nothing
+
 End Function
 
 Private Sub IGenericIterator_Reset()
 
+     With myclass.Iterator
+        If Not .Records Is Nothing Then
+            If .Records.STATE = ISqlObjectState.IsOpen_State Then
+                .HasRows = Not (.Records.BOF And .Records.EOF)
+                If .HasRows Then _
+                    Call .Records.MoveFirst
+            End If
+        End If
+    End With
+    
 End Sub
 
