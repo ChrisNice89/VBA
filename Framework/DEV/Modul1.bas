@@ -660,17 +660,18 @@ Sub TestTree()
     
     Dim i As Long
     
-    For i = 100 To 1 Step -1
+    For i = 17 To 1 Step -1
         Call tree.Add(GNumeric(i))
     Next
     Debug.Print t.TimeElapsed
-    
-    Dim N As IGeneric
-    Set N = tree.ElementAt(1)
-    
-    Debug.Print N.ToString
+'
+'    Dim N As IGeneric
+'    Set N = tree.ElementAt(1)
+'    Debug.Print N.ToString
     Dim c As IGenericReadOnlyList
     Set c = System.Clone(tree)
+    Call tree.Clear
+    Set tree = Nothing
     
     Debug.Print c.IndexOf(GNumeric(10))
     Debug.Print c.IndexOf(GNumeric(1))

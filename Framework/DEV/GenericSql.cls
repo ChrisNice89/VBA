@@ -908,21 +908,18 @@ Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
     Dim i As Long, LB As Long
     
     If myclass.Iterator.HasRows Then
-        With myclass.Iterator.Records
-            With .Fields
-                Set Row = GenericArray.Build(.Count)
-                LB = Row.LowerBound
-                
-                For i = 0 To .Count - 1
-                    Set Row.ElementAt(LB + i) = myclass.Iterator.Converter(i).Create(.Item(i).Value)
-                Next
-            End With
+        With myclass.Iterator.Records.Fields
+            Set Row = GenericArray.Build(.Count)
+            LB = Row.LowerBound
             
-            Call .MoveNext
-            myclass.Iterator.HasRows = Not .EOF
-            
+            For i = 0 To .Count - 1
+                Set Row.ElementAt(LB + i) = myclass.Iterator.Converter(i).Create(.Item(i).Value)
+            Next
         End With
         
+        Call myclass.Iterator.Records.MoveNext
+        myclass.Iterator.HasRows = Not myclass.Iterator.Records.EOF
+    
     Else
         
         If myclass.Iterator.HasLoaded = False Then _

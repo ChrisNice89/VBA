@@ -79,46 +79,33 @@ End Type
 Private Type Member
     Length As Long
     Value As String
-    Chars() As GString
+    UnicodeCharacters As GenericArray
     Hash As Long
     Iterator As Iterator
     Format As TStringFormat
 End Type
 Private myclass As Member
-'Singelton
-Public Static Property Get UnicodeCharacter(ByVal Code As Integer) As GString
 
-    Dim i As Long
-    Dim Char As GString
-    
-    If i = 0 Then
-        ReDim Characters(2 ^ 16 - 1)
-        For i = 0 To 255 'Initialize Ascii
-            Set Characters(AscW(Chr$(i))) = GString(Chr$(i))
-        Next
-        '...Add here some special chars and extend Ascii to Int16
-    End If
-    
-    Set Char = Characters(Code)
-    
-    If Char Is Nothing Then
-        Set Char = GString(ChrW$(Code))
-        Set Characters(Code) = Char
-    End If
-    
-    Set UnicodeCharacter = Char
-    
-End Property
+Public Static Property Get UnicodeCharacters() As IGenericReadOnlyList: Set UnicodeCharacters = myclass.UnicodeCharacters: End Property
 Public Property Get Pointer() As LongPtr: Pointer = StrPtr(myclass.Value): End Property
 
 Public Property Get ElementAt(ByVal Index As Long) As GString
     
-    If Not myclass.Length = 0 Then
-        Set ElementAt = GString.UnicodeCharacter(Code:=AscW(Mid$(myclass.Value, Index + 1, 1)))
-    Else
-        Set ElementAt = GString 'Default emptystring
+    Dim Char As GString
+    Dim Code As Long
+   
+    Set Char = GString ' avoid nothing
+    
+    If myclass.Length > 0 Then
+        Code = AscW(Mid$(myclass.Value, Index + 1, 1))
+        Set Char = myclass.UnicodeCharacters.ElementAt(Code)
     End If
-
+    
+    If Char Is Nothing Then _
+        Set Char = GString(ChrW$(Code)): Set myclass.UnicodeCharacters.ElementAt(Code) = Char
+    
+    Set ElementAt = Char
+    
 End Property
 
 Public Property Get Length() As Long: Length = myclass.Length: End Property
@@ -223,14 +210,21 @@ Public Function ToArray() As GenericArray
     Dim Chars As GenericArray
     Dim i As Long
     
-    Set Chars = GenericArray.Build(myclass.Length)
-     
-    With Chars
-        For i = .LowerBound To .Length - 1 + .LowerBound
-            Set .ElementAt(i) = Me.ElementAt(i)
-        Next
-    End With
+    If myclass.Length > 0 Then
+        Set Chars = GenericArray.Build(myclass.Length)
+         
+        With Chars
+            For i = .LowerBound To .Length - 1 + .LowerBound
+                Set .ElementAt(i) = Me.ElementAt(i)
+            Next
+        End With
     
+    Else
+    
+        Set Chars = GenericArray.Build(1)
+        Set Chars.ElementAt(Chars.LowerBound) = GString
+        
+    End If
     Set ToArray = Chars
     
 End Function
@@ -292,10 +286,18 @@ Attribute Build.VB_UserMemId = 0
     If (Me Is GString) = False Then _
         Call System.Throw(Me, "Public Function Build").BuildExeption
         
-    If IsNull(Value) Or Value = vbNullString Then _
+    If IsNull(Value) Then _
         Set Build = GString: Exit Function
     
+    If Value = vbNullString Then _
+        Set Build = GString: Exit Function
+    
+    Static UniCodes As GenericArray
+    If UniCodes Is Nothing Then _
+        Set UniCodes = GenericArray.Build(2 ^ 16)
+        
     With myclass
+        Set .UnicodeCharacters = UniCodes 'share between all Strings
         .Value = Value
         .Format = Format
     End With
@@ -309,6 +311,7 @@ Private Sub Class_Initialize()
         myclass.Value = .Value
         myclass.Length = Len(myclass.Value)
         myclass.Format = .Format
+        Set myclass.UnicodeCharacters = .UnicodeCharacters
     End With
 End Sub
 

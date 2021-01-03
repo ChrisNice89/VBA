@@ -387,21 +387,34 @@ Public Function Iterator(Optional ByVal Reverse As Boolean) As IGenericIterator
     Set Iterator = System.CreateInstance(New GenericSortedSet, VarPtr(c), LenB(c))
     
 End Function
-
+'TODO
 Public Sub Clear()
+    Call ClearTree(myclass.Root)
+End Sub
+'Todo - test performance vs stack ' Node.Count ?!
+'Use like a Queue
+Private Sub ClearTree(ByRef Node As GenericNode)
+
+    Dim Left As GenericNode
+    Dim Right As GenericNode
     
-    If myclass.Root Is Nothing = False Then
-        With myclass.Root
-            If .Left Is Nothing = False Then _
-                Call .Left.Clear
-            Set .Left = Nothing
+    Do While Node Is Nothing = False
+        
+        Set Node.Parent = Nothing
+        Set Left = Node.Left
+        
+        If Not Left Is Nothing Then
+            Set Node.Left = Left.Right '// Rotate the left child up.
+            Set Left.Right = Node
+            Set Node = Left
+        Else
+            Set Right = Node.Right
+            Set Node.Right = Nothing
+            Set Node = Right
+        End If
     
-            If .Right Is Nothing = False Then _
-                Call .Right.Clear
-            Set .Right = Nothing
-        End With
-    End If
-    
+    Loop
+ 
 End Sub
 
 Public Sub IntersectWith(ByVal Collection As IGenericCollection)
@@ -965,13 +978,12 @@ Private Function CopyOf(ByVal GArray As GenericArray, ByVal ArrayIndex As Long, 
         Call System.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Count)")
     
     Dim Stack As InternalStack
-    Dim Node As GenericNode
-    Dim Current As IGeneric
+    Dim Current As GenericNode
     
     Call LoadStack(Stack, myclass.Root, False)
 
-    Do While InOrderTreeWalk(Node, Stack)
-        Set GArray(ArrayIndex) = Node.Value
+    Do While InOrderTreeWalk(Current, Stack)
+        Set GArray(ArrayIndex) = Current.Value
         ArrayIndex = ArrayIndex + 1
     Loop
        
@@ -1004,9 +1016,15 @@ Private Function CloneTree(ByVal Node As GenericNode) As GenericNode
         Exit Function
     
     With Node
-        Set newNode = GenericNode.Build(Value:=.Value, Parent:=.Parent, IsRed:=.IsRed, Count:=.Count)
+        Set newNode = GenericNode.Build(Value:=.Value, Parent:=Nothing, IsRed:=.IsRed, Count:=.Count)
         Set newNode.Left = CloneTree(.Left)
+        If Not newNode.Left Is Nothing Then _
+            Set newNode.Left.Parent = newNode
+        
         Set newNode.Right = CloneTree(.Right)
+        If Not newNode.Right Is Nothing Then _
+            Set newNode.Right.Parent = newNode
+            
     End With
     
     Set CloneTree = newNode
@@ -1036,7 +1054,7 @@ End Function
 Private Sub Class_Terminate()
 
     If Not myclass.Root Is Nothing Then _
-        Call System.Dispose(myclass.Root)
+        IGeneric_Dispose
     
     myclass = EmptyStructure
     

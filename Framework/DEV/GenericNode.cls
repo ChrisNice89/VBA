@@ -47,22 +47,8 @@ Public Property Set Parent(ByVal P As GenericNode): Set myclass.Parent = P: End 
 Public Property Get Value() As IGeneric: Set Value = myclass.Value: End Property
 Public Property Set Value(ByVal V As IGeneric): Set myclass.Value = V: End Property
 
-Public Sub Clear()
-    With myclass
-        .Count = 1
-        IsRed = False
-        Set .Value = Nothing
-        Set .Parent = Nothing
-        
-        If myclass.Left Is Nothing = False Then _
-            Call myclass.Left.Clear
-        Set .Left = Nothing
-
-        If myclass.Right Is Nothing = False Then _
-            Call myclass.Right.Clear
-        Set .Right = Nothing
-        
-    End With
+Public Sub Invalidate()
+    myclass = EmptyStructure
 End Sub
 
 Public Function InOrderNext() As GenericNode
@@ -176,11 +162,11 @@ Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean
 End Property
 
 Private Sub IGeneric_Dispose()
-    Call Me.Clear
+    Call Me.Invalidate
 End Sub
 
 Private Function EmptyStructure() As Member: End Function
-
+'Todo DeepCopy
 Private Function IGeneric_Clone() As IGeneric
 
     Dim newNode As GenericNode
@@ -188,9 +174,9 @@ Private Function IGeneric_Clone() As IGeneric
     
     With newNode
         Set .Value = myclass.Value
-        Set .Left = myclass.Left
-        Set .Right = myclass.Right
-        Set .Parent = myclass.Parent
+        Set .Left = myclass.Left '!
+        Set .Right = myclass.Right '!
+        Set .Parent = myclass.Parent '!
         .IsRed = myclass.IsRed
         .Count = myclass.Count
     End With
