@@ -375,7 +375,7 @@ End Sub
 Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
 
     Dim NewBuckets() As Bucket: ReDim NewBuckets(Size - 1)
-    Dim b as Bucket
+    Dim b as Bucket, State as byte
     Dim i As Long
     Dim Hash As HashItem
     
@@ -393,7 +393,8 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
               
                 Do
                     
-                    if (NewBuckets(Hash.Index).STATE = IS_EMPTY) Then
+                    State=NewBuckets(Hash.Index).STATE
+                    if (State = IS_EMPTY) Then
                         With B
                             .STATE = HAS_ENTRY
                             .HashCode = Hash.Code
@@ -403,8 +404,8 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
                         NewBuckets(Hash.Index)=b
                     end if
                     
-                    If Not (NewBuckets(Hash.Index).STATE And HAS_COLLISION) = HAS_COLLISION Then _
-                        NewBuckets(Hash.Index).STATE = (HAS_COLLISION Or NewBuckets(Hash.Index).STATE): Call InterlockedIncrement(myclass.Occupancy)
+                    If Not (STATE And HAS_COLLISION) = HAS_COLLISION Then _
+                        NewBuckets(Hash.Index).STATE = (HAS_COLLISION Or STATE): Call InterlockedIncrement(myclass.Occupancy)
                     
                     Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
                 Loop
