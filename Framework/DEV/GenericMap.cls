@@ -256,6 +256,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
 
     Dim Try As Long
     Dim Hash As HashItem
+    Dim State as byte
     
     If (Key Is Nothing) Then _
         Call System.Throw(Me, "Private Function FindEntry").IsNothing("(Key Is Nothing)")
@@ -263,18 +264,20 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     Call LoadHash(Hash, Key.HashValue, myclass.Size)
   
     Do
-        myclass.FindCounter = myclass.FindCounter + 1
-        With myclass.Buckets(Hash.Index)
-            If ((.STATE And HAS_ENTRY) = HAS_ENTRY) Then _
-                If .HashCode = Hash.Code Then _
-                    If Key.Equals(.Key) Then _
-                        FindEntry = Hash.Index: Exit Function
-
-            If (Not (.STATE And HAS_COLLISION) = HAS_COLLISION) Then _
-                FindEntry = -1: Exit Function
         
-        End With
-       
+        State = myclass.Buckets(Hash.Index).STATE                         
+        
+        If (State = IS_EMPTY) Then _
+            FindEntry = -1: Exit Function
+                                        
+        If ((State And HAS_ENTRY) = HAS_ENTRY) Then _
+            If myclass.Buckets(Hash.Index).HashCode = Hash.Code Then _
+                If Key.Equals(myclass.Buckets(Hash.Index).Key) Then _
+                    FindEntry = Hash.Index: Exit Function
+
+        If (Not (State And HAS_COLLISION) = HAS_COLLISION) Then _
+            FindEntry = -1: Exit Function
+        
         If ((InterlockedIncrement(Try)) > Hash.Size) Then _
             FindEntry = -1: Exit Function
 
@@ -288,13 +291,14 @@ End Function
 
 Public Sub Remove(ByVal Key As IGeneric)
     
-    Dim S As Byte
+    Dim b As Bucket
     Dim i As Long: i = FindEntry(Key)
     
     If (i >= 0) Then
         With myclass
-            S = (.Buckets(i).STATE And Not HAS_ENTRY)
-            .Buckets(i) = EmptyBucket: .Buckets(i).STATE = S
+            b.State = (.Buckets(i).STATE And Not HAS_ENTRY)
+            b.HashCode=-1
+            .Buckets(i)=b                        
             Call InterlockedDecrement(.Count)
         End With
     End If
@@ -371,6 +375,7 @@ End Sub
 Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
 
     Dim NewBuckets() As Bucket: ReDim NewBuckets(Size - 1)
+    Dim b as Bucket
     Dim i As Long
     Dim Hash As HashItem
     
@@ -387,19 +392,19 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
                 End If
               
                 Do
-                    With NewBuckets(Hash.Index)
-                        If (.STATE = IS_EMPTY) Then
+                    
+                    if (NewBuckets(Hash.Index).STATE = IS_EMPTY) Then
+                        With B
                             .STATE = HAS_ENTRY
                             .HashCode = Hash.Code
                             Set .Key = myclass.Buckets(i).Key
                             Set .Value = myclass.Buckets(i).Value
-                            Exit Do
-                        End If
-                       
-                        If Not (.STATE And HAS_COLLISION) = HAS_COLLISION Then _
-                            .STATE = (HAS_COLLISION Or .STATE): Call InterlockedIncrement(myclass.Occupancy)
+                        End with
+                        NewBuckets(Hash.Index)=b
+                    end if
                     
-                    End With
+                    If Not (NewBuckets(Hash.Index).STATE And HAS_COLLISION) = HAS_COLLISION Then _
+                        NewBuckets(Hash.Index).STATE = (HAS_COLLISION Or NewBuckets(Hash.Index).STATE): Call InterlockedIncrement(myclass.Occupancy)
                     
                     Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
                 Loop
@@ -422,6 +427,7 @@ Public Sub Add( _
 
     Dim Try As Long
     Dim Hash As HashItem
+    Dim b as Bucket, State as Byte                                         
     Dim Slot As Long: Slot = -1
     
     If (Key Is Nothing) Then _
@@ -439,22 +445,24 @@ Public Sub Add( _
    
         Do
             
+            State = myclass.Buckets(Hash.Index).STATE     
+                                                    
             If (Slot = -1) Then _
-              If (myclass.Buckets(Hash.Index).STATE = HAS_COLLISION) Then _
+              If (State = HAS_COLLISION) Then _
                     Slot = Hash.Index
             
-            If (myclass.Buckets(Hash.Index).STATE = IS_EMPTY) Then
+            If (State = IS_EMPTY) Then
               
                 If Not Slot = -1 Then _
                     Hash.Index = Slot
                                                           
-               
-                With myclass.Buckets(Hash.Index)
-                    .STATE = (HAS_ENTRY Or .STATE) '!Or .STATE
+                With b
+                    .STATE = (HAS_ENTRY Or State) '!Or .STATE
                     .HashCode = Hash.Code
                     Set .Key = Key: Set .Value = Value
                 End With
                 
+                myclass.Buckets(Hash.Index)=b
                 Call InterlockedIncrement(myclass.Count)
                 Exit Sub
                 
@@ -470,8 +478,8 @@ Public Sub Add( _
             End If
             
             If (Slot = -1) Then _
-                If (Not (myclass.Buckets(Hash.Index).STATE And HAS_COLLISION) = HAS_COLLISION) Then _
-                    myclass.Buckets(Hash.Index).STATE = (HAS_COLLISION Or myclass.Buckets(Hash.Index).STATE): Call InterlockedIncrement(myclass.Occupancy)
+                If (Not (State And HAS_COLLISION) = HAS_COLLISION) Then _
+                    myclass.Buckets(Hash.Index).STATE = (HAS_COLLISION Or State): Call InterlockedIncrement(myclass.Occupancy)
     
             Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
 
