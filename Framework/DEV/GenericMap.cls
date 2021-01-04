@@ -454,10 +454,10 @@ Public Sub Add( _
             If (State = IS_EMPTY) Then
               
                 If Not Slot = -1 Then _
-                    Hash.Index = Slot
-                                                          
+                    Hash.Index = Slot : State = HAS_COLLISION
+                                                     
                 With b
-                    .STATE = (HAS_ENTRY Or State) '!Or .STATE
+                    .STATE = (HAS_ENTRY Or State) '!
                     .HashCode = Hash.Code
                     Set .Key = Key: Set .Value = Value
                 End With
