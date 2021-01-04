@@ -41,7 +41,7 @@ Attribute VB_Exposed = True
 '* Notes:   Key objects must be immutable as long as they are used as keys in the Hashtable.
 '*          A key cannot be null, but a value can be.
 '*          Each key object in the map must provide its own hash function.
-'*          A GenericMap doesn’t maintain the order of stored values.
+'*          A GenericMap doesnâ€™t maintain the order of stored values.
 '*          This map uses double hashing. There are hashsize buckets in the map, and ech bucket can contain 0 or 1 element.
 '*
 '*======================================================================================================================
@@ -440,14 +440,14 @@ Public Sub Add( _
         Do
             
             If (Slot = -1) Then _
-                If ((myclass.Buckets(Hash.Index).STATE And HAS_COLLISION) = HAS_COLLISION) Then _
-                    If myclass.Buckets(Hash.Index).Key Is Nothing Then _
-                        Slot = Hash.Index
+              If (myclass.Buckets(Hash.Index).STATE = HAS_COLLISION) Then _
+                    Slot = Hash.Index
             
             If (myclass.Buckets(Hash.Index).STATE = IS_EMPTY) Then
               
                 If Not Slot = -1 Then _
                     Hash.Index = Slot
+                                                          
                
                 With myclass.Buckets(Hash.Index)
                     .STATE = (HAS_ENTRY Or .STATE) '!Or .STATE
