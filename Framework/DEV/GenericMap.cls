@@ -70,7 +70,7 @@ Implements IGenericIterator
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
 
-Private Const MAXLONG As Long = 2 ^ 31 - 1
+Private Const MAXPRIME As Long = 2 ^ 31 - 1
 Private Const DEFAULT_LOADFACTOR As Double = 0.7
 Private Const DEFAULT_CAPACITY As Long = 23 ' 23*LoadFactor(0.7) =16
 Private Const S_OK As Long = &H0&
@@ -81,11 +81,8 @@ Private Const HAS_ENTRY As Byte = 2 ^ 0
 Private Const HAS_COLLISION As Byte = 2 ^ 1
 
 Private Type Constant
-    MaxVal As Long
-    InitialSize As Long
     Primes() As Variant
     HashPrime As Long
-    RehashBarrier As Long
 End Type
 
 '
@@ -204,19 +201,16 @@ Public Function Build( _
                             187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263, _
                             1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369)
         
-            .MaxVal = MAXLONG
-            .InitialSize = getMinPrime
             .HashPrime = 101
-            .RehashBarrier = 100
         End With
         
         .LoadFactor = LoadFactor
         .RawSize = Capacity / .LoadFactor
         
-        If (.RawSize > MAXLONG) Then _
+        If (.RawSize > MAXPRIME) Then _
            Call System.Throw(Me, "Build").Overflow(".RawSize > Skynet.MaxArraySize")
         
-        .Size = IIf(.RawSize > .Const.InitialSize, getPrime(.RawSize), .Const.InitialSize)
+        .Size = getPrime(.RawSize)
         ReDim .Buckets(.Size - 1)
         
         .LoadSize = Int(.LoadFactor * .Size)
@@ -320,7 +314,7 @@ Private Function getPrime(ByVal Min As Long) As Long
                 getPrime = .Primes(P): Exit Function
         Next
         
-        For P = Min To .MaxVal
+        For P = Min To MAXPRIME
             If IsPrime(P) And ((P - 1) Mod .HashPrime) <> 0 Then _
                 getPrime = P: Exit Function
         Next
@@ -351,10 +345,10 @@ Private Function Expandprime(ByVal oldSize As Long) As Long
     
     Dim newSize As Long: newSize = oldSize * 2
     
-    If newSize > myclass.Const.MaxVal Then
-        Expandprime = myclass.Const.MaxVal
-    Else
+    If newSize < MAXPRIME Then
         Expandprime = getPrime(newSize)
+    Else
+        Expandprime = MAXPRIME
     End If
     
 End Function
