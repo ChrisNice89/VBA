@@ -118,25 +118,40 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
         If myclass.Key.Equals(otherPair.Key) = False Then _
             Exit Function
     Else
-        If otherPair.Key Is Nothing Then _
-            IGeneric_Equals = True: Exit Function
+        If otherPair.Key Is Nothing = False Then _
+            Exit Function
     End If
     
     If myclass.Value Is Nothing = False Then
         If myclass.Value.Equals(otherPair.Value) = False Then _
             Exit Function
     Else
-        If otherPair.Value Is Nothing Then _
-            IGeneric_Equals = True: Exit Function
+        If otherPair.Value Is Nothing = False Then _
+            Exit Function
     End If
-
+    
+    IGeneric_Equals = True
+    
 End Function
 
 Private Function IGeneric_ToString() As String
     
-    IGeneric_ToString = "Class: " & TypeName$(Me) & " :: " & _
-                        "[" & _
-                            myclass.Key.ToString & _
-                            "," & myclass.Value.ToString & "]"
+        IGeneric_ToString = "Class: " & TypeName$(Me) & " :: " & _
+                        "["
+        If Not myclass.Key Is Nothing Then
+            IGeneric_ToString = IGeneric_ToString & myclass.Key.ToString
+        Else
+            IGeneric_ToString = IGeneric_ToString & "NULL"
+        End If
+        
+        IGeneric_ToString = IGeneric_ToString & ";"
+        
+        If Not myclass.Value Is Nothing Then
+            IGeneric_ToString = IGeneric_ToString & myclass.Key.ToString
+        Else
+            IGeneric_ToString = IGeneric_ToString & "NULL"
+        End If
+        
+        IGeneric_ToString = IGeneric_ToString & "]"
                                                
 End Function

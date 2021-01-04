@@ -166,7 +166,7 @@ Private Sub IGeneric_Dispose()
 End Sub
 
 Private Function EmptyStructure() As Member: End Function
-'Todo DeepCopy
+'Todo adjust to DeepCopy
 Private Function IGeneric_Clone() As IGeneric
 
     Dim newNode As GenericNode
@@ -200,6 +200,13 @@ End Function
 Private Function IGeneric_ToString() As String
     
     IGeneric_ToString = "Class: " & TypeName$(Me) & " :: " & _
-                        "[" & myclass.Value.ToString & "]"
- 
+                        "["
+    If Not myclass.Value Is Nothing Then
+        IGeneric_ToString = IGeneric_ToString & myclass.Value.ToString
+    Else
+        IGeneric_ToString = IGeneric_ToString & "NULL"
+    End If
+    
+    IGeneric_ToString = IGeneric_ToString & "]"
+    
 End Function

@@ -560,13 +560,13 @@ Public Function IndexOf( _
     End If
     
     If (Count = 0) Then
-        Count = myclass.Size - Index + myclass.Items.LowerBound
+        Count = myclass.Size - Index
     Else
         If (Count < 0) Or (Index > myclass.Size - Count + myclass.Items.LowerBound) Then _
             Call System.Throw(Me, "Public Function IndexOf").InvalidInput("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
     End If
     
-    IndexOf = myclass.Items.IndexOf(Value:=Item, StartIndex:=Index, Count:=Count)
+    IndexOf = myclass.Items.IndexOf(Value:=Item, Index:=Index, Length:=Count)
     
 End Function
 
@@ -582,7 +582,7 @@ Public Sub Reverse( _
     End If
     
     If (Count = 0) Then
-        Count = myclass.Size - Index + myclass.Items.LowerBound
+        Count = myclass.Size - Index
     Else
         If (Count < 0) Or (Index > myclass.Size - Count + myclass.Items.LowerBound) Then _
             Call System.Throw(Me, "Public Sub Reverse").InvalidInput("(Count < 0) Or (Index > myClass.Size - Count + myClass.Items.LowerBound)")
@@ -672,7 +672,7 @@ End Function
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = myclass.Items.LowerBound: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Size: End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myclass.Items.IndexOf(Value:=Item, Count:=myclass.Size): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = myclass.Items.IndexOf(Value:=Item, Length:=myclass.Size): End Function
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
     If (myclass.Size = 0) Then _

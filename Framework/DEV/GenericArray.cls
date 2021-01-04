@@ -675,36 +675,33 @@ End Function
 
 Public Function IndexOf( _
                             ByVal Value As IGeneric, _
-                            Optional ByVal StartIndex As Long = MIN_INDEX, _
-                            Optional ByVal Count As Long) As Long
+                            Optional ByVal Index As Long = MIN_INDEX, _
+                            Optional ByVal Length As Long) As Long
   
-   
     If Not (Me.Rank = 1) Then _
         Call System.Throw(Me, "Public Function IndexOf").NotSupported("Me.Rank != 1")
+    
+    If Length = 0 Then _
+        Length = myclass.Elements - Index
         
-    If (StartIndex < MIN_INDEX) Or (StartIndex > myclass.Elements + MIN_INDEX - 1) Then _
+    If (Index < MIN_INDEX) Or (Index + Length > myclass.Elements + MIN_INDEX) Then _
         Call System.Throw(Me, "Public Function IndexOf").IndexOutofRange("(StartIndex < MIN_INDEX) Or (StartIndex > Me.Count() + MIN_INDEX)")
-
-    If (Count = 0) Then
-        Count = (myclass.Elements - StartIndex) + MIN_INDEX
-    Else
-        If (Count < 0) Or (Count > myclass.Elements - StartIndex + MIN_INDEX) Then _
-            Call System.Throw(Me, "Public Function IndexOf").ArgOutOfRange("(Count < 0) Or (Count > Me.Elements - StartIndex + MIN_INDEX)")
-    End If
    
-    IndexOf = Me.IndexOfArray(Objects:=myclass.Internal, Value:=Value, LowerBound:=StartIndex, UpperBound:=Count)
+    IndexOf = Me.IndexOfArray(Objects:=myclass.Internal, Value:=Value, LowerBound:=Index, UpperBound:=Length + Index - 1, Comparer:=Nothing)
     
 End Function
 
-Public Function Reverse(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Length As Long) As GenericArray
-    
-    If Length = 0 Then _
-        Length = Me.Length
+Public Function Reverse( _
+                            Optional ByVal Index As Long = MIN_INDEX, _
+                            Optional ByVal Length As Long) As GenericArray
     
     If Not Me.Rank = 1 Then _
         Call System.Throw(Me, "Public Sub Reverse").NotSupported("Me.Rank != 1")
+    
+    If Length = 0 Then _
+        Length = myclass.Elements - Index
         
-    If (Index < MIN_INDEX Or Length < 0) Then _
+    If (Index < MIN_INDEX Or Length <= 0) Then _
         Call System.Throw(Me, "Public Sub Reverse").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
     
     If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
@@ -722,13 +719,13 @@ Public Function Sort( _
                         Optional ByVal Length As Long, _
                         Optional ByVal Comparer As IGenericComparer) As GenericArray
     
-    If Length = 0 Then _
-        Length = myclass.Elements
-    
     If Not Me.Rank = 1 Then _
         Call System.Throw(Me, "Public Sub Sort").NotSupported("Me.Rank != 1")
+       
+    If Length = 0 Then _
+        Length = myclass.Elements
         
-    If (Index < MIN_INDEX Or Length < 0) Then _
+    If (Index < MIN_INDEX Or Length <= 0) Then _
         Call System.Throw(Me, "Public Sub Sort").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
     
     If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
@@ -2137,7 +2134,7 @@ Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGen
     Set IGenericReadOnlyList_ElementAt = myclass.Internal(Index)
         
 End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myclass.Elements): End Function
+Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, Index:=MIN_INDEX, Length:=myclass.Elements): End Function
 Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Iterator.Count): End Sub 'TODO CopyTo as Vector
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(): End Function
 
@@ -2146,7 +2143,7 @@ Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Coun
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item, StartIndex:=MIN_INDEX, Count:=myclass.Elements) >= 0: End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item, Index:=MIN_INDEX, Length:=myclass.Elements) >= 0: End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(MIN_INDEX, Me.Length): End Function
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property

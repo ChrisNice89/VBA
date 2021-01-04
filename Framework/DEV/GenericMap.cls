@@ -122,10 +122,12 @@ Private Type Member
     LoadSize As Long
     LoadFactor As Double
     Buckets() As Bucket
+    FindCounter As Long
     Iterator As Iterator
 End Type
 Private myclass As Member
 
+Public Property Get FindCounter() As Long: FindCounter = myclass.FindCounter: End Property
 Public Property Get LoadSize() As Long: LoadSize = myclass.LoadSize: End Property
 Public Property Get LoadFactor() As Double: LoadFactor = myclass.LoadFactor: End Property
 Public Property Get Count() As Long: Count = myclass.Count: End Property
@@ -236,13 +238,15 @@ Public Sub Clear()
 End Sub
 
 Public Function TryByIndex(ByVal Index As Long, ByRef Key As IGeneric, ByRef Value As IGeneric) As Boolean
-    With myclass.Buckets(Index)
-        If (.STATE And HAS_ENTRY) = HAS_ENTRY Then
+    
+    If (myclass.Buckets(Index).STATE And HAS_ENTRY) = HAS_ENTRY Then
+        With myclass.Buckets(Index)
             Set Key = .Key
             Set Value = .Value
             TryByIndex = True
-        End If
-    End With
+        End With
+    End If
+    
 End Function
 
 Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As Boolean
@@ -265,6 +269,7 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
     Call LoadHash(Hash, Key.HashValue, myclass.Size)
   
     Do
+        myclass.FindCounter = myclass.FindCounter + 1
         With myclass.Buckets(Hash.Index)
             If ((.STATE And HAS_ENTRY) = HAS_ENTRY) Then _
                 If .HashCode = Hash.Code Then _
@@ -398,7 +403,7 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
                         End If
                        
                         If Not (.STATE And HAS_COLLISION) = HAS_COLLISION Then _
-                            .STATE = (HAS_ENTRY + HAS_COLLISION): Call InterlockedIncrement(myclass.Occupancy)
+                            .STATE = (HAS_COLLISION Or .STATE): Call InterlockedIncrement(myclass.Occupancy)
                     
                     End With
                     
@@ -414,7 +419,8 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     End With
     
 End Sub
-
+'Todo need to search this entire collision chain because we have to ensure that there are no
+'duplicate entries in the table.
 Public Sub Add( _
                   ByVal Key As IGeneric, _
                   ByVal Value As IGeneric, _
@@ -422,6 +428,7 @@ Public Sub Add( _
 
     Dim Try As Long
     Dim Hash As HashItem
+    Dim Slot As Long: Slot = -1
     
     If (Key Is Nothing) Then _
         Call System.Throw(Me, "Public Function Add").IsNothing("(Key Is Nothing)")
@@ -430,39 +437,50 @@ Public Sub Add( _
     
         If (.Count >= .LoadSize) Then
             Call Rehash(Expandprime(.Size), False)
-        ElseIf ((.Occupancy > .LoadSize) And (.Count > .Const.RehashBarrier)) Then
-            Call Rehash(.Size, False)
+        ElseIf (.Occupancy > .LoadSize) Then
+            Call Rehash(getPrime(.Size + 1), False)
         End If
         
         Call LoadHash(Hash, Key.HashValue, .Size)
    
         Do
-            With myclass.Buckets(Hash.Index)
-                If (Not (.STATE And HAS_ENTRY) = HAS_ENTRY) Then
-                    .STATE = (HAS_ENTRY Or .STATE)
+            
+            If (Slot = -1) Then _
+                If ((myclass.Buckets(Hash.Index).STATE And HAS_COLLISION) = HAS_COLLISION) Then _
+                    If myclass.Buckets(Hash.Index).Key Is Nothing Then _
+                        Slot = Hash.Index
+            
+            If (myclass.Buckets(Hash.Index).STATE = IS_EMPTY) Then
+              
+                If Not Slot = -1 Then _
+                    Hash.Index = Slot
+               
+                With myclass.Buckets(Hash.Index)
+                    .STATE = (HAS_ENTRY Or .STATE) '!Or .STATE
                     .HashCode = Hash.Code
                     Set .Key = Key: Set .Value = Value
-                    Call InterlockedIncrement(myclass.Count)
+                End With
+                
+                Call InterlockedIncrement(myclass.Count)
+                Exit Sub
+                
+            End If
+            
+            If myclass.Buckets(Hash.Index).HashCode = Hash.Code Then
+                If Key.Equals(myclass.Buckets(Hash.Index).Key) Then
+                    If Not (Overwrite) Then _
+                        Call System.Throw(Me, "Public Function Add").DuplicateNotAllowed(Key)
+                    Set myclass.Buckets(Hash.Index).Value = Value
                     Exit Sub
                 End If
-                
-                If .HashCode = Hash.Code Then
-                    If Key.Equals(.Key) Then
-                        If (Overwrite) Then
-                            Set .Value = Value
-                        Else
-                            Call System.Throw(Me, "Public Function Add").DuplicateNotAllowed(Key)
-                        End If
-                        Exit Sub
-                    End If
-                End If
-                
-                If (Not (.STATE And HAS_COLLISION) = HAS_COLLISION) Then _
-                    .STATE = (HAS_ENTRY Or HAS_COLLISION): Call InterlockedIncrement(myclass.Occupancy)
-                
-            End With
+            End If
             
+            If (Slot = -1) Then _
+                If (Not (myclass.Buckets(Hash.Index).STATE And HAS_COLLISION) = HAS_COLLISION) Then _
+                    myclass.Buckets(Hash.Index).STATE = (HAS_COLLISION Or myclass.Buckets(Hash.Index).STATE): Call InterlockedIncrement(myclass.Occupancy)
+    
             Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
+
         Loop While (InterlockedIncrement(Try) < Hash.Size)
     
     End With
@@ -491,6 +509,7 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
                 If (myclass.Buckets(i).STATE And HAS_ENTRY) = HAS_ENTRY Then _
                     Set GArray(ArrayIndex) = myclass.Buckets(i).Key: Call InterlockedIncrement(ArrayIndex)
+              
             Next
         Case t = ValueData
             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)

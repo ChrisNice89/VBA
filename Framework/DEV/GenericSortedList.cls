@@ -419,7 +419,7 @@ End Function
 'Size of this sorted list. The elements of the list are compared to the
 'given value using the IGeneric.Equals method.
 Public Function IndexOfValue(ByVal Value As IGeneric) As Long
-    IndexOfValue = myclass.Values.IndexOf(Value:=Value, StartIndex:=myclass.Values.LowerBound, Count:=myclass.Size)
+    IndexOfValue = myclass.Values.IndexOf(Value:=Value, Index:=myclass.Values.LowerBound, Length:=myclass.Size)
 End Function
 
 Public Sub Clear():

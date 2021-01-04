@@ -660,7 +660,7 @@ Sub TestTree()
     
     Dim i As Long
     
-    For i = 17 To 1 Step -1
+    For i = 30000 To 1 Step -1
         Call tree.Add(GNumeric(i))
     Next
     Debug.Print t.TimeElapsed
@@ -838,23 +838,27 @@ Sub testMap()
 
     Dim i As Long
     Dim hm As GenericMap
-    Set hm = GenericMap.Build(5000)
+    Set hm = GenericMap.Build()
     Dim t As CTimer
     Set t = New CTimer
     
     t.StartCounter
     For i = 1 To 35
-        Call hm.Add(GString("Key" & i), GNumeric(i))
+        Call hm.Add(GString("Key " & i), GNumeric(i))
     Next
     Debug.Print t.TimeElapsed
-'    Debug.Print Skynet.Generic(hm)
+    
+    For i = 1 To 35
+         Call hm.Contains(GString("Key " & i))
+    Next
 
     Dim Clone As IGenericDictionary
     Set Clone = System.Clone(hm)
+    Debug.Print System.Generic(hm)
     Set hm = Nothing
     
     Dim Item As IGeneric
-    t.StartCounter
+'    t.StartCounter
 '    With Clone.IteratorOf(PairData)
 '        Do While .HasNext(Item)
 '            Debug.Print Item
