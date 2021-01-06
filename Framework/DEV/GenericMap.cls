@@ -419,8 +419,7 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     End With
     
 End Sub
-'Todo need to search this entire collision chain because we have to ensure that there are no
-'duplicate entries in the table.
+
 Public Sub Add( _
                   ByVal Key As IGeneric, _
                   ByVal Value As IGeneric, _
