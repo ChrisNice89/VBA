@@ -196,35 +196,34 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     
     Dim SAB() As SAFEARRAYBOUND
     Dim i As Long, ub As Long, LB As Long
-    
+                                                                                            
     If (Me Is GenericArray) = False Then _
         Call System.Throw(Me, "Public Function Build").BuildExeption
     
     If IsMissing(Indices) Then _
         Call System.Throw(Me, "Public Function Build").InvalidInput("ParamArray Indices are missing")
     
-    LB = LBound(Indices): ub = UBound(Indices)
+    LB = 0&: ub = UBound(Indices)
     
     With myclass
         .Elements = 1
         ReDim .Indices(LB To ub)
-        ReDim .Struct.Bounds(LB To ub)
         ReDim SAB(LB To ub)
-    
+                                                                                                 
+        ReDim .Struct.Bounds(LB To ub)                                                                                                  
+        .Struct.cDims = ub+1
+        .Struct.fFeatures = F_FEATURES
+        .Struct.cbElements = ELEMENT_SIZE                                                                                     
         For i = LB To ub
             If Not (Indices(i) > 0) Then _
                 Call System.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
-            
-            With SAB(i)
-                .cElements = Indices(i)
-                .lLbound = MIN_INDEX
-            End With
-            
-            .Elements = .Elements * SAB(i).cElements
-            .Indices(i) = SAB(i).lLbound
-            .Struct.Bounds(ub - i) = SAB(i)
-            .Struct.cDims = .Struct.cDims + 1
+
+            SAB(i).cElements = Indices(i)
+            SAB(i).lLbound = MIN_INDEX
            
+            .Elements = .Elements * Indices(i)
+            .Indices(i) = MIN_INDEX
+            .Struct.Bounds(ub - i) = SAB(i)
         Next i
 
         .Descriptor = SafeArrayCreateEx(ELEMENT_TYPE, .Struct.cDims, SAB(LB), ByVal 0&)
@@ -233,9 +232,13 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
             Call System.Throw(Me, "Public Function Build").InvalidOperation("Descriptor = 0")
         
         Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(LB), .Struct.pvData))
+<<<<<<< HEAD
         .Struct.fFeatures = F_FEATURES
         .Struct.cbElements = ELEMENT_SIZE
         Call LoadArray(.Internal, .Descriptor)
+=======
+        Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
+>>>>>>> 3207442cbfccbb4943d1d198c7517dc668aa28a7
     End With
     
     Set Build = System.CreateInstance(New GenericArray, VarPtr(myclass), LenB(myclass))
@@ -383,7 +386,7 @@ Public Function GetValue(ParamArray Indices() As Variant) As IGeneric
         
 End Function
 Public Function ExtractElement(ByVal Descriptor As LongPtr, ByRef Indices() As Long, ByVal Out As LongPtr) As Boolean: ExtractElement = S_OK = SafeArrayGetElement(ByVal Descriptor, Indices(0), ByVal Out): End Function
-Public Function AdressOf(ByVal Element As Long) As LongPtr: AdressOf = myclass.Struct.pvData + Me.SizeOf(Element - MIN_INDEX): End Function
+Public Function AdressOf(Optional ByVal Index As Long = MIN_INDEX) As LongPtr: AdressOf = myclass.Struct.pvData + Me.SizeOf(Index - MIN_INDEX): End Function
 Public Function SizeOf(ByVal Elements As Long) As Long: SizeOf = Elements * myclass.Struct.cbElements: End Function
 
 Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
