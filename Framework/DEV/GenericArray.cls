@@ -376,7 +376,7 @@ Public Function GetValue(ParamArray Indices() As Variant) As IGeneric
         
 End Function
 Public Function ExtractElement(ByVal Descriptor As LongPtr, ByRef Indices() As Long, ByVal Out As LongPtr) As Boolean: ExtractElement = S_OK = SafeArrayGetElement(ByVal Descriptor, Indices(0), ByVal Out): End Function
-Public Function AdressOf(ByVal Element As Long) As LongPtr: AdressOf = myclass.Struct.pvData + Me.SizeOf(Element - MIN_INDEX): End Function
+Public Function AdressOf(Optional ByVal Index As Long = MIN_INDEX) As LongPtr: AdressOf = myclass.Struct.pvData + Me.SizeOf(Index - MIN_INDEX): End Function
 Public Function SizeOf(ByVal Elements As Long) As Long: SizeOf = Elements * myclass.Struct.cbElements: End Function
 
 Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
