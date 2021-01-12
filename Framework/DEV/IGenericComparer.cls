@@ -12,7 +12,6 @@ Option Compare Database
 
 Public Enum SortOrder
     Descending = -1
-    Random = 0
     Ascending = 1
 End Enum
 
@@ -24,27 +23,27 @@ End Enum
 
 'IGenericCompare Default comparer
 Public Function GetHashCode(ByVal Obj As IGeneric) As Long: GetHashCode = Obj.HashValue: End Function
-Public Function Compare(ByVal a As IGeneric, ByVal b As IGeneric) As CompareResult
+Public Function Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult
     
     If a Is Nothing Then _
-        IGenericComparer_Compare = IIf(b Is Nothing, CompareResult.IsEqual, CompareResult.IsLower): Exit Function
+        IGenericComparer_Compare = IIf(B Is Nothing, CompareResult.IsEqual, CompareResult.IsLower): Exit Function
     
-    If b Is Nothing Then _
+    If B Is Nothing Then _
         IGenericComparer_Compare = CompareResult.IsGreater: Exit Function
         
     Dim x As IGenericValue, y As IGenericValue
     'try cast
-    Set x = a: Set y = b
+    Set x = a: Set y = B
     Compare = x.CompareTo(y): Exit Function
 
 End Function
 
-Public Function Equals(ByVal a As IGeneric, ByVal b As IGeneric) As Boolean
+Public Function Equals(ByVal a As IGeneric, ByVal B As IGeneric) As Boolean
     
     If a Is Nothing = False Then _
-        IGenericComparer_Equals = a.Equals(b): Exit Function
+        IGenericComparer_Equals = a.Equals(B): Exit Function
     
-    If b Is Nothing = False Then _
+    If B Is Nothing = False Then _
         IGenericComparer_Equals = False: Exit Function
     
     Equals = True

@@ -86,9 +86,9 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then IGeneric_Equals = False: Exit Function
     If Not Other.IsRelatedTo(Me) Then IGeneric_Equals = False: Exit Function
 
-    Dim b As GBoolean: Set b = Other
+    Dim B As GBoolean: Set B = Other
    
-    IGeneric_Equals = (myclass.Value = b.Value)
+    IGeneric_Equals = (myclass.Value = B.Value)
      
 End Function
 

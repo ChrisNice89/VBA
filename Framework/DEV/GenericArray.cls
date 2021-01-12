@@ -72,6 +72,7 @@ Private Const DEFAULT_SORTORDER As Integer = 1 'SortOrder.Ascending
 Private Const QUICKSORT_DEPTH_THRESHOLD As Long = 30
 
 Public Enum SortMethod
+    Random = 0
     IntrospectiveSort = -1
     Quicksort = 1
 End Enum
@@ -226,7 +227,6 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
            
         Next i
 
-        'Call Catch(SafeArrayDestroyDescriptor(ByVal Skynet.PointerOf(myClass.Internal))) '!Memoryleak?!
         .Descriptor = SafeArrayCreateEx(ELEMENT_TYPE, .Struct.cDims, SAB(LB), ByVal 0&)
         
         If (.Descriptor = 0) Then _
@@ -235,8 +235,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
         Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(LB), .Struct.pvData))
         .Struct.fFeatures = F_FEATURES
         .Struct.cbElements = ELEMENT_SIZE
-        
-        Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
+        Call LoadArray(.Internal, .Descriptor)
     End With
     
     Set Build = System.CreateInstance(New GenericArray, VarPtr(myclass), LenB(myclass))
@@ -323,7 +322,7 @@ Private Sub LoadArrayStructure(ByRef structure As SAFEARRAYSTRUCT, ByVal SafeArr
     If (SafeArrayPointer = 0) Then _
         Call System.Throw(Me, "Private Sub LoadArrayStructure").InvalidInput("SafeArrayPointer")
 
-    Call CopyMemory(Dst:=structure, Src:=ByVal SafeArrayPointer, Length:=16&)
+    Call CopyMemory(Dst:=structure, Src:=ByVal SafeArrayPointer, Length:=12& + POINTERSIZE)
     
     With structure
         If (.cDims <= 0) Then _
@@ -333,6 +332,10 @@ Private Sub LoadArrayStructure(ByRef structure As SAFEARRAYSTRUCT, ByVal SafeArr
         Call CopyMemory(Dst:=.Bounds(0&), Src:=ByVal (SafeArrayPointer + 16&), Length:=.cDims * 8&)
     End With
 
+End Sub
+
+Private Sub LoadArray(ByRef Internal() As IGeneric, ByVal Descriptor As LongPtr)
+    Call CopyMemory(Dst:=ByVal VarPtrArray(Internal), Src:=ByVal VarPtr(Descriptor), Length:=POINTERSIZE)
 End Sub
 
 Public Function DescriptorOf(ByRef SomeArray As Variant) As LongPtr
@@ -408,7 +411,7 @@ Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef S As SAFEARRAYSTRUCT)
 End Sub
 
 Private Sub Class_Terminate()
-    Call System.Dispose(Me)
+    Call IGeneric_Dispose
 End Sub
 
 Public Sub Clear()
@@ -463,12 +466,14 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     
 End Function
 
-Public Sub Copy( _
-                    ByVal SrcArray As GenericArray, _
-                    ByVal SrcIndex As Long, _
-                    ByVal DstArray As GenericArray, _
-                    ByVal DstIndex As Long, _
-                    ByVal Elements As Long)
+Public Function Copy() As GenericArray: Set Copy = IGeneric_Clone: End Function
+
+Public Sub CopyArrays( _
+                        ByVal SrcArray As GenericArray, _
+                        ByVal SrcIndex As Long, _
+                        ByVal DstArray As GenericArray, _
+                        ByVal DstIndex As Long, _
+                        ByVal Elements As Long)
                     
     Dim Overlay As SAFEARRAYSTRUCT
     Dim Src As SAFEARRAYSTRUCT
@@ -744,7 +749,7 @@ Public Sub Transpose()
     Dim ptrT1 As LongPtr, ptrT2 As LongPtr
     Dim t1() As ObjectTransfer, t2() As ObjectTransfer
     Dim TotalSize As Long
-    Dim i As Long, j As Long, m As Long, N As Long
+    Dim i As Long, j As Long, M As Long, N As Long
     
     If (Me.IsEmpty) Then _
         Call System.Throw(Me, "Public Sub Transpose").InvalidOperation("SafeArray not allocated")
@@ -753,11 +758,11 @@ Public Sub Transpose()
         Call System.Throw(Me, "Public Sub Transpose").InvalidOperation("Rank <> 2")
         
     With myclass.Struct
-        m = .Bounds(1).cElements
+        M = .Bounds(1).cElements
         N = .Bounds(0).cElements
         
-        ReDim t1(1 To m, 1 To N)
-        ReDim t2(1 To N, 1 To m)
+        ReDim t1(1 To M, 1 To N)
+        ReDim t2(1 To N, 1 To M)
 
         ptrT1 = VarPtr(t1(1, 1))
         ptrT2 = VarPtr(t2(1, 1))
@@ -1995,78 +2000,78 @@ Private Sub SwapArray(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
 
 End Sub
 
-Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As Long)
+Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal B As Long)
     
     Dim t As IGeneric
     Dim Element As IGenericValue
     
-    If Not (a = b) Then
+    If Not (a = B) Then
         Set Element = Keys(a)
         If Not (Element Is Nothing) Then
-            If (Element.CompareTo(Keys(b)) = IsGreater) Then
+            If (Element.CompareTo(Keys(B)) = IsGreater) Then
                 Set t = Keys(a)
-                Set Keys(a) = Keys(b)
-                Set Keys(b) = t
+                Set Keys(a) = Keys(B)
+                Set Keys(B) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal b As Long)
+Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal B As Long)
     
     Dim t As IGeneric
     Dim Element As IGenericValue
    
-    If Not (a = b) Then
+    If Not (a = B) Then
         Set Element = Keys(a)
         If Not (Element Is Nothing) Then
-            If (Element.CompareTo(Keys(b)) = IsGreater) Then
-                Set t = Keys(a): Set Keys(a) = Keys(b): Set Keys(b) = t
-                Set t = Items(a): Set Items(a) = Items(b): Set Items(b) = t
+            If (Element.CompareTo(Keys(B)) = IsGreater) Then
+                Set t = Keys(a): Set Keys(a) = Keys(B): Set Keys(B) = t
+                Set t = Items(a): Set Items(a) = Items(B): Set Items(B) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem_Comparer(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal b As Long, ByVal Comparer As IGenericComparer)
+Private Sub SwapIfGreaterWithItem_Comparer(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
     
     Dim t As IGeneric
    
-    If Not (a = b) Then
+    If Not (a = B) Then
         If Not (Keys(a) Is Nothing) Then
-            If (Comparer.Compare(Keys(a), Keys(b)) = IsGreater) Then
-                Set t = Keys(a): Set Keys(a) = Keys(b): Set Keys(b) = t
-                Set t = Items(a): Set Items(a) = Items(b): Set Items(b) = t
+            If (Comparer.Compare(Keys(a), Keys(B)) = IsGreater) Then
+                Set t = Keys(a): Set Keys(a) = Keys(B): Set Keys(B) = t
+                Set t = Items(a): Set Items(a) = Items(B): Set Items(B) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal a As Long, ByVal b As Long, ByVal Comparer As IGenericComparer)
+Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal a As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
     
     Dim t As IGeneric
    
-    If Not (a = b) Then
+    If Not (a = B) Then
         If Not (Keys(a) Is Nothing) Then
-            If (Comparer.Compare(Keys(a), Keys(b)) = IsGreater) Then
+            If (Comparer.Compare(Keys(a), Keys(B)) = IsGreater) Then
                 Set t = Keys(a)
-                Set Keys(a) = Keys(b)
-                Set Keys(b) = t
+                Set Keys(a) = Keys(B)
+                Set Keys(B) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapWithItem(ByRef a() As IGeneric, ByRef b() As Object, ByVal i As Long, ByVal j As Long)
+Private Sub SwapWithItem(ByRef a() As IGeneric, ByRef B() As Object, ByVal i As Long, ByVal j As Long)
     
     Dim t As IGeneric
     
     Set t = a(i): Set a(i) = a(j): Set a(j) = t
-    Set t = b(i): Set b(i) = b(j): Set b(j) = t
+    Set t = B(i): Set B(i) = B(j): Set B(j) = t
     
 End Sub
 
@@ -2079,27 +2084,29 @@ Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True:
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericArray):  End Property
 
 Private Sub IGeneric_Dispose()
-    'Call Catch(SafeArrayDestroy(ByVal .Descriptor))
     myclass = EmptyStructure
-  
+    'Call Catch(SafeArrayDestroy(ByVal .Descriptor))
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member
+    Dim i As Long
     
     If (Me.IsEmpty) Then _
         Call System.Throw(Me, "Private Function IGeneric_Clone").InvalidOperation("Me.IsEmpty")
         
     With c
         Call Catch(SafeArrayCopy(ByVal myclass.Descriptor, .Descriptor))
-'        Call Catch(SafeArrayDestroyDescriptor(ByVal Skynet.PointerOf(.Internal)))
         
-        Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
-        Call LoadArrayStructure(.Struct, .Descriptor) '! pv.data
-       
-        ReDim .Indices(.Struct.cDims - 1) '!
+        If (.Descriptor = 0) Then _
+            Call System.Throw(Me, "Private Function IGeneric_Clone").InvalidOperation("Descriptor = 0")
+    
+        Call LoadArray(.Internal, .Descriptor)
+        Call CopyMemory(Dst:=.Struct, Src:=ByVal .Descriptor, Length:=12& + POINTERSIZE)
+        .Struct.Bounds = myclass.Struct.Bounds
+        .Indices = myclass.Indices
         .Elements = myclass.Elements
     End With
     
@@ -2135,13 +2142,13 @@ Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGen
         
 End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item, Index:=MIN_INDEX, Length:=myclass.Elements): End Function
-Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Iterator.Count): End Sub 'TODO CopyTo as Vector
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.CopyArrays(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Iterator.Count): End Sub 'TODO CopyTo as Vector
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator(): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Length: End Property
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.Copy(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.CopyArrays(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me: End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item, Index:=MIN_INDEX, Length:=myclass.Elements) >= 0: End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(MIN_INDEX, Me.Length): End Function

@@ -57,6 +57,7 @@ Private Type InternalStack
 End Type
 
 Private Type Iterator
+    SortedSet As GenericSortedSet
     Current As IGeneric
     Root As GenericNode
     Stack As InternalStack
@@ -383,14 +384,12 @@ Public Function Iterator(Optional ByVal Reverse As Boolean) As IGenericIterator
     
     Dim c As Member
 
-    Call LoadIterator(c.Iterator, myclass.Root, Reverse)
+    Call LoadIterator(c.Iterator, Me, myclass.Root, Reverse)
     Set Iterator = System.CreateInstance(New GenericSortedSet, VarPtr(c), LenB(c))
     
 End Function
 'TODO
-Public Sub Clear()
-    Call ClearTree(myclass.Root)
-End Sub
+Public Sub Clear(): Call ClearTree(myclass.Root): End Sub
 'Todo - test performance vs stack ' Node.Count ?!
 'Use like a Queue
 Private Sub ClearTree(ByRef Node As GenericNode)
@@ -952,12 +951,13 @@ Private Sub LoadStack(ByRef Stack As InternalStack, ByVal Node As GenericNode, B
     
 End Sub
 
-Private Sub LoadIterator(ByRef e As Iterator, ByVal Root As GenericNode, ByVal Reverse As Boolean)
+Private Sub LoadIterator(ByRef e As Iterator, ByVal Parent As GenericSortedSet, ByVal Root As GenericNode, ByVal Reverse As Boolean)
     
     If (Root Is Nothing) Then _
         Call System.Throw(Me, "Private Sub LoadIterator").IsNothing("(Root Is Nothing)")
     
     With e
+        Set .SortedSet = Parent
         Set .Current = Nothing
         Set .Root = Root
         Call LoadStack(.Stack, .Root, Reverse)
@@ -1032,7 +1032,8 @@ Private Function CloneTree(ByVal Node As GenericNode) As GenericNode
 End Function
 
 Private Sub IGeneric_Dispose()
-    Call Me.Clear
+    Call ClearTree(myclass.Root)
+    myclass = EmptyStructure
 End Sub
 Private Function EmptyStructure() As Member: End Function
 
@@ -1052,12 +1053,7 @@ Private Function IGeneric_ToString() As String
 End Function
 
 Private Sub Class_Terminate()
-
-    If Not myclass.Root Is Nothing Then _
-        IGeneric_Dispose
-    
-    myclass = EmptyStructure
-    
+    Call IGeneric_Dispose
 End Sub
 
 'IGenericReadOnlyList
@@ -1112,7 +1108,7 @@ Private Sub IGenericIterator_Reset()
          If .HasLoaded = False Then _
             Call System.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
           
-        Call LoadIterator(myclass.Iterator, .Root, .Stack.Reverse)
+        Call LoadIterator(myclass.Iterator, .SortedSet, .Root, .Stack.Reverse)
     End With
 End Sub
 

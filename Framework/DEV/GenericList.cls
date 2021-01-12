@@ -239,7 +239,7 @@ Public Function BuildWith(Items As GenericArray, Optional ByVal MakeCopy As Bool
 End Function
 
 Private Sub Class_Terminate()
-    Call System.Dispose(Me)
+    Call IGeneric_Dispose
 End Sub
 
 Public Sub Swap(ByVal i As Long, ByVal j As Long)
@@ -440,7 +440,7 @@ Public Function GetRange(ByVal StartIndex As Long, ByVal EndIndex As Long) As Ge
 
         Set Items = .Build(EndIndex - StartIndex + 1)
 
-        Call .Copy(SrcArray:=myclass.Items, SrcIndex:=StartIndex, DstArray:=Items, DstIndex:=Items.LowerBound, Elements:=Items.Length)
+        Call .CopyArrays(SrcArray:=myclass.Items, SrcIndex:=StartIndex, DstArray:=Items, DstIndex:=Items.LowerBound, Elements:=Items.Length)
     End With
     
     Set GetRange = GenericList.BuildWith(Items)
@@ -465,7 +465,7 @@ Public Sub CopyTo( _
     If (GArray.Length - ArrayIndex + GArray.LowerBound < Elements) Then _
         Call System.Throw(Me, "Public Sub CopyTo").InvalidInput("(GArray.Length - Index < Elements)")
     
-    Call GenericArray.Copy(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Elements)
+    Call GenericArray.CopyArrays(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Elements)
 
 End Sub
 
@@ -489,12 +489,12 @@ Public Function IsEqual(ByVal first As IGenericReadOnlyList, ByVal second As IGe
     If Not first.Count = second.Count Then _
         Exit Function
     
-    Dim a As IGenericIterator, b As IGenericIterator
+    Dim a As IGenericIterator, B As IGenericIterator
     Dim i As IGeneric, j As IGeneric
     
-    Set a = first.Iterator: Set b = second.Iterator
+    Set a = first.Iterator: Set B = second.Iterator
     
-    Do While (a.HasNext(i) And b.HasNext(j))
+    Do While (a.HasNext(i) And B.HasNext(j))
 
         If Not (i Is Nothing) Then
             If i.Equals(j) = False Then _
@@ -638,7 +638,7 @@ Private Function IGeneric_Clone() As IGeneric
     Dim c As Member
     
     With c
-        Set .Items = System.Clone(myclass.Items)
+        Set .Items = myclass.Items.Copy
         .Size = myclass.Size
     End With
     

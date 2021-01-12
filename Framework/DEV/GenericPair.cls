@@ -52,19 +52,19 @@ Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long
     IGenericComparer_GetHashCode = myclass.Comparer.GetHashCode(pair.Key)
 End Function
 
-Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal b As IGeneric) As CompareResult
+Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult
 
     Dim x As GenericPair, y As GenericPair
-    Set x = a: Set y = b
+    Set x = a: Set y = B
     
     IGenericComparer_Compare = myclass.Comparer.Compare(x.Key, y.Key)
     
 End Function
 '
-Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal b As IGeneric) As Boolean
+Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal B As IGeneric) As Boolean
 
     Dim x As GenericPair, y As GenericPair
-    Set x = a: Set y = b
+    Set x = a: Set y = B
 
     IGenericComparer_Equals = myclass.Comparer.Equals(x.Key, y.Key)
 

@@ -369,7 +369,7 @@ Public Sub Execute()
     If Not myclass.IsPrepared Then _
         Call Me.Prepare(myclass.Sql)
     
-    Do While Database.STATE And ISqlObjectState.IsConnecting_State
+    Do While Database.State And ISqlObjectState.IsConnecting_State
     Loop
     
     Set myclass.Command.ActiveConnection = Database
@@ -721,9 +721,9 @@ Private Function Connect(ByVal Command As ADODB.Command, ByVal Credentials As Sq
 End Function
 
 Private Function IsConnected(ByVal Connection As ADODB.Connection) As Boolean
-    Debug.Print Connection.STATE
+    Debug.Print Connection.State
     If Not Connection Is Nothing Then _
-        IsConnected = (Connection.STATE And ISqlObjectState.IsOpen_State) = ISqlObjectState.IsOpen_State
+        IsConnected = (Connection.State And ISqlObjectState.IsOpen_State) = ISqlObjectState.IsOpen_State
 
 End Function
 
@@ -734,7 +734,7 @@ Private Function IsFetching(ByVal Command As ADODB.Command) As Boolean
     
     If Not Command Is Nothing Then
         If Not Command.ActiveConnection Is Nothing Then
-            Do While (Command.STATE And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting 'Do While Connection.State = ISqlConnectionState.Connection_IsOpen + ISqlConnectionState.Connection_IsExecuting
+            Do While (Command.State And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting 'Do While Connection.State = ISqlConnectionState.Connection_IsOpen + ISqlConnectionState.Connection_IsExecuting
 '                If Counter Mod BREAK = 0 Then
 '                    Debug.Print ("Command is executing ...")
 '                    DoEvents
@@ -858,13 +858,13 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
     If (Records Is Nothing) Then _
         Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records Is Nothing)")
     
-    If (Records.STATE = ISqlCommandState.StateClosed) Then _
+    If (Records.State = ISqlCommandState.StateClosed) Then _
         Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
     
     With myclass.Iterator
         Set .Records = Records
         
-        Do While (.Records.STATE And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting
+        Do While (.Records.State And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting
             Debug.Print "Records fetching...."
         Loop
         
@@ -938,7 +938,7 @@ Private Sub IGenericIterator_Reset()
 
      With myclass.Iterator
         If Not .Records Is Nothing Then
-            If .Records.STATE = ISqlObjectState.IsOpen_State Then
+            If .Records.State = ISqlObjectState.IsOpen_State Then
                 .HasRows = Not (.Records.BOF And .Records.EOF)
                 If .HasRows Then _
                     Call .Records.MoveFirst

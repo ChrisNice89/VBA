@@ -4,14 +4,14 @@ Public Function HeapSort(Keys)
    Dim Base As Long: Base = LBound(Keys)                    ' array index base
    Dim N As Long: N = UBound(Keys) - LBound(Keys) + 1       ' array Size
    ReDim Index(Base To Base + N - 1) As Long                ' allocate index array
-   Dim i As Long, m As Long
+   Dim i As Long, M As Long
    For i = 0 To N - 1: Index(Base + i) = Base + i: Next     ' fill index array
    For i = N \ 2 - 1 To 0 Step -1                           ' generate ordered heap
       Heapify Keys, Index, i, N
       Next
-   For m = N To 2 Step -1
-      Exchange Index, 0, m - 1                              ' move highest element to top
-      Heapify Keys, Index, 0, m - 1
+   For M = N To 2 Step -1
+      Exchange Index, 0, M - 1                              ' move highest element to top
+      Heapify Keys, Index, 0, M - 1
       Next
    HeapSort = Index
    End Function

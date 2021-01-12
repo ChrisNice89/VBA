@@ -135,7 +135,7 @@ Public Function LOGn(ByVal Value As Long, Optional ByVal Base As Byte = 2) As Lo
 Public Function Multiply(ByVal Other As GNumeric) As GNumeric: Set Multiply = GNumeric.Build(myclass.Value * Other.Value): End Function
 Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
 Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
-Public Function Modulo(ByVal m As Double) As GNumeric: Set Modulo = GNumeric((myclass.Value - (Int(myclass.Value / m) * m))): End Function
+Public Function Modulo(ByVal M As Double) As GNumeric: Set Modulo = GNumeric((myclass.Value - (Int(myclass.Value / M) * M))): End Function
 Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(myclass.Value + Factor): End Function
 Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / MAXLONG) * MAXLONG)): End Function
 

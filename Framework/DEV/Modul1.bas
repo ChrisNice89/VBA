@@ -304,7 +304,7 @@ Sub TestMultiDimArray()
     End With
     
     'Insert/ Copy Column into Matrix first column
-    Call GenericArray.Copy(Column, Column.LowerBound, ga, ga.LowerBound, Column.Length)
+    Call GenericArray.CopyArrays(Column, Column.LowerBound, ga, ga.LowerBound, Column.Length)
     Debug.Print ga.GetValue(0, 0).Equals(ga.GetValue(0, 2))
     
     Call ga.Transpose
@@ -837,40 +837,44 @@ End Sub
 Sub testMap()
 
     Dim i As Long
-    Dim hm As GenericMap
-    Set hm = GenericMap.Build()
+    Dim hm As GenericLinkedMap
+    Set hm = GenericLinkedMap.Build()
     Dim t As CTimer
     Set t = New CTimer
     
     t.StartCounter
-    For i = 1 To 35
+    For i = 1 To 5
         Call hm.Add(GString("Key " & i), GNumeric(i))
     Next
     Debug.Print t.TimeElapsed
     
-    For i = 1 To 35
-         Call hm.Contains(GString("Key " & i))
+    t.StartCounter
+    For i = 1 To 5
+         If hm.Contains(GString("Key " & i)) = False Then
+            Debug.Print "nicht gefunden"
+         End If
     Next
-
+    Debug.Print t.TimeElapsed
+    
     Dim Clone As IGenericDictionary
-    Set Clone = System.Clone(hm)
-    Debug.Print System.Generic(hm)
+    Set Clone = System.Generic(hm).Clone
     Set hm = Nothing
     
     Dim Item As IGeneric
-'    t.StartCounter
-'    With Clone.IteratorOf(PairData)
-'        Do While .HasNext(Item)
-'            Debug.Print Item
-'        Loop
-'    End With
-'    Debug.Print t.TimeElapsed
-
-    With GenericSortedList.BuildFrom(Clone, IGenericValue.Comparer).IteratorOf(PairData)
+    t.StartCounter
+    With Clone.IteratorOf(PairData)
         Do While .HasNext(Item)
             Debug.Print Item
         Loop
     End With
+    Debug.Print t.TimeElapsed
+    Debug.Print System.Generic(Clone)
+'
+'    With GenericSortedList.BuildFrom(Clone, IGenericValue.Comparer).IteratorOf(PairData)
+'        Do While .HasNext(Item)
+''            Debug.Print Item
+'        Loop
+'    End With
 
 End Sub
 

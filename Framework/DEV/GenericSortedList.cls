@@ -281,7 +281,7 @@ Public Function BuildFrom(ByVal Dictionary As IGenericDictionary, Optional ByVal
 End Function
 
 Private Sub Class_Terminate()
-    Call System.Dispose(Me)
+    Call IGeneric_Dispose
 End Sub
 
 Private Sub EnsureCapacity(ByVal Min As Long)
@@ -443,9 +443,9 @@ Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray,
      
     Select Case True
         Case t = KeyData
-            Call GenericArray.Copy(SrcArray:=myclass.Keys, SrcIndex:=myclass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Size)
+            Call GenericArray.CopyArrays(SrcArray:=myclass.Keys, SrcIndex:=myclass.Keys.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Size)
         Case t = ValueData
-            Call GenericArray.Copy(SrcArray:=myclass.Values, SrcIndex:=myclass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Size)
+            Call GenericArray.CopyArrays(SrcArray:=myclass.Values, SrcIndex:=myclass.Values.LowerBound, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=myclass.Size)
         Case Else
             For i = myclass.Keys.LowerBound To myclass.Size - 1 + myclass.Keys.LowerBound
                 Set GArray(ArrayIndex) = GenericPair(myclass.Keys(i), myclass.Values(i)): ArrayIndex = ArrayIndex + 1
@@ -521,8 +521,8 @@ Private Function IGeneric_Clone() As IGeneric
     Dim c As Member
     
     With c
-        Set .Keys = System.Clone(myclass.Keys)
-        Set .Values = System.Clone(myclass.Values)
+        Set .Keys = myclass.Keys.Copy
+        Set .Values = myclass.Values.Copy
         .Size = myclass.Size
         .SortOrder = myclass.SortOrder
     End With

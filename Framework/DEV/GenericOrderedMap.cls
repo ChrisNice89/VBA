@@ -103,7 +103,7 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     
     With myclass
         Set .Internal = GenericList.Build(Capacity)
-        Set .HashTable = GenericMap.Build(Capacity * 2) 'GenericSortedSet.Build
+        Set .HashTable = GenericLinkedMap.Build(Capacity * 2)
     End With
 
     Set Build = System.CreateInstance(New GenericOrderedMap, VarPtr(myclass), LenB(myclass))
