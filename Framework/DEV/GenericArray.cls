@@ -202,7 +202,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     If IsMissing(Indices) Then _
         Call System.Throw(Me, "Public Function Build").InvalidInput("ParamArray Indices are missing")
     
-    LB = LBound(Indices): ub = UBound(Indices)
+    LB = 0&: ub = UBound(Indices)
     
     With myclass
         .Elements = 1
