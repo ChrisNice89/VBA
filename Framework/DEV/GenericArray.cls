@@ -195,7 +195,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     
     Dim SAB() As SAFEARRAYBOUND
     Dim i As Long, ub As Long, LB As Long
-    
+                                                                                            
     If (Me Is GenericArray) = False Then _
         Call System.Throw(Me, "Public Function Build").BuildExeption
     
@@ -207,23 +207,22 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     With myclass
         .Elements = 1
         ReDim .Indices(LB To ub)
-        ReDim .Struct.Bounds(LB To ub)
         ReDim SAB(LB To ub)
-    
+                                                                                                 
+        ReDim .Struct.Bounds(LB To ub)                                                                                                  
+        .Struct.cDims = ub+1
+        .Struct.fFeatures = F_FEATURES
+        .Struct.cbElements = ELEMENT_SIZE                                                                                     
         For i = LB To ub
             If Not (Indices(i) > 0) Then _
                 Call System.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
-            
-            With SAB(i)
-                .cElements = Indices(i)
-                .lLbound = MIN_INDEX
-            End With
-            
-            .Elements = .Elements * SAB(i).cElements
-            .Indices(i) = SAB(i).lLbound
-            .Struct.Bounds(ub - i) = SAB(i)
-            .Struct.cDims = .Struct.cDims + 1
+
+            SAB(i).cElements = Indices(i)
+            SAB(i).lLbound = MIN_INDEX
            
+            .Elements = .Elements * Indices(i)
+            .Indices(i) = MIN_INDEX
+            .Struct.Bounds(ub - i) = SAB(i)
         Next i
 
         'Call Catch(SafeArrayDestroyDescriptor(ByVal Skynet.PointerOf(myClass.Internal))) '!Memoryleak?!
@@ -233,9 +232,6 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
             Call System.Throw(Me, "Public Function Build").InvalidOperation("Descriptor = 0")
         
         Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(LB), .Struct.pvData))
-        .Struct.fFeatures = F_FEATURES
-        .Struct.cbElements = ELEMENT_SIZE
-        
         Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
     End With
     
