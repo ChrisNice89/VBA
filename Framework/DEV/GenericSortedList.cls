@@ -210,12 +210,12 @@ Public Property Let Capacity(ByVal Value As Long)
             
             If (myclass.Size > 0) Then
                 With myclass.Keys
-                    Call CopyMemory(Dst:=ByVal newKeys.AdressOf(Element:=.LowerBound), Src:=ByVal .AdressOf(Element:=.LowerBound), Length:=.Size): _
-                    Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=.LowerBound), Length:=.Size)
+                    Call CopyMemory(Dst:=ByVal newKeys.AdressOf(Index:=.LowerBound), Src:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size): _
+                    Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size)
                 End With
                 With myclass.Values
-                    Call CopyMemory(Dst:=ByVal newValues.AdressOf(Element:=.LowerBound), Src:=ByVal .AdressOf(Element:=.LowerBound), Length:=.Size): _
-                    Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=.LowerBound), Length:=.Size)
+                    Call CopyMemory(Dst:=ByVal newValues.AdressOf(Index:=.LowerBound), Src:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size): _
+                    Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size)
                 End With
             End If
            
@@ -345,12 +345,12 @@ Public Sub RemoveAt(ByVal Index As Long)
     
     If (Index < UpperBound) Then
         With myclass.Keys
-            Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=myclass.Size), Length:=.SizeOf(1))
         End With
         With myclass.Values
-            Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=myclass.Size), Length:=.SizeOf(1))
         End With
     End If
     
@@ -380,13 +380,13 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
 
     If (Index < UpperBound) Then
         With myclass.Keys
-            Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
         End With
         
         With myclass.Values
-            Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
         End With
     End If
     

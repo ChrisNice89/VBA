@@ -152,8 +152,8 @@ Public Property Let Capacity(ByVal Value As Long)
             With GenericArray
                 Set newItems = .Build(Value)
                 If (myclass.Size > 0) Then _
-                    Call CopyMemory(Dst:=ByVal newItems.AdressOf(Element:=.LowerBound), Src:=ByVal myclass.Items.AdressOf(Element:=.LowerBound), Length:=myclass.Items.Size): _
-                    Call ZeroMemory(Dst:=ByVal myclass.Items.AdressOf(Element:=.LowerBound), Length:=myclass.Items.Size)
+                    Call CopyMemory(Dst:=ByVal newItems.AdressOf(Index:=.LowerBound), Src:=ByVal myclass.Items.AdressOf(Index:=.LowerBound), Length:=myclass.Items.Size): _
+                    Call ZeroMemory(Dst:=ByVal myclass.Items.AdressOf(Index:=.LowerBound), Length:=myclass.Items.Size)
             End With
             
             Set myclass.Items = newItems
@@ -245,9 +245,9 @@ End Sub
 Public Sub Swap(ByVal i As Long, ByVal j As Long)
 
     Dim Item As IGeneric
-    Dim ub As Long: ub = UpperBound
+    Dim UB As Long: UB = UpperBound
     
-    If (i > ub) Or (j > ub) Then _
+    If (i > UB) Or (j > UB) Then _
         Call System.Throw(Me, "Public Sub Swap").IndexOutofRange("(i > myClass.Size) Or (j > myClass.Size)")
      
     With myclass.Items
@@ -358,8 +358,8 @@ Public Sub InsertCollection(ByVal Index As Long, ByVal Collection As IGenericCol
     
         With myclass.Items
             If (Index < UpperBound) Then _
-                Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index + Collection.Count), Src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-                Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(Collection.Count))
+                Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + Collection.Count), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+                Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(Collection.Count))
                 
         End With
       
@@ -379,8 +379,8 @@ Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
         
     With myclass.Items
         If (Index < UpperBound) Then _
-            Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index + 1), Src:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=Index), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
          
          Set .ElementAt(Index) = Item
          Call InterlockedIncrement(myclass.Size)
@@ -409,8 +409,8 @@ Public Sub RemoveAt(ByVal Index As Long)
         Set .ElementAt(Index) = Nothing
         
         If (Index < UpperBound) Then _
-            Call CopyMemory(Dst:=ByVal .AdressOf(Element:=Index), Src:=ByVal .AdressOf(Element:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Element:=myclass.Size), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=myclass.Size), Length:=.SizeOf(1))
         
         Call InterlockedDecrement(myclass.Size)
     End With

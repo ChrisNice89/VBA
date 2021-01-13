@@ -309,7 +309,8 @@ Sub TestMultiDimArray()
     
     Call ga.Transpose
     Debug.Print ga.GetValue(2, 0).Equals(Column(0))
-
+     Call Column.Clear
+    
 End Sub
 Sub testArrayConstructor()
 

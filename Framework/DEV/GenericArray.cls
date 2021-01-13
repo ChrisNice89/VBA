@@ -61,6 +61,19 @@ Private Const DISP_E_BADINDEX As Long = &H8002000B
 Private Const E_OUTOFMEMORY As Long = &H8007000E
 Private Const DISP_E_ARRAYISLOCKED As Long = &H8002000D
 Private Const E_UNEXPECTED As Long = &H8000FFFF
+'SafeArray fFeatures
+Private Const FADF_AUTO As Long = &H1
+Private Const FADF_STATIC As Long = &H2
+Private Const FADF_EMBEDDED As Long = &H4
+Private Const FADF_FIXEDSize As Long = &H10
+Private Const FADF_RECORD As Long = &H20
+Private Const FADF_HAVEIID As Long = &H40
+Private Const FADF_HAVEVARTYPE As Long = &H80
+Private Const FADF_BSTR As Long = &H100
+Private Const FADF_UNKNOWN As Long = &H200
+Private Const FADF_DISPATCH As Long = &H400
+Private Const FADF_VARIANT As Long = &H800
+Private Const FADF_CREATEVECTOR As Long = &H2000 ' Flag for safearraydestroydata
 
 Private Const MIN_INDEX As Long = 0 'Option Base { 0 | 1 }
 Private Const MAX_ARRAY_LENGHT As Long = &H7FEFFFFF
@@ -85,6 +98,7 @@ End Enum
     Private Declare PtrSafe Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As LongPtr, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
     Private Declare PtrSafe Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef Dst As LongPtr, ByVal Src As LongPtr) As Long
     Private Declare PtrSafe Function SafeArrayCreateEx Lib "oleaut32.dll" (ByVal vt As Integer, ByVal cDims As Long, ByRef rgsabound As SAFEARRAYBOUND, ByRef pvExtra As Any) As LongPtr
+    Private Declare PtrSafe Function SafeArrayAllocData Lib "oleaut32.dll" (ByRef psa As Any) As LongPtr
     Private Declare PtrSafe Function SafeArrayDestroyDescriptor Lib "oleaut32.dll" (ByRef psa As Any) As LongPtr
     Private Declare PtrSafe Function SafeArrayDestroy Lib "oleaut32.dll" (ByRef psa As Any) As LongPtr
     Private Declare PtrSafe Function SafeArrayDestroyData Lib "oleaut32.dll" (ByRef psa As Any) As LongPtr
@@ -111,6 +125,7 @@ End Enum
     Private Declare Function CopyBytes Lib "msvbvm60.dll" Alias "__vbaCopyBytes" (ByVal Length As Long, ByRef Dst As Long, ByVal Src As Long) As Long
     Private Declare Function CopyBytesZero Lib "msvbvm60.dll" Alias "__vbaCopyByteZeros" (ByVal Length As Long, ByRef Dst As Long, ByVal Src As Long) As Long
     Private Declare Function SafeArrayCreateEx Lib "oleaut32.dll" (ByVal vt As Integer, ByVal cDims As Long, ByRef rgsabound As SAFEARRAYBOUND, ByRef pvExtra As Any) As Long
+    Private Declare Function SafeArrayAllocData Lib "oleaut32.dll" (ByRef psa As Any) As Long
     Private Declare Function SafeArrayDestroyDescriptor Lib "oleaut32.dll" (ByRef psa As Any) As Long
     Private Declare Function SafeArrayDestroy Lib "oleaut32.dll" (ByRef psa As Any) As Long
     Private Declare Function SafeArrayDestroyData Lib "oleaut32.dll" (ByRef psa As Any) As Long
@@ -180,7 +195,7 @@ Private myclass As Member
 Public Property Get SortOrder() As SortOrder: SortOrder = DEFAULT_SORTORDER: End Property
 Public Property Get MaxLength() As Long: MaxLength = MAX_ARRAY_LENGHT: End Property
 Public Property Get LowerBound() As Long: LowerBound = MIN_INDEX: End Property
-Public Property Get IsEmpty() As Boolean: IsEmpty = (myclass.Descriptor = 0): End Property
+Public Property Get IsEmpty() As Boolean: IsEmpty = (myclass.Descriptor = 0) Or (myclass.Struct.pvData = 0): End Property
 Public Property Get Descriptor() As LongPtr: Descriptor = myclass.Descriptor: End Property
 'Public Property Get LengthOf(ByVal Dimension As Long) As Long: Call Catch(SafeArrayGetUBound(ByVal myclass.Descriptor, Dimension, LengthOf)): End Property
 Public Property Get LengthOf(ByVal Dimension As Long) As Long: LengthOf = myclass.Struct.Bounds(myclass.Struct.cDims - Dimension).cElements: End Property
@@ -195,7 +210,7 @@ Attribute ElementAt.VB_UserMemId = 0
 Public Function Build(ParamArray Indices() As Variant) As GenericArray
     
     Dim SAB() As SAFEARRAYBOUND
-    Dim i As Long, ub As Long, LB As Long
+    Dim i As Long, UB As Long, LB As Long
                                                                                             
     If (Me Is GenericArray) = False Then _
         Call System.Throw(Me, "Public Function Build").BuildExeption
@@ -203,18 +218,20 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     If IsMissing(Indices) Then _
         Call System.Throw(Me, "Public Function Build").InvalidInput("ParamArray Indices are missing")
     
-    LB = 0&: ub = UBound(Indices)
+    LB = 0&: UB = UBound(Indices)
     
+'    Dim x(10) As IGeneric 'fFeatures = FADF_DISPATCH-FADF_FIXEDSize-FADF_HAVEIID-FADF_STATIC
     With myclass
         .Elements = 1
-        ReDim .Indices(LB To ub)
-        ReDim SAB(LB To ub)
-                                                                                                 
-        ReDim .Struct.Bounds(LB To ub)                                                                                                  
-        .Struct.cDims = ub+1
+        ReDim .Indices(LB To UB)
+        ReDim SAB(LB To UB)
+        ReDim .Struct.Bounds(LB To UB)
+        
+        .Struct.cDims = UB + 1
         .Struct.fFeatures = F_FEATURES
-        .Struct.cbElements = ELEMENT_SIZE                                                                                     
-        For i = LB To ub
+        .Struct.cbElements = ELEMENT_SIZE
+        
+        For i = LB To UB
             If Not (Indices(i) > 0) Then _
                 Call System.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
 
@@ -223,7 +240,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
            
             .Elements = .Elements * Indices(i)
             .Indices(i) = MIN_INDEX
-            .Struct.Bounds(ub - i) = SAB(i)
+            .Struct.Bounds(UB - i) = SAB(i)
         Next i
 
         .Descriptor = SafeArrayCreateEx(ELEMENT_TYPE, .Struct.cDims, SAB(LB), ByVal 0&)
@@ -232,13 +249,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
             Call System.Throw(Me, "Public Function Build").InvalidOperation("Descriptor = 0")
         
         Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(LB), .Struct.pvData))
-<<<<<<< HEAD
-        .Struct.fFeatures = F_FEATURES
-        .Struct.cbElements = ELEMENT_SIZE
-        Call LoadArray(.Internal, .Descriptor)
-=======
         Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
->>>>>>> 3207442cbfccbb4943d1d198c7517dc668aa28a7
     End With
     
     Set Build = System.CreateInstance(New GenericArray, VarPtr(myclass), LenB(myclass))
@@ -418,20 +429,18 @@ Private Sub Class_Terminate()
 End Sub
 
 Public Sub Clear()
-'    Call Catch(SafeArrayDestroyData(ByVal myclass.Descriptor))
-
-    With myclass
-        Call Catch(SafeArrayDestroy(ByVal .Descriptor))
-        .Descriptor = SafeArrayCreateEx(ELEMENT_TYPE, .Struct.cDims, .Struct.Bounds(0&), ByVal 0&)
-        
-        If (.Descriptor = 0) Then _
-            Call System.Throw(Me, "Public Function Build").InvalidOperation("Descriptor = 0")
-        
-        Call LoadArrayStructure(.Struct, .Descriptor)
-        ReDim .Indices(.Struct.cDims - 1)
     
-        Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
-    End With
+    Call Catch(SafeArrayDestroyData(ByVal myclass.Descriptor)) 'if not fFeatures & FADF_STATIC then pvData-> null
+    myclass.Struct.pvData = 0
+    Call Catch(SafeArrayAllocData(ByVal myclass.Descriptor))
+    
+    Dim i As Long
+    
+    For i = UBound(myclass.Indices) To LBound(myclass.Indices) Step -1
+        myclass.Indices(i) = MIN_INDEX
+    Next i
+    
+    Call Catch(SafeArrayPtrOfIndex(ByVal myclass.Descriptor, myclass.Indices(i + 1), myclass.Struct.pvData))
     
 End Sub
 
@@ -458,7 +467,7 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
         ReDim .Bounds(0)
         .Bounds(0).cElements = Me.LengthOf(1)
         .Bounds(0).lLbound = MIN_INDEX
-        .pvData = Me.AdressOf(Element:=(Me.LengthOf(1) * Index))
+        .pvData = Me.AdressOf(Index:=(Me.LengthOf(1) * Index))
     End With
     
     Call SwitchTo(Me.Descriptor, Overlay)
@@ -505,13 +514,13 @@ Public Sub CopyArrays( _
     
     With SrcArray
         Call LoadArrayStructure(Src, .Descriptor)
-        Overlay.pvData = .AdressOf(Element:=SrcIndex)
+        Overlay.pvData = .AdressOf(Index:=SrcIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
     
     With DstArray
         Call LoadArrayStructure(Dst, .Descriptor)
-        Overlay.pvData = .AdressOf(Element:=DstIndex)
+        Overlay.pvData = .AdressOf(Index:=DstIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
     
@@ -2095,22 +2104,32 @@ Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member
+
     Dim i As Long
     
     If (Me.IsEmpty) Then _
         Call System.Throw(Me, "Private Function IGeneric_Clone").InvalidOperation("Me.IsEmpty")
-        
+  
     With c
+        .Elements = myclass.Elements
+        .Struct.cDims = myclass.Struct.cDims
+        .Struct.fFeatures = F_FEATURES
+        .Struct.cbElements = ELEMENT_SIZE
+        .Struct.Bounds = myclass.Struct.Bounds
+        .Indices = myclass.Indices
+
         Call Catch(SafeArrayCopy(ByVal myclass.Descriptor, .Descriptor))
         
         If (.Descriptor = 0) Then _
             Call System.Throw(Me, "Private Function IGeneric_Clone").InvalidOperation("Descriptor = 0")
-    
-        Call LoadArray(.Internal, .Descriptor)
+        
+        For i = LBound(.Indices) To UBound(.Indices)
+            .Indices(i) = MIN_INDEX
+        Next
+        
+        Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(0), .Struct.pvData))
         Call CopyMemory(Dst:=.Struct, Src:=ByVal .Descriptor, Length:=12& + POINTERSIZE)
-        .Struct.Bounds = myclass.Struct.Bounds
-        .Indices = myclass.Indices
-        .Elements = myclass.Elements
+
     End With
     
     Set IGeneric_Clone = System.CreateInstance(New GenericArray, VarPtr(c), LenB(c))
