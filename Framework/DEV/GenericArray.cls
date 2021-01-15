@@ -478,7 +478,39 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     
 End Function
 
-Public Function Copy() As GenericArray: Set Copy = IGeneric_Clone: End Function
+Public Function Copy() As GenericArray
+          
+    Dim c As Member
+    Dim i As Long
+    
+    If (Me.IsEmpty) Then _
+        Call System.Throw(Me, "Public Function Copy").InvalidOperation("Me.IsEmpty")
+  
+    With c
+        .Elements = myclass.Elements
+        .Struct.cDims = myclass.Struct.cDims
+        .Struct.fFeatures = F_FEATURES
+        .Struct.cbElements = ELEMENT_SIZE
+        .Struct.Bounds = myclass.Struct.Bounds
+        .Indices = myclass.Indices
+
+        Call Catch(SafeArrayCopy(ByVal myclass.Descriptor, .Descriptor))
+        
+        If (.Descriptor = 0) Then _
+            Call System.Throw(Me, "Public Function Copy").InvalidOperation("Descriptor = 0")
+        
+        For i = LBound(.Indices) To UBound(.Indices)
+            .Indices(i) = MIN_INDEX
+        Next
+        
+        Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(0), .Struct.pvData))
+        Call CopyMemory(Dst:=.Struct, Src:=ByVal .Descriptor, Length:=12& + POINTERSIZE)
+
+    End With
+    
+    Set Copy = System.CreateInstance(New GenericArray, VarPtr(c), LenB(c))
+
+End Function
 
 Public Sub CopyArrays( _
                         ByVal SrcArray As GenericArray, _
@@ -492,16 +524,19 @@ Public Sub CopyArrays( _
     Dim Dst As SAFEARRAYSTRUCT
  
     If (SrcArray Is Nothing) Or (DstArray Is Nothing) Then _
-        Call System.Throw(Me, "Public Sub Copy").InvalidInput("SrcArray Is Nothing) Or (DstArray Is Nothing)")
-        
+        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("SrcArray Is Nothing) Or (DstArray Is Nothing)")
+    
+    If (SrcArray.isEmpty) Or (DstArray.isEmpty) Then _
+        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(SrcArray.isEmpty) Or (DstArray.isEmpty)")
+                                                                                                                                  
     If (Elements < 1) Then _
-        Call System.Throw(Me, "Public Sub Copy").InvalidInput("Elements to copy  <  1")
+        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("Elements to copy  <  1")
     
     If (SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX) Then _
-        Call System.Throw(Me, "Public Sub Copy").InvalidInput("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX)")
+        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX)")
         
     If (DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX) Then _
-        Call System.Throw(Me, "Public Sub Copy").InvalidInput("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX)")
+        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX)")
     
     With Overlay
         .cDims = 1
@@ -2102,38 +2137,7 @@ End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
-    
-    Dim c As Member
-
-    Dim i As Long
-    
-    If (Me.IsEmpty) Then _
-        Call System.Throw(Me, "Private Function IGeneric_Clone").InvalidOperation("Me.IsEmpty")
-  
-    With c
-        .Elements = myclass.Elements
-        .Struct.cDims = myclass.Struct.cDims
-        .Struct.fFeatures = F_FEATURES
-        .Struct.cbElements = ELEMENT_SIZE
-        .Struct.Bounds = myclass.Struct.Bounds
-        .Indices = myclass.Indices
-
-        Call Catch(SafeArrayCopy(ByVal myclass.Descriptor, .Descriptor))
-        
-        If (.Descriptor = 0) Then _
-            Call System.Throw(Me, "Private Function IGeneric_Clone").InvalidOperation("Descriptor = 0")
-        
-        For i = LBound(.Indices) To UBound(.Indices)
-            .Indices(i) = MIN_INDEX
-        Next
-        
-        Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(0), .Struct.pvData))
-        Call CopyMemory(Dst:=.Struct, Src:=ByVal .Descriptor, Length:=12& + POINTERSIZE)
-
-    End With
-    
-    Set IGeneric_Clone = System.CreateInstance(New GenericArray, VarPtr(c), LenB(c))
-  
+    Set IGeneric_Clone =Me.Copy
 End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
