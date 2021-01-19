@@ -108,6 +108,7 @@ Public Property Get ElementAt(ByVal Index As Long) As GString
     
 End Property
 
+Public Property Get IsNumeric() As Boolean:IsNumeric =IsNumeric(myclass.value): End Property
 Public Property Get Length() As Long: Length = myclass.Length: End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myclass.Value, Len(myclass.Value), 1): End Property
 Public Property Get Format() As TStringFormat: Format = myclass.Format: End Property
