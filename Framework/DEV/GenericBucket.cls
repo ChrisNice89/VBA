@@ -72,6 +72,7 @@ Private Sub Class_Terminate()
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericBucket: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericNode: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property

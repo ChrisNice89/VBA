@@ -24,8 +24,10 @@ Implements IGenericIterator
 
 Private Const MAXVALUE As Double = 922337203685477#
 Private Const MAXLONG As Long = 2 ^ 31 - 1
+Private Const NUMERIC_SCALE As Long = 4
+Private Const PRECISION As Long = 4
 
-Public Enum TNumericFormat
+Public Enum NumericFormat
     [_First]
     DefaultNumber
     TwoDecimals
@@ -46,10 +48,7 @@ End Type
 
 Private Type Member
     Value As Currency
-    Precision As Byte
-    NumericScale As Byte
     Range As Range
-    Format As TNumericFormat
 End Type
 Private myclass As Member
 Private Formats() As String
@@ -79,26 +78,23 @@ Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIt
 
 End Property
 
-Public Property Get Format() As TNumericFormat: Format = myclass.Format: End Property
+Public Property Get IsDefault() As Boolean: IsDefault = Me Is GNumeric: End Property
+Public Property Get ToFormat(ByVal Format As NumericFormat) As String: ToFormat = myclass.Value: End Property
 Public Property Get Value() As Currency: Value = myclass.Value: End Property
 Public Property Get IsZero() As Boolean: IsZero = myclass.Value = 0: End Property
-Public Property Get Precision() As Long: Precision = myclass.Precision: End Property
-Public Property Get NumericScale() As Long: NumericScale = myclass.NumericScale: End Property
+'TODO see hashmap
+'Public Property Get IsPrime() As Boolean: End Property
+Public Property Get Fractional() As Double: Fractional = myclass.Value - Int(myclass.Value): End Property
 Public Property Get IsEven() As Boolean: IsEven = (myclass.Value - (Int(myclass.Value / 2) * 2)) = 0: End Property
 
-Public Function Build( _
-                            ByVal Value As Variant, _
-                            Optional ByVal Precision As Byte = 4, _
-                            Optional ByVal NumericScale As Byte = 4, _
-                            Optional ByVal Format As TNumericFormat = TNumericFormat.DefaultNumber) As GNumeric
+Public Function Build(ByVal Value As Variant) As GNumeric
 Attribute Build.VB_UserMemId = 0
+    
     With myclass
-        If Not IsNull(Value) Then _
-            .Value = Value
-         
-        .Precision = Precision
-        .NumericScale = NumericScale
-        .Format = Format
+        If IsNull(Value) Then _
+            Set Build = GNumeric: Exit Function
+  
+        .Value = Value
     End With
     
     Set Build = New GNumeric: myclass = EmptyStructure
@@ -108,9 +104,6 @@ End Function
 Private Sub Class_Initialize()
     With GNumeric
         myclass.Value = .Value
-        myclass.Format = .Format
-        myclass.Precision = .Precision
-        myclass.NumericScale = .NumericScale
     End With
 '    ReDim Formats(TNumericFormat.[_First] To TNumericFormat.[_Last])
 '    Formats(TNumericFormat.DefaultNumber) = "General Number"
@@ -140,6 +133,7 @@ Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(my
 Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / MAXLONG) * MAXLONG)): End Function
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.IsDefault: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GNumeric: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
@@ -149,8 +143,23 @@ Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: I
 
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
-Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = GNumeric.Build(myclass.Value, myclass.Precision, myclass.NumericScale, myclass.Format): End Function
-Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_Equals = IGenericValue_Equals(Other): End Function
+Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me: End Function
+
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
+    
+    If Other Is Nothing Then _
+        IGeneric_Equals = False: Exit Function
+    
+    If Not TypeOf Other Is GNumeric Then _
+        IGeneric_Equals = False: Exit Function
+        
+    Dim otherNumber As GNumeric
+    Set otherNumber = Other
+
+    IGeneric_Equals = (myclass.Value = otherNumber.Value)
+    
+End Function
+
 Private Function IGeneric_ToString() As String: IGeneric_ToString = myclass.Value: End Function
 
 'IGenericValue
@@ -159,9 +168,9 @@ Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myc
 Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Decimal_Type: End Property
 Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue = myclass.Value: End Property
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
-Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericValue.Comparer: End Property
+Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = 1&) As IGenericValue
+Private Function IGenericValue_Create(ByVal Value As Variant) As IGenericValue
     Set IGenericValue_Create = Me.Build(Value)
 End Function
 
@@ -182,14 +191,7 @@ Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As Compar
     
 End Function
 
-Private Function IGenericValue_Equals(ByVal Other As IGenericValue) As Boolean
-    
-    If Other Is Nothing Then IGenericValue_Equals = False: Exit Function
-    IGenericValue_Equals = (myclass.Value = Other.ToValue)
-    
-End Function
-
-Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Variant
+Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
     Dim P As ADODB.Parameter
     Set P = New ADODB.Parameter
@@ -197,9 +199,9 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
     With P
         .Direction = Direction
         .Attributes = adParamNullable '64
-        .Precision = myclass.Precision
-        .NumericScale = myclass.NumericScale
-        .Type = ISqlDataType.Decimal_Type
+        .PRECISION = PRECISION
+        .NumericScale = NUMERIC_SCALE
+        .Type = IGenericValue_VarType
         .Name = Name
         .Value = myclass.Value
     End With

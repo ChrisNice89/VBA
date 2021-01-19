@@ -526,7 +526,7 @@ Public Sub CopyArrays( _
     If (SrcArray Is Nothing) Or (DstArray Is Nothing) Then _
         Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("SrcArray Is Nothing) Or (DstArray Is Nothing)")
     
-    If (SrcArray.isEmpty) Or (DstArray.isEmpty) Then _
+    If (SrcArray.IsEmpty) Or (DstArray.IsEmpty) Then _
         Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(SrcArray.isEmpty) Or (DstArray.isEmpty)")
                                                                                                                                   
     If (Elements < 1) Then _
@@ -975,7 +975,7 @@ Public Function BinarySearchArray( _
     Dim lo As Long: lo = LowerBound
     Dim hi As Long: hi = UpperBound
     
-    If Comparer Is Nothing Or Comparer Is IGenericValue Or Comparer Is IGenericComparer Then
+    If Comparer Is Nothing Or Comparer Is IGenericComparer Then
     
         Dim Element As IGenericValue
         
@@ -1041,7 +1041,7 @@ Public Function IndexOfArray( _
     Dim i As Long
         
     If Not (Value Is Nothing) Then
-        If Comparer Is Nothing Or Comparer Is IGenericValue Or Comparer Is IGenericComparer Then
+        If Comparer Is Nothing Or Comparer Is IGenericComparer Then
             
             For i = LowerBound To UpperBound
                 If Value.Equals(Objects(i)) Then _
@@ -1056,6 +1056,7 @@ Public Function IndexOfArray( _
                         IndexOfArray = i: Exit Function
                 Next
             End With
+            
         End If
         
     Else
@@ -1103,7 +1104,7 @@ Public Sub SortArray( _
     If Order = Random Then
         Call Shuffle(Objects, LowerBound:=LowerBound, UpperBound:=UpperBound)
     Else
-        If Comparer Is Nothing Or Comparer Is IGenericValue Or Comparer Is IGenericComparer Then
+        If Comparer Is Nothing Or Comparer Is IGenericComparer Then
             Call DepthLimitedQuicksort(Objects, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order)   'Try Convert to GenericValue
         Else
             Call DepthLimitedQuicksort_Comparer(Objects, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
@@ -1123,7 +1124,7 @@ Public Sub SortArrayWithItems( _
     If Order = Random Then
         Call ShuffleWithItems(Keys, Items, LowerBound, UpperBound)
     Else
-        If Comparer Is Nothing Or Comparer Is IGenericValue Or Comparer Is IGenericComparer Then
+        If Comparer Is Nothing Or Comparer Is IGenericComparer Then
             Call DepthLimitedQuicksortWithItems(Keys, Items, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order)  'Try Convert to GenericValue
         Else
             Call DepthLimitedQuicksortWithItems_Comparer(Keys, Items, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
@@ -1148,13 +1149,13 @@ Public Sub SortGenericArrays( _
 
     If (Keys Is Nothing) Or (Items Is Nothing) Then _
         Call System.Throw(Me, "Public Sub SortGenericArrays").IsNothing("(Keys Is Nothing) Or (Items Is Nothing)")
-
+    
+    If (Keys.IsEmpty) Or (Items.IsEmpty) Then _
+        Call System.Throw(Me, "Public Sub SortGenericArrays").InvalidInput("(Keys.IsEmpty) Or (Items.IsEmpty)")
+        
     d1 = Keys.Descriptor
     d2 = Items.Descriptor
-
-    If (d1 = 0) Or (d2 = 0) Then _
-        Call System.Throw(Me, "Public Sub SortGenericArrays").InvalidOperation("(Keys.Descriptor = 0) Or (Items.Descriptor = 0)")
-
+    
     ptrKeys = VarPtrArray(KeyArray)
     ptrItems = VarPtrArray(ItemArray)
 
@@ -2039,25 +2040,25 @@ Private Sub MinHeapWithItems_Comparer( _
     Set Items(lo + i - 1) = dItem
     
 End Sub
-Private Sub SwapArray(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
+Private Sub SwapArray(ByRef A() As IGeneric, ByVal i As Long, ByVal j As Long)
 
     Dim t As IGeneric
     
-    Set t = a(i): Set a(i) = a(j): Set a(j) = t
+    Set t = A(i): Set A(i) = A(j): Set A(j) = t
 
 End Sub
 
-Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal B As Long)
+Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As Long)
     
     Dim t As IGeneric
     Dim Element As IGenericValue
     
-    If Not (a = B) Then
-        Set Element = Keys(a)
+    If Not (A = B) Then
+        Set Element = Keys(A)
         If Not (Element Is Nothing) Then
             If (Element.CompareTo(Keys(B)) = IsGreater) Then
-                Set t = Keys(a)
-                Set Keys(a) = Keys(B)
+                Set t = Keys(A)
+                Set Keys(A) = Keys(B)
                 Set Keys(B) = t
             End If
         End If
@@ -2065,47 +2066,47 @@ Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal B As 
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal B As Long)
+Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal A As Long, ByVal B As Long)
     
     Dim t As IGeneric
     Dim Element As IGenericValue
    
-    If Not (a = B) Then
-        Set Element = Keys(a)
+    If Not (A = B) Then
+        Set Element = Keys(A)
         If Not (Element Is Nothing) Then
             If (Element.CompareTo(Keys(B)) = IsGreater) Then
-                Set t = Keys(a): Set Keys(a) = Keys(B): Set Keys(B) = t
-                Set t = Items(a): Set Items(a) = Items(B): Set Items(B) = t
+                Set t = Keys(A): Set Keys(A) = Keys(B): Set Keys(B) = t
+                Set t = Items(A): Set Items(A) = Items(B): Set Items(B) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem_Comparer(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
+Private Sub SwapIfGreaterWithItem_Comparer(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal A As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
     
     Dim t As IGeneric
    
-    If Not (a = B) Then
-        If Not (Keys(a) Is Nothing) Then
-            If (Comparer.Compare(Keys(a), Keys(B)) = IsGreater) Then
-                Set t = Keys(a): Set Keys(a) = Keys(B): Set Keys(B) = t
-                Set t = Items(a): Set Items(a) = Items(B): Set Items(B) = t
+    If Not (A = B) Then
+        If Not (Keys(A) Is Nothing) Then
+            If (Comparer.Compare(Keys(A), Keys(B)) = IsGreater) Then
+                Set t = Keys(A): Set Keys(A) = Keys(B): Set Keys(B) = t
+                Set t = Items(A): Set Items(A) = Items(B): Set Items(B) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal a As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
+Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
     
     Dim t As IGeneric
    
-    If Not (a = B) Then
-        If Not (Keys(a) Is Nothing) Then
-            If (Comparer.Compare(Keys(a), Keys(B)) = IsGreater) Then
-                Set t = Keys(a)
-                Set Keys(a) = Keys(B)
+    If Not (A = B) Then
+        If Not (Keys(A) Is Nothing) Then
+            If (Comparer.Compare(Keys(A), Keys(B)) = IsGreater) Then
+                Set t = Keys(A)
+                Set Keys(A) = Keys(B)
                 Set Keys(B) = t
             End If
         End If
@@ -2113,17 +2114,19 @@ Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal a As Long, By
     
 End Sub
 
-Private Sub SwapWithItem(ByRef a() As IGeneric, ByRef B() As Object, ByVal i As Long, ByVal j As Long)
+Private Sub SwapWithItem(ByRef A() As IGeneric, ByRef B() As Object, ByVal i As Long, ByVal j As Long)
     
     Dim t As IGeneric
     
-    Set t = a(i): Set a(i) = a(j): Set a(j) = t
+    Set t = A(i): Set A(i) = A(j): Set A(j) = t
     Set t = B(i): Set B(i) = B(j): Set B(j) = t
     
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericArray: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericArray: End Property
+
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
@@ -2137,7 +2140,7 @@ End Sub
 Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
-    Set IGeneric_Clone =Me.Copy
+    Set IGeneric_Clone = Me.Copy
 End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean

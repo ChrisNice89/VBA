@@ -35,7 +35,7 @@ Attribute HasNext.VB_UserMemId = 0
 Public Sub Reset(): End Sub
 
 
-'Private Sub Class_Initialize()
-'    Call System.Throw(Me, "Private Sub Class_Initialize").Instantiation
-'End Sub
+Private Sub Class_Initialize()
+    Call System.Throw(Me, "Private Sub Class_Initialize").Instantiation
+End Sub
 

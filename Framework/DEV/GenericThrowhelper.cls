@@ -166,9 +166,9 @@ Public Function ArgOutOfRange(Optional ByVal Message As String) As GenericThrowh
     Set ArgOutOfRange = Me
 End Function
 
-Public Function NotEqual(ByRef a As IGeneric, ByRef B As IGeneric) As GenericThrowhelper
+Public Function NotEqual(ByRef A As IGeneric, ByRef B As IGeneric) As GenericThrowhelper
     myclass.Number = NotEqual_
-    myclass.Message = "<" & TypeName$(a) & "> !=  <" & TypeName$(B) & ">"
+    myclass.Message = "<" & TypeName$(A) & "> !=  <" & TypeName$(B) & ">"
     myclass.Type = "Not Equal"
     Set NotEqual = Me
 End Function
@@ -214,6 +214,7 @@ CleanFail:
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericThrowhelper: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericThrowhelper: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property

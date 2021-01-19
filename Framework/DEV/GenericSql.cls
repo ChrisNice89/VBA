@@ -825,6 +825,7 @@ Private Sub Database_ExecuteComplete(ByVal RecordsAffected As Long, ByVal pError
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericSql: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSql: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property

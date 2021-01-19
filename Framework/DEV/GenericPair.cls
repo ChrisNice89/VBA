@@ -16,7 +16,6 @@ Implements IGeneric
 Implements IGenericComparer
 
 Private Type Member
-    Comparer As IGenericComparer
     Key As IGeneric
     Value As IGeneric
 End Type
@@ -38,7 +37,7 @@ End Function
 
 Private Sub Class_Initialize()
     With GenericPair
-        Set myclass.Key = .Key: Set myclass.Value = .Value: Set myclass.Comparer = System.DefaultComparer
+        Set myclass.Key = .Key: Set myclass.Value = .Value
     End With
 End Sub
 
@@ -49,28 +48,29 @@ End Sub
 Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long
     Dim pair As GenericPair
     Set pair = Obj
-    IGenericComparer_GetHashCode = myclass.Comparer.GetHashCode(pair.Key)
+    IGenericComparer_GetHashCode = System.DefaultComparer.GetHashCode(pair.Key)
 End Function
 
-Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult
+Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult
 
     Dim x As GenericPair, y As GenericPair
-    Set x = a: Set y = B
+    Set x = A: Set y = B
     
-    IGenericComparer_Compare = myclass.Comparer.Compare(x.Key, y.Key)
+    IGenericComparer_Compare = System.DefaultComparer.Compare(x.Key, y.Key)
     
 End Function
 '
-Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal B As IGeneric) As Boolean
+Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
 
     Dim x As GenericPair, y As GenericPair
-    Set x = a: Set y = B
+    Set x = A: Set y = B
 
-    IGenericComparer_Equals = myclass.Comparer.Equals(x.Key, y.Key)
+    IGenericComparer_Equals = System.DefaultComparer.Equals(x.Key, y.Key)
 
 End Function
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericPair: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericPair: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
@@ -103,7 +103,7 @@ End Property
 Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 
-Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = GenericPair.Build(myclass.Key, myclass.Value): End Function
+Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me: End Function
 
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 
@@ -111,6 +111,9 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     
     If Other Is Nothing Then _
         Exit Function
+    
+    If Not TypeOf Other Is GenericPair Then _
+        IGeneric_Equals = False: Exit Function
         
     Set otherPair = Other
     

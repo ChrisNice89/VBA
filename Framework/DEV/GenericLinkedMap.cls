@@ -155,7 +155,7 @@ Public Function GetValues() As GenericArray
     
 End Function
 
-Private Function Modulo(ByVal a As Double, ByVal M As Double) As Long: Modulo = (a - (Int(a / M) * M)): End Function
+Private Function Modulo(ByVal A As Double, ByVal M As Double) As Long: Modulo = (A - (Int(A / M) * M)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
@@ -558,7 +558,8 @@ Private Sub LoadIterator( _
 End Sub
 
 'IGeneric
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericMap: End Property
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericLinkedMap: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericLinkedMap: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property

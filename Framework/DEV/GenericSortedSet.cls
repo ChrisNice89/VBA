@@ -992,6 +992,7 @@ Private Function CopyOf(ByVal GArray As GenericArray, ByVal ArrayIndex As Long, 
 End Function
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericSortedSet: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSortedSet: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property

@@ -509,6 +509,7 @@ Private Sub LoadIterator( _
     
 End Sub
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericSortedList: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSortedList: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property

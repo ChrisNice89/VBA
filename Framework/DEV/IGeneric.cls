@@ -11,8 +11,9 @@ Attribute VB_Exposed = True
 Option Explicit
 '@Folder "Base"
 
+Public Property Get IsDefault() As Boolean: IsDefault = True: End Property
 Public Property Get Default() As IGeneric: Set Default = IGeneric: End Property
-Public Property Get VirtualPointer() As LongPtr: VirtualPointer = ObjPtr(IGeneric): End Property
+Public Property Get VirtualPointer() As LongPtr: End Property
 Public Property Get VirtualSize() As Long: End Property
 Public Property Get IsMutable() As Boolean: IsMutable = False: End Property
 Public Property Get HashValue() As Long: End Property
@@ -24,7 +25,7 @@ Attribute ToString.VB_UserMemId = 0
 Public Function Clone() As IGeneric: Set Clone = IGeneric: End Function
 Public Sub Dispose(): End Sub
 
-'Private Sub Class_Initialize()
-'    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
-'End Sub
+Private Sub Class_Initialize()
+    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+End Sub
 

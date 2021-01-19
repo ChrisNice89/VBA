@@ -8,9 +8,10 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@Folder "<T>Class"
+Option Compare Text
 
 Implements IGeneric
-'Implements IGenericComparer
+Implements IGenericComparer
 
 Public Enum ISqlDataType
     AUTOINCREMENT = -1
@@ -56,45 +57,55 @@ Public Enum ISqlDataType
     'AdArray = 0x2000 'A flag value combined with another data
 End Enum
 
-Public Property Get ToValue() As Variant: End Property
+Public Property Get ToValue() As Variant: ToValue = Null: End Property
 Attribute ToValue.VB_UserMemId = 0
-Public Property Get SqlType() As ISqlDataType: End Property
+Public Property Get SqlType() As ISqlDataType: SqlType = IUnknown_Type: End Property
 Public Property Get VarType() As VbVarType: End Property
 Public Property Get Size() As Byte: End Property
-Public Property Get Instance() As IGeneric: End Property
+Public Property Get Instance() As IGeneric: Set Instance = Me: End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = IGenericComparer: End Property
+Public Function Create(ByVal Value As Variant) As IGenericValue: Set Create = Me: End Function
+Public Function CompareTo(ByVal Other As IGenericValue) As CompareResult
+        
+        If Other Is Nothing Then _
+            CompareTo = CompareResult.IsGreater: Exit Function
+        
+        If Other Is Me Then _
+            CompareTo = CompareResult.IsEqual: Exit Function
 
-Public Function Create(ByVal Value As Variant, Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As IGenericValue: End Function
-Public Function CompareTo(ByVal Other As IGenericValue) As CompareResult: End Function
-Public Function Equals(ByVal Other As IGenericValue) As Boolean: Equals = Other Is Me: End Function
-Public Function ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput, Optional ByVal Name As String): End Function
+        CompareTo = CompareResult.IsLower
+        
+End Function
+Public Function ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput, Optional ByVal Name As String) As Object: End Function
 
-'Private Sub Class_Initialize()
-'    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
-'End Sub
+Private Sub Class_Initialize()
+    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+End Sub
 
-'IGenericCompare IGenericValue comparer
+'IGenericCompare IGenericValue Variant comparer
 Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long: IGenericComparer_GetHashCode = Obj.HashValue: End Function
-Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult
+Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult
 
     Dim x As IGenericValue, y As IGenericValue
-
-    Set x = a: Set y = B
-
-    If x Is Nothing = False Then _
-        IGenericComparer_Compare = x.CompareTo(y): Exit Function
-
-    If y Is Nothing = False Then _
-        IGenericComparer_Compare = -1: Exit Function
-
-    IGenericComparer_Compare = 0: Exit Function
+    Dim i As Variant, j As Variant
+    
+    If A Is Nothing Then _
+        IGenericComparer_Compare = IIf(B Is Nothing, CompareResult.IsEqual, CompareResult.IsLower): Exit Function
+    
+    If B Is Nothing Then _
+        IGenericComparer_Compare = CompareResult.IsGreater: Exit Function
+        
+    Set x = A: i = x.ToValue: Set y = B: j = y.ToValue
+    
+    Select Case True
+        Case i > j: IGenericValue_CompareTo = IsGreater
+        Case i < j: IGenericValue_CompareTo = IsLower
+        Case Else: IGenericValue_CompareTo = IsEqual
+    End Select
 
 End Function
 
-Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal B As IGeneric) As Boolean
-
-    Dim x As IGenericValue, y As IGenericValue
-    Set x = a: Set y = B
+Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
 
     If x Is Nothing = False Then _
         IGenericComparer_Equals = x.Equals(y): Exit Function
@@ -107,8 +118,9 @@ Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal B As IGeneri
 End Function
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = True: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = IGenericValue: End Property
-Private Property Get IGeneric_VirtualPointer() As LongPtr: IGeneric_VirtualPointer = ObjPtr(IGenericValue): End Property
+Private Property Get IGeneric_VirtualPointer() As LongPtr: End Property
 Private Property Get IGeneric_VirtualSize() As Long: End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
 Private Property Get IGeneric_HashValue() As Long: End Property

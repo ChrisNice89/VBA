@@ -145,6 +145,7 @@ Private Sub Class_Initialize()
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is SqlCredentials: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New SqlCredentials: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property

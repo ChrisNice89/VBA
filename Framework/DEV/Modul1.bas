@@ -315,7 +315,7 @@ End Sub
 Sub testArrayConstructor()
 
     Dim List As GenericList
-    Set List = GenericList.BuildWith(GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   ", Trim), GDate(VBA.Now, year)))
+    Set List = GenericList.BuildWith(GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   "), GDate(VBA.Now)))
     
     Dim Element As IGeneric
     With List.Iterator

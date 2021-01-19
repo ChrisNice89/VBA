@@ -486,12 +486,12 @@ Public Function IsEqual(ByVal first As IGenericReadOnlyList, ByVal second As IGe
     If Not first.Count = second.Count Then _
         Exit Function
     
-    Dim a As IGenericIterator, B As IGenericIterator
+    Dim A As IGenericIterator, B As IGenericIterator
     Dim i As IGeneric, j As IGeneric
     
-    Set a = first.Iterator: Set B = second.Iterator
+    Set A = first.Iterator: Set B = second.Iterator
     
-    Do While (a.HasNext(i) And B.HasNext(j))
+    Do While (A.HasNext(i) And B.HasNext(j))
 
         If Not (i Is Nothing) Then
             If i.Equals(j) = False Then _
@@ -623,6 +623,7 @@ Private Sub LoadIterator( _
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericList: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericList: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
