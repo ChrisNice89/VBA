@@ -249,7 +249,8 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
             Call System.Throw(Me, "Public Function Build").InvalidOperation("Descriptor = 0")
         
         Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(LB), .Struct.pvData))
-        Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
+        Call LoadArray(.Internal,.Descriptor)                                                                                                  
+        
     End With
     
     Set Build = System.CreateInstance(New GenericArray, VarPtr(myclass), LenB(myclass))
@@ -272,9 +273,11 @@ Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
         
         If (.Descriptor = 0) Then _
             Call System.Throw(Me, "Public Function BuildFrom").InvalidOperation("Descriptor = 0")
-          
+        
+        Call ZeroMemory(Dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE) 'FillMemory(dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE, Fill:=0)                                                                                                           
         Call LoadArrayStructure(.Struct, .Descriptor)
-    
+        Call LoadArray(.Internal,.Descriptor)
+                                                                                                                    
         myclass.Elements = 1
         With .Struct
             ReDim myclass.Indices(.cDims - 1)
@@ -291,9 +294,6 @@ Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
         
         End With
 
-        Call ZeroMemory(Dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE) 'FillMemory(dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE, Fill:=0)
-        Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
-    
     End With
     
     Set BuildFrom = System.CreateInstance(New GenericArray, VarPtr(myclass), LenB(myclass))
@@ -441,7 +441,10 @@ Public Sub Clear()
     Next i
     
     Call Catch(SafeArrayPtrOfIndex(ByVal myclass.Descriptor, myclass.Indices(i + 1), myclass.Struct.pvData))
-    
+                                                                                                                        
+    If (Me.IsEmpty) Then _
+        Call System.Throw(Me, "Public Sub Clear").InvalidOperation("Me.IsEmpty")
+                                                                                                                          
 End Sub
 
 Public Function SlizeColumn(ByVal Index As Long) As GenericArray
@@ -489,23 +492,23 @@ Public Function Copy() As GenericArray
     With c
         .Elements = myclass.Elements
         .Struct.cDims = myclass.Struct.cDims
-        .Struct.fFeatures = F_FEATURES
-        .Struct.cbElements = ELEMENT_SIZE
-        .Struct.Bounds = myclass.Struct.Bounds
-        .Indices = myclass.Indices
+        .Struct.fFeatures = myclass.Struct.Struct.fFeatures 
+        .Struct.cbElements = myclass.Struct.Struct.cbElements
+        .Struct.Bounds = myclass.Struct.Bounds 'Hardcopy
+        .Indices = myclass.Indices'Hardcopy
 
         Call Catch(SafeArrayCopy(ByVal myclass.Descriptor, .Descriptor))
         
         If (.Descriptor = 0) Then _
             Call System.Throw(Me, "Public Function Copy").InvalidOperation("Descriptor = 0")
         
+        Call LoadArray(.Internal,.Descriptor)
         For i = LBound(.Indices) To UBound(.Indices)
             .Indices(i) = MIN_INDEX
         Next
         
         Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(0), .Struct.pvData))
-        Call CopyMemory(Dst:=.Struct, Src:=ByVal .Descriptor, Length:=12& + POINTERSIZE)
-
+   
     End With
     
     Set Copy = System.CreateInstance(New GenericArray, VarPtr(c), LenB(c))
