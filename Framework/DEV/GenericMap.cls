@@ -285,7 +285,7 @@ End Sub
 
 Private Static Function getPrime(Optional ByVal Min As Long = 0) As Long
     
-    Dim P As Long
+    Dim p As Long
     Dim i As Long
     Dim Primes() As Long
     
@@ -307,15 +307,15 @@ Private Static Function getPrime(Optional ByVal Min As Long = 0) As Long
         Next
     End If
     
-    For P = LBound(Primes) To UBound(Primes)
-        If Primes(P) >= Min Then _
-            getPrime = Primes(P): Exit Function
+    For p = LBound(Primes) To UBound(Primes)
+        If Primes(p) >= Min Then _
+            getPrime = Primes(p): Exit Function
     Next
     
-    For P = Min To MAXPRIME
-        If IsPrime(P) Then _
-            If (((P - 1) Mod HASHPRIME) = 0 = False) Then _
-                getPrime = P: Exit Function
+    For p = Min To MAXPRIME
+        If IsPrime(p) Then _
+            If (((p - 1) Mod HASHPRIME) = 0 = False) Then _
+                getPrime = p: Exit Function
     Next
    
     getPrime = Min

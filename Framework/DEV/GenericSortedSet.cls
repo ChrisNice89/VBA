@@ -251,49 +251,49 @@ End Function
 
 Private Function InOrderNext(ByVal Node As GenericNode) As GenericNode
     
-    Dim P As GenericNode
+    Dim p As GenericNode
     
     If Node Is Nothing Then _
         Exit Function
         
     If Node.Right Is Nothing = False Then
-        Set P = FindMinOf(Node.Right)
+        Set p = FindMinOf(Node.Right)
     Else
-        Set P = Node.Parent
-        Do While (P Is Nothing) = False
-            If (P.Right Is Node) = False Then _
+        Set p = Node.Parent
+        Do While (p Is Nothing) = False
+            If (p.Right Is Node) = False Then _
                 Exit Do
             
-            Set Node = P
-            Set P = P.Parent
+            Set Node = p
+            Set p = p.Parent
         Loop
     End If
     
-    Set InOrderNext = P
+    Set InOrderNext = p
         
 End Function
 
 Private Function InOrderPrevious(ByVal Node As GenericNode) As GenericNode
 
-    Dim P As GenericNode
+    Dim p As GenericNode
     
     If Node Is Nothing Then _
         Exit Function
         
     If (Node.Left Is Nothing) = False Then
-        Set P = FindMaxOf(Node.Left)
+        Set p = FindMaxOf(Node.Left)
     Else
-        Set P = Node.Parent
-        Do While (P Is Nothing) = False
-            If (P.Left Is Node) = False Then _
+        Set p = Node.Parent
+        Do While (p Is Nothing) = False
+            If (p.Left Is Node) = False Then _
                 Exit Do
             
-            Set Node = P
-            Set P = P.Parent
+            Set Node = p
+            Set p = p.Parent
         Loop
     End If
     
-    Set InOrderPrevious = P
+    Set InOrderPrevious = p
 
 End Function
 

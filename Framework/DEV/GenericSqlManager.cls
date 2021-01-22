@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "GenericSql"
+Attribute VB_Name = "GenericSqlManager"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -18,30 +18,13 @@ Implements IGenericIterator
 Public Event Result(ByVal Data As ADODB.Recordset)
 
 Private Const ASYNC_OPTION As Long = 16&
-Private Const EXECUTE_ASYNC As Boolean = False
+Private Const EXECUTE_ASYNC As Boolean = True
 Private Const CLOSE_CONNECTION_IMMEDIATELY  As Boolean = True
 Private Const DEBUG_MODE  As Boolean = True
 
-'Gibt an in welche Richtung der Parameter agiert. Die Konstanten stammen aus dem ParameterDirectoinEnum.
-Public Enum ISqlParameterDirection
-    ParamUnknown = 0 'Die Richtung des Parameters ist nicht bekannt.
-    ParamInput = 1 'Es handelt sich um einen Input-Parameter
-    ParamOutput = 2 'Es handelt sich um einen Output-Parameter
-    ParamInputOutput = 3 'Der Parameter ist sowohl Übergabeparameter, liefert aber auch einen Wert zurück.
-    ParamReturnValue = 4 'Beschreibt einen Return-Wert
-End Enum
-'
 Public Enum ISqlCursorLocation
     UseClient = 3 'Bedeutet, daß die Daten komplett auf den Client gezogen werden sollen. Dies bringt jedoch einen eventuell großen Speicherbedarf auf dem Client.
     UseServer = 2 'Die Daten werden nicht komplett auf den Client gezogen, sondern nur diese die vom Client aktuell benötigt werden. Das spart viel Speicherbedarf auf dem Client. Nachteil ist jedoch, daß bei manchen Datenanzeige-Controlls wie z.B. DataGrid oder MSHFlexGrid die Daten mit einem serverseitigen Cursor keine Daten angezeigt werden, bzw. ein paar Funktionen nicht mehr verfügbar sind.
-End Enum
-'
-Public Enum ISqlCommandState
-    StateClosed = 0        'Indicates that the object is closed.
-    StateOpen = 1          'Indicates that the object is open.
-    StateConnecting = 2    'Indicates that the object is connecting.
-    StateExecuting = 4     'Indicates that the object is executing a command.
-    StateFetching = 8      'Indicates that the rows of the object are being retrieved.
 End Enum
 '
 'Der CommandType gibt an was ausgeführt werden soll. Dafür liegt das CommandTypeEnum zu Grunde.
@@ -211,131 +194,129 @@ Private Type Iterator
     HasLoaded  As Boolean
 End Type
 
+'Provider Database
+Public Enum ISqlConnectionProvider
+    Default_Provider
+    Excel_Provider
+    Access97_2003_Provider
+    Access2007_2013_Provider
+    Sql_Provider
+    MySql_Provider
+    Oracle_Provider
+    PostgreSql_Provider
+    DBMS_Provider
+    CSV_File_Provider
+End Enum
+
+Private Type Credentials
+    ProviderTyp As ISqlConnectionProvider
+    Prompt As ISqlConnectionPrompt
+    Mode As ISqlConnectionMode
+    DataSource As String
+    UserPassword As String
+    UserID As String
+    Filepassword As String 'Datenbankpasswort einer Accessdatenbank
+    HDR As Boolean
+    ConnectionString As String
+    SSPI As Boolean
+    IntitialCatalog As String
+End Type
+
 Private Type Member
-    Credentials As SqlCredentials
-    Command As ADODB.Command
+    Credentials As Credentials
+    Locks As Long
     Result As ADODB.Recordset
-    ParameterList As GenericOrderedMap
-    Parameter As Long
-    Sql As String
-    SqlOptions As ISqlQueryType
-    IsPrepared As Boolean
-    AffectedRecords As Long
-    IsInExecution As Boolean
     Iterator As Iterator
 End Type
 Private myclass As Member
 
-Private Type Internal
-    Size As Long
-    Pointer As LongPtr
-End Type
-Private Virtual As Internal
-
 Private WithEvents Database As ADODB.Connection
 Attribute Database.VB_VarHelpID = -1
 
-Public Property Get Sql() As String
-    Sql = myclass.Sql
-End Property
-
-Public Property Get ID() As Long
-    ID = ObjPtr(myclass.Command)
-End Property
-
-Public Property Get IsPrepared() As Boolean
-    IsPrepared = myclass.IsPrepared
-End Property
-
-Public Property Get Result() As ADODB.Recordset
-
-    If Me.IsReady Then _
-        Set Result = myclass.Result
-
-End Property
-
-Public Property Get HasResult() As Boolean
-    If Me.IsReady Then _
-        HasResult = Not myclass.Result Is Nothing
-End Property
-Public Property Get IsReady() As Boolean
-    IsReady = Not IsFetching(myclass.Command)
-End Property
-
-Public Function Build( _
-                        ByVal Credentials As SqlCredentials, _
-                        Optional ByVal Sql As String, _
-                        Optional ByVal Parameter As Long = 0, _
-                        Optional ByVal Options As ISqlQueryType = ISqlQueryType.ReturnRecords) As GenericSql
-
-    If Sql = vbNullString Then
-        'error
-    End If
+Public Function BuildSqlConnection( _
+                                ByVal ServerName As String, _
+                                ByVal InitialCatalog As String, _
+                                Optional ByVal SSPI As Boolean = False, _
+                                Optional ByVal User As String = "SA", _
+                                Optional ByVal Password As String = vbNullString) As GenericSqlManager
     
-    If Credentials Is Nothing Then
-    'error
-    End If
-    
-    If Parameter < 0 Then
-    'error
-    End If
-
-    With myclass
-        Set .Credentials = Credentials
-        .Sql = Sql
-        .SqlOptions = Options '= ISqlQueryType.ReturnRecords + ISqlQueryType.NamedParameter + ISqlQueryType.Prepared
-        .Parameter = Parameter
+    With myclass.Credentials
+        .ProviderTyp = Sql_Provider
+        .DataSource = ServerName
+        .IntitialCatalog = InitialCatalog
+        .SSPI = SSPI
+        If .SSPI = False Then
+            .UserID = User
+            .UserPassword = Password
+        End If
+        .Prompt = PromptNever
     End With
-    
-    Set Build = System.CreateInstance(New GenericSql, Virtual.Pointer, Virtual.Size)
- 
+   
+    Set BuildSqlConnection = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
+
 End Function
 
-Public Sub Prepare(ByVal Sql As String)
+Public Function BuildAccessConnection(ByVal Path As String, Optional ByVal User As String = "Admin", Optional ByVal Password As String, Optional ByVal Filepassword As String) As GenericSqlManager
     
-    Dim p As GenericPair
-    
-    If Disconnect(myclass.Command) Then
-        Set myclass.Command = New ADODB.Command
-    Else
-        Debug.Print "Error Public Sub Prepare()"
-    End If
+    With myclass.Credentials
+        .ProviderTyp = Access2007_2013_Provider
+        .DataSource = Path
+        .UserID = User
+        .Filepassword = Filepassword
+        .Prompt = PromptNever
+    End With
+   
+    Set BuildAccessConnection = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
 
-    myclass.Sql = VBA.Trim$(Sql)
+End Function
+
+Public Function BuildCsvConnection(ByVal File As String, Optional ByVal Filepassword As String) As GenericSqlManager
     
-    With myclass.Command
-        If (myclass.SqlOptions And ISqlQueryType.NamedParameter) = ISqlQueryType.NamedParameter Then _
+    With myclass.Credentials
+        .ProviderTyp = CSV_File_Provider
+        .DataSource = VBA.Left$(File, InStrRev(File, "\") - 1)
+        .Filepassword = Filepassword
+        .SSPI = True
+        .Prompt = PromptNever
+    End With
+    
+    Set BuildCsvConnection = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
+
+End Function
+
+Public Function BuildExcelConnection(ByVal File As String, Optional ByVal Filepassword As String) As GenericSqlManager
+    
+    With myclass.Credentials
+        .ProviderTyp = Excel_Provider
+        .DataSource = File
+        .Filepassword = Filepassword
+        .SSPI = True
+        .Prompt = PromptNever
+    End With
+    
+    Set BuildExcelConnection = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
+    
+End Function
+
+Public Sub Prepare(ByVal Command As ADODB.Command, ByVal Sql As String, ByVal Options As ISqlQueryType)
+
+    Sql = VBA.Trim$(Sql)
+    
+    With Command
+        If (Options And ISqlQueryType.NamedParameter) = ISqlQueryType.NamedParameter Then _
             .NamedParameters = True
         
-        If (myclass.SqlOptions And ISqlQueryType.Prepared) = ISqlQueryType.Prepared Then _
+        If (Options And ISqlQueryType.Prepared) = ISqlQueryType.Prepared Then _
             .Prepared = True
             
-        If (myclass.SqlOptions And ISqlQueryType.StoredProc) = ISqlQueryType.StoredProc Then
-            .CommandText = myclass.Sql
+        If (Options And ISqlQueryType.StoredProc) = ISqlQueryType.StoredProc Then
+            .CommandText = Sql
             .CommandType = ISqlCommandType.CmdStoredProc
         Else
-            .CommandText = IIf(VBA.Right$(myclass.Sql, 1) = ";", myclass.Sql, myclass.Sql & ";")
+            .CommandText = IIf(VBA.Right$(Sql, 1) = ";", Sql, Sql & ";")
             .CommandType = ISqlCommandType.CMDText
         End If
     End With
-    
-    Dim pair As GenericPair
-    Dim Value As IGenericValue
-    
-    If myclass.Parameter > 0 Then
-        If myclass.ParameterList Is Nothing Then
-            'error
-        End If
-        
-        With myclass.ParameterList.IteratorOf(t:=PairData)
-            Do While .HasNext(pair)
-                Set Value = pair.Value
-                Call myclass.Command.Parameters.Append(Value.ToSqlParameter)
-            Loop
-        End With
-    End If
-    
-    myclass.IsPrepared = True
     
 End Sub
 
@@ -362,85 +343,38 @@ Public Function ExecuteSchema(ByVal Schema As ISqlDBSchema, ParamArray Args() As
     
 End Function
 
-Public Sub Execute()
-
-    Set Database = CreateConnection(myclass.Credentials, True)
+Public Sub Execute(ByVal Sql As String, Optional ByVal Options As ISqlQueryType)
+  
+    Dim Cmd As ADODB.Command
+    Set Cmd = New ADODB.Command
     
-    If Not myclass.IsPrepared Then _
-        Call Me.Prepare(myclass.Sql)
+    Dim AffectedRecords As Long
+    
+    If Database Is Nothing Then _
+        Set Database = CreateConnection(myclass.Credentials)
+    
+    Debug.Print Database.State
+    If Not (Database.State And ISqlObjectState.IsOpen_State) = ISqlObjectState.IsOpen_State Then _
+        Call Database.Open(Options:=IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
+    
+    Call Me.Prepare(Cmd, Sql, Options)
     
     Do While Database.State And ISqlObjectState.IsConnecting_State
+        If DEBUG_MODE Then _
+            Debug.Print "is connecting..."
     Loop
     
-    Set myclass.Command.ActiveConnection = Database
-    myclass.IsInExecution = True
-
+    Set Cmd.ActiveConnection = Database
+    
     On Error Resume Next
-        If (myclass.SqlOptions And ISqlQueryType.ReturnRecords) = ISqlQueryType.ReturnRecords Then
-            Call Me.CreateRecordset(ISqlRecodsetType.Disconnected_Recordset).Open(myclass.Command, , , , IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
-        Else
-            Call myclass.Command.Execute(myclass.AffectedRecords, , 128 + IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
-        End If
-    On Error GoTo 0
-    
-End Sub
-
-Public Function ExecuteMapper() As IGenericIterator
-
-    Dim rs As ADODB.Recordset
-    
-    If Not myclass.IsPrepared Then _
-        Call Me.Prepare(myclass.Sql)
-    
-    If Connect(myclass.Command, myclass.Credentials) Then
-        Set Database = myclass.Command.ActiveConnection
+    If (Options And ISqlQueryType.ReturnRecords) = ISqlQueryType.ReturnRecords Then
+        Call Me.CreateRecordset(ISqlRecodsetType.Disconnected_Recordset).Open(Cmd, , , , IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
     Else
-        Debug.Print "error If Not Connect(myclass.Command, myclass.Credentials, Database)"
+        Call Cmd.Execute(AffectedRecords, , 128 + IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
     End If
-    
-    Set myclass.Result = Nothing
-    
-    Set rs = Me.CreateRecordset(ISqlRecodsetType.Disconnected_Recordset)
-    myclass.IsInExecution = True
-    Call rs.Open(myclass.Command, , , , IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
-    
-    Set ExecuteMapper = Me.RowMapper(rs)
+    On Error GoTo 0
 
-End Function
-
-Private Sub Class_Initialize()
-    Virtual.Pointer = VarPtr(myclass)
-    Virtual.Size = LenB(myclass)
 End Sub
-
-Public Function Add( _
-                      ByVal Value As IGenericValue, _
-                      Optional ByVal Name As String = vbNullString, _
-                      Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As GenericSql
-
-    If myclass.IsPrepared Then
-        'error
-    End If
-    
-    If myclass.Parameter = 0 Then
-        'Error
-    End If
-    
-    If myclass.ParameterList Is Nothing Then _
-        Set myclass.ParameterList = GenericOrderedMap.Build(myclass.Parameter)
-    
-    If myclass.ParameterList.Count > myclass.Parameter Then
-        'error
-    End If
-    
-    If Name = vbNullString Then _
-        Name = "P" & myclass.ParameterList.Count + 1
-    
-'    Call myclass.ParameterList.Add(GString(Name), Value.Prepare(Name, Direction))
-
-    Set Add = Me
-    
-End Function
 
 Private Function Indexes(ByVal Table As String) As ADODB.Recordset
     Set Indexes = Me.ExecuteSchema(SchemaIndexes, Empty, Empty, Empty, Empty, Table)
@@ -464,68 +398,6 @@ End Function
 
 Private Function TableStructure(ByVal Table As String) As ADODB.Recordset
     Set TableStructure = Me.ExecuteSchema(SchemaColumns, Empty, Empty, Table, Empty) '.ToArray("COLUMN_NAME"))
-End Function
-
-Public Function Update(ByVal Index As Variant, ByVal NewValue As IGenericValue) As GenericSql
-    
-    Dim Parameter As ADODB.Parameter
-    
-    If myclass.Parameter = 0 Then
-        'Error
-    End If
-    
-    With myclass.ParameterList
-        If VarType(Index) = vbString Then _
-            Index = .IndexOfKey(GString(Index))
-        
-        If Not .ElementAt(Index).IsRelatedTo(NewValue) Then
-            'Error false type
-        End If
-        
-        Set .ElementAt(Index) = NewValue
-    End With
-    
-    If myclass.IsPrepared Then
-        Set Parameter = myclass.Command.Parameters(Index - 1)
-        With NewValue
-'            If Not .IsNumeric Then _
-'                Parameter.Size = Len(.Primitive)
-'
-'            Parameter.Value = .Primitive
-        End With
-    End If
-    
-    Set Update = Me
-    
-End Function
-
-Public Function CreateParameter( _
-                                    ByVal Name As String, _
-                                    ByVal Value As IGenericValue, _
-                                    Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As ADODB.Parameter
-
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
-    
-    With p
-        .Direction = Direction
-        .Name = Name
-        .Attributes = adParamNullable '64
-        
-'        If Value.IsNumeric Then
-'            .Precision = 4
-'            .NumericScale = 4
-'        Else
-'            .Size = Len(Value.Primitive)
-'        End If
-        
-        .Type = Value.SqlType
-        .Value = Value.ToValue
-        
-    End With
-    
-    Set CreateParameter = p
-
 End Function
 
 Public Function CreateRecordset(Optional ByVal Setting As ISqlRecodsetType = ISqlRecodsetType.Default_Recordset) As ADODB.Recordset
@@ -614,12 +486,8 @@ Private Function ExternalLink(ByVal Connection As ADODB.Connection, ByVal Table 
 End Function
 
 'internal stuff
-Private Function CreateConnection(ByVal Credentials As SqlCredentials, Optional ByVal OpenConnection As Boolean = False) As ADODB.Connection
+Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Connection
         
-    If Credentials Is Nothing Then
-    'erro
-    End If
-    
     Dim oConnection As ADODB.Connection
     Set oConnection = New ADODB.Connection
     
@@ -635,17 +503,17 @@ Private Function CreateConnection(ByVal Credentials As SqlCredentials, Optional 
                     Case "xlsx"  'Excel 2007-2010 Workbook (.xlsx)
                         .Provider = "Microsoft.ACE.OLEDB.12.0"
                         .Properties("Extended Properties") = "Excel 12.0 Xml;HDR=YES"
-                        .Properties("Jet OLEDB:Database Password") = Credentials.DatabasePassword
+                        .Properties("Jet OLEDB:Database Password") = Credentials.Filepassword
                     
                     Case "xlsm" 'Excel 2007-2010 Workbook (.xlsm)
                         .Provider = "Microsoft.ACE.OLEDB.12.0"
                         .Properties("Extended Properties") = "Excel 12.0 Macro;HDR=YES"
-                        .Properties("Jet OLEDB:Database Password") = Credentials.DatabasePassword
+                        .Properties("Jet OLEDB:Database Password") = Credentials.Filepassword
                     
                     Case "xls" 'Excel 97-2003 Workbook (.xls)'nur für 32-Bit OfficeVersionen
                         .Provider = "Microsoft.Jet.OLEDB.4.0"
                         .Properties("Extended Properties") = "Excel 8.0;HDR=YES"
-                        .Properties("Jet OLEDB:Database Password") = Credentials.DatabasePassword
+                        .Properties("Jet OLEDB:Database Password") = Credentials.Filepassword
                     
                     Case Else
                         Call Err.Raise(1, TypeName$(Me), "Not defined File:" & Credentials.DataSource)
@@ -661,17 +529,25 @@ Private Function CreateConnection(ByVal Credentials As SqlCredentials, Optional 
                 .Provider = "SQLOLEDB.1"
                 .Properties("Initial Catalog") = Credentials.IntitialCatalog
             
-            Case ISqlConnectionProvider.MySql_Provider
-                .Provider = "MSDASQL.1"
+            Case ISqlConnectionProvider.Oracle_Provider 'Error
+                .Provider = "MSDAORA"
                 .Properties("Initial Catalog") = Credentials.IntitialCatalog
+            
+            Case ISqlConnectionProvider.PostgreSql_Provider 'Error
+                .Provider = "PostgreSQL OLE DB Provider"
+                .Properties("Initial Catalog") = Credentials.IntitialCatalog
+                .Properties("location") = Credentials.DataSource
+            
+            Case ISqlConnectionProvider.MySql_Provider 'Error
+                .Provider = "MSDASQL.1"
                 
             Case ISqlConnectionProvider.Access97_2003_Provider
                 .Provider = "Microsoft.Jet.OLEDB.4.0"
-                .Properties("Jet OLEDB:Database Password") = Credentials.DatabasePassword
+                .Properties("Jet OLEDB:Database Password") = Credentials.Filepassword
                 
             Case ISqlConnectionProvider.Access2007_2013_Provider
                 .Provider = "Microsoft.ACE.OLEDB.12.0"
-                .Properties("Jet OLEDB:Database Password") = Credentials.DatabasePassword
+                .Properties("Jet OLEDB:Database Password") = Credentials.Filepassword
             
             Case Else
                 Call Err.Raise(1, TypeName$(Me), "Not defined File:" & Credentials.DataSource)
@@ -699,35 +575,34 @@ Private Function CreateConnection(ByVal Credentials As SqlCredentials, Optional 
         
         Dim p As ADODB.Property
         If DEBUG_MODE Then
-            For Each p In .Properties
-                Debug.Print p.Name & " :: " & p.Value
-            Next
+'            Debug.Print "Provider :: " & .Provider
+'            For Each p In .Properties
+'                Debug.Print p.Name & " :: " & p.Value
+'            Next
         End If
         
-        If OpenConnection Then _
-            Call .Open(Options:=IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
-              
     End With
     
     Set CreateConnection = oConnection
     
 End Function
 
-Private Function Connect(ByVal Command As ADODB.Command, ByVal Credentials As SqlCredentials) As Boolean
+Private Function Connect(ByVal Command As ADODB.Command, ByRef Credentials As Credentials) As Boolean
    
     If Command Is Nothing Then
         'Error
     End If
     
     With Command
-        Set .ActiveConnection = CreateConnection(Credentials, OpenConnection:=True)
+        Set .ActiveConnection = CreateConnection(Credentials)
+        Call .ActiveConnection.Open
         Connect = IsConnected(.ActiveConnection)
     End With
     
 End Function
 
 Private Function IsConnected(ByVal Connection As ADODB.Connection) As Boolean
-    Debug.Print Connection.State
+    
     If Not Connection Is Nothing Then _
         IsConnected = (Connection.State And ISqlObjectState.IsOpen_State) = ISqlObjectState.IsOpen_State
 
@@ -740,7 +615,7 @@ Private Function IsFetching(ByVal Command As ADODB.Command) As Boolean
     
     If Not Command Is Nothing Then
         If Not Command.ActiveConnection Is Nothing Then
-            Do While (Command.State And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting 'Do While Connection.State = ISqlConnectionState.Connection_IsOpen + ISqlConnectionState.Connection_IsExecuting
+            Do While (Command.State And ISqlObjectState.IsExecuting_State) = ISqlObjectState.IsExecuting_State 'Do While Connection.State = ISqlConnectionState.Connection_IsOpen + ISqlConnectionState.Connection_IsExecuting
 '                If Counter Mod BREAK = 0 Then
 '                    Debug.Print ("Command is executing ...")
 '                    DoEvents
@@ -783,64 +658,77 @@ Private Function Disconnect(ByVal Command As ADODB.Command) As Boolean
     
 End Function
 
-Private Sub Database_ConnectComplete(ByVal pError As ADODB.Error, adStatus As ADODB.EventStatusEnum, ByVal pConnection As ADODB.Connection)
+Private Sub Database_WillConnect(ConnectionString As String, UserID As String, Password As String, Options As Long, adStatus As ADODB.EventStatusEnum, ByVal pConnection As ADODB.Connection)
+    
     If DEBUG_MODE Then _
-        Debug.Print "Database_ConnectComplete"
+        Debug.Print "Private Sub Database_WillConnect"
+        
+End Sub
+
+Private Sub Database_ConnectComplete(ByVal pError As ADODB.Error, adStatus As ADODB.EventStatusEnum, ByVal pConnection As ADODB.Connection)
+    
+    If DEBUG_MODE Then _
+        Debug.Print "Private Sub Database_ConnectComplete"
+        
 End Sub
 
 Private Sub Database_Disconnect(adStatus As ADODB.EventStatusEnum, ByVal pConnection As ADODB.Connection)
+    
     If DEBUG_MODE Then _
         Debug.Print "Private Sub Database_Disconnect"
     
     Set Database = Nothing
+    
 End Sub
 
-'Private Sub Database_WillExecute(Source As String, CursorType As ADODB.CursorTypeEnum, LockType As ADODB.LockTypeEnum, Options As Long, adStatus As ADODB.EventStatusEnum, ByVal pCommand As ADODB.Command, ByVal pRecordset As ADODB.Recordset, ByVal pConnection As ADODB.Connection)
-'    Debug.Print "Private Sub Database_WillExecute"
-'End Sub
+Private Sub Database_WillExecute(Source As String, CursorType As ADODB.CursorTypeEnum, LockType As ADODB.LockTypeEnum, Options As Long, adStatus As ADODB.EventStatusEnum, ByVal pCommand As ADODB.Command, ByVal pRecordset As ADODB.Recordset, ByVal pConnection As ADODB.Connection)
+    
+    If DEBUG_MODE Then _
+        Debug.Print "Private Sub Database_WillExecute"
+    
+    myclass.Locks = myclass.Locks + 1
+    
+End Sub
 
 Private Sub Database_ExecuteComplete(ByVal RecordsAffected As Long, ByVal pError As ADODB.Error, adStatus As ADODB.EventStatusEnum, ByVal pCommand As ADODB.Command, ByVal pRecordset As ADODB.Recordset, ByVal pConnection As ADODB.Connection)
     
     If DEBUG_MODE Then _
-        Debug.Print "Database_ExecuteComplete"
- 
+        Debug.Print "Private Sub Database_ExecuteComplete"
+    
+    myclass.Locks = myclass.Locks - 1
+    
     If pError Is Nothing Then
-        If Not pRecordset Is Nothing Then
-            With myclass
-                Set .Result = pRecordset
-                Set .Result.ActiveConnection = Nothing
-                .AffectedRecords = .Result.RecordCount
-            End With
-        End If
         
-        If Not myclass.Result Is Nothing Then _
-            RaiseEvent Result(myclass.Result)
+        If Not pRecordset Is Nothing Then
+            Set pRecordset.ActiveConnection = Nothing
+            RaiseEvent Result(pRecordset)
+        End If
             
     Else
+    
         Debug.Print "Sql Error"
         Debug.Print pError.Description
+        
     End If
     
-    If CLOSE_CONNECTION_IMMEDIATELY Then
-        Call pCommand.ActiveConnection.Close
-        Set pCommand.ActiveConnection = Nothing
-    End If
+    Set pCommand.ActiveConnection = Nothing
     
-    myclass.IsInExecution = False
-       
+    If CLOSE_CONNECTION_IMMEDIATELY And myclass.Locks = 0 Then _
+        Call pConnection.Close
+   
 End Sub
 
 'IGeneric
-Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericSql: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSql: End Property
-Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
-Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericSqlManager: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSqlManager: End Property
+Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
+Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
-Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSql):  End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericSqlManager):  End Property
 
 Private Function IGeneric_ToString() As String
-    IGeneric_ToString = TypeName$(Me) & " :: {" & myclass.Sql & "}"
+    IGeneric_ToString = TypeName$(Me) & " :: {" & myclass.Credentials.DataSource & "}"
 End Function
 
 Private Function IGeneric_Clone() As IGeneric
@@ -865,13 +753,13 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
     If (Records Is Nothing) Then _
         Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records Is Nothing)")
     
-    If (Records.State = ISqlCommandState.StateClosed) Then _
+    If (Records.State = ISqlObjectState.IsClosed_State) Then _
         Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
     
     With myclass.Iterator
         Set .Records = Records
         
-        Do While (.Records.State And ISqlCommandState.StateExecuting) = ISqlCommandState.StateExecuting
+        Do While (.Records.State And ISqlObjectState.IsExecuting_State) = ISqlObjectState.IsExecuting_State
             Debug.Print "Records fetching...."
         Loop
         
@@ -903,7 +791,7 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
         .HasLoaded = True
     End With
     
-    Set RowMapper = System.CreateInstance(New GenericSql, Virtual.Pointer, Virtual.Size)
+    Set RowMapper = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
     
 End Function
 

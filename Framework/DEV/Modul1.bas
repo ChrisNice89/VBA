@@ -4,7 +4,7 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
-Private Sql As GenericSql
+Private Sql As GenericSqlManager
 Private RandomList As GenericList
 
 Sub TestString()
@@ -51,15 +51,14 @@ Sub TestCreaet()
     Set t = New CTimer
     Dim i As Long
     Dim g As IGeneric
-    Set g = GenericPair
+    
     t.StartCounter
-
     For i = 1 To 10000
-        Set g = GenericPair(IGenericValue, IGenericValue)
-        Result = g.IsRelatedTo(g)
+        Set g = GString.Build(True)
+'        Result = g.IsRelatedTo(g)
     Next
-
     Debug.Print t.TimeElapsed
+    
 End Sub
 Sub TestListEquals()
     
@@ -93,195 +92,202 @@ Sub TestListEquals()
     Debug.Print GString.Join(tree, ";").Value
 End Sub
 
-Sub CreateTables()
+'Sub CreateTables()
+'
+'    Dim Stammdaten As Stringbuilder: Set Stammdaten = New Stringbuilder
+'    Dim Portfolio As Stringbuilder: Set Portfolio = New Stringbuilder
+'    Dim Normal As Stringbuilder: Set Normal = New Stringbuilder
+'    Dim Intensiv As Stringbuilder: Set Intensiv = New Stringbuilder
+'    Dim Sanierng As Stringbuilder: Set Sanierng = New Stringbuilder
+'    Dim Abwicklung As Stringbuilder: Set Abwicklung = New Stringbuilder
+'    Dim Paar As Stringbuilder: Set Paar = New Stringbuilder
+'
+'    With Portfolio
+'        .Append "CREATE TABLE LDRS_PORTFOLIO ( "
+'        .Append "[ID] AUTOINCREMENT,"
+'        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
+'        .Append "[NUMMER] TEXT,"
+'        .Append "[NAME] TEXT,"
+'        .Append "[PRÜFER] TEXT,"
+'        .Append "[TRANCHE] TEXT,"
+'        .Append "[PRÜFUNGSSCHWERPUNKT] BYTE,"
+'        .Append "[AUSWAHLGRUND] TEXT,"
+'        .Append "[DATUM] DATE,"
+'        .Append "[KUNDENNUMMER] TEXT,"
+'        .Append "[RATINGVERFAHREN] TEXT,"
+'        .Append "[RATINGNOTE] TEXT,"
+'        .Append "[RATINGDATUM] DATE,"
+'        .Append "[RISIKOVOLUMEN] CURRENCY,"
+'        .Append "[INANSPRUCHNAHME] CURRENCY,"
+'        .Append "[BLANKOVOLUMEN] CURRENCY,"
+'        .Append "[EWB] CURRENCY,"
+'        .Append "[KONTONUMMER] TEXT,"
+'        .Append "[PRODUKTGRUPPE] TEXT,"
+'        .Append "[PRODUKTTYP] TEXT,"
+'        .Append "[SOLLZINS] SINGLE,"
+'        .Append "[LIMIT (EXTERN)] CURRENCY,"
+'        .Append "[LIMIT (INTERN)] CURRENCY,"
+'        .Append "[INANSPRUCHNAHME] CURRENCY,"
+'        .Append "[ÜBERZIEHUNGSDAUER] BYTE,"
+'        .Append "[GEBER-NUMMER] TEXT,"
+'        .Append "[GEBER-NAME] TEXT,"
+'        .Append "[NUMMER] BYTE,"
+'        .Append "[SICHERHEITENART] TEXT,"
+'        .Append "[IMMOBILIEN-NUMMER] BYTE,"
+'        .Append "[OBJEKTART] TEXT,"
+'        .Append "[BLW-AUSLAUF] CURRENCY,"
+'        .Append "[ANRECHNUNG] CURRENCY,"
+'        .Append "[VERFÜGBAR] CURRENCY"
+'        .Append " )"
+'    End With
+'
+'    Call TestSql(Portfolio.ToString)
+'
+'    With Normal
+'        .Append "CREATE TABLE LDRS_NORMAL ( "
+'        .Append "[ID] AUTOINCREMENT,"
+'        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
+'        .Append "[KREDITENTSCHEIDUNG/KREDITPROTOKOLL_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[KREDITENTSCHEIDUNG/KREDITPROTOKOLL_DOKUMENTATION] MEMO,"
+'        .Append "[KDF (INKL OFFENLEGUNG)_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[KDF (INKL OFFENLEGUNG)_DOKUMENTATION] MEMO,"
+'        .Append "[RKV_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[RKV_DOKUMENTATION] MEMO,"
+'        .Append "[SICHERHEITEN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[SICHERHEITEN_DOKUMENTATION] MEMO,"
+'        .Append "[LAUFENDE ÜBERWACHUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[LAUFENDE ÜBERWACHUNG_DOKUMENTATION] MEMO,"
+'        .Append "[ZUORDNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ZUORDNUNG_DOKUMENTATION] MEMO,"
+'        .Append "[RISIKOVORSORGE_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[RISIKOVORSORGE_DOKUMENTATION] MEMO,"
+'        .Append "[VOTIERUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[VOTIERUNG_DOKUMENTATION] MEMO,"
+'        .Append "[GENEHMIGUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[GENEHMIGUNG_DOKUMENTATION] MEMO,"
+'        .Append "[ADRESSENAUSFALLRISIKO_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ADRESSENAUSFALLRISIKO_DOKUMENTATION] MEMO,"
+'        .Append "[STRATEGIEKONFORMITÄT_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[STRATEGIEKONFORMITÄT_DOKUMENTATION] MEMO,"
+'        .Append "[BERICHTSWESEN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[BERICHTSWESEN_DOKUMENTATION] MEMO,"
+'        .Append "[VERTRAGSERSTELLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[VERTRAGSERSTELLUNG_DOKUMENTATION] MEMO,"
+'        .Append "[AUSZAHLUNGSKONTROLLE / MITTELVERWENDUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[AUSZAHLUNGSKONTROLLE / MITTELVERWENDUNG_DOKUMENTATION] MEMO,"
+'        .Append "[FORBEARANCE_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[FORBEARANCE_DOKUMENTATION] MEMO,"
+'        .Append "[ÜBERWACHUNG DER OFFENLEGUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ÜBERWACHUNG DER OFFENLEGUNG_DOKUMENTATION] MEMO,"
+'        .Append "[VOLLSTÄNDIGKEIT ERFORDERLICHE UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[VOLLSTÄNDIGKEIT ERFORDERLICHE UNTERLAGEN_DOKUMENTATION] MEMO,"
+'        .Append "[EINREICHUNGSFRIST_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[EINREICHUNGSFRIST_DOKUMENTATION] MEMO,"
+'        .Append "[AUSWERTUNGSFRIST_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[AUSWERTUNGSFRIST_DOKUMENTATION] MEMO,"
+'        .Append "[MAHNVERFAHREN FÜR AUSSTEHENDE UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[MAHNVERFAHREN FÜR AUSSTEHENDE UNTERLAGEN_DOKUMENTATION] MEMO,"
+'        .Append "[VOLLSTÄNDIGKEIT KDF PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[VOLLSTÄNDIGKEIT KDF DOKUMENTATION] MEMO,"
+'        .Append "[NACHVOLLZIEHBARE BERECHNUNG DER KDF PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[NACHVOLLZIEHBARE BERECHNUNG DER KDF DOKUMENTATION] MEMO,"
+'        .Append "[NACHHALTIGE KDF GEGEBEN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[NACHHALTIGE KDF GEGEBEN_DOKUMENTATION] MEMO,"
+'        .Append "[VERFAHRENSAUSWAHL_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[VERFAHRENSAUSWAHL_DOKUMENTATION] MEMO,"
+'        .Append "[RISIKOFAKTOREN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[RISIKOFAKTOREN_DOKUMENTATION] MEMO,"
+'        .Append "[ÜBERSCHREIBUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ÜBERSCHREIBUNG_DOKUMENTATION] MEMO,"
+'        .Append "[TURNUSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[TURNUSPRÜFUNG_DOKUMENTATION] MEMO,"
+'        .Append "[ANLASSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ANLASSPRÜFUNG_DOKUMENTATION] MEMO,"
+'        .Append "[AUSFALLERKENNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[AUSFALLERKENNUNG_DOKUMENTATION] MEMO,"
+'        .Append "[SICHERHEITENVERTRÄGE_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[SICHERHEITENVERTRÄGE_DOKUMENTATION] MEMO,"
+'        .Append "[RECHTLICHE DURCHSETZBARKEIT_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[RECHTLICHE DURCHSETZBARKEIT_DOKUMENTATION] MEMO,"
+'        .Append "[PLAUSIBILISIERUNG DER WERTERMITTLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[PLAUSIBILISIERUNG DER WERTERMITTLUNG_DOKUMENTATION] MEMO,"
+'        .Append "[TURNUSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[TURNUSPRÜFUNG_DOKUMENTATION] MEMO,"
+'        .Append "[ANLASSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ANLASSPRÜFUNG_DOKUMENTATION] MEMO,"
+'        .Append "[VERWALTUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[VERWALTUNG_DOKUMENTATION] MEMO,"
+'        .Append "[VOLLSTÄNDIGKEIT DER NOTWENDIGEN UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[VOLLSTÄNDIGKEIT DER NOTWENDIGEN UNTERLAGEN_DOKUMENTATION] MEMO,"
+'        .Append "[ÜBERZIEHUNGSBEARBEITUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ÜBERZIEHUNGSBEARBEITUNG_DOKUMENTATION] MEMO,"
+'        .Append "[AUFLAGEN / COVENANTS_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[AUFLAGEN / COVENANTS_DOKUMENTATION] MEMO,"
+'        .Append "[FRÜHWARNSYSTEM - SYSTEMATISCHE INDIKATOREN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[FRÜHWARNSYSTEM - SYSTEMATISCHE INDIKATOREN_DOKUMENTATION] MEMO,"
+'        .Append "[ANLASSBEZOGENE INDIKATOREN_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ANLASSBEZOGENE INDIKATOREN_DOKUMENTATION] MEMO,"
+'        .Append "[BESTANDSAUFNAHME_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[BESTANDSAUFNAHME_DOKUMENTATION] MEMO,"
+'        .Append "[ÜBEREINSTIMMUNG SOLL-ZUORDNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ÜBEREINSTIMMUNG SOLL-ZUORDNUNG_DOKUMENTATION] MEMO,"
+'        .Append "[ERMITTLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[ERMITTLUNG_DOKUMENTATION] MEMO,"
+'        .Append "[BESCHLUSSFASSUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[BESCHLUSSFASSUNG_DOKUMENTATION] MEMO,"
+'        .Append "[BERICHTERSTATTUNG_PRÜFUNGSINTENSITÄT] BYTE,"
+'        .Append "[BERICHTERSTATTUNG_DOKUMENTATION] MEMO"
+'        .Append " )"
+'    End With
+'
+'    Call TestSql(Normal.ToString)
+'
+'    With Stammdaten
+'        .Append "CREATE TABLE LDRS_STAMMDATEN ( "
+'        .Append "[ID] AUTOINCREMENT,"
+'        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
+'        .Append "[KUNDENSTATUS] BYTE,"
+'        .Append "[BETREUUNGSSTATUS] BYTE,"
+'        .Append "[RISIKOVOLUMEN (PORTFOLIOABZUG)] CURRENCY,"
+'        .Append "[BLANKOVOLUMEN (PORTFOLIOABZUG)] CURRENCY,"
+'        .Append "[INANSPRUCHNAHME (PORTFOLIOABZUG)] CURRENCY,"
+'        .Append "[EWB (PORTFOLIOABZUG)] CURRENCY,"
+'        .Append "[RISIKOVOLUMEN (PRÜFUNGSZEITPUNKT)] CURRENCY,"
+'        .Append "[BLANKOVOLUMEN (PRÜFUNGSZEITPUNKT)] CURRENCY,"
+'        .Append "[INANSPRUCHNAHME (PRÜFUNGSZEITPUNKT)] CURRENCY,"
+'        .Append "[EWB (PRÜFUNGSZEITPUNKT)] CURRENCY,"
+'        .Append "[RISIKOVOLUMEN (NACH PAAR)] CURRENCY,"
+'        .Append "[BLANKOVOLUMEN (NACH PAAR)] CURRENCY,"
+'        .Append "[INANSPRUCHNAHME (NACH PAAR)] CURRENCY,"
+'        .Append "[EWB (NACH PAAR)] CURRENCY,"
+'        .Append "[WERTHALTIG ANGESETZTE SICHERHEITEN] BYTE,"
+'        .Append "[KURZBESCHREIBUNG DES ENGAGEMENTS] MEMO,"
+'        .Append "[GESAMTERGEBNIS] MEMO,"
+'        .Append "[NOTIZEN / BEMERKUNGEN] MEMO"
+'        .Append " )"
+'    End With
+'
+''    Call TestSql(Stammdaten.ToString)
+'
+'End Sub
 
-    Dim Stammdaten As Stringbuilder: Set Stammdaten = New Stringbuilder
-    Dim Portfolio As Stringbuilder: Set Portfolio = New Stringbuilder
-    Dim Normal As Stringbuilder: Set Normal = New Stringbuilder
-    Dim Intensiv As Stringbuilder: Set Intensiv = New Stringbuilder
-    Dim Sanierng As Stringbuilder: Set Sanierng = New Stringbuilder
-    Dim Abwicklung As Stringbuilder: Set Abwicklung = New Stringbuilder
-    Dim Paar As Stringbuilder: Set Paar = New Stringbuilder
-    
-    With Portfolio
-        .Append "CREATE TABLE LDRS_PORTFOLIO ( "
-        .Append "[ID] AUTOINCREMENT,"
-        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
-        .Append "[NUMMER] TEXT,"
-        .Append "[NAME] TEXT,"
-        .Append "[PRÜFER] TEXT,"
-        .Append "[TRANCHE] TEXT,"
-        .Append "[PRÜFUNGSSCHWERPUNKT] BYTE,"
-        .Append "[AUSWAHLGRUND] TEXT,"
-        .Append "[DATUM] DATE,"
-        .Append "[KUNDENNUMMER] TEXT,"
-        .Append "[RATINGVERFAHREN] TEXT,"
-        .Append "[RATINGNOTE] TEXT,"
-        .Append "[RATINGDATUM] DATE,"
-        .Append "[RISIKOVOLUMEN] CURRENCY,"
-        .Append "[INANSPRUCHNAHME] CURRENCY,"
-        .Append "[BLANKOVOLUMEN] CURRENCY,"
-        .Append "[EWB] CURRENCY,"
-        .Append "[KONTONUMMER] TEXT,"
-        .Append "[PRODUKTGRUPPE] TEXT,"
-        .Append "[PRODUKTTYP] TEXT,"
-        .Append "[SOLLZINS] SINGLE,"
-        .Append "[LIMIT (EXTERN)] CURRENCY,"
-        .Append "[LIMIT (INTERN)] CURRENCY,"
-        .Append "[INANSPRUCHNAHME] CURRENCY,"
-        .Append "[ÜBERZIEHUNGSDAUER] BYTE,"
-        .Append "[GEBER-NUMMER] TEXT,"
-        .Append "[GEBER-NAME] TEXT,"
-        .Append "[NUMMER] BYTE,"
-        .Append "[SICHERHEITENART] TEXT,"
-        .Append "[IMMOBILIEN-NUMMER] BYTE,"
-        .Append "[OBJEKTART] TEXT,"
-        .Append "[BLW-AUSLAUF] CURRENCY,"
-        .Append "[ANRECHNUNG] CURRENCY,"
-        .Append "[VERFÜGBAR] CURRENCY"
-        .Append " )"
-    End With
-
-    Call TestSql(Portfolio.ToString)
-    
-    With Normal
-        .Append "CREATE TABLE LDRS_NORMAL ( "
-        .Append "[ID] AUTOINCREMENT,"
-        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
-        .Append "[KREDITENTSCHEIDUNG/KREDITPROTOKOLL_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[KREDITENTSCHEIDUNG/KREDITPROTOKOLL_DOKUMENTATION] MEMO,"
-        .Append "[KDF (INKL OFFENLEGUNG)_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[KDF (INKL OFFENLEGUNG)_DOKUMENTATION] MEMO,"
-        .Append "[RKV_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[RKV_DOKUMENTATION] MEMO,"
-        .Append "[SICHERHEITEN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[SICHERHEITEN_DOKUMENTATION] MEMO,"
-        .Append "[LAUFENDE ÜBERWACHUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[LAUFENDE ÜBERWACHUNG_DOKUMENTATION] MEMO,"
-        .Append "[ZUORDNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ZUORDNUNG_DOKUMENTATION] MEMO,"
-        .Append "[RISIKOVORSORGE_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[RISIKOVORSORGE_DOKUMENTATION] MEMO,"
-        .Append "[VOTIERUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[VOTIERUNG_DOKUMENTATION] MEMO,"
-        .Append "[GENEHMIGUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[GENEHMIGUNG_DOKUMENTATION] MEMO,"
-        .Append "[ADRESSENAUSFALLRISIKO_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ADRESSENAUSFALLRISIKO_DOKUMENTATION] MEMO,"
-        .Append "[STRATEGIEKONFORMITÄT_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[STRATEGIEKONFORMITÄT_DOKUMENTATION] MEMO,"
-        .Append "[BERICHTSWESEN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[BERICHTSWESEN_DOKUMENTATION] MEMO,"
-        .Append "[VERTRAGSERSTELLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[VERTRAGSERSTELLUNG_DOKUMENTATION] MEMO,"
-        .Append "[AUSZAHLUNGSKONTROLLE / MITTELVERWENDUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[AUSZAHLUNGSKONTROLLE / MITTELVERWENDUNG_DOKUMENTATION] MEMO,"
-        .Append "[FORBEARANCE_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[FORBEARANCE_DOKUMENTATION] MEMO,"
-        .Append "[ÜBERWACHUNG DER OFFENLEGUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ÜBERWACHUNG DER OFFENLEGUNG_DOKUMENTATION] MEMO,"
-        .Append "[VOLLSTÄNDIGKEIT ERFORDERLICHE UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[VOLLSTÄNDIGKEIT ERFORDERLICHE UNTERLAGEN_DOKUMENTATION] MEMO,"
-        .Append "[EINREICHUNGSFRIST_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[EINREICHUNGSFRIST_DOKUMENTATION] MEMO,"
-        .Append "[AUSWERTUNGSFRIST_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[AUSWERTUNGSFRIST_DOKUMENTATION] MEMO,"
-        .Append "[MAHNVERFAHREN FÜR AUSSTEHENDE UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[MAHNVERFAHREN FÜR AUSSTEHENDE UNTERLAGEN_DOKUMENTATION] MEMO,"
-        .Append "[VOLLSTÄNDIGKEIT KDF PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[VOLLSTÄNDIGKEIT KDF DOKUMENTATION] MEMO,"
-        .Append "[NACHVOLLZIEHBARE BERECHNUNG DER KDF PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[NACHVOLLZIEHBARE BERECHNUNG DER KDF DOKUMENTATION] MEMO,"
-        .Append "[NACHHALTIGE KDF GEGEBEN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[NACHHALTIGE KDF GEGEBEN_DOKUMENTATION] MEMO,"
-        .Append "[VERFAHRENSAUSWAHL_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[VERFAHRENSAUSWAHL_DOKUMENTATION] MEMO,"
-        .Append "[RISIKOFAKTOREN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[RISIKOFAKTOREN_DOKUMENTATION] MEMO,"
-        .Append "[ÜBERSCHREIBUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ÜBERSCHREIBUNG_DOKUMENTATION] MEMO,"
-        .Append "[TURNUSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[TURNUSPRÜFUNG_DOKUMENTATION] MEMO,"
-        .Append "[ANLASSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ANLASSPRÜFUNG_DOKUMENTATION] MEMO,"
-        .Append "[AUSFALLERKENNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[AUSFALLERKENNUNG_DOKUMENTATION] MEMO,"
-        .Append "[SICHERHEITENVERTRÄGE_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[SICHERHEITENVERTRÄGE_DOKUMENTATION] MEMO,"
-        .Append "[RECHTLICHE DURCHSETZBARKEIT_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[RECHTLICHE DURCHSETZBARKEIT_DOKUMENTATION] MEMO,"
-        .Append "[PLAUSIBILISIERUNG DER WERTERMITTLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[PLAUSIBILISIERUNG DER WERTERMITTLUNG_DOKUMENTATION] MEMO,"
-        .Append "[TURNUSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[TURNUSPRÜFUNG_DOKUMENTATION] MEMO,"
-        .Append "[ANLASSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ANLASSPRÜFUNG_DOKUMENTATION] MEMO,"
-        .Append "[VERWALTUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[VERWALTUNG_DOKUMENTATION] MEMO,"
-        .Append "[VOLLSTÄNDIGKEIT DER NOTWENDIGEN UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[VOLLSTÄNDIGKEIT DER NOTWENDIGEN UNTERLAGEN_DOKUMENTATION] MEMO,"
-        .Append "[ÜBERZIEHUNGSBEARBEITUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ÜBERZIEHUNGSBEARBEITUNG_DOKUMENTATION] MEMO,"
-        .Append "[AUFLAGEN / COVENANTS_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[AUFLAGEN / COVENANTS_DOKUMENTATION] MEMO,"
-        .Append "[FRÜHWARNSYSTEM - SYSTEMATISCHE INDIKATOREN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[FRÜHWARNSYSTEM - SYSTEMATISCHE INDIKATOREN_DOKUMENTATION] MEMO,"
-        .Append "[ANLASSBEZOGENE INDIKATOREN_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ANLASSBEZOGENE INDIKATOREN_DOKUMENTATION] MEMO,"
-        .Append "[BESTANDSAUFNAHME_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[BESTANDSAUFNAHME_DOKUMENTATION] MEMO,"
-        .Append "[ÜBEREINSTIMMUNG SOLL-ZUORDNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ÜBEREINSTIMMUNG SOLL-ZUORDNUNG_DOKUMENTATION] MEMO,"
-        .Append "[ERMITTLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[ERMITTLUNG_DOKUMENTATION] MEMO,"
-        .Append "[BESCHLUSSFASSUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[BESCHLUSSFASSUNG_DOKUMENTATION] MEMO,"
-        .Append "[BERICHTERSTATTUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-        .Append "[BERICHTERSTATTUNG_DOKUMENTATION] MEMO"
-        .Append " )"
-    End With
-        
-    Call TestSql(Normal.ToString)
-
-    With Stammdaten
-        .Append "CREATE TABLE LDRS_STAMMDATEN ( "
-        .Append "[ID] AUTOINCREMENT,"
-        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
-        .Append "[KUNDENSTATUS] BYTE,"
-        .Append "[BETREUUNGSSTATUS] BYTE,"
-        .Append "[RISIKOVOLUMEN (PORTFOLIOABZUG)] CURRENCY,"
-        .Append "[BLANKOVOLUMEN (PORTFOLIOABZUG)] CURRENCY,"
-        .Append "[INANSPRUCHNAHME (PORTFOLIOABZUG)] CURRENCY,"
-        .Append "[EWB (PORTFOLIOABZUG)] CURRENCY,"
-        .Append "[RISIKOVOLUMEN (PRÜFUNGSZEITPUNKT)] CURRENCY,"
-        .Append "[BLANKOVOLUMEN (PRÜFUNGSZEITPUNKT)] CURRENCY,"
-        .Append "[INANSPRUCHNAHME (PRÜFUNGSZEITPUNKT)] CURRENCY,"
-        .Append "[EWB (PRÜFUNGSZEITPUNKT)] CURRENCY,"
-        .Append "[RISIKOVOLUMEN (NACH PAAR)] CURRENCY,"
-        .Append "[BLANKOVOLUMEN (NACH PAAR)] CURRENCY,"
-        .Append "[INANSPRUCHNAHME (NACH PAAR)] CURRENCY,"
-        .Append "[EWB (NACH PAAR)] CURRENCY,"
-        .Append "[WERTHALTIG ANGESETZTE SICHERHEITEN] BYTE,"
-        .Append "[KURZBESCHREIBUNG DES ENGAGEMENTS] MEMO,"
-        .Append "[GESAMTERGEBNIS] MEMO,"
-        .Append "[NOTIZEN / BEMERKUNGEN] MEMO"
-        .Append " )"
-    End With
-        
-'    Call TestSql(Stammdaten.ToString)
-    
-End Sub
-
-Public Sub TestSql(ByVal CMDText As String)
+Public Sub TestSql()
     
     Dim Path As String
     Path = "C:\Users\cnitz\Desktop\iCAT Neu\Backend\Vers. 2.5\2020-02-24 iCAT-Backend Vers. 2.5.accdb"
     Dim PW As String
     PW = "OpenSesame"
     
-    Set Sql = GenericSql.Build(SqlCredentials.AccessConnection(Path, PW), CMDText, 0)
-    Call Sql.Execute
-
+    Set Sql = GenericSqlManager.BuildSqlConnection(ServerName:="192.168.2.112", InitialCatalog:="TEST", User:="SA", Password:="Specialguest89$")
+'    Set Sql = GenericSqlManager.Build(SqlCredentials.AccessConnection(Path:=Path, Filepassword:=PW), "SELECT * FROM CUSTOMERS", 0)
+'    Call Sql.Execute(CreateTables.Überblick)
+'    Call Sql.Execute(CreateTables.Normal)
+'    Call Sql.Execute(CreateTables.Intensiv)
+    Call Sql.Execute(CreateTables.Sanierung)
+    Call Sql.Execute(CreateTables.Abwicklung)
+    Call Sql.Execute(CreateTables.Paar)
+    Call Sql.Execute(CreateTables.Abstimmung)
+    
 End Sub
 
 Sub TestMultiDimArray()
@@ -510,18 +516,18 @@ Sub TestListIterator()
     Dim t As CTimer
     Set t = New CTimer
     
-    Dim L As GenericList
-    Set L = GenericList.Build
+    Dim l As GenericList
+    Set l = GenericList.Build
 
     Dim i As Long, N As Long
     
     N = 5000
     For i = 1 To N
-        Call L.Add(GenericPair(GNumeric(i), GNumeric(i)))
+        Call l.Add(GenericPair(GNumeric(i), GNumeric(i)))
     Next
     
     Dim c As GenericList
-    Set c = System.Clone(L)
+    Set c = System.Clone(l)
     
     t.StartCounter
     Dim Item As IGeneric
@@ -582,20 +588,20 @@ Sub TestMaps()
         Call RandomList.Sort(Ascending, GenericPair)
     End If
  
-    Dim P As GenericPair
+    Dim p As GenericPair
     Dim Item As IGeneric
     
     Set t = New CTimer
     t.StartCounter
     For i = RandomList.BaseIndex To RandomList.Count - 1
-        Set P = RandomList(i)
-        Call Map.Add(P.Key, P.Value)
+        Set p = RandomList(i)
+        Call Map.Add(p.Key, p.Value)
     Next
     Debug.Print N & " :: "; t.TimeElapsed
 
     For i = RandomList.BaseIndex To RandomList.Count - 1
-        Set P = RandomList(i)
-        Set Item = Map.Item(P.Key)
+        Set p = RandomList(i)
+        Set Item = Map.Item(p.Key)
     Next
   
     Dim ga As GenericArray

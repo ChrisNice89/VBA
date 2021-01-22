@@ -53,13 +53,8 @@ End Type
 Private myclass As Member
 Private Formats() As String
 
-Public Property Get Min() As Currency
-    Min = -922337203685477#
-End Property
-
-Public Property Get Max() As Currency
-    Max = MAXVALUE
-End Property
+Public Property Get Min() As Currency: Min = -922337203685477#: End Property
+Public Property Get Max() As Currency: Max = MAXVALUE: End Property
 
 Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIterator
     
@@ -90,13 +85,11 @@ Public Property Get IsEven() As Boolean: IsEven = (myclass.Value - (Int(myclass.
 Public Function Build(ByVal Value As Variant) As GNumeric
 Attribute Build.VB_UserMemId = 0
     
-    With myclass
-        If IsNull(Value) Then _
-            Set Build = GNumeric: Exit Function
+    If IsNull(Value) Then _
+        Set Build = GNumeric: Exit Function
   
-        .Value = Value
-    End With
-    
+    myclass.Value = Value
+
     Set Build = New GNumeric: myclass = EmptyStructure
 
 End Function
@@ -170,9 +163,7 @@ Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue =
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
 Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Create(ByVal Value As Variant) As IGenericValue
-    Set IGenericValue_Create = Me.Build(Value)
-End Function
+Private Function IGenericValue_Create(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Create = Me.Build(Value): End Function
 
 Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
     
@@ -193,10 +184,10 @@ End Function
 
 Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
-    Dim P As ADODB.Parameter
-    Set P = New ADODB.Parameter
+    Dim p As ADODB.Parameter
+    Set p = New ADODB.Parameter
     
-    With P
+    With p
         .Direction = Direction
         .Attributes = adParamNullable '64
         .PRECISION = PRECISION
@@ -206,7 +197,7 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = P
+    Set IGenericValue_ToSqlParameter = p
     
 End Function
 

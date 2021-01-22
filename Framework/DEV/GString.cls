@@ -79,33 +79,13 @@ End Type
 Private Type Member
     Length As Long
     Value As String
-    UnicodeCharacters As GenericArray
     Hash As Long
     Iterator As Iterator
 End Type
 Private myclass As Member
 
-Public Static Property Get UnicodeCharacters() As IGenericReadOnlyList: Set UnicodeCharacters = myclass.UnicodeCharacters: End Property
 Public Property Get Pointer() As LongPtr: Pointer = StrPtr(myclass.Value): End Property
-
-Public Property Get ElementAt(ByVal Index As Long) As GString
-    
-    Dim Char As GString
-    Dim Code As Long
-   
-    Set Char = GString ' avoid nothing
-    
-    If Not myclass.Value = vbNullString Then
-        Code = AscW(Mid$(myclass.Value, Index + 1, 1))
-        Set Char = myclass.UnicodeCharacters.ElementAt(Code)
-    End If
-    
-    If Char Is Nothing Then _
-        Set Char = GString(ChrW$(Code)): Set myclass.UnicodeCharacters.ElementAt(Code) = Char
-    
-    Set ElementAt = Char
-    
-End Property
+Public Property Get ElementAt(ByVal Index As Long) As GString: Set ElementAt = GString.Build(Mid$(myclass.Value, Index + 1, 1)): End Property
 
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GString: End Property
 Public Property Get IsNumeric() As Boolean: IsNumeric = VBA.IsNumeric(myclass.Value): End Property
@@ -252,34 +232,7 @@ Public Function Join(ByVal Values As IGenericReadOnlyList, Optional ByVal Delimi
     
 End Function
 
-Public Function HashValueOf(ByRef Text As String) As Long
-
-    Dim Ascii() As Byte
-     
-    Dim h As Currency 'Double
-    Dim i As Long
-    Dim h1 As Double, h2 As Double
-    
-    If LenB(Text) = 0 Then _
-        Exit Function
-    
-    Ascii() = StrConv(Text, vbFromUnicode)
-
-    h1 = 352654597#
-    h2 = h1 'LeftShift(5381,16))+5381
-    
-    For i = 0 To UBound(Ascii) - 1 'For i = 1 To Len(Text) - 1 'For i = 0 To UBound(Ascii) - 1
-       h1 = (h1 * LEFTSHIFT) + h1 + (h1 / RIGHTSHIFT): h1 = CLng(h1 - (Fix(h1 / MAXVALUE) * MAXVALUE)) Xor Ascii(i) 'AscW(Mid$(Text, i, 1))
-       h2 = (h2 * LEFTSHIFT) + h2 + (h2 / RIGHTSHIFT): h2 = CLng(h2 - (Fix(h2 / MAXVALUE) * MAXVALUE)) Xor Ascii(i + 1) 'AscW(Mid$(Text, i + 1, 1))
-    Next
-    
-    h = h1 + h2 'h1 + (h2 * 1566083941#)
-
-    HashValueOf = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
-
-End Function
-
-Public Function Build(ByVal Value As Variant) As GString
+Public Function Build(ByRef Value As Variant, Optional ByVal Intern As Boolean = False) As GString
 Attribute Build.VB_UserMemId = 0
     
     If (Me Is GString) = False Then _
@@ -291,26 +244,71 @@ Attribute Build.VB_UserMemId = 0
     If Value = vbNullString Then _
         Set Build = GString: Exit Function
     
-    Static UniCodes As GenericArray
-    If UniCodes Is Nothing Then _
-        Set UniCodes = GenericArray.Build(2 ^ 16)
-        
-    With myclass
-        Set .UnicodeCharacters = UniCodes 'share between all Strings
-        .Value = Value
-    End With
+    myclass.Length = Len(Value)
     
+    If myclass.Length = 1 Then
+
+        Static Chars As GenericArray
+        If Chars Is Nothing Then _
+            Set Chars = GenericArray.Build(2 ^ 16)
+
+        Dim Char As GString
+        Dim Code As Long
+
+        Code = AscW(Value)
+        Set Char = Chars.ElementAt(Code)
+
+        If Char Is Nothing Then
+            myclass.Value = ChrW$(Code)
+            Set Char = New GString
+            Set Chars.ElementAt(Code) = Char
+        End If
+
+        Set Build = Char: myclass = EmptyStructure
+        Exit Function
+    End If
+
+    myclass.Value = Value
     Set Build = New GString: myclass = EmptyStructure
   
 End Function
 
 Private Sub Class_Initialize()
     With GString
-        myclass.Value = .Value
-        myclass.Length = Len(myclass.Value)
-        Set myclass.UnicodeCharacters = .UnicodeCharacters
+        myclass.Value = .Value: myclass.Length = .Length
     End With
 End Sub
+
+Public Function HashValueOf(ByRef Text As String) As Long
+
+    Dim Ascii() As Byte
+    Dim numChars As Long
+    Dim h As Double
+    Dim i As Long
+    Dim h1 As Double, h2 As Double
+    
+    If Text = vbNullString Then _
+        Exit Function
+    
+    numChars = Len(Text)
+    If numChars = 1 Then _
+        HashValueOf = AscW(Text): Exit Function
+    
+    h1 = 352654597#
+    h2 = h1 'LeftShift(5381,16))+5381
+    
+    Ascii() = StrConv(Text, vbFromUnicode)
+    
+    For i = 0 To numChars - 2 'For i = 1 To Len(Text) - 1 'For i = 0 To UBound(Ascii) - 1
+       h1 = (h1 * LEFTSHIFT) + h1 + (h1 / RIGHTSHIFT): h1 = CLng(h1 - (Fix(h1 / MAXVALUE) * MAXVALUE)) Xor Ascii(i) 'AscW(Mid$(Text, i, 1))
+       h2 = (h2 * LEFTSHIFT) + h2 + (h2 / RIGHTSHIFT): h2 = CLng(h2 - (Fix(h2 / MAXVALUE) * MAXVALUE)) Xor Ascii(i + 1) 'AscW(Mid$(Text, i + 1, 1))
+    Next
+    
+    h = h1 + h2 'h1 + (h2 * 1566083941#)
+
+    HashValueOf = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
+
+End Function
 
 'IGeneric
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.IsDefault: End Property
@@ -359,10 +357,10 @@ Private Function IGenericValue_ToParameter( _
                                           Optional ByVal Name As GString, _
                                           Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As Variant
     
-    Dim P As ADODB.Parameter
-    Set P = New ADODB.Parameter
+    Dim p As ADODB.Parameter
+    Set p = New ADODB.Parameter
     
-    With P
+    With p
         .Direction = Direction
         .Name = Name.Value
         .Attributes = adParamNullable '64
@@ -371,7 +369,7 @@ Private Function IGenericValue_ToParameter( _
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToParameter = P
+    Set IGenericValue_ToParameter = p
     
 End Function
 
@@ -401,10 +399,10 @@ Private Function IGenericValue_ToSqlParameter( _
                                                  Optional ByVal Direction As ISqlParameterDirection = 1&, _
                                                  Optional ByVal Name As String) As Object
     
-    Dim P As ADODB.Parameter
-    Set P = New ADODB.Parameter
+    Dim p As ADODB.Parameter
+    Set p = New ADODB.Parameter
     
-    With P
+    With p
         .Direction = Direction
         .Name = Name
         .Attributes = adParamNullable '64
@@ -413,7 +411,7 @@ Private Function IGenericValue_ToSqlParameter( _
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = P
+    Set IGenericValue_ToSqlParameter = p
     
 End Function
 

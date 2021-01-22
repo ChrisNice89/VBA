@@ -54,6 +54,7 @@ Public Function Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
 End Function
 
 Private Sub Class_Initialize()
-    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+    If Not Me Is IGenericComparer Then _
+        Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 End Sub
 

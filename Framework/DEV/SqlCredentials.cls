@@ -22,6 +22,7 @@ Public Enum ISqlConnectionProvider
     Access97_2003_Provider
     Access2007_2013_Provider
     Sql_Provider
+    MySql_Provider
     DBMS_Provider
     CSV_File_Provider
 End Enum
@@ -33,7 +34,7 @@ Private Type Member
     DataSource As String
     UserPassword As String
     UserID As String
-    DatabasePassword As String
+    Filepassword As String 'Datenbankpasswort einer Accessdatenbank
     HDR As Boolean
     ConnectionString As String
     SSPI As Boolean
@@ -68,7 +69,7 @@ Public Property Get Mode() As ISqlConnectionMode
 End Property
 
 Public Property Get DatabasePassword() As String
-    DatabasePassword = myclass.DatabasePassword
+    DatabasePassword = myclass.Filepassword
 End Property
 
 Public Property Get UserID() As String
@@ -83,15 +84,22 @@ Public Property Get Prompt() As ISqlConnectionPrompt
     Prompt = myclass.Prompt
 End Property
 
-
-Public Function SqlConnection(ByVal Path As String, ByVal InitialCatalog As String, Optional ByVal SSPI As Boolean, Optional ByVal Password As String) As SqlCredentials
+Public Function SqlConnection( _
+                                ByVal ServerName As String, _
+                                ByVal InitialCatalog As String, _
+                                Optional ByVal SSPI As Boolean = False, _
+                                Optional ByVal User As String = "SA", _
+                                Optional ByVal Password As String = vbNullString) As SqlCredentials
     
     With myclass
         .ProviderTyp = Sql_Provider
-        .DataSource = Path
+        .DataSource = ServerName
         .IntitialCatalog = InitialCatalog
         .SSPI = SSPI
-        .DatabasePassword = Password
+        If .SSPI = False Then
+            .UserID = User
+            .UserPassword = Password
+        End If
         .Prompt = PromptNever
     End With
    
@@ -99,26 +107,26 @@ Public Function SqlConnection(ByVal Path As String, ByVal InitialCatalog As Stri
 
 End Function
 
-Public Function AccessConnection(ByVal Path As String, Optional ByVal Password As String) As SqlCredentials
+Public Function AccessConnection(ByVal Path As String, Optional ByVal User As String = "Admin", Optional ByVal Password As String, Optional ByVal Filepassword As String) As SqlCredentials
     
     With myclass
         .ProviderTyp = Access2007_2013_Provider
         .DataSource = Path
-        .DatabasePassword = Password
+        .UserID = User
+        .Filepassword = Filepassword
         .Prompt = PromptNever
-        .UserID = "Admin"
     End With
    
     Set AccessConnection = System.CreateInstance(New SqlCredentials, Virtual.Pointer, Virtual.Size)
 
 End Function
 
-Public Function CsvConnection(ByVal File As String, Optional ByVal Password As String) As SqlCredentials
+Public Function CsvConnection(ByVal File As String, Optional ByVal Filepassword As String) As SqlCredentials
     
     With myclass
         .ProviderTyp = CSV_File_Provider
         .DataSource = VBA.Left$(File, InStrRev(File, "\") - 1)
-        .DatabasePassword = Password
+        .Filepassword = Filepassword
         .Prompt = PromptNever
     End With
     
@@ -126,12 +134,12 @@ Public Function CsvConnection(ByVal File As String, Optional ByVal Password As S
 
 End Function
 
-Public Function ExcelConnection(ByVal File As String, Optional ByVal Password As String) As SqlCredentials
+Public Function ExcelConnection(ByVal File As String, Optional ByVal Filepassword As String) As SqlCredentials
     
     With myclass
         .ProviderTyp = Excel_Provider
         .DataSource = File
-        .DatabasePassword = Password
+        .Filepassword = Filepassword
         .Prompt = PromptNever
     End With
     

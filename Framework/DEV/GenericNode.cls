@@ -36,13 +36,13 @@ Public Property Get Count() As Long: Count = myclass.Count: End Property
 Public Property Let Count(ByVal Value As Long):  myclass.Count = Value: End Property
 
 Public Property Get Left() As GenericNode: Set Left = myclass.Left: End Property
-Public Property Set Left(ByVal L As GenericNode): Set myclass.Left = L: End Property
+Public Property Set Left(ByVal l As GenericNode): Set myclass.Left = l: End Property
 
 Public Property Get Right() As GenericNode: Set Right = myclass.Right: End Property
 Public Property Set Right(ByVal R As GenericNode): Set myclass.Right = R: End Property
 
 Public Property Get Parent() As GenericNode: Set Parent = myclass.Parent: End Property
-Public Property Set Parent(ByVal P As GenericNode): Set myclass.Parent = P: End Property
+Public Property Set Parent(ByVal p As GenericNode): Set myclass.Parent = p: End Property
 
 Public Property Get Value() As IGeneric: Set Value = myclass.Value: End Property
 Public Property Set Value(ByVal V As IGeneric): Set myclass.Value = V: End Property
@@ -53,53 +53,53 @@ End Sub
 
 Public Function InOrderNext() As GenericNode
     
-    Dim P As GenericNode
+    Dim p As GenericNode
     Dim N As GenericNode
     
     If myclass.Right Is Nothing = False Then
-        Set P = myclass.Right
-        Do While (P.Left Is Nothing) = False
-            Set P = P.Left
+        Set p = myclass.Right
+        Do While (p.Left Is Nothing) = False
+            Set p = p.Left
         Loop
     Else
-        Set P = myclass.Parent
+        Set p = myclass.Parent
         Set N = Me
-        Do While (P Is Nothing) = False
-            If (P.Right Is N) = False Then _
+        Do While (p Is Nothing) = False
+            If (p.Right Is N) = False Then _
                 Exit Do
             
-            Set N = P
-            Set P = P.Parent
+            Set N = p
+            Set p = p.Parent
         Loop
     End If
     
-    Set InOrderNext = P
+    Set InOrderNext = p
         
 End Function
 
 Public Function InOrderPrevious() As GenericNode
     
-    Dim P As GenericNode
+    Dim p As GenericNode
     Dim N As GenericNode
     
     If myclass.Left Is Nothing = False Then
-        Set P = myclass.Left
-        Do While (P.Right Is Nothing) = False
-            Set P = P.Right
+        Set p = myclass.Left
+        Do While (p.Right Is Nothing) = False
+            Set p = p.Right
         Loop
     Else
-        Set P = myclass.Parent
+        Set p = myclass.Parent
         Set N = Me
-        Do While (P Is Nothing) = False
-            If (P.Left Is N) = False Then _
+        Do While (p Is Nothing) = False
+            If (p.Left Is N) = False Then _
                 Exit Do
             
-            Set N = P
-            Set P = P.Parent
+            Set N = p
+            Set p = p.Parent
         Loop
     End If
     
-    Set InOrderPrevious = P
+    Set InOrderPrevious = p
         
 End Function
 

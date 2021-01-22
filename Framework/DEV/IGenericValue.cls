@@ -57,6 +57,15 @@ Public Enum ISqlDataType
     'AdArray = 0x2000 'A flag value combined with another data
 End Enum
 
+'Gibt an in welche Richtung der Parameter agiert. Die Konstanten stammen aus dem ParameterDirectoinEnum.
+Public Enum ISqlParameterDirection
+    ParamUnknown = 0 'Die Richtung des Parameters ist nicht bekannt.
+    ParamInput = 1 'Es handelt sich um einen Input-Parameter
+    ParamOutput = 2 'Es handelt sich um einen Output-Parameter
+    ParamInputOutput = 3 'Der Parameter ist sowohl Übergabeparameter, liefert aber auch einen Wert zurück.
+    ParamReturnValue = 4 'Beschreibt einen Return-Wert
+End Enum
+'
 Public Property Get ToValue() As Variant: ToValue = Null: End Property
 Attribute ToValue.VB_UserMemId = 0
 Public Property Get SqlType() As ISqlDataType: SqlType = IUnknown_Type: End Property
@@ -79,7 +88,8 @@ End Function
 Public Function ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput, Optional ByVal Name As String) As Object: End Function
 
 Private Sub Class_Initialize()
-    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+    If Not Me Is IGenericValue Then _
+        Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 End Sub
 
 'IGenericCompare IGenericValue Variant comparer

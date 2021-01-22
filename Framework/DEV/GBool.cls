@@ -7,7 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-Attribute VB_Ext_KEY = "Rubberduck" ,"Predeclared Class Module"
 '@Folder("<T>Class")
 Option Explicit
 '@PredeclaredId
@@ -38,40 +37,72 @@ Private myclass As Member
 
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GBool: End Property
 Public Property Get IsTrue() As Boolean: IsTrue = myclass.Value = TRUE_VALUE: End Property
-Public Property Get IsFalse() As Boolean: IsFalse = myclass.Value = FALSE_VALUE: End Property
 Public Property Get Value() As Byte: Value = myclass.Value: End Property
 Public Property Get Invert() As GBool: Set Invert = GBool.Build(IIf(myclass.Value = TRUE_VALUE, FALSE_VALUE, TRUE_VALUE)): End Property
 
-Public Function BuildTrue() As GBool
+Private Function BuildTrue() As GBool
     myclass.Value = TRUE_VALUE
     Set BuildTrue = New GBool: myclass = EmptyStructure
 End Function
 
-Public Function BuildFalse() As GBool
+Private Function BuildFalse() As GBool
     myclass.Value = FALSE_VALUE
-    Set BuildTrue = New GBool: myclass = EmptyStructure
+    Set BuildFalse = New GBool: myclass = EmptyStructure
 End Function
 
-Public Static Function Build(Optional ByVal Value As Variant = FALSE_VALUE) As GBool
+Public Function Build(Optional ByRef Value As Variant = FALSE_VALUE) As GBool
     
-    Dim TrueValue As GBool
-    Dim FalseValue As GBool
+    Static TrueValue As GBool
+    Static FalseValue As GBool
 
     If IsNull(Value) Then _
         Set Build = GBool: Exit Function
     
-    If CBool(Value) Then
-        If TrueValue Is Nothing Then _
-            Set TrueValue = Me.BuildTrue
-        Set Build = TrueValue
-    Else
-        If FalseValue Is Nothing Then _
-            Set FalseValue = Me.BuildFalse
-        Set Build = FalseValue
-    End If
+    Select Case VarType(Value)
+        Case VbVarType.vbByte, VbVarType.vbInteger, VbVarType.vbLong
+            If Value = TRUE_VALUE Then
+                If TrueValue Is Nothing Then _
+                    Set TrueValue = BuildTrue
+                Set Build = TrueValue
+            Else
+                If FalseValue Is Nothing Then _
+                    Set FalseValue = BuildFalse
+                Set Build = FalseValue
+            End If
+        Case VbVarType.vbBoolean
+            If Value = True Then
+                If TrueValue Is Nothing Then _
+                    Set TrueValue = BuildTrue
+                Set Build = TrueValue
+            Else
+                If FalseValue Is Nothing Then _
+                    Set FalseValue = BuildFalse
+                Set Build = FalseValue
+            End If
+        Case VbVarType.vbString
+            If VBA.StrComp(VBA.Trim$(Value), TRUE_STRING, vbTextCompare) = 0 Then
+                If TrueValue Is Nothing Then _
+                    Set TrueValue = BuildTrue
+                Set Build = TrueValue
+            Else
+                If FalseValue Is Nothing Then _
+                    Set FalseValue = BuildFalse
+                Set Build = FalseValue
+            End If
+        Case Else
+            If CBool(Value) Then
+                If TrueValue Is Nothing Then _
+                    Set TrueValue = BuildTrue
+                Set Build = TrueValue
+            Else
+                If FalseValue Is Nothing Then _
+                    Set FalseValue = BuildFalse
+                Set Build = FalseValue
+            End If
+    End Select
     
     myclass = EmptyStructure
-    
+   
 End Function
 
 Private Sub Class_Initialize()
@@ -145,10 +176,10 @@ End Function
 
 Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
-    Dim P As ADODB.Parameter
-    Set P = New ADODB.Parameter
+    Dim p As ADODB.Parameter
+    Set p = New ADODB.Parameter
     
-    With P
+    With p
         .Direction = Direction
         .Attributes = adParamNullable '64
         .Type = IGenericValue_VarType
@@ -156,7 +187,7 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = P
+    Set IGenericValue_ToSqlParameter = p
     
 End Function
 

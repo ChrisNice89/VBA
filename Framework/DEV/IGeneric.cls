@@ -26,6 +26,7 @@ Public Function Clone() As IGeneric: Set Clone = IGeneric: End Function
 Public Sub Dispose(): End Sub
 
 Private Sub Class_Initialize()
-    Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
+    If Not Me.IsDefault Then _
+        Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 End Sub
 
