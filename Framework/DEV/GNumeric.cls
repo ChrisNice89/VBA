@@ -73,6 +73,7 @@ Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIt
 
 End Property
 
+Public Property Get HasFraction() As Boolean: HasFraction = Me Is GNumeric: End Property
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GNumeric: End Property
 Public Property Get ToFormat(ByVal Format As NumericFormat) As String: ToFormat = myclass.Value: End Property
 Public Property Get Value() As Currency: Value = myclass.Value: End Property
