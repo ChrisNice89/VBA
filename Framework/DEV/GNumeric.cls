@@ -78,10 +78,9 @@ Public Property Get IsDefault() As Boolean: IsDefault = Me Is GNumeric: End Prop
 Public Property Get ToFormat(ByVal Format As NumericFormat) As String: ToFormat = myclass.Value: End Property
 Public Property Get Value() As Currency: Value = myclass.Value: End Property
 Public Property Get IsZero() As Boolean: IsZero = myclass.Value = 0: End Property
-'TODO see hashmap
-'Public Property Get IsPrime() As Boolean: End Property
-Public Property Get Fractional() As Double: Fractional = myclass.Value - Int(myclass.Value): End Property
-Public Property Get IsEven() As Boolean: IsEven = (myclass.Value - (Int(myclass.Value / 2) * 2)) = 0: End Property
+Public Property Get IsNegative() As Boolean: IsNegative = myclass.Value< 0: End Property
+Public Property Get Fraction() As Double: Fraction = myclass.Value - Int(myclass.Value): End Property
+Public Property Get IsEven() As Boolean: IsEven = (Me.Modulus(myclass.value,2@)=0): End Property
 
 Public Function Build(ByVal Value As Variant) As GNumeric
 Attribute Build.VB_UserMemId = 0
@@ -128,7 +127,7 @@ Public function IsPrime() as Boolean
   if myclass.value = 2 then _
     IsPrime=true:exit function
   
-  if me.modulus(myclass.value,2@)= 0 then _
+  if me.IsEven then _
     exit function
                                     
   if me.hasFraction then _
