@@ -73,7 +73,7 @@ Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIt
 
 End Property
 
-Public Property Get HasFraction() As Boolean: HasFraction = Me Is GNumeric: End Property
+Public Property Get HasFraction() As Boolean: HasFraction =not (Me.Modulus(myclass.value,1)=0): End Property
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GNumeric: End Property
 Public Property Get ToFormat(ByVal Format As NumericFormat) As String: ToFormat = myclass.Value: End Property
 Public Property Get Value() As Currency: Value = myclass.Value: End Property
@@ -118,12 +118,38 @@ Private Sub Class_Initialize()
     
 End Sub
 
-Public Function LOGn(ByVal Value As Long, Optional ByVal Base As Byte = 2) As Long: LOGn = Log(Value) / Log(Base): End Function
+Public function IsPrime() as Boolean
+    
+  dim i as long
+                    
+  if myclass.value <= 1 then _
+    exit function
+  
+  if myclass.value = 2 then _
+    IsPrime=true:exit function
+  
+  if me.modulus(myclass.value,2)= 0 then _
+    exit function
+                                    
+  if me.hasFraction then _
+    exit function
+  
+  for i =3 to vba.int(vba.sqr(myclass.value)) step 2
+    if me.modulus(myclass.value,i)=0 then _
+      exit function
+                                
+  next 
+
+  IsPrime=true    
+                                  
+end function
+Public Function LOGn(ByVal Base As Byte = 2) As Long: LOGn = Log(myclass.value) / Log(Base): End Function
 Public Function Multiply(ByVal Other As GNumeric) As GNumeric: Set Multiply = GNumeric.Build(myclass.Value * Other.Value): End Function
 Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
 Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
-Public Function Modulo(ByVal M As Double) As GNumeric: Set Modulo = GNumeric((myclass.Value - (Int(myclass.Value / M) * M))): End Function
-Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric(myclass.Value + Factor): End Function
+Public Function Modulus(Byref a As Currency,Byref b As Currency)  As Currency: Modulus =(a - (Int(a / b) * b)): End Function
+Public Function Modulo(ByVal Other As GNumeric) As GNumeric: Set Modulo = GNumeric.Build(me.Modulus(myclass.Value ,Other.value))): End Function                          
+Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric.Build(myclass.Value + Factor): End Function
 Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / MAXLONG) * MAXLONG)): End Function
 
 'IGeneric
