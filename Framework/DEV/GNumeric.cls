@@ -73,7 +73,7 @@ Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIt
 
 End Property
 
-Public Property Get HasFraction() As Boolean: HasFraction =not (Me.Modulus(myclass.value,1)=0): End Property
+Public Property Get HasFraction() As Boolean: HasFraction =not (Me.Modulus(myclass.value,1@)=0): End Property
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GNumeric: End Property
 Public Property Get ToFormat(ByVal Format As NumericFormat) As String: ToFormat = myclass.Value: End Property
 Public Property Get Value() As Currency: Value = myclass.Value: End Property
@@ -120,7 +120,7 @@ End Sub
 
 Public function IsPrime() as Boolean
     
-  dim i as long
+  dim i as currency
                     
   if myclass.value <= 1 then _
     exit function
@@ -128,7 +128,7 @@ Public function IsPrime() as Boolean
   if myclass.value = 2 then _
     IsPrime=true:exit function
   
-  if me.modulus(myclass.value,2)= 0 then _
+  if me.modulus(myclass.value,2@)= 0 then _
     exit function
                                     
   if me.hasFraction then _
