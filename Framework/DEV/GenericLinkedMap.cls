@@ -155,7 +155,7 @@ Public Function GetValues() As GenericArray
     
 End Function
 
-Private Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
+Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
@@ -163,44 +163,38 @@ Public Function Build( _
                         Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
                         Optional ByVal LoadFactor As Double = DEFAULT_LOADFACTOR) As GenericLinkedMap
     
-    If (Me Is GenericLinkedMap) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
+    Dim newMap As Member
+    Dim RawSize As Long
+
+    If (Capacity < 0) Then _
+       Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
-    With myclass
-        
-        If (Capacity < 0) Then _
-           Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
-        
-        If Not (LoadFactor >= 0.1 And LoadFactor <= 1#) Then _
-           Call System.Throw(Me, "Build").ArgOutOfRange("Not (LoadFactor >= 0.1 And LoadFactor <= 1#")
-        
-        .LoadFactor = LoadFactor
-        
-        Dim RawSize As Long
-        RawSize = Capacity / .LoadFactor
-        
-        If (RawSize > MAXPRIME) Then _
-           Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
-        
-        'InitialSize
-        .Size = getPrime(6)
-     
-        If RawSize > .Size Then _
-            .Size = getPrime(RawSize)
-            
-        Set .Buckets = GenericArray.Build(.Size)
-        Set .Head = New GenericBucket
-        Set .Head.PreviousBucket = .Head
-        Set .Head.nextBucket = .Head
-        
-        .LoadSize = Int(.LoadFactor * .Size)
-        
-        If Not (.LoadSize < .Size) Then _
-            Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")
-        
-    End With
+    If Not (LoadFactor >= 0.1 And LoadFactor <= 1#) Then _
+       Call System.Throw(Me, "Build").ArgOutOfRange("Not (LoadFactor >= 0.1 And LoadFactor <= 1#")
     
-    Set Build = System.CreateInstance(New GenericLinkedMap, VarPtr(myclass), LenB(myclass))
+    newMap.LoadFactor = LoadFactor
+    RawSize = Capacity / LoadFactor
+    
+    If (RawSize > MAXPRIME) Then _
+       Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
+    
+    'InitialSize
+    newMap.Size = getPrime(6)
+    
+    If RawSize > newMap.Size Then _
+        newMap.Size = getPrime(RawSize)
+        
+    Set newMap.Buckets = GenericArray.Build(newMap.Size)
+    Set newMap.Head = New GenericBucket
+    Set newMap.Head.PreviousBucket = newMap.Head
+    Set newMap.Head.nextBucket = newMap.Head
+    
+    newMap.LoadSize = Int(newMap.LoadFactor * newMap.Size)
+    
+    If Not (newMap.LoadSize < newMap.Size) Then _
+        Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")
+  
+    Set Build = System.CreateInstance(New GenericLinkedMap, VarPtr(newMap), LenB(newMap))
     
 End Function
 

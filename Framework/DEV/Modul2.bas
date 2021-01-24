@@ -32,11 +32,11 @@ Private Sub Heapify(Keys, Index() As Long, ByVal i1 As Long, ByVal N As Long)
       Loop
    End Sub
 
-Private Sub Exchange(A() As Long, ByVal i As Long, ByVal j As Long)
-   Dim Base As Long: Base = LBound(A)
-   Dim temp As Long: temp = A(Base + i)
-   A(Base + i) = A(Base + j)
-   A(Base + j) = temp
+Private Sub Exchange(a() As Long, ByVal i As Long, ByVal j As Long)
+   Dim Base As Long: Base = LBound(a)
+   Dim temp As Long: temp = a(Base + i)
+   a(Base + i) = a(Base + j)
+   a(Base + j) = temp
    End Sub
 
 Public Sub TestHeapSort()
@@ -51,13 +51,13 @@ Public Sub TestHeapSort()
 
 Private Function GenerateArrayWithRandomValues()
    Dim N As Long: N = 100
-   ReDim A(0 To N - 1) As String
+   ReDim a(0 To N - 1) As String
    Dim i As Long
-   A(0) = "c"
-    A(0) = ""
-    A(0) = "B"
-    A(0) = "a"
-   GenerateArrayWithRandomValues = A
+   a(0) = "c"
+    a(0) = ""
+    a(0) = "B"
+    a(0) = "a"
+   GenerateArrayWithRandomValues = a
    End Function
 
 Private Sub VerifyIndexIsSorted(Keys, Index)

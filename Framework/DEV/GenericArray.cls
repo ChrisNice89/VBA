@@ -209,123 +209,113 @@ Attribute ElementAt.VB_UserMemId = 0
 
 Public Function Build(ParamArray Indices() As Variant) As GenericArray
     
+    Dim newArray As Member
     Dim SAB() As SAFEARRAYBOUND
     Dim i As Long, UB As Long, LB As Long
                                                                                             
-    If (Me Is GenericArray) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
-    
     If IsMissing(Indices) Then _
         Call System.Throw(Me, "Public Function Build").InvalidInput("ParamArray Indices are missing")
     
     LB = 0&: UB = UBound(Indices)
     
 '    Dim x(10) As IGeneric 'fFeatures = FADF_DISPATCH-FADF_FIXEDSize-FADF_HAVEIID-FADF_STATIC
-    With myclass
-        .Elements = 1
-        ReDim .Indices(LB To UB)
-        ReDim SAB(LB To UB)
-        ReDim .Struct.Bounds(LB To UB)
+   
+    ReDim newArray.Indices(LB To UB)
+    ReDim SAB(LB To UB)
+    ReDim newArray.Struct.Bounds(LB To UB)
+    
+    newArray.Elements = 1
+    newArray.Struct.cDims = UB + 1
+    newArray.Struct.fFeatures = F_FEATURES
+    newArray.Struct.cbElements = ELEMENT_SIZE
         
-        .Struct.cDims = UB + 1
-        .Struct.fFeatures = F_FEATURES
-        .Struct.cbElements = ELEMENT_SIZE
-        
-        For i = LB To UB
-            If Not (Indices(i) > 0) Then _
-                Call System.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
+    For i = LB To UB
+        If Not (Indices(i) > 0) Then _
+            Call System.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
 
-            SAB(i).cElements = Indices(i)
-            SAB(i).lLbound = MIN_INDEX
-           
-            .Elements = .Elements * Indices(i)
-            .Indices(i) = MIN_INDEX
-            .Struct.Bounds(UB - i) = SAB(i)
-        Next i
+        SAB(i).cElements = Indices(i)
+        SAB(i).lLbound = MIN_INDEX
+       
+        newArray.Elements = newArray.Elements * Indices(i)
+        newArray.Indices(i) = MIN_INDEX
+        newArray.Struct.Bounds(UB - i) = SAB(i)
+    Next i
 
-        .Descriptor = SafeArrayCreateEx(ELEMENT_TYPE, .Struct.cDims, SAB(LB), ByVal 0&)
+    newArray.Descriptor = SafeArrayCreateEx(ELEMENT_TYPE, newArray.Struct.cDims, SAB(LB), ByVal 0&)
         
-        If (.Descriptor = 0) Then _
-            Call System.Throw(Me, "Public Function Build").InvalidOperation("Descriptor = 0")
+    If (newArray.Descriptor = 0) Then _
+        Call System.Throw(Me, "Public Function Build").InvalidOperation("Descriptor = 0")
         
-        Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(LB), .Struct.pvData))
-        Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
+    Call Catch(SafeArrayPtrOfIndex(ByVal newArray.Descriptor, newArray.Indices(LB), newArray.Struct.pvData))
+    Call CopyMemory(Dst:=ByVal VarPtrArray(newArray.Internal), Src:=ByVal VarPtr(newArray.Descriptor), Length:=POINTERSIZE)
+   
+    Set Build = System.CreateInstance(New GenericArray, VarPtr(newArray), LenB(newArray))
+    
+End Function
+
+Public Function Create(ParamArray GenericValues() As Variant) As GenericArray
+    
+    Dim i As Long
+    Dim Values As GenericArray
+    
+    If IsMissing(GenericValues) Then _
+        Call System.Throw(Me, "Public Function Create").Instantiation("ParamArray GenericValues are missing")
+    
+    Set Values = GenericArray.Build(UBound(GenericValues) + 1)
+    
+    With Values
+        For i = LBound(GenericValues) To UBound(GenericValues)
+            
+            If Not VarType(GenericValues(i)) = ELEMENT_TYPE Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+            
+            If (GenericValues(i) Is Nothing) Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Element is nothing")
+            
+            If Not TypeOf GenericValues(i) Is IGeneric Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+                
+            Set .ElementAt(i + MIN_INDEX) = GenericValues(i)
+          
+        Next
     End With
     
-    Set Build = System.CreateInstance(New GenericArray, VarPtr(myclass), LenB(myclass))
+    Set Create = Values
     
 End Function
 
 Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
         
     Dim i As Long, FormatBounds As Boolean
-    
-    If (Me Is GenericArray) = False Then _
-        Call System.Throw(Me, "Public Function BuildFrom").BuildExeption
+    Dim newArray As Member
     
     If Not VarType(Matrix) = VbVarType.vbArray + ELEMENT_TYPE Then _
         Call System.Throw(Me, "Public Function BuildWith").InvalidInput("Datatype {" & TypeName$(Matrix) & "} not allowed")
         
-    With myclass
-'        .Descriptor = Me.DescriptorOf(Matrix)
-        Call CopyMemory(Dst:=.Descriptor, Src:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE)
-        
-        If (.Descriptor = 0) Then _
-            Call System.Throw(Me, "Public Function BuildFrom").InvalidOperation("Descriptor = 0")
-          
-        Call LoadArrayStructure(.Struct, .Descriptor)
+    Call CopyMemory(Dst:=newArray.Descriptor, Src:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE)
     
-        myclass.Elements = 1
-        With .Struct
-            ReDim myclass.Indices(.cDims - 1)
-            For i = LBound(.Bounds) To UBound(.Bounds)
-                If Not .Bounds(i).lLbound = MIN_INDEX Then _
-                    FormatBounds = True
-                   
-                .Bounds(i).lLbound = MIN_INDEX
-                myclass.Elements = myclass.Elements * .Bounds(i).cElements
-            Next
-            
-            If FormatBounds Then _
-                Call CopyMemory(Dst:=ByVal myclass.Descriptor + 16&, Src:=ByVal VarPtr(.Bounds(0&)), Length:=.cDims * 8&)
-        
-        End With
-
-        Call ZeroMemory(Dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE) 'FillMemory(dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE, Fill:=0)
-        Call CopyMemory(Dst:=ByVal VarPtrArray(.Internal), Src:=ByVal VarPtr(.Descriptor), Length:=POINTERSIZE)
+    If (newArray.Descriptor = 0) Then _
+        Call System.Throw(Me, "Public Function BuildFrom").InvalidOperation("Descriptor = 0")
+    Call ZeroMemory(Dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE) 'FillMemory(dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE, Fill:=0)
     
-    End With
+    newArray.Elements = 1
+    Call LoadArrayStructure(newArray.Struct, newArray.Descriptor)
     
-    Set BuildFrom = System.CreateInstance(New GenericArray, VarPtr(myclass), LenB(myclass))
-    
-End Function
-
-Public Function BuildWith(ParamArray GenericValues() As Variant) As GenericArray
-    
-    Dim i As Long
-    
-    If (Me Is GenericArray) = False Then _
-        Call System.Throw(Me, "Public Function BuildWith").BuildExeption
-    
-    If IsMissing(GenericValues) Then _
-        Call System.Throw(Me, "Public Function BuildWith(").Instantiation("ParamArray GenericValues are missing")
-    
-    ReDim Values(MIN_INDEX To UBound(GenericValues) + MIN_INDEX) As IGeneric
-    
-    For i = LBound(GenericValues) To UBound(GenericValues)
-        
-        If Not VarType(GenericValues(i)) = ELEMENT_TYPE Then _
-            Call System.Throw(Me, "Public Function BuildWith").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
-        
-        If (GenericValues(i) Is Nothing) Then _
-            Call System.Throw(Me, "Public Function BuildWith").InvalidInput("Element is nothing")
-        
-        If TypeOf GenericValues(i) Is IGeneric Then _
-            Set Values(i + MIN_INDEX) = GenericValues(i)
-      
+    ReDim newArray.Indices(newArray.Struct.cDims - 1)
+    For i = LBound(newArray.Struct.Bounds) To UBound(newArray.Struct.Bounds)
+        If Not newArray.Struct.Bounds(i).lLbound = MIN_INDEX Then _
+            FormatBounds = True
+           
+        newArray.Struct.Bounds(i).lLbound = MIN_INDEX
+        newArray.Elements = newArray.Elements * newArray.Struct.Bounds(i).cElements
     Next
     
-    Set BuildWith = GenericArray.BuildFrom(Values)
+    If FormatBounds Then _
+        Call CopyMemory(Dst:=ByVal myclass.Descriptor + 16&, Src:=ByVal VarPtr(newArray.Struct.Bounds(0&)), Length:=newArray.Struct.cDims * 8&)
+        
+    Call LoadArray(newArray.Internal, newArray.Descriptor)
+
+    Set BuildFrom = System.CreateInstance(New GenericArray, VarPtr(newArray), LenB(newArray))
     
 End Function
 
@@ -459,20 +449,18 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
         Call System.Throw(Me, "Public Function SlizeColumn").InvalidOperation("Me.IsEmpty")
         
     Set Column = GenericArray.Build(Me.LengthOf(1))
-  
-    With Overlay
-        .cDims = 1
-        .fFeatures = F_FEATURES
-        .cbElements = ELEMENT_SIZE
-        ReDim .Bounds(0)
-        .Bounds(0).cElements = Me.LengthOf(1)
-        .Bounds(0).lLbound = MIN_INDEX
-        .pvData = Me.AdressOf(Index:=(Me.LengthOf(1) * Index))
-    End With
+   
+    Overlay.cDims = 1
+    Overlay.fFeatures = F_FEATURES
+    Overlay.cbElements = ELEMENT_SIZE
+    ReDim Overlay.Bounds(0)
+    Overlay.Bounds(0).cElements = Me.LengthOf(1)
+    Overlay.Bounds(0).lLbound = MIN_INDEX
+    Overlay.pvData = Me.AdressOf(Index:=(Me.LengthOf(1) * Index))
     
-    Call SwitchTo(Me.Descriptor, Overlay)
-    Call Catch(SafeArrayCopyData(ByVal Me.Descriptor, ByVal Column.Descriptor))
-    Call SwitchTo(Me.Descriptor, myclass.Struct)
+    Call SwitchTo(myclass.Descriptor, Overlay)
+    Call Catch(SafeArrayCopyData(ByVal myclass.Descriptor, ByVal Column.Descriptor))
+    Call SwitchTo(myclass.Descriptor, myclass.Struct)
 
     Set SlizeColumn = Column
     
@@ -2040,25 +2028,25 @@ Private Sub MinHeapWithItems_Comparer( _
     Set Items(lo + i - 1) = dItem
     
 End Sub
-Private Sub SwapArray(ByRef A() As IGeneric, ByVal i As Long, ByVal j As Long)
+Private Sub SwapArray(ByRef a() As IGeneric, ByVal i As Long, ByVal j As Long)
 
     Dim t As IGeneric
     
-    Set t = A(i): Set A(i) = A(j): Set A(j) = t
+    Set t = a(i): Set a(i) = a(j): Set a(j) = t
 
 End Sub
 
-Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As Long)
+Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal a As Long, ByVal B As Long)
     
     Dim t As IGeneric
     Dim Element As IGenericValue
     
-    If Not (A = B) Then
-        Set Element = Keys(A)
+    If Not (a = B) Then
+        Set Element = Keys(a)
         If Not (Element Is Nothing) Then
             If (Element.CompareTo(Keys(B)) = IsGreater) Then
-                Set t = Keys(A)
-                Set Keys(A) = Keys(B)
+                Set t = Keys(a)
+                Set Keys(a) = Keys(B)
                 Set Keys(B) = t
             End If
         End If
@@ -2066,47 +2054,47 @@ Private Sub SwapIfGreater(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As 
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal A As Long, ByVal B As Long)
+Private Sub SwapIfGreaterWithItem(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal B As Long)
     
     Dim t As IGeneric
     Dim Element As IGenericValue
    
-    If Not (A = B) Then
-        Set Element = Keys(A)
+    If Not (a = B) Then
+        Set Element = Keys(a)
         If Not (Element Is Nothing) Then
             If (Element.CompareTo(Keys(B)) = IsGreater) Then
-                Set t = Keys(A): Set Keys(A) = Keys(B): Set Keys(B) = t
-                Set t = Items(A): Set Items(A) = Items(B): Set Items(B) = t
+                Set t = Keys(a): Set Keys(a) = Keys(B): Set Keys(B) = t
+                Set t = Items(a): Set Items(a) = Items(B): Set Items(B) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreaterWithItem_Comparer(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal A As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
+Private Sub SwapIfGreaterWithItem_Comparer(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal a As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
     
     Dim t As IGeneric
    
-    If Not (A = B) Then
-        If Not (Keys(A) Is Nothing) Then
-            If (Comparer.Compare(Keys(A), Keys(B)) = IsGreater) Then
-                Set t = Keys(A): Set Keys(A) = Keys(B): Set Keys(B) = t
-                Set t = Items(A): Set Items(A) = Items(B): Set Items(B) = t
+    If Not (a = B) Then
+        If Not (Keys(a) Is Nothing) Then
+            If (Comparer.Compare(Keys(a), Keys(B)) = IsGreater) Then
+                Set t = Keys(a): Set Keys(a) = Keys(B): Set Keys(B) = t
+                Set t = Items(a): Set Items(a) = Items(B): Set Items(B) = t
             End If
         End If
     End If
     
 End Sub
 
-Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
+Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal a As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
     
     Dim t As IGeneric
    
-    If Not (A = B) Then
-        If Not (Keys(A) Is Nothing) Then
-            If (Comparer.Compare(Keys(A), Keys(B)) = IsGreater) Then
-                Set t = Keys(A)
-                Set Keys(A) = Keys(B)
+    If Not (a = B) Then
+        If Not (Keys(a) Is Nothing) Then
+            If (Comparer.Compare(Keys(a), Keys(B)) = IsGreater) Then
+                Set t = Keys(a)
+                Set Keys(a) = Keys(B)
                 Set Keys(B) = t
             End If
         End If
@@ -2114,11 +2102,11 @@ Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal A As Long, By
     
 End Sub
 
-Private Sub SwapWithItem(ByRef A() As IGeneric, ByRef B() As Object, ByVal i As Long, ByVal j As Long)
+Private Sub SwapWithItem(ByRef a() As IGeneric, ByRef B() As Object, ByVal i As Long, ByVal j As Long)
     
     Dim t As IGeneric
     
-    Set t = A(i): Set A(i) = A(j): Set A(j) = t
+    Set t = a(i): Set a(i) = a(j): Set a(j) = t
     Set t = B(i): Set B(i) = B(j): Set B(j) = t
     
 End Sub

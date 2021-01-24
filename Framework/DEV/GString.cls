@@ -116,12 +116,12 @@ Public Property Get Value() As String: Value = myclass.Value: End Property
 Public Function Build(ByVal Value As String, Optional ByVal Intern As Boolean = False) As GString
 Attribute Build.VB_UserMemId = 0
     
-    If (Me Is GString) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
-    
     If Value = vbNullString Then _
         Set Build = GString: Exit Function
     
+    If Not (Me Is GString) Then _
+        Set Build = GString.Build(Value): Exit Function
+        
     myclass.Length = Len(Value)
     
     If myclass.Length = 1 Then
@@ -160,7 +160,7 @@ End Sub
 
 Public Function ToLower() As GString: Set ToLower = GString.Build(LCase(myclass.Value)): End Function
 Public Function ToUpper() As GString: Set ToUpper = GString.Build(UCase(myclass.Value)): End Function
-Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myclass.Value, Find, ReplaceWith)): End Function
+Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString.Build(VBA.Replace$(myclass.Value, Find, ReplaceWith)): End Function
 Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myclass.Value Like Pattern): End Function
 Public Function StartsWith(ByVal RegEx As String) As Boolean: StartsWith = (myclass.Value Like ("%" & RegEx)): End Function
 Public Function EndsWith(ByVal RegEx As String) As Boolean: EndsWith = (myclass.Value Like (RegEx & "%")): End Function
@@ -189,42 +189,40 @@ Public Function CountChar(ByVal c As String) As Long
     
 End Function
 
-Public Function Concat(ByVal Item As IGeneric, Optional ByVal Delimiter = vbNullString) As GString
+Public Function Insert(ByVal Index As Long, Text As String) As GString
+
+    If Index < 1 Then _
+        Index = 1
     
-    Dim Other As GString
-    
-    If Item Is Nothing Then _
+    If myclass.Length < Index Then _
+        Index = myclass.Length + 1
+
+    Set Insert = GString.Build(VBA.Mid$(myclass.Value, 1, Index - 1) _
+                        & Text _
+                        & VBA.Mid$(myclass.Value, Index, myclass.Length - Index + 1))
+
+
+End Function
+
+Public Function Concat(ByVal Other As GString, Optional ByVal Delimiter = vbNullString) As GString
+   
+    If Other Is Nothing Then _
         Set Concat = Me: Exit Function
-    
-    If TypeOf Item Is GString Then _
-        Set Other = Item
-            
-    If Not Me Is GString Then
-        If Not Other Is Nothing Then
-            Set Concat = GString(myclass.Value & Delimiter & Other.Value)
-        Else
-            Set Concat = GString(myclass.Value & Delimiter & Item.ToString)
-        End If
-    Else 'Static default call
-        If Not Other Is Nothing Then
-            Set Concat = Item.Clone ' must be a Gstring ;)
-        Else
-            Set Concat = GString(Item.ToString)
-        End If
-    End If
+        
+    Set Concat = GString.Build(myclass.Value & Delimiter & Other.Value)
     
 End Function
 
-Public Function Sequence(ByVal Repeat As Long, ByVal Text As String, Optional ByVal Delimiter As String = vbNullString) As GString
+Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVal Delimiter As String = vbNullString) As GString
     
     Dim i As Long
-    ReDim strings(Repeat - 1) As String
+    ReDim strings(Number - 1) As String
     
     For i = LBound(strings) To UBound(strings)
         strings(i) = Text
     Next
     
-    Set Sequence = GString.Build(VBA.Join$(strings, Delimiter))
+    Set Repeat = GString.Build(VBA.Join$(strings, Delimiter))
     
 End Function
 

@@ -85,6 +85,9 @@ Public Property Get IsEven() As Boolean: IsEven = (Me.Modulus(myclass.Value, 2@)
 Public Function Build(ByVal Value As Currency) As GNumeric
 Attribute Build.VB_UserMemId = 0
     
+    If Not (Me Is GNumeric) Then _
+        Set Build = GNumeric.Build(Value): Exit Function
+        
     myclass.Value = Value
     Set Build = New GNumeric: myclass = EmptyStructure
 
@@ -162,7 +165,7 @@ Public Function LOGn(ByVal Base As Byte) As Long: LOGn = Log(myclass.Value) / Lo
 Public Function Multiply(ByVal Other As GNumeric) As GNumeric: Set Multiply = GNumeric.Build(myclass.Value * Other.Value): End Function
 Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
 Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
-Public Function Modulus(ByRef A As Currency, ByRef B As Currency) As Currency: Modulus = (A - (Int(A / B) * B)): End Function
+Public Function Modulus(ByRef a As Currency, ByRef B As Currency) As Currency: Modulus = (a - (Int(a / B) * B)): End Function
 Public Function Modulo(ByVal Other As GNumeric) As GNumeric: Set Modulo = GNumeric.Build(Me.Modulus(myclass.Value, Other.Value)): End Function
 Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric.Build(myclass.Value + Factor): End Function
 Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / MAXLONG) * MAXLONG)): End Function

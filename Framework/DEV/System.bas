@@ -78,7 +78,7 @@ Public Function ClassName(ByRef Instance As IGeneric) As String: ClassName = "<"
 Public Sub Dispose(ByVal Instance As IGeneric): Call Instance.Dispose: End Sub
 Public Function Clone(ByVal Instance As IGeneric) As IGeneric: Set Clone = Instance.Clone: End Function
 Public Function Generic(ByRef Instance As IGeneric) As IGeneric: Set Generic = Instance: End Function
-Public Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
+Public Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = (a - (Int(a / m) * m)): End Function
 Public Function DecreSystemnt(ByRef i As Long) As Long: i = (Not -i): DecreSystemnt = i: End Function
 Public Function IncreSystemnt(ByRef i As Long) As Long: i = (-(Not i)): IncreSystemnt = i: End Function
 Public Function RIGHTSHIFT(ByVal Value As Long, Shift As Byte) As Double: RIGHTSHIFT = Value / (2& ^ Shift): End Function

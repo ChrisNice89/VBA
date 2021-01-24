@@ -94,18 +94,18 @@ End Sub
 
 'IGenericCompare IGenericValue Variant comparer
 Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long: IGenericComparer_GetHashCode = Obj.HashValue: End Function
-Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult
+Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult
 
     Dim x As IGenericValue, y As IGenericValue
     Dim i As Variant, j As Variant
     
-    If A Is Nothing Then _
+    If a Is Nothing Then _
         IGenericComparer_Compare = IIf(B Is Nothing, CompareResult.IsEqual, CompareResult.IsLower): Exit Function
     
     If B Is Nothing Then _
         IGenericComparer_Compare = CompareResult.IsGreater: Exit Function
         
-    Set x = A: i = x.ToValue: Set y = B: j = y.ToValue
+    Set x = a: i = x.ToValue: Set y = B: j = y.ToValue
     
     Select Case True
         Case i > j: IGenericValue_CompareTo = IsGreater
@@ -115,7 +115,7 @@ Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGener
 
 End Function
 
-Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
+Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal B As IGeneric) As Boolean
 
     If x Is Nothing = False Then _
         IGenericComparer_Equals = x.Equals(y): Exit Function

@@ -181,25 +181,52 @@ End Sub
 
 Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As GenericList
     
-    If (Me Is GenericList) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
-
+    Dim newList As Member
+    
     If (Capacity < 0) Then _
         Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
 
-    With myclass
-        .SortOrder = Ascending
-        Set .Items = GenericArray.Build(Capacity)
+    newList.SortOrder = Ascending
+    Set newList.Items = GenericArray.Build(Capacity)
+  
+    Set Build = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
+    
+End Function
+
+Public Function Create(ParamArray GenericValues() As Variant) As GenericList
+
+    Dim i As Long
+    Dim Values As GenericArray
+    
+    If IsMissing(GenericValues) Then _
+        Call System.Throw(Me, "Public Function Create").Instantiation("ParamArray GenericValues are missing")
+    
+    Set Values = GenericArray.Build(UBound(GenericValues) + 1)
+    
+    With Values
+        For i = LBound(GenericValues) To UBound(GenericValues)
+            
+            If Not VarType(GenericValues(i)) = vbObject Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+            
+            If (GenericValues(i) Is Nothing) Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Element is nothing")
+            
+            If Not TypeOf GenericValues(i) Is IGeneric Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+                
+            Set .ElementAt(i + .LowerBound) = GenericValues(i)
+          
+        Next
     End With
     
-    Set Build = System.CreateInstance(New GenericList, VarPtr(myclass), LenB(myclass))
+    Set Create = AsList(Values)
     
 End Function
 
 Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
     
-    If (Me Is GenericList) = False Then _
-        Call System.Throw(Me, "Public Function BuildFrom").BuildExeption
+    Dim newList As Member
     
     If (Collection Is Nothing) Then _
         Call System.Throw(Me, "Public Function BuildFrom").IsNothing("(Collection Is Nothing)")
@@ -207,32 +234,28 @@ Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
     If (Collection.Count < 0) Then _
         Call System.Throw(Me, "Build").ArgOutOfRange("Collection.Count < 0")
         
-    With myclass
-        .SortOrder = Ascending
-        If (Collection Is Nothing) = False Then
-            Set .Items = GenericArray.Build(Collection.Count)
-            Call Collection.CopyTo(GArray:=.Items, ArrayIndex:=.Items.LowerBound)
-            .Size = Collection.Count
-        End If
-    End With
-    
-    Set BuildFrom = System.CreateInstance(New GenericList, VarPtr(myclass), LenB(myclass))
+    newList.SortOrder = Ascending
+    If (Collection Is Nothing) = False Then
+        Set newList.Items = GenericArray.Build(Collection.Count)
+        Call Collection.CopyTo(GArray:=newList.Items, ArrayIndex:=newList.Items.LowerBound)
+        newList.Size = Collection.Count
+    End If
+   
+    Set BuildFrom = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
     
 End Function
 
-Public Function BuildWith(Items As GenericArray, Optional ByVal MakeCopy As Boolean) As GenericList
+Private Function AsList(ByRef Items As GenericArray) As GenericList
+
+    Dim newList As Member
     
-    If (Me Is GenericList) = False Then _
-        Call System.Throw(Me, "Public Function BuildWith").BuildExeption
+    newList.SortOrder = Ascending
+    Set newList.Items = Items
+    newList.Size = Items.Length
+    Set Items = Nothing
     
-'    If MakeCopy Then _
-'        Set Items = System.Clone(Items)
-        
-    Set myclass.Items = Items
-    myclass.Size = Items.Length
-    
-    Set BuildWith = System.CreateInstance(New GenericList, VarPtr(myclass), LenB(myclass))
-    
+    Set AsList = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
+
 End Function
 
 Private Sub Class_Terminate()
@@ -440,7 +463,7 @@ Public Function GetRange(ByVal StartIndex As Long, ByVal EndIndex As Long) As Ge
         Call .CopyArrays(SrcArray:=myclass.Items, SrcIndex:=StartIndex, DstArray:=Items, DstIndex:=Items.LowerBound, Elements:=Items.Length)
     End With
     
-    Set GetRange = GenericList.BuildWith(Items)
+    Set GetRange = AsList(Items)
    
 End Function
 
@@ -486,12 +509,12 @@ Public Function IsEqual(ByVal first As IGenericReadOnlyList, ByVal second As IGe
     If Not first.Count = second.Count Then _
         Exit Function
     
-    Dim A As IGenericIterator, B As IGenericIterator
+    Dim a As IGenericIterator, B As IGenericIterator
     Dim i As IGeneric, j As IGeneric
     
-    Set A = first.Iterator: Set B = second.Iterator
+    Set a = first.Iterator: Set B = second.Iterator
     
-    Do While (A.HasNext(i) And B.HasNext(j))
+    Do While (a.HasNext(i) And B.HasNext(j))
 
         If Not (i Is Nothing) Then
             If i.Equals(j) = False Then _

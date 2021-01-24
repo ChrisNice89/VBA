@@ -287,7 +287,7 @@ Public Sub TestSql()
 '    Call Sql.Execute(CreateTables.Test)
 
     Call sql.InsertInto("TEST", _
-                    GenericArray.BuildWith( _
+                    GenericArray.Create( _
                                                 GNumeric(111), _
                                                 GDateTime(#1/1/1900#), _
                                                 GString("Testlauf"), _
@@ -358,7 +358,7 @@ End Sub
 Sub testArrayConstructor()
 
     Dim List As GenericList
-    Set List = GenericList.BuildWith(GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   "), GDateTime(VBA.Now)))
+    Set List = GenericList.Create(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   "), GDateTime(VBA.Now))
     
     Dim Element As IGeneric
     With List.Iterator

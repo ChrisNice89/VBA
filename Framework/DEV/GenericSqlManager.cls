@@ -394,7 +394,7 @@ Public Sub InsertInto(ByVal TableName As String, ByVal Parameters As IGenericRea
   
     With GString 'Used a trick here to avoid .Sequence(Parameters.Count, "?").ToArray !
         Set sql = .Build("INSERT INTO " & TableName & " VALUES (") _
-                  .Concat(.Join(.Sequence(Parameters.Count, "?"), ",")) _
+                  .Concat(.Join(.Repeat(Parameters.Count, "?"), ",")) _
                   .Concat(.Build(")"))
     End With
 

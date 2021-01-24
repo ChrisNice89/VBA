@@ -68,7 +68,10 @@ End Function
 
 Public Function Build(ByVal Value As Boolean) As GBool
 Attribute Build.VB_UserMemId = 0
- 
+    
+    If Not (Me Is GBool) Then _
+        Set Build = GBool.Build(Value): Exit Function
+        
     If Value = True Then
         Set Build = BuildTrue
     Else

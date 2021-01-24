@@ -77,15 +77,46 @@ Public Property Get Count() As Long: Count = SizeOf(myclass.Root): End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
 
 Public Function Build(Optional ByVal Comparer As IGenericComparer) As GenericSortedSet
-    
-    If (Me Is GenericSortedSet) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
+        
+    Dim newSet As Member
     
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
     
-    Set myclass.Comparer = Comparer
-    Set Build = System.CreateInstance(New GenericSortedSet, VarPtr(myclass), LenB(myclass))
+    Set newSet.Comparer = Comparer
+    Set Build = System.CreateInstance(New GenericSortedSet, VarPtr(newSet), LenB(newSet))
+    
+End Function
+
+Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As GenericSortedSet
+        
+    Dim SortedSet As GenericSortedSet
+    Dim i As Long
+    
+    If IsMissing(GenericValues) Then _
+        Call System.Throw(Me, "Public Function Create").Instantiation("ParamArray GenericValues are missing")
+        
+    If Comparer Is Nothing Then _
+        Set Comparer = IGenericComparer
+    
+    Set SortedSet = GenericSortedSet.Build(Comparer)
+     
+    For i = LBound(GenericValues) To UBound(GenericValues)
+        
+        If Not VarType(GenericValues(i)) = vbObject Then _
+            Call System.Throw(Me, "Public Function Create").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+        
+        If (GenericValues(i) Is Nothing) Then _
+            Call System.Throw(Me, "Public Function Create").InvalidInput("Element is nothing")
+        
+        If Not TypeOf GenericValues(i) Is IGeneric Then _
+            Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+            
+        Call SortedSet.Add(GenericValues(i))
+        
+    Next
+    
+    Set Create = SortedSet
     
 End Function
 
@@ -297,11 +328,14 @@ Private Function InOrderPrevious(ByVal Node As GenericNode) As GenericNode
 
 End Function
 
-Public Sub AddAll(ByVal Sequence As IGenericIterator)
+Public Sub AddAll(ByVal Collection As IGenericCollection)
     
     Dim Element As IGeneric
-
-    With Sequence
+    
+    If Collection Is Nothing Then _
+        Exit Sub
+        
+    With Collection.Iterator
         Do While .HasNext(Element): Call Me.Add(Element, True): Loop
     End With
 

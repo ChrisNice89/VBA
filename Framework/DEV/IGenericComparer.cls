@@ -26,9 +26,9 @@ Public Function GetHashCode(ByVal Obj As IGeneric) As Long
     If Not Obj Is Nothing Then _
         GetHashCode = Obj.HashValue
 End Function
-Public Function Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult
+Public Function Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult
     
-    If A Is Nothing Then _
+    If a Is Nothing Then _
         IGenericComparer_Compare = IIf(B Is Nothing, CompareResult.IsEqual, CompareResult.IsLower): Exit Function
     
     If B Is Nothing Then _
@@ -36,15 +36,15 @@ Public Function Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResu
         
     Dim x As IGenericValue, y As IGenericValue
     'try cast
-    Set x = A: Set y = B
+    Set x = a: Set y = B
     Compare = x.CompareTo(y): Exit Function
 
 End Function
 
-Public Function Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
+Public Function Equals(ByVal a As IGeneric, ByVal B As IGeneric) As Boolean
     
-    If A Is Nothing = False Then _
-        IGenericComparer_Equals = A.Equals(B): Exit Function
+    If a Is Nothing = False Then _
+        IGenericComparer_Equals = a.Equals(B): Exit Function
     
     If B Is Nothing = False Then _
         IGenericComparer_Equals = False: Exit Function

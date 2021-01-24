@@ -230,8 +230,7 @@ End Property
 
 Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY, Optional ByVal Comparer As IGenericComparer) As GenericSortedList
     
-    If (Me Is GenericSortedList) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
+    Dim newList As Member
     
     If (Capacity < 0) Then _
         Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
@@ -239,44 +238,38 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY, Option
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
     
-    With myclass
-        .SortOrder = Ascending
-        Set .Comparer = Comparer
-        Set .Keys = GenericArray.Build(Capacity)
-        Set .Values = GenericArray.Build(Capacity)
-    End With
-   
-    Set Build = System.CreateInstance(New GenericSortedList, VarPtr(myclass), LenB(myclass))
+    newList.SortOrder = Ascending
+    Set newList.Comparer = Comparer
+    Set newList.Keys = GenericArray.Build(Capacity)
+    Set newList.Values = GenericArray.Build(Capacity)
+
+    Set Build = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
     
 End Function
 
 Public Function BuildFrom(ByVal Dictionary As IGenericDictionary, Optional ByVal Comparer As IGenericComparer) As GenericSortedList
     
-    If (Me Is GenericSortedList) = False Then _
-        Call System.Throw(Me, "Public Function BuildFrom").BuildExeption
+    Dim newList As Member
     
     If (Dictionary Is Nothing) Then _
         Call System.Throw(Me, "Public Function BuildFrom").IsNothing("(Dictionary Is Nothing)")
     
+    newList.SortOrder = Ascending
+    
     If Comparer Is Nothing Then _
         Set Comparer = IGenericValue.Comparer
-        
-    With myclass
-        .SortOrder = Ascending
-        
-        Set .Comparer = Comparer
-        Set .Keys = GenericArray.Build(Dictionary.Count)
-        Set .Values = GenericArray.Build(Dictionary.Count)
-        
-        Call Dictionary.CopyOf(t:=KeyData, GArray:=.Keys, ArrayIndex:=.Keys.LowerBound)
-        Call Dictionary.CopyOf(t:=ValueData, GArray:=.Values, ArrayIndex:=.Values.LowerBound)
-        
-        Call GenericArray.SortGenericArrays(Keys:=.Keys, Items:=.Values, Index:=.Keys.LowerBound, Length:=.Keys.Length, Comparer:=myclass.Comparer, Order:=myclass.SortOrder)
-        .Size = Dictionary.Count
     
-    End With
-   
-    Set BuildFrom = System.CreateInstance(New GenericSortedList, VarPtr(myclass), LenB(myclass))
+    Set newList.Comparer = Comparer
+    Set newList.Keys = GenericArray.Build(Dictionary.Count)
+    Set newList.Values = GenericArray.Build(Dictionary.Count)
+    
+    Call Dictionary.CopyOf(t:=KeyData, GArray:=newList.Keys, ArrayIndex:=newList.Keys.LowerBound)
+    Call Dictionary.CopyOf(t:=ValueData, GArray:=newList.Values, ArrayIndex:=newList.Values.LowerBound)
+    
+    Call GenericArray.SortGenericArrays(Keys:=newList.Keys, Items:=newList.Values, Index:=newList.Keys.LowerBound, Length:=newList.Keys.Length, Comparer:=newList.Comparer, Order:=newList.SortOrder)
+    newList.Size = Dictionary.Count
+    
+    Set BuildFrom = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
     
 End Function
 
