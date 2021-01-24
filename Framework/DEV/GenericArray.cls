@@ -419,9 +419,9 @@ Private Function IsValidAdress(ByVal Pointer As LongPtr) As Boolean
 
 End Function
 
-Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef S As SAFEARRAYSTRUCT)
-    Call CopyMemory(Dst:=ByVal Descriptor, Src:=ByVal VarPtr(S), Length:=16&)
-    Call CopyMemory(Dst:=ByVal Descriptor + 16&, Src:=ByVal VarPtr(S.Bounds(LBound(S.Bounds))), Length:=S.cDims * 8&)
+Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef s As SAFEARRAYSTRUCT)
+    Call CopyMemory(Dst:=ByVal Descriptor, Src:=ByVal VarPtr(s), Length:=16&)
+    Call CopyMemory(Dst:=ByVal Descriptor + 16&, Src:=ByVal VarPtr(s.Bounds(LBound(s.Bounds))), Length:=s.cDims * 8&)
 End Sub
 
 Private Sub Class_Terminate()
@@ -796,7 +796,7 @@ Public Sub Transpose()
     Dim ptrT1 As LongPtr, ptrT2 As LongPtr
     Dim t1() As ObjectTransfer, t2() As ObjectTransfer
     Dim TotalSize As Long
-    Dim i As Long, j As Long, M As Long, N As Long
+    Dim i As Long, j As Long, m As Long, N As Long
     
     If (Me.IsEmpty) Then _
         Call System.Throw(Me, "Public Sub Transpose").InvalidOperation("SafeArray not allocated")
@@ -805,11 +805,11 @@ Public Sub Transpose()
         Call System.Throw(Me, "Public Sub Transpose").InvalidOperation("Rank <> 2")
         
     With myclass.Struct
-        M = .Bounds(1).cElements
+        m = .Bounds(1).cElements
         N = .Bounds(0).cElements
         
-        ReDim t1(1 To M, 1 To N)
-        ReDim t2(1 To N, 1 To M)
+        ReDim t1(1 To m, 1 To N)
+        ReDim t2(1 To N, 1 To m)
 
         ptrT1 = VarPtr(t1(1, 1))
         ptrT2 = VarPtr(t2(1, 1))
@@ -2124,8 +2124,9 @@ Private Sub SwapWithItem(ByRef A() As IGeneric, ByRef B() As Object, ByVal i As 
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericArray: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericArray: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GenericArray: End Property
 
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property

@@ -298,9 +298,9 @@ Public Function BuildExcelConnection(ByVal File As String, Optional ByVal Filepa
     
 End Function
 
-Public Sub Prepare(ByVal Command As ADODB.Command, ByVal Sql As String, ByVal Options As ISqlQueryType)
+Public Sub Prepare(ByVal Command As ADODB.Command, ByVal sql As String, ByVal Options As ISqlQueryType, Optional ByVal Parameters As IGenericReadOnlyList)
 
-    Sql = VBA.Trim$(Sql)
+    sql = VBA.Trim$(sql)
     
     With Command
         If (Options And ISqlQueryType.NamedParameter) = ISqlQueryType.NamedParameter Then _
@@ -310,54 +310,61 @@ Public Sub Prepare(ByVal Command As ADODB.Command, ByVal Sql As String, ByVal Op
             .Prepared = True
             
         If (Options And ISqlQueryType.StoredProc) = ISqlQueryType.StoredProc Then
-            .CommandText = Sql
+            .CommandText = sql
             .CommandType = ISqlCommandType.CmdStoredProc
         Else
-            .CommandText = IIf(VBA.Right$(Sql, 1) = ";", Sql, Sql & ";")
+            .CommandText = IIf(VBA.Right$(sql, 1) = ";", sql, sql & ";")
             .CommandType = ISqlCommandType.CMDText
         End If
     End With
     
+    Dim Value As IGenericValue
+    If Not Parameters Is Nothing Then
+        With Parameters.Iterator
+            Do While .HasNext(Value)
+                Call Command.Parameters.Append(Value.ToSqlParameter)
+            Loop
+        End With
+    End If
+
 End Sub
 
 Public Function ExecuteSchema(ByVal Schema As ISqlDBSchema, ParamArray Args() As Variant) As ADODB.Recordset
     
-    Dim rs As ADODB.Recordset
+    Dim Rs As ADODB.Recordset
     
     With CreateConnection(myclass.Credentials)
         Call .Open
         
         If IsMissing(Args) Then
-            Set rs = .OpenSchema(Schema)
+            Set Rs = .OpenSchema(Schema)
         Else
-            Set rs = .OpenSchema(Schema, Args)
+            Set Rs = .OpenSchema(Schema, Args)
         End If
         
         Call .Close
         
     End With
     
-    RaiseEvent Result(rs)
+    RaiseEvent Result(Rs)
     
-    Set ExecuteSchema = rs
+    Set ExecuteSchema = Rs
     
 End Function
 
-Public Sub Execute(ByVal Sql As String, Optional ByVal Options As ISqlQueryType)
-  
-    Dim Cmd As ADODB.Command
-    Set Cmd = New ADODB.Command
+Public Function ExecuteRowMapper(ByVal sql As String, Optional ByVal Parameters As IGenericReadOnlyList) As IGenericIterator
     
-    Dim AffectedRecords As Long
+    Dim Cmd As ADODB.Command
+    Dim Rs As ADODB.Recordset
     
     If Database Is Nothing Then _
         Set Database = CreateConnection(myclass.Credentials)
     
-    Debug.Print Database.State
     If Not (Database.State And ISqlObjectState.IsOpen_State) = ISqlObjectState.IsOpen_State Then _
         Call Database.Open(Options:=IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
     
-    Call Me.Prepare(Cmd, Sql, Options)
+    Set Cmd = New ADODB.Command
+    Call Me.Prepare(Cmd, sql, ReturnRecords, Parameters)
     
     Do While Database.State And ISqlObjectState.IsConnecting_State
         If DEBUG_MODE Then _
@@ -367,13 +374,56 @@ Public Sub Execute(ByVal Sql As String, Optional ByVal Options As ISqlQueryType)
     Set Cmd.ActiveConnection = Database
     
     On Error Resume Next
-    If (Options And ISqlQueryType.ReturnRecords) = ISqlQueryType.ReturnRecords Then
-        Call Me.CreateRecordset(ISqlRecodsetType.Disconnected_Recordset).Open(Cmd, , , , IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
-    Else
-        Call Cmd.Execute(AffectedRecords, , 128 + IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
-    End If
+        Set Rs = Me.CreateRecordset(ISqlRecodsetType.Disconnected_Recordset)
+        Call Rs.Open(Cmd, , , , IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
+    
+        Do While Cmd.State And ISqlObjectState.IsExecuting_State
+            If DEBUG_MODE Then _
+                Debug.Print "is executing..."
+        Loop
     On Error GoTo 0
+   
+    Set ExecuteRowMapper = Me.RowMapper(Rs)
 
+End Function
+
+Public Sub InsertInto(ByVal TableName As String, ByVal Parameters As IGenericReadOnlyList)
+
+    Dim sql As GString
+    Dim i As Long
+  
+    With GString 'Used a trick here to avoid .Sequence(Parameters.Count, "?").ToArray !
+        Set sql = .Build("INSERT INTO " & TableName & " VALUES (") _
+                  .Concat(.Join(.Sequence(Parameters.Count, "?"), ",")) _
+                  .Concat(.Build(")"))
+    End With
+
+    Call Me.Execute(sql.Value, Parameters)
+    
+End Sub
+
+Public Sub Execute(ByVal sql As String, Optional ByVal Parameters As IGenericReadOnlyList)
+  
+    Dim Cmd As ADODB.Command
+    Dim AffectedRecords As Long
+    
+    If Database Is Nothing Then _
+        Set Database = CreateConnection(myclass.Credentials)
+    
+    If Not (Database.State And ISqlObjectState.IsOpen_State) = ISqlObjectState.IsOpen_State Then _
+        Call Database.Open(Options:=IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
+        
+    Set Cmd = New ADODB.Command
+    Call Me.Prepare(Cmd, sql, 0, Parameters)
+    
+    Do While Database.State And ISqlObjectState.IsConnecting_State
+        If DEBUG_MODE Then _
+            Debug.Print "is connecting..."
+    Loop
+    
+    Set Cmd.ActiveConnection = Database
+    Call Cmd.Execute(AffectedRecords, , 128 + IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
+ 
 End Sub
 
 Private Function Indexes(ByVal Table As String) As ADODB.Recordset
@@ -400,12 +450,12 @@ Private Function TableStructure(ByVal Table As String) As ADODB.Recordset
     Set TableStructure = Me.ExecuteSchema(SchemaColumns, Empty, Empty, Table, Empty) '.ToArray("COLUMN_NAME"))
 End Function
 
-Public Function CreateRecordset(Optional ByVal Setting As ISqlRecodsetType = ISqlRecodsetType.Default_Recordset) As ADODB.Recordset
+Public Function CreateRecordset(ByVal Setting As ISqlRecodsetType) As ADODB.Recordset
 
-    Dim rs As ADODB.Recordset
-    Set rs = New ADODB.Recordset
-
-    With rs
+    Dim Rs As ADODB.Recordset
+    Set Rs = New ADODB.Recordset
+    
+    With Rs
         Select Case Setting
             Case ISqlRecodsetType.ReadOnly_Recordset
                 .CursorLocation = ISqlCursorLocation.UseServer
@@ -438,16 +488,16 @@ Public Function CreateRecordset(Optional ByVal Setting As ISqlRecodsetType = ISq
         End Select
     End With
 
-    Set CreateRecordset = rs
+    Set CreateRecordset = Rs
    
 End Function
 
-Private Function ImportQuery(ByVal Source As ADODB.Connection, ByVal Sql As String, ByVal Table As String) As String
+Private Function ImportQuery(ByVal Source As ADODB.Connection, ByVal sql As String, ByVal Table As String) As String
     
     Dim vCommandParts As Variant
     Dim External As Variant
 
-    vCommandParts = Split(Sql, " FROM ", 2, vbTextCompare)
+    vCommandParts = Split(sql, " FROM ", 2, vbTextCompare)
     External = Split(vCommandParts(1), " WHERE ", 2)
     External(0) = ExternalLink(Source, External(0))
     vCommandParts(1) = Join$(External, " ")
@@ -462,12 +512,12 @@ Private Function ImportQuery(ByVal Source As ADODB.Connection, ByVal Sql As Stri
     
 End Function
 
-Private Function ExportQuery(ByVal Source As ADODB.Connection, ByVal Sql As String, ByVal Table As String) As String
+Private Function ExportQuery(ByVal Source As ADODB.Connection, ByVal sql As String, ByVal Table As String) As String
     
     Dim vCommandParts As Variant
     Dim External As Variant
      
-    vCommandParts = Split(Sql, " FROM ", 2, vbTextCompare)
+    vCommandParts = Split(sql, " FROM ", 2, vbTextCompare)
      
 '    If Source.CreateAdapter.TableExists(Table) Then
 '        vCommandParts(0) = "INSERT INTO " & ExternalLink(Source, Table) & Space$(1) & vCommandParts(0)
@@ -573,7 +623,7 @@ Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Con
         .Properties("Persist Security Info") = False
         .Properties("Prompt") = Credentials.Prompt
         
-        Dim p As ADODB.Property
+        Dim P As ADODB.Property
         If DEBUG_MODE Then
 '            Debug.Print "Provider :: " & .Provider
 '            For Each p In .Properties
@@ -682,7 +732,7 @@ Private Sub Database_Disconnect(adStatus As ADODB.EventStatusEnum, ByVal pConnec
 End Sub
 
 Private Sub Database_WillExecute(Source As String, CursorType As ADODB.CursorTypeEnum, LockType As ADODB.LockTypeEnum, Options As Long, adStatus As ADODB.EventStatusEnum, ByVal pCommand As ADODB.Command, ByVal pRecordset As ADODB.Recordset, ByVal pConnection As ADODB.Connection)
-    
+      
     If DEBUG_MODE Then _
         Debug.Print "Private Sub Database_WillExecute"
     
@@ -696,7 +746,6 @@ Private Sub Database_ExecuteComplete(ByVal RecordsAffected As Long, ByVal pError
         Debug.Print "Private Sub Database_ExecuteComplete"
     
     myclass.Locks = myclass.Locks - 1
-    
     If pError Is Nothing Then
         
         If Not pRecordset Is Nothing Then
@@ -715,12 +764,13 @@ Private Sub Database_ExecuteComplete(ByVal RecordsAffected As Long, ByVal pError
     
     If CLOSE_CONNECTION_IMMEDIATELY And myclass.Locks = 0 Then _
         Call pConnection.Close
-   
+    
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericSqlManager: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSqlManager: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GenericSqlManager: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
@@ -746,52 +796,55 @@ Private Function EmptyStructure() As Member: End Function
 
 'IGenericIterator
 Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
-
+    
+    Dim newClass As Member
     Dim Field As ADODB.Field
     Dim i As Long
-  
+
     If (Records Is Nothing) Then _
         Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records Is Nothing)")
     
-    If (Records.State = ISqlObjectState.IsClosed_State) Then _
-        Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
+'    If (Records.State = ISqlObjectState.IsClosed_State) Then _
+'        Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
     
-    With myclass.Iterator
-        Set .Records = Records
-        
-        Do While (.Records.State And ISqlObjectState.IsExecuting_State) = ISqlObjectState.IsExecuting_State
-            Debug.Print "Records fetching...."
+    Set newClass.Iterator.Records = Records
+    With newClass.Iterator.Records
+    
+        Do While (.State And ISqlObjectState.IsExecuting_State) = ISqlObjectState.IsExecuting_State
+            If DEBUG_MODE Then _
+                Debug.Print "is fetching..."
         Loop
         
-        .HasRows = Not (.Records.BOF Or .Records.EOF)
-        
-        ReDim .Converter(.Records.Fields.Count - 1)
-        
-        For i = 0 To .Records.Fields.Count - 1
-            Select Case .Records.Fields(i).Type
-                Case Is = ISqlDataType.Boolean_Type: Set .Converter(i) = GString '("Yes/No")
-                Case Is = ISqlDataType.Binary_Type: Set .Converter(i) = GString
-                Case Is = ISqlDataType.Numeric_Type: Set .Converter(i) = GString
-                Case Is = ISqlDataType.Single_Type: Set .Converter(i) = GString
-                Case Is = ISqlDataType.Currency_Type: Set .Converter(i) = GString '("Currency")
-                Case Is = ISqlDataType.Double_Type: Set .Converter(i) = GString
-                Case Is = ISqlDataType.Decimal_Type: Set .Converter(i) = GString
-                Case Is = ISqlDataType.SmallInt_Type: Set .Converter(i) = GString '("#")
-                Case Is = ISqlDataType.Integer_Type: Set .Converter(i) = GString '("#")
-                Case Is = ISqlDataType.UnsignedTinyInt_Type: Set .Converter(i) = GString '("#")
-                Case Is = ISqlDataType.BigInt_Type: Set .Converter(i) = GString
-                Case Is = ISqlDataType.Date_Type: Set .Converter(i) = GString
-                Case Is = ISqlDataType.VarWChar_Type: Set .Converter(i) = GString
-                Case Is = ISqlDataType.LongVarWChar_Type: Set .Converter(i) = GString '203 Gibt eine lange Null-terminierte Unicode-Zeichenfolgenwert an.
-                Case Else
-                    Set .Converter(i) = GString
-            End Select
-        Next
-        
-        .HasLoaded = True
+        If .State = ISqlObjectState.IsOpen_State Then
+            newClass.Iterator.HasRows = Not (.BOF Or .EOF)
+            
+            ReDim newClass.Iterator.Converter(.Fields.Count - 1)
+            
+            For i = 0 To .Fields.Count - 1
+                Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type
+                Select Case .Fields(i).Type
+                    Case Is = ISqlDataType.Boolean_Type: Set newClass.Iterator.Converter(i) = GBool
+                    Case Is = ISqlDataType.Char_Type: Set newClass.Iterator.Converter(i) = GString
+                    Case Is = ISqlDataType.Numeric_Type: Set newClass.Iterator.Converter(i) = GNumeric
+                    Case Is = ISqlDataType.Single_Type: Set newClass.Iterator.Converter(i) = GNumeric
+                    Case Is = ISqlDataType.Currency_Type: Set newClass.Iterator.Converter(i) = GNumeric
+                    Case Is = ISqlDataType.Double_Type: Set newClass.Iterator.Converter(i) = GString
+                    Case Is = ISqlDataType.Decimal_Type: Set newClass.Iterator.Converter(i) = GNumeric
+                    Case Is = ISqlDataType.Integer_Type: Set newClass.Iterator.Converter(i) = GNumeric
+                    Case Is = ISqlDataType.BigInt_Type: Set newClass.Iterator.Converter(i) = GNumeric
+                    Case Is = ISqlDataType.Date_Type: Set newClass.Iterator.Converter(i) = GDateTime
+                    Case Is = ISqlDataType.VarWChar_Type: Set newClass.Iterator.Converter(i) = GString
+                    Case Is = ISqlDataType.LongVarChar_Type: Set newClass.Iterator.Converter(i) = GString
+                    Case Is = ISqlDataType.LongVarWChar_Type: Set newClass.Iterator.Converter(i) = GString '203 Gibt eine lange Null-terminierte Unicode-Zeichenfolgenwert an.
+                    Case Else
+                        Set newClass.Iterator.Converter(i) = GString
+                End Select
+            Next
+        End If
     End With
     
-    Set RowMapper = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
+    newClass.Iterator.HasLoaded = True
+    Set RowMapper = System.CreateInstance(New GenericSqlManager, VarPtr(newClass), LenB(newClass))
     
 End Function
 
@@ -808,7 +861,7 @@ Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
             LB = Row.LowerBound
             
             For i = 0 To .Count - 1
-                Set Row.ElementAt(LB + i) = myclass.Iterator.Converter(i).Create(.Item(i).Value)
+                Set Row.ElementAt(LB + i) = myclass.Iterator.Converter(i).Convert(.Item(i).Value)
             Next
         End With
         

@@ -1,6 +1,25 @@
 Attribute VB_Name = "CreateTables"
 Option Compare Database
 
+Public Function Test() As String
+
+     With New Stringbuilder
+        .Append "CREATE TABLE TEST ( "
+        .Append "[ID] INT IDENTITY(1,1),"
+        .Append "[KNE] INT ," 'PRIMARY KEY
+        .Append "[DATUM] DATETIME,"
+        .Append "[KATEGORIE] CHAR(20),"
+        .Append "[BETRAG] NUMERIC(18,4),"
+        .Append "[BESCHREIBUNG] VARCHAR(MAX),"
+        .Append "[STATUS] BIT "
+        .Append " )"
+        
+        Test = .ToString
+    
+    End With
+    
+End Function
+
 Public Function Überblick() As String
 
      With New Stringbuilder

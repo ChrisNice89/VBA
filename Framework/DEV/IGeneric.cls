@@ -11,6 +11,7 @@ Attribute VB_Exposed = True
 Option Explicit
 '@Folder "Base"
 
+Public Property Get ClassName() As String: ClassName = TypeName$(Me): End Property
 Public Property Get IsDefault() As Boolean: IsDefault = True: End Property
 Public Property Get Default() As IGeneric: Set Default = IGeneric: End Property
 Public Property Get VirtualPointer() As LongPtr: End Property

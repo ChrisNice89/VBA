@@ -22,9 +22,9 @@ Implements IGenericIterator
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
 
-Private Const MAXVALUE As Double = 922337203685477#
+Private Const MAXVALUE As Currency = 922337203685477@
 Private Const MAXLONG As Long = 2 ^ 31 - 1
-Private Const NUMERIC_SCALE As Long = 4
+Private Const NUMERIC_SCALE As Long = 8
 Private Const PRECISION As Long = 4
 
 Public Enum NumericFormat
@@ -53,7 +53,7 @@ End Type
 Private myclass As Member
 Private Formats() As String
 
-Public Property Get Min() As Currency: Min = -922337203685477#: End Property
+Public Property Get min() As Currency: min = -922337203685477@: End Property
 Public Property Get Max() As Currency: Max = MAXVALUE: End Property
 
 Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIterator
@@ -73,23 +73,19 @@ Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIt
 
 End Property
 
-Public Property Get HasFraction() As Boolean: HasFraction =not (Me.Modulus(myclass.value,1@)=0): End Property
+Public Property Get HasFraction() As Boolean: HasFraction = Not (Me.Modulus(myclass.Value, 1@) = 0): End Property
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GNumeric: End Property
 Public Property Get ToFormat(ByVal Format As NumericFormat) As String: ToFormat = myclass.Value: End Property
 Public Property Get Value() As Currency: Value = myclass.Value: End Property
 Public Property Get IsZero() As Boolean: IsZero = myclass.Value = 0: End Property
-Public Property Get IsNegative() As Boolean: IsNegative = myclass.Value< 0: End Property
-Public Property Get Fraction() As Double: Fraction = myclass.Value - Int(myclass.Value): End Property
-Public Property Get IsEven() As Boolean: IsEven = (Me.Modulus(myclass.value,2@)=0): End Property
+Public Property Get IsNegative() As Boolean: IsNegative = myclass.Value < 0: End Property
+Public Property Get Fraction() As Currency: Fraction = myclass.Value - Int(myclass.Value): End Property
+Public Property Get IsEven() As Boolean: IsEven = (Me.Modulus(myclass.Value, 2@) = 0): End Property
 
-Public Function Build(ByVal Value As Variant) As GNumeric
+Public Function Build(ByVal Value As Currency) As GNumeric
 Attribute Build.VB_UserMemId = 0
     
-    If IsNull(Value) Then _
-        Set Build = GNumeric: Exit Function
-  
     myclass.Value = Value
-
     Set Build = New GNumeric: myclass = EmptyStructure
 
 End Function
@@ -117,43 +113,64 @@ Private Sub Class_Initialize()
     
 End Sub
 
-Public function IsPrime() as Boolean
+Public Function IsPrime() As Boolean
     
-  dim i as currency
+  Dim i As Currency
                     
-  if myclass.value <= 1 then _
-    exit function
+  If myclass.Value <= 1 Then _
+    Exit Function
   
-  if myclass.value = 2 then _
-    IsPrime=true:exit function
+  If myclass.Value = 2 Then _
+    IsPrime = True: Exit Function
   
-  if me.IsEven then _
-    exit function
+  If Me.IsEven Then _
+    Exit Function
                                     
-  if me.hasFraction then _
-    exit function
+  If Me.HasFraction Then _
+    Exit Function
   
-  for i =3 to vba.int(vba.sqr(myclass.value)) step 2
-    if me.modulus(myclass.value,i)=0 then _
-      exit function
+  For i = 3 To VBA.Int(VBA.sqr(myclass.Value)) Step 2
+    If Me.Modulus(myclass.Value, i) = 0 Then _
+      Exit Function
                                 
-  next 
+  Next
 
-  IsPrime=true    
+  IsPrime = True
                                   
-end function
-Public Function LOGn(ByVal Base As Byte = 2) As Long: LOGn = Log(myclass.value) / Log(Base): End Function
+End Function
+'TODO Overflow
+'The floor() method rounds a number DOWNWARDS to the nearest integer
+Public Function Floor() As GNumeric
+    
+    Set Floor = Me
+    
+    If Floor.HasFraction Then _
+        Set Floor = GNumeric.Build(VBA.Int(myclass.Value))
+  
+End Function
+'TODO Overflow
+Public Function Ceiling() As GNumeric
+    
+    Set Ceiling = Me
+    
+    If Ceiling.HasFraction Then _
+        Set Ceiling = GNumeric.Build(VBA.Int(myclass.Value) + 1) '-VBA.Int(-myclass.Value)
+  
+End Function
+
+Public Function LOGn(ByVal Base As Byte) As Long: LOGn = Log(myclass.Value) / Log(Base): End Function
 Public Function Multiply(ByVal Other As GNumeric) As GNumeric: Set Multiply = GNumeric.Build(myclass.Value * Other.Value): End Function
 Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
 Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
-Public Function Modulus(Byref a As Currency,Byref b As Currency)  As Currency: Modulus =(a - (Int(a / b) * b)): End Function
-Public Function Modulo(ByVal Other As GNumeric) As GNumeric: Set Modulo = GNumeric.Build(me.Modulus(myclass.Value ,Other.value))): End Function                          
+Public Function Modulus(ByRef A As Currency, ByRef B As Currency) As Currency: Modulus = (A - (Int(A / B) * B)): End Function
+Public Function Modulo(ByVal Other As GNumeric) As GNumeric: Set Modulo = GNumeric.Build(Me.Modulus(myclass.Value, Other.Value)): End Function
 Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric.Build(myclass.Value + Factor): End Function
 Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / MAXLONG) * MAXLONG)): End Function
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.IsDefault: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GNumeric: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GNumeric: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = myclass.Value: End Property
@@ -184,12 +201,19 @@ Private Function IGeneric_ToString() As String: IGeneric_ToString = myclass.Valu
 'IGenericValue
 Private Property Get IGenericValue_VarType() As VbVarType: IGenericValue_VarType = vbCurrency: End Property
 Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
-Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Decimal_Type: End Property
+Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Numeric_Type: End Property
 Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue = myclass.Value: End Property
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
 Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Create(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Create = Me.Build(Value): End Function
+Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue
+
+     If IsNull(Value) Then _
+        Set IGenericValue_Convert = IGeneric_Default: Exit Function
+
+    Set IGenericValue_Convert = Me.Build(Value)
+    
+End Function
 
 Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
     
@@ -210,10 +234,10 @@ End Function
 
 Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = Direction
         .Attributes = adParamNullable '64
         .PRECISION = PRECISION
@@ -223,7 +247,7 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = p
+    Set IGenericValue_ToSqlParameter = P
     
 End Function
 

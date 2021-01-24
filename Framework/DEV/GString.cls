@@ -113,6 +113,51 @@ Public Function ToFormat(ByVal Format As StringFormat) As String
 End Function
 Public Property Get Value() As String: Value = myclass.Value: End Property
 
+Public Function Build(ByVal Value As String, Optional ByVal Intern As Boolean = False) As GString
+Attribute Build.VB_UserMemId = 0
+    
+    If (Me Is GString) = False Then _
+        Call System.Throw(Me, "Public Function Build").BuildExeption
+    
+    If Value = vbNullString Then _
+        Set Build = GString: Exit Function
+    
+    myclass.Length = Len(Value)
+    
+    If myclass.Length = 1 Then
+
+        Static Chars As GenericArray
+        If Chars Is Nothing Then _
+            Set Chars = GenericArray.Build(2 ^ 16)
+
+        Dim Char As GString
+        Dim Code As Long
+
+        Code = AscW(Value)
+        Set Char = Chars.ElementAt(Code)
+
+        If Char Is Nothing Then
+            myclass.Value = ChrW$(Code)
+            Set Char = New GString
+            Set Chars.ElementAt(Code) = Char
+            myclass = EmptyStructure
+        End If
+
+        Set Build = Char
+        Exit Function
+    End If
+
+    myclass.Value = Value
+    Set Build = New GString: myclass = EmptyStructure
+  
+End Function
+
+Private Sub Class_Initialize()
+    With GString
+        myclass.Value = .Value: myclass.Length = .Length
+    End With
+End Sub
+
 Public Function ToLower() As GString: Set ToLower = GString.Build(LCase(myclass.Value)): End Function
 Public Function ToUpper() As GString: Set ToUpper = GString.Build(UCase(myclass.Value)): End Function
 Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString(VBA.Replace$(myclass.Value, Find, ReplaceWith)): End Function
@@ -120,9 +165,13 @@ Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myclass.Va
 Public Function StartsWith(ByVal RegEx As String) As Boolean: StartsWith = (myclass.Value Like ("%" & RegEx)): End Function
 Public Function EndsWith(ByVal RegEx As String) As Boolean: EndsWith = (myclass.Value Like (RegEx & "%")): End Function
 Public Function Contains(ByRef Text As String) As Boolean: Contains = Not (Me.IndexOf(Text:=Text) = 0): End Function
-Public Function CompareToString(ByRef S As String) As CompareResult: CompareToString = StrComp(myclass.Value, S, vbBinaryCompare): End Function
+Public Function CompareToString(ByRef s As String) As CompareResult: CompareToString = StrComp(myclass.Value, s, vbBinaryCompare): End Function
 Public Function IndexOf(ByRef Text As String) As Long: IndexOf = InStr(1, myclass.Value, Text, vbTextCompare): End Function
-Public Function Iterator() As IGenericIterator: Set Iterator = GString.Build(myclass.Value): End Function
+Public Function Iterator() As IGenericIterator
+    Call IGenericIterator_Reset
+    Set Iterator = Me
+End Function
+
 Public Function CountChar(ByVal c As String) As Long
     
     Dim i As Long
@@ -140,7 +189,7 @@ Public Function CountChar(ByVal c As String) As Long
     
 End Function
 
-Public Function Concat(ByVal Item As IGeneric, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
+Public Function Concat(ByVal Item As IGeneric, Optional ByVal Delimiter = vbNullString) As GString
     
     Dim Other As GString
     
@@ -166,6 +215,19 @@ Public Function Concat(ByVal Item As IGeneric, Optional ByVal Delimiter = DEFAUL
     
 End Function
 
+Public Function Sequence(ByVal Repeat As Long, ByVal Text As String, Optional ByVal Delimiter As String = vbNullString) As GString
+    
+    Dim i As Long
+    ReDim strings(Repeat - 1) As String
+    
+    For i = LBound(strings) To UBound(strings)
+        strings(i) = Text
+    Next
+    
+    Set Sequence = GString.Build(VBA.Join$(strings, Delimiter))
+    
+End Function
+
 Public Function Split(ByVal Delimiter As String) As GenericArray
     
     Dim i As Long, LB As Long
@@ -178,7 +240,7 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     Set Parts = GenericArray.Build(UBound(strings) + 1)
     
     For i = LBound(strings) To UBound(strings)
-        Set Parts.ElementAt(i + LB) = GString(strings(i))
+        Set Parts.ElementAt(i + LB) = GString.Build(strings(i))
     Next
     
     Set Split = Parts
@@ -212,72 +274,25 @@ End Function
 
 Public Function Join(ByVal Values As IGenericReadOnlyList, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
-    Dim S As IGeneric
+    Dim s As IGeneric
     Dim i As Long
-    
+  
     If (Values Is Nothing) Then _
         Call System.Throw(Me, "Public Function Join").IsNothing("(Values Is Nothing)")
-    
+
     With Values
-        ReDim strings(.BaseIndex To .Count - .BaseIndex) As String
+        ReDim strings(.BaseIndex To .Count - .BaseIndex - 1) As String
         
         For i = .BaseIndex To .Count - 1 + .BaseIndex
-            Set S = .ElementAt(i)
-            If Not S Is Nothing Then _
-                strings(i - .BaseIndex) = S.ToString
+            Set s = .ElementAt(i)
+            If Not s Is Nothing Then _
+                strings(i - .BaseIndex) = s.ToString
         Next
     End With
     
-    Set Join = Me.Concat(GString(VBA.Join$(strings, Delimiter)))
+    Set Join = GString(VBA.Join$(strings, Delimiter))
     
 End Function
-
-Public Function Build(ByRef Value As Variant, Optional ByVal Intern As Boolean = False) As GString
-Attribute Build.VB_UserMemId = 0
-    
-    If (Me Is GString) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
-        
-    If IsNull(Value) Then _
-        Set Build = GString: Exit Function
-    
-    If Value = vbNullString Then _
-        Set Build = GString: Exit Function
-    
-    myclass.Length = Len(Value)
-    
-    If myclass.Length = 1 Then
-
-        Static Chars As GenericArray
-        If Chars Is Nothing Then _
-            Set Chars = GenericArray.Build(2 ^ 16)
-
-        Dim Char As GString
-        Dim Code As Long
-
-        Code = AscW(Value)
-        Set Char = Chars.ElementAt(Code)
-
-        If Char Is Nothing Then
-            myclass.Value = ChrW$(Code)
-            Set Char = New GString
-            Set Chars.ElementAt(Code) = Char
-        End If
-
-        Set Build = Char: myclass = EmptyStructure
-        Exit Function
-    End If
-
-    myclass.Value = Value
-    Set Build = New GString: myclass = EmptyStructure
-  
-End Function
-
-Private Sub Class_Initialize()
-    With GString
-        myclass.Value = .Value: myclass.Length = .Length
-    End With
-End Sub
 
 Public Function HashValueOf(ByRef Text As String) As Long
 
@@ -311,8 +326,9 @@ Public Function HashValueOf(ByRef Text As String) As Long
 End Function
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.IsDefault: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GString: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GString: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long
@@ -339,13 +355,13 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Not TypeOf Other Is GString Then _
         IGeneric_Equals = False: Exit Function
         
-    Dim S As GString: Set S = Other
+    Dim s As GString: Set s = Other
 
-    If (myclass.Length = S.Length) = False Then _
+    If (myclass.Length = s.Length) = False Then _
         Exit Function
 
 '    IGeneric_Equals = (StrComp(myclass.Pointer, S.Pointer, vbBinaryCompare) = 0)
-    IGeneric_Equals = (StrComp(myclass.Value, S.Value, vbBinaryCompare) = 0)
+    IGeneric_Equals = (StrComp(myclass.Value, s.Value, vbBinaryCompare) = 0)
 '    IGeneric_Equals = (StrComp(myclass.Bytes, S.Bytes, vbBinaryCompare) = 0)
 '    IGeneric_Equals = CSTR_EQUAL = CompareString(0&, NORM_IGNORESYMBOLS Or SORT_STRINGSORT, myclass.Value, myclass.Length, S.Value, S.Length)
 
@@ -357,10 +373,10 @@ Private Function IGenericValue_ToParameter( _
                                           Optional ByVal Name As GString, _
                                           Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As Variant
     
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = Direction
         .Name = Name.Value
         .Attributes = adParamNullable '64
@@ -369,7 +385,7 @@ Private Function IGenericValue_ToParameter( _
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToParameter = p
+    Set IGenericValue_ToParameter = P
     
 End Function
 
@@ -382,14 +398,21 @@ Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue =
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
 Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Create(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Create = Me.Build(Value): End Function
+Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue
+
+    If IsNull(Value) Then _
+        Set IGenericValue_Convert = IGeneric_Default: Exit Function
+
+    Set IGenericValue_Convert = GString.Build(Value)
+
+End Function
 Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
     
     If Other Is Nothing Then _
         IGenericValue_CompareTo = IsGreater: Exit Function
     
-    Dim S As GString: Set S = Other
-    IGenericValue_CompareTo = StrComp(myclass.Value, S.Value, vbTextCompare)
+    Dim s As GString: Set s = Other
+    IGenericValue_CompareTo = StrComp(myclass.Value, s.Value, vbTextCompare)
    
 '    IGenericValue_CompareTo = lstrcmpi(myclass.Value, S.Value)
     
@@ -399,10 +422,10 @@ Private Function IGenericValue_ToSqlParameter( _
                                                  Optional ByVal Direction As ISqlParameterDirection = 1&, _
                                                  Optional ByVal Name As String) As Object
     
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = Direction
         .Name = Name
         .Attributes = adParamNullable '64
@@ -411,7 +434,7 @@ Private Function IGenericValue_ToSqlParameter( _
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = p
+    Set IGenericValue_ToSqlParameter = P
     
 End Function
 

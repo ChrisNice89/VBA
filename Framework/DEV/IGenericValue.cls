@@ -68,12 +68,12 @@ End Enum
 '
 Public Property Get ToValue() As Variant: ToValue = Null: End Property
 Attribute ToValue.VB_UserMemId = 0
-Public Property Get SqlType() As ISqlDataType: SqlType = IUnknown_Type: End Property
+Public Property Get SqlType() As ISqlDataType: SqlType = Variant_Type: End Property
 Public Property Get VarType() As VbVarType: End Property
 Public Property Get Size() As Byte: End Property
 Public Property Get Instance() As IGeneric: Set Instance = Me: End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = IGenericComparer: End Property
-Public Function Create(ByVal Value As Variant) As IGenericValue: Set Create = Me: End Function
+Public Function Convert(ByVal Value As Variant) As IGenericValue: Set Create = Me: End Function
 Public Function CompareTo(ByVal Other As IGenericValue) As CompareResult
         
         If Other Is Nothing Then _
@@ -128,6 +128,7 @@ Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneri
 End Function
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = True: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = IGenericValue: End Property
 Private Property Get IGeneric_VirtualPointer() As LongPtr: End Property

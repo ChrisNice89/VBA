@@ -214,8 +214,9 @@ CleanFail:
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericThrowhelper: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericThrowhelper: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GenericThrowhelper: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = Virtual.Pointer: End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = Virtual.Size: End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property

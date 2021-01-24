@@ -4,14 +4,14 @@ Attribute VB_Name = "Modul1"
 
 Option Explicit
 
-Private Sql As GenericSqlManager
+Private sql As GenericSqlManager
 Private RandomList As GenericList
 
 Sub TestString()
     
     Dim Char As IGeneric
     
-    Dim S As String
+    Dim s As String
     Dim t As CTimer
     Set t = New CTimer
     Dim i As Long, N As Long
@@ -23,7 +23,7 @@ Sub TestString()
     
     t.StartCounter
     For i = 1 To N
-        Set newText = GString.Build("€tastatstastastsa" & i)
+        Set newText = GString.Build("abcdefghijklmnopqrstuvwxyz" & i)
 '        Debug.Print newText.ElementAt(5).Value
     Next
     Debug.Print t.TimeElapsed
@@ -36,12 +36,15 @@ Sub TestString()
     Next
     Debug.Print t.TimeElapsed
     
-'    With GString.Build("abcdefgh").ToArray.Reverse.Iterator
-'        Do While .HasNext(Char)
-'            Debug.Print Char.ToString
-'        Loop
-'    End With
-    
+    t.StartCounter
+    For i = 1 To 10
+        With GString("bcdefghijklmnopqrstuvwxyz").ToArray.Reverse.Iterator
+            Do While .HasNext(Char)
+    '            Debug.Print Char.ToString
+            Loop
+        End With
+    Next
+    Debug.Print t.TimeElapsed
 End Sub
 
 Sub TestCreaet()
@@ -53,8 +56,8 @@ Sub TestCreaet()
     Dim g As IGeneric
     
     t.StartCounter
-    For i = 1 To 10000
-        Set g = GString.Build(True)
+    For i = 1 To 1000
+        Set g = GBool.Build(True).Invert
 '        Result = g.IsRelatedTo(g)
     Next
     Debug.Print t.TimeElapsed
@@ -71,14 +74,14 @@ Sub TestListEquals()
     Dim tree As GenericSortedSet
     Set tree = GenericSortedSet.Build
     
-    Dim S As GString
+    Dim s As GString
     
     Dim i As Long
     t.StartCounter
     For i = 1 To 10
-        Set S = GString("Key: " & i)
-        Call tree.Add(S)
-        Call SortedList.Add(S, S)
+        Set s = GString("Key: " & i)
+        Call tree.Add(s)
+        Call SortedList.Add(s, s)
 '        Call GString.HashValueOf("asfethzrnasx fvfcsc" & i)
     Next
     Debug.Print t.TimeElapsed
@@ -278,15 +281,49 @@ Public Sub TestSql()
     Dim PW As String
     PW = "OpenSesame"
     
-    Set Sql = GenericSqlManager.BuildSqlConnection(ServerName:="192.168.2.112", InitialCatalog:="TEST", User:="SA", Password:="Specialguest89$")
-'    Set Sql = GenericSqlManager.Build(SqlCredentials.AccessConnection(Path:=Path, Filepassword:=PW), "SELECT * FROM CUSTOMERS", 0)
+    Set sql = GenericSqlManager.BuildSqlConnection(ServerName:="192.168.2.112", InitialCatalog:="TEST", User:="SA", Password:="Specialguest89$")
+'    Set Sql = GenericSqlManager.BuildAccessConnection(Path:=Path, Filepassword:=PW)
+    
+'    Call Sql.Execute(CreateTables.Test)
+
+    Call sql.InsertInto("TEST", _
+                    GenericArray.BuildWith( _
+                                                GNumeric(111), _
+                                                GDateTime(#1/1/1900#), _
+                                                GString("Testlauf"), _
+                                                GNumeric(103.51), _
+                                                GString("abcdefghijklmnopqrstuvwxyz"), _
+                                                GBool(1)) _
+                                            )
+
+
+
+
+
+
+
+
+
+'    Dim Row As GenericArray, Item As IGenericValue
+'    Dim Rows As IGenericIterator
+''
+'    Set Rows = Sql.ExecuteRowMapper("Select * FROM TEST WHERE KNE=?", GenericArray.BuildWith(GNumeric(101)))
+'    Do While Rows.HasNext(Row)
+'        With Row.Iterator
+'            Do While .HasNext(Item)
+'                Debug.Print Item.ToValue
+'            Loop
+'        End With
+'    Loop
+
+    
 '    Call Sql.Execute(CreateTables.Überblick)
 '    Call Sql.Execute(CreateTables.Normal)
 '    Call Sql.Execute(CreateTables.Intensiv)
-    Call Sql.Execute(CreateTables.Sanierung)
-    Call Sql.Execute(CreateTables.Abwicklung)
-    Call Sql.Execute(CreateTables.Paar)
-    Call Sql.Execute(CreateTables.Abstimmung)
+'    Call Sql.Execute(CreateTables.Sanierung)
+'    Call Sql.Execute(CreateTables.Abwicklung)
+'    Call Sql.Execute(CreateTables.Paar)
+'    Call Sql.Execute(CreateTables.Abstimmung)
     
 End Sub
 
@@ -321,7 +358,7 @@ End Sub
 Sub testArrayConstructor()
 
     Dim List As GenericList
-    Set List = GenericList.BuildWith(GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   "), GDate(VBA.Now)))
+    Set List = GenericList.BuildWith(GenericArray.BuildWith(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   "), GDateTime(VBA.Now)))
     
     Dim Element As IGeneric
     With List.Iterator
@@ -334,22 +371,22 @@ End Sub
 Sub TestArrayIterator2()
     
     Dim Char As IGeneric
-    Dim S As GString
-    Set S = GString("Ich bin ein Fuchs")
+    Dim s As GString
+    Set s = GString("Ich bin ein Fuchs")
     
-    With S.ToArray.Iterator
+    With s.ToArray.Iterator
         Do While .HasNext(Char)
             Debug.Print Char
         Loop
     End With
     
-    With S.Split(" ").Iterator
+    With s.Split(" ").Iterator
         Do While .HasNext(Char)
             Debug.Print Char
         Loop
     End With
     
-    Debug.Print S.ElementAt(1).Contains("i")
+    Debug.Print s.ElementAt(1).Contains("i")
     
 End Sub
 Sub TestArrayGetter()
@@ -588,20 +625,20 @@ Sub TestMaps()
         Call RandomList.Sort(Ascending, GenericPair)
     End If
  
-    Dim p As GenericPair
+    Dim P As GenericPair
     Dim Item As IGeneric
     
     Set t = New CTimer
     t.StartCounter
     For i = RandomList.BaseIndex To RandomList.Count - 1
-        Set p = RandomList(i)
-        Call Map.Add(p.Key, p.Value)
+        Set P = RandomList(i)
+        Call Map.Add(P.Key, P.Value)
     Next
     Debug.Print N & " :: "; t.TimeElapsed
 
     For i = RandomList.BaseIndex To RandomList.Count - 1
-        Set p = RandomList(i)
-        Set Item = Map.Item(p.Key)
+        Set P = RandomList(i)
+        Set Item = Map.Item(P.Key)
     Next
   
     Dim ga As GenericArray

@@ -58,14 +58,11 @@ End Property
 Public Function BuildSerial(ByVal day As Integer, ByVal month As Integer, ByVal Year As Integer) As GDate: Set BuildSerial = GDate(VBA.DateSerial(Year, month, day)): End Function
 Public Function BuildFromString(ByVal StringDate As String, ByVal Format As DateFormat) As GDate: Set BuildFromString = GDate(Me.Convert(StringDate, Format)): End Function
 
-Public Function Build(ByVal Value As Variant) As GDate
+Public Function Build(ByVal Value As Date) As GDate
 Attribute Build.VB_UserMemId = 0
     
-    If IsNull(Value) Then _
-        Set Build = GDate: Exit Function
     
     myclass.Value = Value
-    
     Set Build = New GDate: myclass = EmptyStructure
     
 End Function
@@ -112,7 +109,9 @@ Public Function DifferenceTo(ByVal d As GDate, ByVal i As DateInterval) As Long:
 Private Function IsValid(ByVal day As Integer, ByVal month As Integer, ByVal Year As Integer) As Boolean
 
 End Function
+
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.IsDefault: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GDate: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
@@ -147,7 +146,7 @@ Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue =
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
 Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Create(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Create = Me.Build(Value): End Function
+Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Convert = Me.Build(Value): End Function
 
 Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
     

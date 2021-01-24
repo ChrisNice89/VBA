@@ -251,49 +251,49 @@ End Function
 
 Private Function InOrderNext(ByVal Node As GenericNode) As GenericNode
     
-    Dim p As GenericNode
+    Dim P As GenericNode
     
     If Node Is Nothing Then _
         Exit Function
         
     If Node.Right Is Nothing = False Then
-        Set p = FindMinOf(Node.Right)
+        Set P = FindMinOf(Node.Right)
     Else
-        Set p = Node.Parent
-        Do While (p Is Nothing) = False
-            If (p.Right Is Node) = False Then _
+        Set P = Node.Parent
+        Do While (P Is Nothing) = False
+            If (P.Right Is Node) = False Then _
                 Exit Do
             
-            Set Node = p
-            Set p = p.Parent
+            Set Node = P
+            Set P = P.Parent
         Loop
     End If
     
-    Set InOrderNext = p
+    Set InOrderNext = P
         
 End Function
 
 Private Function InOrderPrevious(ByVal Node As GenericNode) As GenericNode
 
-    Dim p As GenericNode
+    Dim P As GenericNode
     
     If Node Is Nothing Then _
         Exit Function
         
     If (Node.Left Is Nothing) = False Then
-        Set p = FindMaxOf(Node.Left)
+        Set P = FindMaxOf(Node.Left)
     Else
-        Set p = Node.Parent
-        Do While (p Is Nothing) = False
-            If (p.Left Is Node) = False Then _
+        Set P = Node.Parent
+        Do While (P Is Nothing) = False
+            If (P.Left Is Node) = False Then _
                 Exit Do
             
-            Set Node = p
-            Set p = p.Parent
+            Set Node = P
+            Set P = P.Parent
         Loop
     End If
     
-    Set InOrderPrevious = p
+    Set InOrderPrevious = P
 
 End Function
 
@@ -992,8 +992,9 @@ Private Function CopyOf(ByVal GArray As GenericArray, ByVal ArrayIndex As Long, 
 End Function
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericSortedSet: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSortedSet: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GenericSortedSet: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property

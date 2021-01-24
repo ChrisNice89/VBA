@@ -70,8 +70,9 @@ Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneri
 End Function
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericPair: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericPair: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GenericPair: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long

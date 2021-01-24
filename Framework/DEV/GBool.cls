@@ -38,77 +38,50 @@ Private myclass As Member
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GBool: End Property
 Public Property Get IsTrue() As Boolean: IsTrue = myclass.Value = TRUE_VALUE: End Property
 Public Property Get Value() As Byte: Value = myclass.Value: End Property
-Public Property Get Invert() As GBool: Set Invert = GBool.Build(IIf(myclass.Value = TRUE_VALUE, FALSE_VALUE, TRUE_VALUE)): End Property
+Public Property Get Invert() As GBool: Set Invert = GBool.Build(IIf(myclass.Value = TRUE_VALUE, False, True)): End Property
 
-Private Function BuildTrue() As GBool
-    myclass.Value = TRUE_VALUE
-    Set BuildTrue = New GBool: myclass = EmptyStructure
+Private Static Function BuildTrue() As GBool
+    
+    Dim TrueValue As GBool
+    If TrueValue Is Nothing Then
+        myclass.Value = TRUE_VALUE
+        Set TrueValue = New GBool
+        myclass = EmptyStructure
+    End If
+    
+    Set BuildTrue = TrueValue
+    
 End Function
 
-Private Function BuildFalse() As GBool
-    myclass.Value = FALSE_VALUE
-    Set BuildFalse = New GBool: myclass = EmptyStructure
+Private Static Function BuildFalse() As GBool
+    
+    Dim FalseValue As GBool
+    If FalseValue Is Nothing Then
+        myclass.Value = FALSE_VALUE
+        Set FalseValue = New GBool
+        myclass = EmptyStructure
+    End If
+    
+    Set BuildFalse = FalseValue
+    
 End Function
 
-Public Function Build(Optional ByRef Value As Variant = FALSE_VALUE) As GBool
+Public Function Build(ByVal Value As Boolean) As GBool
+Attribute Build.VB_UserMemId = 0
+ 
+    If Value = True Then
+        Set Build = BuildTrue
+    Else
+        Set Build = BuildFalse
+    End If
     
-    Static TrueValue As GBool
-    Static FalseValue As GBool
-
-    If IsNull(Value) Then _
-        Set Build = GBool: Exit Function
-    
-    Select Case VarType(Value)
-        Case VbVarType.vbByte, VbVarType.vbInteger, VbVarType.vbLong
-            If Value = TRUE_VALUE Then
-                If TrueValue Is Nothing Then _
-                    Set TrueValue = BuildTrue
-                Set Build = TrueValue
-            Else
-                If FalseValue Is Nothing Then _
-                    Set FalseValue = BuildFalse
-                Set Build = FalseValue
-            End If
-        Case VbVarType.vbBoolean
-            If Value = True Then
-                If TrueValue Is Nothing Then _
-                    Set TrueValue = BuildTrue
-                Set Build = TrueValue
-            Else
-                If FalseValue Is Nothing Then _
-                    Set FalseValue = BuildFalse
-                Set Build = FalseValue
-            End If
-        Case VbVarType.vbString
-            If VBA.StrComp(VBA.Trim$(Value), TRUE_STRING, vbTextCompare) = 0 Then
-                If TrueValue Is Nothing Then _
-                    Set TrueValue = BuildTrue
-                Set Build = TrueValue
-            Else
-                If FalseValue Is Nothing Then _
-                    Set FalseValue = BuildFalse
-                Set Build = FalseValue
-            End If
-        Case Else
-            If CBool(Value) Then
-                If TrueValue Is Nothing Then _
-                    Set TrueValue = BuildTrue
-                Set Build = TrueValue
-            Else
-                If FalseValue Is Nothing Then _
-                    Set FalseValue = BuildFalse
-                Set Build = FalseValue
-            End If
-    End Select
-    
-    myclass = EmptyStructure
-   
 End Function
 
 Private Sub Class_Initialize()
     myclass.Value = GBool.Value
 End Sub
 
+Public Function ToBoolean() As Boolean: ToBoolean = IIf(myclass.Value = TRUE_VALUE, True, False): End Function
 Public Function ToFormat(ByVal Format As BooleanFormat) As String
 
     Select Case Format
@@ -120,7 +93,9 @@ Public Function ToFormat(ByVal Format As BooleanFormat) As String
     End Select
 
 End Function
+
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.IsDefault: End Property
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GBool: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
@@ -155,7 +130,39 @@ Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue =
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
 Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Create(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Create = Me.Build(Value): End Function
+Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue
+
+    If IsNull(Value) Then _
+        Set IGenericValue_Convert = IGeneric_Default: Exit Function
+    
+    Select Case VarType(Value)
+        Case VbVarType.vbByte, VbVarType.vbInteger, VbVarType.vbLong
+            If Value = TRUE_VALUE Then
+                Set IGenericValue_Convert = GBool.Build(True)
+            Else
+                Set IGenericValue_Convert = GBool.Build(False)
+            End If
+        Case VbVarType.vbBoolean
+            If Value = True Then
+                Set IGenericValue_Convert = GBool.Build(True)
+            Else
+                Set IGenericValue_Convert = GBool.Build(False)
+            End If
+        Case VbVarType.vbString
+            If VBA.StrComp(VBA.Trim$(Value), TRUE_STRING, vbTextCompare) = 0 Then
+                Set IGenericValue_Convert = GBool.Build(True)
+            Else
+                Set IGenericValue_Convert = GBool.Build(False)
+            End If
+        Case Else
+            If CBool(Value) Then
+                Set IGenericValue_Convert = GBool.Build(True)
+            Else
+                Set IGenericValue_Convert = GBool.Build(False)
+            End If
+    End Select
+
+End Function
 
 Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
     
@@ -176,10 +183,10 @@ End Function
 
 Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = Direction
         .Attributes = adParamNullable '64
         .Type = IGenericValue_VarType
@@ -187,7 +194,7 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = p
+    Set IGenericValue_ToSqlParameter = P
     
 End Function
 

@@ -157,7 +157,7 @@ Public Function GetValues() As GenericArray
 End Function
 
 Private Function EmptyBucket() As Bucket: End Function
-Private Function Modulo(ByVal A As Double, ByVal M As Double) As Long: Modulo = (A - (Int(A / M) * M)): End Function
+Private Function Modulo(ByVal A As Double, ByVal m As Double) As Long: Modulo = (A - (Int(A / m) * m)): End Function
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
@@ -283,13 +283,13 @@ Public Sub Remove(ByVal Key As IGeneric)
     
 End Sub
 
-Private Static Function getPrime(Optional ByVal Min As Long = 0) As Long
+Private Static Function getPrime(Optional ByVal min As Long = 0) As Long
     
-    Dim p As Long
+    Dim P As Long
     Dim i As Long
     Dim Primes() As Long
     
-    If Min < 0 Then _
+    If min < 0 Then _
         Call System.Throw(Me, "getPrime").InvalidInput("Min < 0")
     
     If i = 0 Then
@@ -307,24 +307,24 @@ Private Static Function getPrime(Optional ByVal Min As Long = 0) As Long
         Next
     End If
     
-    For p = LBound(Primes) To UBound(Primes)
-        If Primes(p) >= Min Then _
-            getPrime = Primes(p): Exit Function
+    For P = LBound(Primes) To UBound(Primes)
+        If Primes(P) >= min Then _
+            getPrime = Primes(P): Exit Function
     Next
     
-    For p = Min To MAXPRIME
-        If IsPrime(p) Then _
-            If (((p - 1) Mod HASHPRIME) = 0 = False) Then _
-                getPrime = p: Exit Function
+    For P = min To MAXPRIME
+        If IsPrime(P) Then _
+            If (((P - 1) Mod HASHPRIME) = 0 = False) Then _
+                getPrime = P: Exit Function
     Next
    
-    getPrime = Min
+    getPrime = min
     
 End Function
 
 Private Function IsPrime(ByVal Candidate As Long) As Boolean
     
-    Dim Limit As Long: Limit = Sqr(Candidate)
+    Dim Limit As Long: Limit = sqr(Candidate)
     Dim Divisor As Long
     
     If (Candidate And 1) <> 0 Then
@@ -552,8 +552,9 @@ Private Sub LoadIterator( _
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericMap: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericMap: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GenericMap: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property

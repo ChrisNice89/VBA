@@ -284,19 +284,19 @@ Private Sub Class_Terminate()
     Call IGeneric_Dispose
 End Sub
 
-Private Sub EnsureCapacity(ByVal Min As Long)
+Private Sub EnsureCapacity(ByVal min As Long)
     
     Dim newCapacity As Long
     
     With myclass.Keys
-        If (.Length < Min) Then
+        If (.Length < min) Then
             newCapacity = IIf(.Length = 0, DEFAULT_CAPACITY, .Length * 2)
             
             If (newCapacity > .MaxLength) Then _
                 newCapacity = .MaxLength
             
-            If (newCapacity < Min) Then _
-                newCapacity = Min
+            If (newCapacity < min) Then _
+                newCapacity = min
         
             Me.Capacity = newCapacity
         End If
@@ -508,9 +508,11 @@ Private Sub LoadIterator( _
     End With
     
 End Sub
+
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericSortedList: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericSortedList: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GenericSortedList: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property

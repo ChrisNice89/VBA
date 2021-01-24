@@ -151,10 +151,10 @@ End Sub
 
 Public Sub AddAll(ByVal Map As IGenericDictionary)
     
-    Dim p As GenericPair
+    Dim P As GenericPair
   
     With Map.IteratorOf(PairData) ' Copy
-        Do While .HasNext(p): Call Me.AddPair(p): Loop
+        Do While .HasNext(P): Call Me.AddPair(P): Loop
     End With
     
 End Sub
@@ -313,8 +313,9 @@ Private Sub LoadIterator( _
 End Sub
 
 'IGeneric
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is GenericOrderedMap: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = New GenericOrderedMap: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GenericOrderedMap: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
@@ -356,14 +357,14 @@ Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyL
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Count: End Property
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
-    Dim p As GenericPair
+    Dim P As GenericPair
     
     If (Index > myclass.Internal.Count) Then _
         Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index > myclass.Internal.Count)")
     
-    Set p = myclass.Internal(Index)
+    Set P = myclass.Internal(Index)
     
-    Set IGenericReadOnlyList_ElementAt = p.Value
+    Set IGenericReadOnlyList_ElementAt = P.Value
 
 End Property
 
@@ -397,7 +398,7 @@ Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGeneric
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
-    Dim p As GenericPair
+    Dim P As GenericPair
     
     With myclass.Iterator
        
@@ -410,16 +411,16 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             Exit Function
         End If
             
-        Set p = .Entries(InterlockedIncrement(.Index))
+        Set P = .Entries(InterlockedIncrement(.Index))
         
         If .Type = KeyData Then
-            Set .Current = p.Key
+            Set .Current = P.Key
         
         ElseIf .Type = ValueData Then
-            Set .Current = p.Value
+            Set .Current = P.Value
         
         Else
-            Set .Current = p
+            Set .Current = P
         End If
         
         Set Out = .Current
