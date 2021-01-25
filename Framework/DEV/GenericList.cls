@@ -638,7 +638,7 @@ Private Sub LoadIterator( _
     Iterator.StartIndex = StartIndex
     Iterator.Count = Count
     Iterator.Index = StartIndex - 1
-    Iterator.EndIndex = StartIndex + Count - 1&
+    Iterator.EndIndex = StartIndex + Count 
     Iterator.HasLoaded = True
     
 End Sub
@@ -718,19 +718,20 @@ Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterato
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     With myclass.Iterator
+    
         If .Index < .EndIndex Then
             Set .Current = .Items.ElementAt(InterlockedIncrement(.Index))
-            Set Out = .Current
-            IGenericIterator_HasNext = True
-            Exit Function
-        End If
-        
-        If .HasLoaded = False Then _
-            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+            Set Out= .Current
+            IGenericIterator_HasNext=True
             
-        Set .Current = Nothing
-        IGenericIterator_HasNext = False
-    
+        ElseIf .HasLoaded = False Then 
+               Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+        Else
+            set .current=nothing
+            Set Out= .Current
+            IGenericIterator_HasNext=false
+        end if
+     
     End With
     
 End Function
