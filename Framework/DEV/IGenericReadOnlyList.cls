@@ -9,7 +9,8 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 '@Folder("<T>Enumerable")
 
-Public Property Get BaseIndex() As Long: End Property
+Public Property Get Last() As Long: End Property
+Public Property Get First() As Long: End Property
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric: End Property
 Attribute ElementAt.VB_UserMemId = 0
 Public Property Get Count() As Long: End Property

@@ -30,7 +30,7 @@ Public Function Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResu
     
     If a Is Nothing Then _
         IGenericComparer_Compare = IIf(B Is Nothing, CompareResult.IsEqual, CompareResult.IsLower): Exit Function
-    
+
     If B Is Nothing Then _
         IGenericComparer_Compare = CompareResult.IsGreater: Exit Function
         

@@ -63,216 +63,6 @@ Sub TestCreaet()
     Debug.Print t.TimeElapsed
     
 End Sub
-Sub TestListEquals()
-    
-    Dim t As CTimer
-    Set t = New CTimer
-    
-    Dim SortedList As GenericSortedList
-    Set SortedList = GenericSortedList.Build
-    
-    Dim tree As GenericSortedSet
-    Set tree = GenericSortedSet.Build
-    
-    Dim s As GString
-    
-    Dim i As Long
-    t.StartCounter
-    For i = 1 To 10
-        Set s = GString("Key: " & i)
-        Call tree.Add(s)
-        Call SortedList.Add(s, s)
-'        Call GString.HashValueOf("asfethzrnasx fvfcsc" & i)
-    Next
-    Debug.Print t.TimeElapsed
-'    Call List.Sort(ascending)
-    
-    Debug.Print GenericList.IsEqual(SortedList, tree)
-    Debug.Print tree.IndexOf(GString("Key: " & i - 1))
-    Debug.Print SortedList.IndexOfKey(GString("Key: " & i - 1))
-    
-    
-    Debug.Print GString.Join(tree, ";").Value
-End Sub
-
-'Sub CreateTables()
-'
-'    Dim Stammdaten As Stringbuilder: Set Stammdaten = New Stringbuilder
-'    Dim Portfolio As Stringbuilder: Set Portfolio = New Stringbuilder
-'    Dim Normal As Stringbuilder: Set Normal = New Stringbuilder
-'    Dim Intensiv As Stringbuilder: Set Intensiv = New Stringbuilder
-'    Dim Sanierng As Stringbuilder: Set Sanierng = New Stringbuilder
-'    Dim Abwicklung As Stringbuilder: Set Abwicklung = New Stringbuilder
-'    Dim Paar As Stringbuilder: Set Paar = New Stringbuilder
-'
-'    With Portfolio
-'        .Append "CREATE TABLE LDRS_PORTFOLIO ( "
-'        .Append "[ID] AUTOINCREMENT,"
-'        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
-'        .Append "[NUMMER] TEXT,"
-'        .Append "[NAME] TEXT,"
-'        .Append "[PRÜFER] TEXT,"
-'        .Append "[TRANCHE] TEXT,"
-'        .Append "[PRÜFUNGSSCHWERPUNKT] BYTE,"
-'        .Append "[AUSWAHLGRUND] TEXT,"
-'        .Append "[DATUM] DATE,"
-'        .Append "[KUNDENNUMMER] TEXT,"
-'        .Append "[RATINGVERFAHREN] TEXT,"
-'        .Append "[RATINGNOTE] TEXT,"
-'        .Append "[RATINGDATUM] DATE,"
-'        .Append "[RISIKOVOLUMEN] CURRENCY,"
-'        .Append "[INANSPRUCHNAHME] CURRENCY,"
-'        .Append "[BLANKOVOLUMEN] CURRENCY,"
-'        .Append "[EWB] CURRENCY,"
-'        .Append "[KONTONUMMER] TEXT,"
-'        .Append "[PRODUKTGRUPPE] TEXT,"
-'        .Append "[PRODUKTTYP] TEXT,"
-'        .Append "[SOLLZINS] SINGLE,"
-'        .Append "[LIMIT (EXTERN)] CURRENCY,"
-'        .Append "[LIMIT (INTERN)] CURRENCY,"
-'        .Append "[INANSPRUCHNAHME] CURRENCY,"
-'        .Append "[ÜBERZIEHUNGSDAUER] BYTE,"
-'        .Append "[GEBER-NUMMER] TEXT,"
-'        .Append "[GEBER-NAME] TEXT,"
-'        .Append "[NUMMER] BYTE,"
-'        .Append "[SICHERHEITENART] TEXT,"
-'        .Append "[IMMOBILIEN-NUMMER] BYTE,"
-'        .Append "[OBJEKTART] TEXT,"
-'        .Append "[BLW-AUSLAUF] CURRENCY,"
-'        .Append "[ANRECHNUNG] CURRENCY,"
-'        .Append "[VERFÜGBAR] CURRENCY"
-'        .Append " )"
-'    End With
-'
-'    Call TestSql(Portfolio.ToString)
-'
-'    With Normal
-'        .Append "CREATE TABLE LDRS_NORMAL ( "
-'        .Append "[ID] AUTOINCREMENT,"
-'        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
-'        .Append "[KREDITENTSCHEIDUNG/KREDITPROTOKOLL_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[KREDITENTSCHEIDUNG/KREDITPROTOKOLL_DOKUMENTATION] MEMO,"
-'        .Append "[KDF (INKL OFFENLEGUNG)_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[KDF (INKL OFFENLEGUNG)_DOKUMENTATION] MEMO,"
-'        .Append "[RKV_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[RKV_DOKUMENTATION] MEMO,"
-'        .Append "[SICHERHEITEN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[SICHERHEITEN_DOKUMENTATION] MEMO,"
-'        .Append "[LAUFENDE ÜBERWACHUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[LAUFENDE ÜBERWACHUNG_DOKUMENTATION] MEMO,"
-'        .Append "[ZUORDNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ZUORDNUNG_DOKUMENTATION] MEMO,"
-'        .Append "[RISIKOVORSORGE_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[RISIKOVORSORGE_DOKUMENTATION] MEMO,"
-'        .Append "[VOTIERUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[VOTIERUNG_DOKUMENTATION] MEMO,"
-'        .Append "[GENEHMIGUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[GENEHMIGUNG_DOKUMENTATION] MEMO,"
-'        .Append "[ADRESSENAUSFALLRISIKO_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ADRESSENAUSFALLRISIKO_DOKUMENTATION] MEMO,"
-'        .Append "[STRATEGIEKONFORMITÄT_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[STRATEGIEKONFORMITÄT_DOKUMENTATION] MEMO,"
-'        .Append "[BERICHTSWESEN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[BERICHTSWESEN_DOKUMENTATION] MEMO,"
-'        .Append "[VERTRAGSERSTELLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[VERTRAGSERSTELLUNG_DOKUMENTATION] MEMO,"
-'        .Append "[AUSZAHLUNGSKONTROLLE / MITTELVERWENDUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[AUSZAHLUNGSKONTROLLE / MITTELVERWENDUNG_DOKUMENTATION] MEMO,"
-'        .Append "[FORBEARANCE_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[FORBEARANCE_DOKUMENTATION] MEMO,"
-'        .Append "[ÜBERWACHUNG DER OFFENLEGUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ÜBERWACHUNG DER OFFENLEGUNG_DOKUMENTATION] MEMO,"
-'        .Append "[VOLLSTÄNDIGKEIT ERFORDERLICHE UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[VOLLSTÄNDIGKEIT ERFORDERLICHE UNTERLAGEN_DOKUMENTATION] MEMO,"
-'        .Append "[EINREICHUNGSFRIST_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[EINREICHUNGSFRIST_DOKUMENTATION] MEMO,"
-'        .Append "[AUSWERTUNGSFRIST_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[AUSWERTUNGSFRIST_DOKUMENTATION] MEMO,"
-'        .Append "[MAHNVERFAHREN FÜR AUSSTEHENDE UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[MAHNVERFAHREN FÜR AUSSTEHENDE UNTERLAGEN_DOKUMENTATION] MEMO,"
-'        .Append "[VOLLSTÄNDIGKEIT KDF PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[VOLLSTÄNDIGKEIT KDF DOKUMENTATION] MEMO,"
-'        .Append "[NACHVOLLZIEHBARE BERECHNUNG DER KDF PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[NACHVOLLZIEHBARE BERECHNUNG DER KDF DOKUMENTATION] MEMO,"
-'        .Append "[NACHHALTIGE KDF GEGEBEN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[NACHHALTIGE KDF GEGEBEN_DOKUMENTATION] MEMO,"
-'        .Append "[VERFAHRENSAUSWAHL_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[VERFAHRENSAUSWAHL_DOKUMENTATION] MEMO,"
-'        .Append "[RISIKOFAKTOREN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[RISIKOFAKTOREN_DOKUMENTATION] MEMO,"
-'        .Append "[ÜBERSCHREIBUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ÜBERSCHREIBUNG_DOKUMENTATION] MEMO,"
-'        .Append "[TURNUSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[TURNUSPRÜFUNG_DOKUMENTATION] MEMO,"
-'        .Append "[ANLASSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ANLASSPRÜFUNG_DOKUMENTATION] MEMO,"
-'        .Append "[AUSFALLERKENNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[AUSFALLERKENNUNG_DOKUMENTATION] MEMO,"
-'        .Append "[SICHERHEITENVERTRÄGE_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[SICHERHEITENVERTRÄGE_DOKUMENTATION] MEMO,"
-'        .Append "[RECHTLICHE DURCHSETZBARKEIT_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[RECHTLICHE DURCHSETZBARKEIT_DOKUMENTATION] MEMO,"
-'        .Append "[PLAUSIBILISIERUNG DER WERTERMITTLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[PLAUSIBILISIERUNG DER WERTERMITTLUNG_DOKUMENTATION] MEMO,"
-'        .Append "[TURNUSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[TURNUSPRÜFUNG_DOKUMENTATION] MEMO,"
-'        .Append "[ANLASSPRÜFUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ANLASSPRÜFUNG_DOKUMENTATION] MEMO,"
-'        .Append "[VERWALTUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[VERWALTUNG_DOKUMENTATION] MEMO,"
-'        .Append "[VOLLSTÄNDIGKEIT DER NOTWENDIGEN UNTERLAGEN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[VOLLSTÄNDIGKEIT DER NOTWENDIGEN UNTERLAGEN_DOKUMENTATION] MEMO,"
-'        .Append "[ÜBERZIEHUNGSBEARBEITUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ÜBERZIEHUNGSBEARBEITUNG_DOKUMENTATION] MEMO,"
-'        .Append "[AUFLAGEN / COVENANTS_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[AUFLAGEN / COVENANTS_DOKUMENTATION] MEMO,"
-'        .Append "[FRÜHWARNSYSTEM - SYSTEMATISCHE INDIKATOREN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[FRÜHWARNSYSTEM - SYSTEMATISCHE INDIKATOREN_DOKUMENTATION] MEMO,"
-'        .Append "[ANLASSBEZOGENE INDIKATOREN_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ANLASSBEZOGENE INDIKATOREN_DOKUMENTATION] MEMO,"
-'        .Append "[BESTANDSAUFNAHME_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[BESTANDSAUFNAHME_DOKUMENTATION] MEMO,"
-'        .Append "[ÜBEREINSTIMMUNG SOLL-ZUORDNUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ÜBEREINSTIMMUNG SOLL-ZUORDNUNG_DOKUMENTATION] MEMO,"
-'        .Append "[ERMITTLUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[ERMITTLUNG_DOKUMENTATION] MEMO,"
-'        .Append "[BESCHLUSSFASSUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[BESCHLUSSFASSUNG_DOKUMENTATION] MEMO,"
-'        .Append "[BERICHTERSTATTUNG_PRÜFUNGSINTENSITÄT] BYTE,"
-'        .Append "[BERICHTERSTATTUNG_DOKUMENTATION] MEMO"
-'        .Append " )"
-'    End With
-'
-'    Call TestSql(Normal.ToString)
-'
-'    With Stammdaten
-'        .Append "CREATE TABLE LDRS_STAMMDATEN ( "
-'        .Append "[ID] AUTOINCREMENT,"
-'        .Append "[KNE] VARCHAR(60) PRIMARY KEY,"
-'        .Append "[KUNDENSTATUS] BYTE,"
-'        .Append "[BETREUUNGSSTATUS] BYTE,"
-'        .Append "[RISIKOVOLUMEN (PORTFOLIOABZUG)] CURRENCY,"
-'        .Append "[BLANKOVOLUMEN (PORTFOLIOABZUG)] CURRENCY,"
-'        .Append "[INANSPRUCHNAHME (PORTFOLIOABZUG)] CURRENCY,"
-'        .Append "[EWB (PORTFOLIOABZUG)] CURRENCY,"
-'        .Append "[RISIKOVOLUMEN (PRÜFUNGSZEITPUNKT)] CURRENCY,"
-'        .Append "[BLANKOVOLUMEN (PRÜFUNGSZEITPUNKT)] CURRENCY,"
-'        .Append "[INANSPRUCHNAHME (PRÜFUNGSZEITPUNKT)] CURRENCY,"
-'        .Append "[EWB (PRÜFUNGSZEITPUNKT)] CURRENCY,"
-'        .Append "[RISIKOVOLUMEN (NACH PAAR)] CURRENCY,"
-'        .Append "[BLANKOVOLUMEN (NACH PAAR)] CURRENCY,"
-'        .Append "[INANSPRUCHNAHME (NACH PAAR)] CURRENCY,"
-'        .Append "[EWB (NACH PAAR)] CURRENCY,"
-'        .Append "[WERTHALTIG ANGESETZTE SICHERHEITEN] BYTE,"
-'        .Append "[KURZBESCHREIBUNG DES ENGAGEMENTS] MEMO,"
-'        .Append "[GESAMTERGEBNIS] MEMO,"
-'        .Append "[NOTIZEN / BEMERKUNGEN] MEMO"
-'        .Append " )"
-'    End With
-'
-''    Call TestSql(Stammdaten.ToString)
-'
-'End Sub
 
 Public Sub TestSql()
     
@@ -478,38 +268,6 @@ Sub TestEquals()
     Debug.Print t.TimeElapsed
      
 End Sub
-Sub TestArray()
-    
-    Dim t As CTimer
-    
-    Dim ga As GenericArray
-    Dim ga2 As GenericArray
-    Dim ga3 As GenericArray
-    Dim x() As IGeneric
-    Dim i As Long, N As Long
-   
-    N = 1000
-    Set ga = GenericArray.Build(N)
-    Set ga2 = GenericArray.Build(N)
-    ReDim x(N - 1)
-    
-    For i = 0 To N - 1
-        Call ga.SetValue(GNumeric(i), i)
-        Call ga2.SetValue(GString("Value: " & i), i)
-        Set x(i) = GString("Value: " & i)
-    Next
-    
-    Set ga3 = GenericArray.BuildFrom(x)
-    
-    Dim c As IGeneric
-    Set c = System.Clone(ga3)
-    
-    Set t = New CTimer
-    t.StartCounter
-    Debug.Print GenericList.IsEqual(c, ga3)
-    Debug.Print t.TimeElapsed
-    
-End Sub
 
 Sub TestOrderedMap()
     
@@ -520,11 +278,11 @@ Sub TestOrderedMap()
     Set Map = GenericOrderedMap.Build
     
     Dim Imap As IGenericDictionary
-    Set Imap = GenericMap.Build
+    Set Imap = GenericLinkedMap.Build
     
     Dim i As Long, N As Long
     
-    N = 10000
+    N = 30
     t.StartCounter
     For i = 0 To N - 1
         Call Imap.Add(GNumeric(i), GNumeric(i))
@@ -537,11 +295,11 @@ Sub TestOrderedMap()
     Dim c As GenericOrderedMap
     Set c = System.Clone(Map)
     
-    Dim Item As GenericPair
+    Dim Item As IGeneric
     t.StartCounter
-    With c.IteratorOf(PairData)
+    With c.GetKeys.Iterator
         Do While .HasNext(Item)
-'            Debug.Print Item.Key
+            Debug.Print Item
         Loop
     End With
     Debug.Print t.TimeElapsed
@@ -630,13 +388,13 @@ Sub TestMaps()
     
     Set t = New CTimer
     t.StartCounter
-    For i = RandomList.BaseIndex To RandomList.Count - 1
+    For i = RandomList.First To RandomList.Count - 1
         Set P = RandomList(i)
         Call Map.Add(P.Key, P.Value)
     Next
     Debug.Print N & " :: "; t.TimeElapsed
 
-    For i = RandomList.BaseIndex To RandomList.Count - 1
+    For i = RandomList.First To RandomList.Count - 1
         Set P = RandomList(i)
         Set Item = Map.Item(P.Key)
     Next
@@ -708,7 +466,7 @@ Sub TestTree()
         Call tree.Add(GNumeric(i))
     Next
     Debug.Print t.TimeElapsed
-'
+
 '    Dim N As IGeneric
 '    Set N = tree.ElementAt(1)
 '    Debug.Print N.ToString

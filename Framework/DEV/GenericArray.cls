@@ -275,7 +275,7 @@ Public Function Create(ParamArray GenericValues() As Variant) As GenericArray
             If Not TypeOf GenericValues(i) Is IGeneric Then _
                 Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
                 
-            Set .ElementAt(i + MIN_INDEX) = GenericValues(i)
+            Set .ElementAt(i) = GenericValues(i)
           
         Next
     End With
@@ -283,41 +283,41 @@ Public Function Create(ParamArray GenericValues() As Variant) As GenericArray
     Set Create = Values
     
 End Function
-
-Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
-        
-    Dim i As Long, FormatBounds As Boolean
-    Dim newArray As Member
-    
-    If Not VarType(Matrix) = VbVarType.vbArray + ELEMENT_TYPE Then _
-        Call System.Throw(Me, "Public Function BuildWith").InvalidInput("Datatype {" & TypeName$(Matrix) & "} not allowed")
-        
-    Call CopyMemory(Dst:=newArray.Descriptor, Src:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE)
-    
-    If (newArray.Descriptor = 0) Then _
-        Call System.Throw(Me, "Public Function BuildFrom").InvalidOperation("Descriptor = 0")
-    Call ZeroMemory(Dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE) 'FillMemory(dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE, Fill:=0)
-    
-    newArray.Elements = 1
-    Call LoadArrayStructure(newArray.Struct, newArray.Descriptor)
-    
-    ReDim newArray.Indices(newArray.Struct.cDims - 1)
-    For i = LBound(newArray.Struct.Bounds) To UBound(newArray.Struct.Bounds)
-        If Not newArray.Struct.Bounds(i).lLbound = MIN_INDEX Then _
-            FormatBounds = True
-           
-        newArray.Struct.Bounds(i).lLbound = MIN_INDEX
-        newArray.Elements = newArray.Elements * newArray.Struct.Bounds(i).cElements
-    Next
-    
-    If FormatBounds Then _
-        Call CopyMemory(Dst:=ByVal myclass.Descriptor + 16&, Src:=ByVal VarPtr(newArray.Struct.Bounds(0&)), Length:=newArray.Struct.cDims * 8&)
-        
-    Call LoadArray(newArray.Internal, newArray.Descriptor)
-
-    Set BuildFrom = System.CreateInstance(New GenericArray, VarPtr(newArray), LenB(newArray))
-    
-End Function
+'' Works and very fast for large matrices
+'Public Function BuildFrom(ByRef Matrix() As IGeneric) As GenericArray
+'
+'    Dim i As Long, FormatBounds As Boolean
+'    Dim newArray As Member
+'
+'    If Not VarType(Matrix) = VbVarType.vbArray + ELEMENT_TYPE Then _
+'        Call System.Throw(Me, "Public Function BuildWith").InvalidInput("Datatype {" & TypeName$(Matrix) & "} not allowed")
+'
+'    Call CopyMemory(Dst:=newArray.Descriptor, Src:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE)
+'
+'    If (newArray.Descriptor = 0) Then _
+'        Call System.Throw(Me, "Public Function BuildFrom").InvalidOperation("Descriptor = 0")
+'    Call ZeroMemory(Dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE) 'FillMemory(dst:=ByVal VarPtrArray(Matrix), Length:=POINTERSIZE, Fill:=0)
+'
+'    newArray.Elements = 1
+'    Call LoadArrayStructure(newArray.Struct, newArray.Descriptor)
+'
+'    ReDim newArray.Indices(newArray.Struct.cDims - 1)
+'    For i = LBound(newArray.Struct.Bounds) To UBound(newArray.Struct.Bounds)
+'        If Not newArray.Struct.Bounds(i).lLbound = MIN_INDEX Then _
+'            FormatBounds = True
+'
+'        newArray.Struct.Bounds(i).lLbound = MIN_INDEX
+'        newArray.Elements = newArray.Elements * newArray.Struct.Bounds(i).cElements
+'    Next
+'
+'    If FormatBounds Then _
+'        Call CopyMemory(Dst:=ByVal myclass.Descriptor + 16&, Src:=ByVal VarPtr(newArray.Struct.Bounds(0&)), Length:=newArray.Struct.cDims * 8&)
+'
+'    Call LoadArray(newArray.Internal, newArray.Descriptor)
+'
+'    Set BuildFrom = System.CreateInstance(New GenericArray, VarPtr(newArray), LenB(newArray))
+'
+'End Function
 
 Private Sub LoadArrayStructure(ByRef structure As SAFEARRAYSTRUCT, ByVal SafeArrayPointer As LongPtr)
     
@@ -419,7 +419,10 @@ Private Sub Class_Terminate()
 End Sub
 
 Public Sub Clear()
-    
+        
+    If Me.IsEmpty Then _
+        Exit Sub
+        
     Call Catch(SafeArrayDestroyData(ByVal myclass.Descriptor)) 'if not fFeatures & FADF_STATIC then pvData-> null
     myclass.Struct.pvData = 0
     Call Catch(SafeArrayAllocData(ByVal myclass.Descriptor))
@@ -468,35 +471,32 @@ End Function
 
 Public Function Copy() As GenericArray
           
-    Dim c As Member
+    Dim Clone As Member
     Dim i As Long
     
     If (Me.IsEmpty) Then _
         Call System.Throw(Me, "Public Function Copy").InvalidOperation("Me.IsEmpty")
   
-    With c
-        .Elements = myclass.Elements
-        .Struct.cDims = myclass.Struct.cDims
-        .Struct.fFeatures = F_FEATURES
-        .Struct.cbElements = ELEMENT_SIZE
-        .Struct.Bounds = myclass.Struct.Bounds
-        .Indices = myclass.Indices
+    Clone.Elements = myclass.Elements
+    Clone.Struct.cDims = myclass.Struct.cDims
+    Clone.Struct.fFeatures = myclass.Struct.fFeatures
+    Clone.Struct.cbElements = myclass.Struct.cbElements
+    Clone.Struct.Bounds = myclass.Struct.Bounds
+    Clone.Indices = myclass.Indices
 
-        Call Catch(SafeArrayCopy(ByVal myclass.Descriptor, .Descriptor))
-        
-        If (.Descriptor = 0) Then _
-            Call System.Throw(Me, "Public Function Copy").InvalidOperation("Descriptor = 0")
-        
-        For i = LBound(.Indices) To UBound(.Indices)
-            .Indices(i) = MIN_INDEX
-        Next
-        
-        Call Catch(SafeArrayPtrOfIndex(ByVal .Descriptor, .Indices(0), .Struct.pvData))
-        Call CopyMemory(Dst:=.Struct, Src:=ByVal .Descriptor, Length:=12& + POINTERSIZE)
-
-    End With
+    Call Catch(SafeArrayCopy(ByVal myclass.Descriptor, Clone.Descriptor))
     
-    Set Copy = System.CreateInstance(New GenericArray, VarPtr(c), LenB(c))
+    If (Clone.Descriptor = 0) Then _
+        Call System.Throw(Me, "Public Function Copy").InvalidOperation("Descriptor = 0")
+    
+    For i = LBound(Clone.Indices) To UBound(Clone.Indices)
+        Clone.Indices(i) = MIN_INDEX
+    Next
+    
+    Call Catch(SafeArrayPtrOfIndex(ByVal Clone.Descriptor, Clone.Indices(0), Clone.Struct.pvData))
+    Call LoadArray(Clone.Internal, Clone.Descriptor)
+
+    Set Copy = System.CreateInstance(New GenericArray, VarPtr(Clone), LenB(Clone))
 
 End Function
 
@@ -520,21 +520,19 @@ Public Sub CopyArrays( _
     If (Elements < 1) Then _
         Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("Elements to copy  <  1")
     
-    If (SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX) Then _
-        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex + MIN_INDEX)")
+    If (SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex) Then _
+        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex)")
         
-    If (DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX) Then _
-        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex + MIN_INDEX)")
+    If (DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex) Then _
+        Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex)")
     
-    With Overlay
-        .cDims = 1
-        .fFeatures = F_FEATURES
-        .cbElements = ELEMENT_SIZE
-        ReDim .Bounds(0)
-        .Bounds(0).cElements = Elements
-        .Bounds(0).lLbound = MIN_INDEX
-    End With
-    
+    Overlay.cDims = 1
+    Overlay.fFeatures = F_FEATURES
+    Overlay.cbElements = ELEMENT_SIZE
+    ReDim Overlay.Bounds(0)
+    Overlay.Bounds(0).cElements = Elements
+    Overlay.Bounds(0).lLbound = MIN_INDEX
+  
     With SrcArray
         Call LoadArrayStructure(Src, .Descriptor)
         Overlay.pvData = .AdressOf(Index:=SrcIndex)
@@ -695,39 +693,30 @@ End Sub
 
 Public Function BinarySearch( _
                                 ByVal Value As IGeneric, _
-                                ByVal Index As Long, _
-                                ByVal Length As Long, _
                                 ByVal Order As SortOrder, _
-                                ByVal Comparer As IGenericComparer) As Long
-
-    If Not Me.Rank = 1 Then _
-        Call System.Throw(Me, "Public Function BinarySearch").NotSupported("Me.Rank != 1")
-
-    If (Index < MIN_INDEX Or Length < 0) Then _
-        Call System.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
-
-    If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
-        Call System.Throw(Me, "Public Function BinarySearch").ArgOutOfRange("Argument_InvalidOffLen")
-      
-    BinarySearch = Not Me.BinarySearchArray(Objects:=myclass.Internal, Value:=Value, LowerBound:=Index, UpperBound:=Length + Index - 1, Order:=Order, Comparer:=Comparer)
+                                Optional ByVal Index As Long = MIN_INDEX, _
+                                Optional ByVal Length As Long, _
+                                Optional ByVal Comparer As IGenericComparer) As Long
     
+    If Length = 0 Then _
+        Length = myclass.Elements
+    
+    Call Validate("Public Function BinarySearch", Me, Index, Length)
+    BinarySearch = Not Me.BinarySearchArray(Objects:=myclass.Internal, Value:=Value, LowerBound:=Index, UpperBound:=Length + Index - 1, Order:=Order, Comparer:=Comparer)
+  
 End Function
 
 Public Function IndexOf( _
                             ByVal Value As IGeneric, _
                             Optional ByVal Index As Long = MIN_INDEX, _
-                            Optional ByVal Length As Long) As Long
+                            Optional ByVal Length As Long, _
+                            Optional ByVal Comparer As IGenericComparer) As Long
   
-    If Not (Me.Rank = 1) Then _
-        Call System.Throw(Me, "Public Function IndexOf").NotSupported("Me.Rank != 1")
-    
     If Length = 0 Then _
         Length = myclass.Elements - Index
-        
-    If (Index < MIN_INDEX) Or (Index + Length > myclass.Elements + MIN_INDEX) Then _
-        Call System.Throw(Me, "Public Function IndexOf").IndexOutofRange("(StartIndex < MIN_INDEX) Or (StartIndex > Me.Count() + MIN_INDEX)")
-   
-    IndexOf = Me.IndexOfArray(Objects:=myclass.Internal, Value:=Value, LowerBound:=Index, UpperBound:=Length + Index - 1, Comparer:=Nothing)
+    
+    Call Validate("Public Function IndexOf", Me, Index, Length)
+    IndexOf = Me.IndexOfArray(Objects:=myclass.Internal, Value:=Value, LowerBound:=Index, UpperBound:=Length + Index - 1, Comparer:=Comparer)
     
 End Function
 
@@ -735,19 +724,11 @@ Public Function Reverse( _
                             Optional ByVal Index As Long = MIN_INDEX, _
                             Optional ByVal Length As Long) As GenericArray
     
-    If Not Me.Rank = 1 Then _
-        Call System.Throw(Me, "Public Sub Reverse").NotSupported("Me.Rank != 1")
-    
     If Length = 0 Then _
-        Length = myclass.Elements - Index
-        
-    If (Index < MIN_INDEX Or Length <= 0) Then _
-        Call System.Throw(Me, "Public Sub Reverse").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
+        Length = myclass.Elements
     
-    If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
-        Call System.Throw(Me, "Public Sub Reverse").ArgOutOfRange("Argument_InvalidOffLen")
-
-    Call Me.ReverseArray(Objects:=myclass.Internal, LowerBound:=Index, UpperBound:=Length + Index - 1)
+    Call Validate("Public Function Reverse", Me, Index, Length)
+    Call GenericArray.ReverseArray(Objects:=myclass.Internal, LowerBound:=Index, UpperBound:=Length + Index - 1)
     
     Set Reverse = Me
     
@@ -758,24 +739,40 @@ Public Function Sort( _
                         Optional ByVal Index As Long = MIN_INDEX, _
                         Optional ByVal Length As Long, _
                         Optional ByVal Comparer As IGenericComparer) As GenericArray
-    
-    If Not Me.Rank = 1 Then _
-        Call System.Throw(Me, "Public Sub Sort").NotSupported("Me.Rank != 1")
-       
+     
     If Length = 0 Then _
         Length = myclass.Elements
         
-    If (Index < MIN_INDEX Or Length <= 0) Then _
-        Call System.Throw(Me, "Public Sub Sort").ArgOutOfRange("Index < MIN_INDEX Or Length < 0")
+    Call Validate("Public Function Sort", Me, Index, Length)
     
-    If (myclass.Elements - (Index - MIN_INDEX) < Length) Then _
-        Call System.Throw(Me, "Public Sub Sort").ArgOutOfRange("Argument_InvalidOffLen")
-        
-    Call Me.SortArray(Objects:=myclass.Internal, LowerBound:=Index, UpperBound:=Length + Index - 1, Order:=Order, Comparer:=Comparer)
+    If Length > 1 Then _
+        Call GenericArray.SortArray(Objects:=myclass.Internal, LowerBound:=Index, UpperBound:=Length + Index - 1, Order:=Order, Comparer:=Comparer)
 
     Set Sort = Me
     
 End Function
+
+Private Sub Validate(ByRef Caller As String, ByVal GArray As GenericArray, ByVal Index As Long, ByVal Count As Long)
+    
+    With GArray
+    
+'        If (.IsEmpty) Then _
+'            Call System.Throw(Me, Caller).InvalidInput("IsEmpty")
+            
+        If Not .Rank = 1 Then _
+            Call System.Throw(Me, Caller).NotSupported("Rank != 1")
+            
+        If (Index < MIN_INDEX Or Index > .Length) Then _
+            Call System.Throw(Me, Caller).ArgOutOfRange("(Index < MIN_INDEX Or Index > Length)")
+            
+        If (Count < 0 Or Count > .Length - Index) Then _
+            Call System.Throw(Me, Caller).ArgOutOfRange("(Count < 0 Or Count > .Length - Index) ")
+        
+'       If (.Length - Index < Count) Then _
+'           Call System.Throw(Me, Caller).ArgOutOfRange("(.Length - Index < Count)")
+    End With
+
+End Sub
 
 Public Sub Transpose()
     
@@ -865,74 +862,41 @@ Private Sub Catch(ByVal hResult As Long)
     
 End Sub
 
-'Todo new instance
-Public Function AsReadOnly(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Count As Long) As IGenericReadOnlyList
-  
-    If Count = 0 Then _
-        Count = myclass.Elements
-    
-    If Not Me.Rank = 1 Then _
-        Call System.Throw(Me, "Public Function AsReadOnly").NotSupported("Me.Rank != 1")
-        
-    If (Index < MIN_INDEX Or Count < 0) Then _
-        Call System.Throw(Me, "Public Function AsReadOnly").ArgOutOfRange("Index < MIN_INDEX Or Count < 0")
-    
-    If (myclass.Elements - (Index - MIN_INDEX) < Count) Then _
-        Call System.Throw(Me, "Public Function AsReadOnly").ArgOutOfRange("Argument_InvalidOffLen")
-    
-    If (Me.IsEmpty) Then _
-        Call System.Throw(Me, "Public Function AsReadOnly").InvalidOperation("Me.IsEmpty")
-    
-    Set AsReadOnly = Me
-
-End Function
-
-Public Function Iterator(Optional ByVal StartIndex As Long = MIN_INDEX, Optional ByVal Count As Long) As IGenericIterator
+Public Function Iterator(Optional ByVal Index As Long = MIN_INDEX, Optional ByVal Count As Long) As IGenericIterator
 
     Dim c As Member
         
     If Count = 0 Then _
         Count = myclass.Elements
-        
-    If (myclass.Descriptor = 0) Then _
-        Call System.Throw(Me, "Public Function Iterator").InvalidOperation("Descriptor = 0")
-            
-    If (StartIndex < MIN_INDEX) Or (StartIndex > myclass.Elements + MIN_INDEX) Then _
-        Call System.Throw(Me, "Public Function Iterator").IndexOutofRange("(StartIndex < MIN_INDEX) Or (StartIndex > myClass.Elements + MIN_INDEX)")
-
-    If (Count < 0) Or (Count > myclass.Elements - StartIndex + MIN_INDEX) Then _
-        Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Elements - StartIndex + MIN_INDEX)")
-
-    Call LoadIterator(c.Iterator, Me, StartIndex, Count)
+    
+    Call Validate("Public Function Iterator", Me, Index, Count)
+    Call LoadIterator(c.Iterator, Me, Index, Count)
     
     Set Iterator = System.CreateInstance(New GenericArray, VarPtr(c), LenB(c))
     
 End Function
 
 Private Sub LoadIterator( _
-                            ByRef e As Iterator, _
+                            ByRef Iterator As Iterator, _
                             ByVal Values As GenericArray, _
                             ByVal StartIndex As Long, _
                             ByVal Count As Long)
 
-    With e
-        Set .Values = Values
-        Set .Current = Nothing
-        .Descriptor = Values.Descriptor
-        .Rank = Values.Rank
-        .StartIndex = StartIndex
-        .EndIndex = .StartIndex + Count - 1&
-        .Count = Count
-       
-        If (.Rank = 1) Then
-            .Index = StartIndex - 1
-        Else
-            ReDim .Indices(.Rank - 1)
-            .ptrIndices = VarPtr(.Indices(0))
-        End If
-        
-        .HasLoaded = True
-    End With
+     Set Iterator.Values = Values
+     Iterator.Descriptor = Values.Descriptor
+     Iterator.Rank = Values.Rank
+     Iterator.StartIndex = StartIndex
+     Iterator.EndIndex = StartIndex + Count - 1&
+     Iterator.Count = Count
+    
+     If (Iterator.Rank = 1) Then
+         Iterator.Index = StartIndex - 1
+     Else
+         ReDim Iterator.Indices(Iterator.Rank - 1)
+         Iterator.ptrIndices = VarPtr(Iterator.Indices(0))
+     End If
+     
+     Iterator.HasLoaded = True
 
 End Sub
 
@@ -1072,11 +1036,13 @@ Public Sub ReverseArray( _
     Dim j As Long: j = UpperBound
     Dim temp As IGeneric
     
-    Do
+    Do While i < j
         Set temp = Objects(i)
         Set Objects(i) = Objects(j)
         Set Objects(j) = temp
-    Loop While InterlockedIncrement(i) < InterlockedDecrement(j)
+        Call InterlockedIncrement(i)
+        Call InterlockedDecrement(j)
+    Loop 'While InterlockedIncrement(i) < InterlockedDecrement(j)
 
 End Sub
 
@@ -1148,7 +1114,7 @@ Public Sub SortGenericArrays( _
     ptrItems = VarPtrArray(ItemArray)
 
     Call CopyMemory(Dst:=ByVal ptrKeys, Src:=ByVal VarPtr(d1), Length:=POINTERSIZE): Call CopyMemory(Dst:=ByVal ptrItems, Src:=ByVal VarPtr(d2), Length:=POINTERSIZE)
-    Call Me.SortArrayWithItems(Keys:=KeyArray, Items:=ItemArray, LowerBound:=Index, UpperBound:=Length + Index - 1, Comparer:=Comparer, Order:=Order)
+    Call GenericArray.SortArrayWithItems(Keys:=KeyArray, Items:=ItemArray, LowerBound:=Index, UpperBound:=Length + Index - 1, Comparer:=Comparer, Order:=Order)
     Call ZeroMemory(Dst:=ByVal ptrKeys, Length:=POINTERSIZE): Call ZeroMemory(Dst:=ByVal ptrItems, Length:=POINTERSIZE)
 
 End Sub
@@ -1158,12 +1124,8 @@ Private Sub Shuffle(ByRef Element() As IGeneric, ByVal LowerBound As Long, ByVal
     Dim i As Long
     Randomize VBA.Timer
     
-    For i = UpperBound To LowerBound Step -1
-        Call SwapArray(Element, i, (i * Rnd + 0.5))
-    Next
-'    For i = Length To Index Step -1
-'        Debug.Print Element(i)
-'    Next
+    For i = UpperBound To LowerBound Step -1: Call SwapArray(Element, i, (i * Rnd + 0.5)): Next
+
 End Sub
 
 Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, ByVal LowerBound As Long, ByVal UpperBound As Long)
@@ -1171,9 +1133,7 @@ Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, 
     Dim i As Long
     Randomize VBA.Timer
     
-    For i = UpperBound To LowerBound Step -1
-        Call SwapWithItem(Keys, Items, i, (i * Rnd + 0.5))
-    Next
+    For i = UpperBound To LowerBound Step -1: Call SwapWithItem(Keys, Items, i, (i * Rnd + 0.5)): Next
 
 End Sub
 
@@ -2149,12 +2109,13 @@ Private Function IGeneric_ToString() As String
 End Function
 
 'IGenericReadOnlyList
-Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = MIN_INDEX: End Property
+Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = MIN_INDEX: End Property
+Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = myclass.Elements - 1: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Elements: End Property
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
-    If (Index > myclass.Elements) Or Index < MIN_INDEX Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("Index not valid") '!
+    If (Index >= myclass.Elements) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index >= myclass.Elements)")
 
     Set IGenericReadOnlyList_ElementAt = myclass.Internal(Index)
         
@@ -2176,29 +2137,24 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     With myclass.Iterator
         If (.Rank = 1) Then
-            If .Index = .EndIndex Then
-                If .HasLoaded = False Then _
-                    Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-            
-                Set Out = Nothing
-                Set .Current = Nothing
-                Exit Function
-            End If
-            
-            Set .Current = .Values(InterlockedIncrement(.Index))
-            Set Out = .Current
-            
-            IGenericIterator_HasNext = True
-           
-        Else
-            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").NotImplemented("multi dim not implemented yet")
-            If (S_OK = SafeArrayGetElement(ByVal .Descriptor, InterlockedIncrement(.Index), .Current)) Then
+            If .Index < .EndIndex Then
+                Set .Current = .Values(InterlockedIncrement(.Index))
                 Set Out = .Current
                 IGenericIterator_HasNext = True
-            Else
-                Set .Current = Nothing
-                Set Out = Nothing
+                Exit Function
             End If
+        
+            If .HasLoaded = False Then _
+                Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+            
+            Set .Current = Nothing
+            IGenericIterator_HasNext = False
+            Exit Function
+           
+        Else
+        
+            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").NotImplemented("multi dim not implemented yet")
+            
         End If
     End With
     

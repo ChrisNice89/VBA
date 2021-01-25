@@ -124,35 +124,42 @@ Attribute Item.VB_UserMemId = 0
 
 End Property
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
+
 Public Function GetKeys() As GenericArray
 
-    ReDim Keys(GenericArray.LowerBound To myclass.Count - GenericArray.LowerBound + 1) As IGeneric
-    Dim Index As Long
-
-    Dim i As Long
+    Dim Keys As GenericArray
+    Dim i As Long, Index As Long
     
-    For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-        If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Keys(InterlockedIncrement(Index)) = myclass.Buckets(i).Key
-    Next
+    Set Keys = GenericArray.Build(Me.Count)
     
-    Set GetKeys = GenericArray.BuildFrom(Keys)
+    With Keys
+        Index = .LowerBound - 1
+        For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
+            If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                Set .ElementAt(InterlockedIncrement(Index)) = myclass.Buckets(i).Key
+        Next
+    End With
+    
+    Set GetKeys = Keys
 
 End Function
 
 Public Function GetValues() As GenericArray
 
-    ReDim Values(GenericArray.LowerBound To myclass.Count - GenericArray.LowerBound + 1) As IGeneric
-    Dim Index As Long
-
-    Dim i As Long
+    Dim Values As GenericArray
+    Dim i As Long, Index As Long
     
-    For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-        If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-            Set Values(InterlockedIncrement(Index)) = myclass.Buckets(i).Value
-    Next
+    Set Values = GenericArray.Build(Me.Count)
     
-    Set GetValues = GenericArray.BuildFrom(Values)
+    With Values
+        Index = .LowerBound - 1
+        For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
+            If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
+                Set .ElementAt(InterlockedIncrement(Index)) = myclass.Buckets(i).Value
+        Next
+    End With
+    
+    Set GetValues = Values
     
 End Function
 

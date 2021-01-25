@@ -853,15 +853,14 @@ Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterato
 Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
     
     Dim Row As GenericArray
-    Dim i As Long, LB As Long
+    Dim i As Long
     
     If myclass.Iterator.HasRows Then
         With myclass.Iterator.Records.Fields
             Set Row = GenericArray.Build(.Count)
-            LB = Row.LowerBound
-            
+         
             For i = 0 To .Count - 1
-                Set Row.ElementAt(LB + i) = myclass.Iterator.Converter(i).Convert(.Item(i).Value)
+                Set Row.ElementAt(i) = myclass.Iterator.Converter(i).Convert(.Item(i).Value)
             Next
         End With
         

@@ -67,6 +67,10 @@ Public Function Build( _
     
 End Function
 
+Public Function ToPair() As GenericPair
+    Set ToPair = GenericPair(myclass.Key, myclass.Value)
+End Function
+
 Private Sub Class_Terminate()
 '    Debug.Print "Node_Terminate"
 End Sub

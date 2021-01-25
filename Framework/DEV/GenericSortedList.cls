@@ -112,30 +112,26 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Private Property Get UpperBound() As Long
+Public Property Get First() As Long: First = myclass.Keys.LowerBound: End Property
+Public Property Get Last() As Long
     
-    UpperBound = myclass.Keys.LowerBound
+    Last = myclass.Keys.LowerBound
     
     If myclass.Size > 0 Then _
-        UpperBound = UpperBound + myclass.Size - 1
+        Last = myclass.Size - Last - 1
    
 End Property
 
 Public Property Get KeyList() As IGenericReadOnlyList: Set KeyList = myclass.Keys: End Property
 Public Property Get ValueList() As IGenericReadOnlyList: Set ValueList = myclass.Values: End Property
-Public Property Get BaseIndex() As Long: BaseIndex = myclass.Keys.LowerBound: End Property
 Public Property Get SortOrder() As SortOrder: SortOrder = myclass.SortOrder: End Property
-Public Property Get Last() As IGeneric: Set Last = myclass.Values(myclass.Size): End Property
 Public Property Get Count() As Long: Count = myclass.Size: End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
 
 Public Property Get GetKey(ByVal Index As Long) As IGeneric
     
-    If (myclass.Size = 0) Then _
-        Call System.Throw(Me, "Public Property Get GetKey").InvalidOperation("(myclass.Size = 0)")
-        
-    If (Index > UpperBound) Then _
-        Call System.Throw(Me, "Public Property Get GetKey").IndexOutofRange("(Index > UpperBound)")
+    If (Index >= myclass.Size) Then _
+        Call System.Throw(Me, "Public Property Get GetKey").IndexOutofRange("(Index >= myclass.size)")
     
     Set GetKey = myclass.Keys(Index)
 
@@ -143,23 +139,17 @@ End Property
 
 Public Property Set ElementAt(ByVal Index As Long, ByVal Value As IGeneric)
     
-    If (myclass.Size = 0) Then _
-        Call System.Throw(Me, "Public Property Set ElementAt").InvalidOperation("(myclass.Size = 0)")
-        
-    If (Index > UpperBound) Then _
-        Call System.Throw(Me, "Public Property Set ElementAt").IndexOutofRange("(Index > UpperBound)")
+    If (Index >= myclass.Size) Then _
+        Call System.Throw(Me, "Public Property Set ElementAt").IndexOutofRange("(Index >= myclass.size)")
     
-    Set myclass.Values(Index) = Value
+    Set myclass.Values.ElementAt(Index) = Value
     
 End Property
 
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric
 
-    If (myclass.Size = 0) Then _
-        Call System.Throw(Me, "Public Property Get ElementAt").InvalidOperation("(myclass.Size = 0)")
-        
-    If (Index > UpperBound) Then _
-        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index > UpperBound)")
+    If (Index >= myclass.Size) Then _
+        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index >= myclass.size)")
     
     Set ElementAt = myclass.Values(Index)
     
@@ -294,6 +284,7 @@ Private Sub EnsureCapacity(ByVal min As Long)
             Me.Capacity = newCapacity
         End If
     End With
+    
 End Sub
 
 'SortedList.Clear();
@@ -330,24 +321,22 @@ End Function
 
 Public Sub RemoveAt(ByVal Index As Long)
 
-    If (Index > UpperBound) Then _
-        Call System.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("(Index > UpperBound)")
+    If (Index < myclass.Keys.LowerBound Or Index >= myclass.Size) Then _
+        Call System.Throw(Me, "Public Sub RemoveAt").ArgOutOfRange("(Index >= myclass.Size)")
    
-    Set myclass.Keys(Index) = Nothing
-    Set myclass.Values(Index) = Nothing
+    Set myclass.Keys.ElementAt(Index) = Nothing
+    Set myclass.Values.ElementAt(Index) = Nothing
     
-    If (Index < UpperBound) Then
+    If (Index < InterlockedDecrement(myclass.Size)) Then
         With myclass.Keys
-            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=myclass.Size), Length:=.SizeOf(1))
         End With
         With myclass.Values
-            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=myclass.Size), Length:=.SizeOf(1))
         End With
     End If
-    
-    Call InterlockedDecrement(myclass.Size)
     
 End Sub
 
@@ -357,10 +346,10 @@ Public Function Add(ByVal Key As IGeneric, ByVal Value As IGeneric) As Long
         Call System.Throw(Me, "Public Function Add").IsNothing("(Key Is Nothing)")
        
     Dim i As Long
-    i = Not myclass.Keys.BinarySearch(Value:=Key, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
+    i = Not myclass.Keys.BinarySearch(Value:=Key, Order:=myclass.SortOrder, Index:=myclass.Keys.LowerBound, Length:=myclass.Size, Comparer:=myclass.Comparer)
    
     If (i >= 0) Then _
-        Call System.Throw(Me, "Public Sub Add").InvalidInput("Key duplicated")
+        Call System.Throw(Me, "Public Function Add").InvalidInput("Key duplicated")
 
     Call Insert(Index:=Not i, Key:=Key, Value:=Value)
 
@@ -371,21 +360,21 @@ Private Sub Insert(ByVal Index As Long, ByVal Key As IGeneric, ByVal Value As IG
     If (myclass.Size = myclass.Keys.Length) Then _
         Call EnsureCapacity(myclass.Size + 1)
 
-    If (Index < UpperBound) Then
+    If (Index < myclass.Size) Then
         With myclass.Keys
-            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
         End With
         
         With myclass.Values
-            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index + .LowerBound)): _
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
         End With
     End If
     
-    Set myclass.Keys(Index) = Key
-    Set myclass.Values(Index) = Value
-    Call InterlockedIncrement(myclass.Size)
+    Set myclass.Keys.ElementAt(Index) = Key
+    Set myclass.Values.ElementAt(Index) = Value
+    myclass.Size = myclass.Size + 1
 
 End Sub
 
@@ -453,31 +442,18 @@ Public Function IteratorOf(ByVal t As DictionaryData, Optional ByVal Index As Lo
     
     Dim c As Member
     
-    If Index = 0 Then _
-        Index = myclass.Keys.LowerBound
-        
     If Count = 0 Then _
         Count = myclass.Size
     
-    If (Index < myclass.Keys.LowerBound) Or (Index > myclass.Size + myclass.Keys.LowerBound) Then _
-        Call System.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myClass.Keys.LowerBound) Or (Index > myClass.Size + myClass.Keys.LowerBound)")
+    If (Index < myclass.Keys.LowerBound) Or (Index > myclass.Size) Then _
+        Call System.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myclass.Keys.LowerBound) Or (Index > myclass.Size)")
 
-    If (Count < 0) Or (Count > myclass.Size - Index + myclass.Keys.LowerBound) Then _
-        Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Size - Index + myClass.Keys.LowerBound)")
+    If (Count < 0) Or (Count > myclass.Size - Index) Then _
+        Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myclass.Size - Index) ")
     
     Call LoadIterator(c.Iterator, t, myclass.Keys, myclass.Values, Index, Count)
     Set IteratorOf = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
 
-'    Select Case True
-'        Case t = KeyData
-'            Set Iterator = myClass.Keys.Iterator(StartIndex:=myClass.Keys.LowerBound, Count:=myClass.Size)
-'        Case t = ValueData
-'            Set Iterator = myClass.Values.Iterator(StartIndex:=myClass.Values.LowerBound, Count:=myClass.Size)
-'        Case Else
-'            Call LoadIterator(c.Iterator, PairData, myClass.Keys, myClass.Values, Index, Count)
-'            Set Iterator = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
-'    End Select
-'
 End Function
 
 Private Sub LoadIterator( _
@@ -550,17 +526,15 @@ Private Function IGeneric_ToString() As String
 End Function
 
 'IGenericReadOnlyList
-Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = myclass.Keys.LowerBound: End Property
+Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = Me.First: End Property
+Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = Me.Last: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = myclass.Size: End Property
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
-    If (myclass.Size = 0) Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").InvalidOperation("(myclass.Size = 0)")
-        
-    If (Index > myclass.Keys.LowerBound + myclass.Size - 1) Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index > UpperBound)")
+    If (Index >= myclass.Size) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index >= myclass.size)")
     
-    Set IGenericReadOnlyList_ElementAt = myclass.Values(Index)
+    Set IGenericReadOnlyList_ElementAt = myclass.Values.ElementAt(Index)
     
 End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOfValue(Value:=Item): End Function

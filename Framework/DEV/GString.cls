@@ -228,17 +228,15 @@ End Function
 
 Public Function Split(ByVal Delimiter As String) As GenericArray
     
-    Dim i As Long, LB As Long
+    Dim i As Long
     Dim Parts As GenericArray
     Dim strings As Variant
     
     strings = VBA.Split(myclass.Value, Delimiter)
-    LB = GenericArray.LowerBound
-    
     Set Parts = GenericArray.Build(UBound(strings) + 1)
     
     For i = LBound(strings) To UBound(strings)
-        Set Parts.ElementAt(i + LB) = GString.Build(strings(i))
+        Set Parts.ElementAt(i) = GString.Build(strings(i))
     Next
     
     Set Split = Parts
@@ -254,7 +252,7 @@ Public Function ToArray() As GenericArray
         Set Chars = GenericArray.Build(myclass.Length)
          
         With Chars
-            For i = .LowerBound To .Length - 1 + .LowerBound
+            For i = .LowerBound To .Length - 1
                 Set .ElementAt(i) = Me.ElementAt(i)
             Next
         End With
@@ -279,12 +277,12 @@ Public Function Join(ByVal Values As IGenericReadOnlyList, Optional ByVal Delimi
         Call System.Throw(Me, "Public Function Join").IsNothing("(Values Is Nothing)")
 
     With Values
-        ReDim strings(.BaseIndex To .Count - .BaseIndex - 1) As String
+        ReDim strings(.First To .Count - .First - 1) As String
         
-        For i = .BaseIndex To .Count - 1 + .BaseIndex
+        For i = .First To .Count - 1 + .First
             Set s = .ElementAt(i)
             If Not s Is Nothing Then _
-                strings(i - .BaseIndex) = s.ToString
+                strings(i - .First) = s.ToString
         Next
     End With
     
@@ -437,7 +435,8 @@ Private Function IGenericValue_ToSqlParameter( _
 End Function
 
 'IGenericReadOnlyList
-Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = GenericArray.LowerBound: End Property
+Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = GenericArray.LowerBound: End Property
+Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = myclass.Length - GenericArray.LowerBound - 1: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Length: End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Text:=Item.ToString): End Function
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
@@ -461,7 +460,7 @@ Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal Arra
         Call System.Throw(Me, "Private Sub IGenericReadOnlyList_CopyTo").InvalidInput("(GArray.Length - Index < String.Length)")
     
     Dim i As Long
-    For i = IGenericReadOnlyList_BaseIndex To Me.Length
+    For i = IGenericReadOnlyList_First To Me.Length
         Set GArray(ArrayIndex) = Me.ElementAt(i)
         ArrayIndex = ArrayIndex + 1
     Next
@@ -489,6 +488,6 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
 End Function
 
 Private Sub IGenericIterator_Reset()
-   myclass.Iterator.Index = IGenericReadOnlyList_BaseIndex
+   myclass.Iterator.Index = IGenericReadOnlyList_First
 End Sub
 

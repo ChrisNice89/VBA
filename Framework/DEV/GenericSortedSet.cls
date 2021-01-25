@@ -131,15 +131,15 @@ End Function
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric
 Attribute ElementAt.VB_UserMemId = 0
 
-    If (Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root) - BASE_INDEX + 1) Then _
-        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root) - BASE_INDEX + 1)")
+    If (Index >= SizeOf(myclass.Root)) Then _
+        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index >= SizeOf(myclass.Root)")
 
-    Set ElementAt = SelectKth(myclass.Root, Index - BASE_INDEX).Value
+    Set ElementAt = SelectKth(myclass.Root, Index).Value
     
 End Property
 
 Public Function GetRankOf(ByVal Value As IGeneric) As Long
-    GetRankOf = RankOf(Value, myclass.Root) + BASE_INDEX
+    GetRankOf = RankOf(Value, myclass.Root)
 End Function
 
 Public Function IndexOf(ByVal Value As IGeneric) As Long
@@ -151,7 +151,7 @@ Public Function IndexOf(ByVal Value As IGeneric) As Long
         Order = myclass.Comparer.Compare(Value, Current.Value)
         
         If (Order = 0) Then _
-            IndexOf = IndexOf + SizeOf(Current.Left) + BASE_INDEX: Exit Function
+            IndexOf = IndexOf + SizeOf(Current.Left): Exit Function
             
         If Order < 0 Then
             Set Current = Current.Left
@@ -343,18 +343,21 @@ End Sub
 
 Public Function ToArray(Optional ByVal Reverse As Boolean) As GenericArray
    
-    ReDim Values(GenericArray.LowerBound To Me.Count - GenericArray.LowerBound + 1) As IGeneric
-    
-    Dim Index As Long: Index = GenericArray.LowerBound - 1
+    Dim Values As GenericArray
+    Set Values = GenericArray.Build(Me.Count)
     
     Dim Stack As InternalStack
     Dim Current As GenericNode
-
-    Call LoadStack(Stack, myclass.Root, Reverse)
-
-    Do While InOrderTreeWalk(Current, Stack): Set Values(InterlockedIncrement(Index)) = Current.Value: Loop
+    Dim Index As Long
     
-    Set ToArray = GenericArray.BuildFrom(Values)
+    Call LoadStack(Stack, myclass.Root, Reverse)
+    
+    With Values
+        Index = .LowerBound - 1
+        Do While InOrderTreeWalk(Current, Stack): Set .ElementAt(InterlockedIncrement(Index)) = Current.Value: Loop
+    End With
+    
+    Set ToArray = Values
     
 End Function
 
@@ -432,20 +435,20 @@ Private Sub ClearTree(ByRef Node As GenericNode)
     Dim Right As GenericNode
     
     Do While Node Is Nothing = False
-        
-        Set Node.Parent = Nothing
-        Set Left = Node.Left
-        
-        If Not Left Is Nothing Then
-            Set Node.Left = Left.Right '// Rotate the left child up.
-            Set Left.Right = Node
-            Set Node = Left
-        Else
-            Set Right = Node.Right
-            Set Node.Right = Nothing
-            Set Node = Right
-        End If
-    
+        With Node
+            Set .Parent = Nothing
+            Set Left = .Left
+            
+            If Not Left Is Nothing Then
+                Set .Left = Left.Right '// Rotate the left child up.
+                Set Left.Right = Node
+                Set Node = Left
+            Else
+                Set Right = .Right
+                Set .Right = Nothing
+                Set Node = Right
+            End If
+        End With
     Loop
  
 End Sub
@@ -1093,14 +1096,15 @@ Private Sub Class_Terminate()
 End Sub
 
 'IGenericReadOnlyList
-Private Property Get IGenericReadOnlyList_BaseIndex() As Long: IGenericReadOnlyList_BaseIndex = BASE_INDEX: End Property
+Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = BASE_INDEX: End Property
+Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = Me.Count - 1: End Property
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Count: End Property
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
 
-    If (Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root) - BASE_INDEX + 1) Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index < BASE_INDEX) Or (Index > SizeOf(myclass.Root) - BASE_INDEX + 1)")
+    If (Index >= SizeOf(myclass.Root)) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index > SizeOf(myclass.Root)")
 
-    Set IGenericReadOnlyList_ElementAt = SelectKth(myclass.Root, Index - BASE_INDEX).Value
+    Set IGenericReadOnlyList_ElementAt = SelectKth(myclass.Root, Index).Value
 
 End Property
 Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="IGenericReadOnlyList_CopyTo"):   End Sub

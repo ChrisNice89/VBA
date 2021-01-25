@@ -121,37 +121,46 @@ Public Property Get Item(ByVal Key As IGeneric) As IGeneric
 
 End Property
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
+
 Public Function GetKeys() As GenericArray
 
-    ReDim Keys(GenericArray.LowerBound To myclass.Count - GenericArray.LowerBound + 1) As IGeneric
-    Dim Index As Long: Index = GenericArray.LowerBound - 1
-    
+    Dim Keys As GenericArray
+    Dim Index As Long
     Dim Bucket As GenericBucket
     Set Bucket = myclass.Head
     
-    Do While Bucket Is Nothing
-        Set Keys(InterlockedIncrement(Index)) = Bucket.Key
-        Set Bucket = Bucket.nextBucket
-    Loop
+    Set Keys = GenericArray.Build(Me.Count)
     
-    Set GetKeys = GenericArray.BuildFrom(Keys)
+    With Keys
+        Index = .LowerBound - 1
+        Do While Bucket Is Nothing
+            Set .ElementAt(InterlockedIncrement(Index)) = Bucket.Key
+            Set Bucket = Bucket.nextBucket
+        Loop
+    End With
+    
+    Set GetKeys = Keys
 
 End Function
 
 Public Function GetValues() As GenericArray
 
-    ReDim Values(GenericArray.LowerBound To myclass.Count - GenericArray.LowerBound + 1) As IGeneric
-    Dim Index As Long: Index = GenericArray.LowerBound - 1
-    
+    Dim Values As GenericArray
+    Dim Index As Long
     Dim Bucket As GenericBucket
     Set Bucket = myclass.Head
     
-    Do While Bucket Is Nothing
-        Set Values(InterlockedIncrement(Index)) = Bucket.Value
-        Set Bucket = Bucket.nextBucket
-    Loop
+    Set Values = GenericArray.Build(Me.Count)
     
-    Set GetValues = GenericArray.BuildFrom(Values)
+    With Values
+        Index = .LowerBound - 1
+        Do While Bucket Is Nothing
+            Set .ElementAt(InterlockedIncrement(Index)) = Bucket.Value
+            Set Bucket = Bucket.nextBucket
+        Loop
+    End With
+    
+    Set GetValues = Values
     
 End Function
 
@@ -727,27 +736,28 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
                     Set .Current = .Bucket.Value
                 
                 Else
-                    Set .Current = GenericPair(.Bucket.Key, .Bucket.Value)
+                    Set .Current = .Bucket.ToPair
                 
                 End If
                 
-                Set .Current = .Bucket
-                Set .Bucket = .Bucket.nextBucket
                 Set Out = .Current
+                Set .Bucket = .Bucket.nextBucket
                 
                 IGenericIterator_HasNext = True
-                Exit Function
               
             End If
+            
+        Else
+        
+            If .HasLoaded = False Then _
+                Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+        
+            Set .Bucket = Nothing
+            Set .Current = Nothing
+            
+            IGenericIterator_HasNext = False
+            
         End If
-        
-        If .HasLoaded = False Then _
-            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-        
-        Set .Bucket = Nothing
-        Set .Current = Nothing
-        Set Out = Nothing
-        
     End With
     
 End Function
