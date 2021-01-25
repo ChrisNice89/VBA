@@ -725,7 +725,8 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             IGenericIterator_HasNext=True
             
         ElseIf .HasLoaded = False Then 
-               Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+        
         Else
             set .current=nothing
             Set Out= .Current
