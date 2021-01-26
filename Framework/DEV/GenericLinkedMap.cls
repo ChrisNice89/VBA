@@ -89,7 +89,6 @@ Private Type Iterator
     Current As IGeneric
     Head As GenericBucket
     Bucket As GenericBucket
-    Map As GenericLinkedMap
 End Type
 '
 Private Type Member
@@ -99,8 +98,7 @@ Private Type Member
     LoadSize As Long
     LoadFactor As Double
     Buckets As GenericArray
-    Head As GenericBucket
-    Tail As GenericBucket
+Head As GenericBucket 
     Iterator As Iterator
 End Type
 Private myclass As Member
@@ -454,15 +452,13 @@ Public Sub Add( _
                     Set EmptyBucket = New GenericBucket
                     Set myclass.Buckets(Hash.Index) = EmptyBucket
                 End If
-                
-                With EmptyBucket
-                    Set .nextBucket = myclass.Head
-                    Set .PreviousBucket = myclass.Head.PreviousBucket
+            
+                Set EmptyBucket.nextBucket = myclass.Head                                                                                                                
+                With myclass.Head
+                    Set EmptyBucket.PreviousBucket = .PreviousBucket
                     Set .PreviousBucket.nextBucket = EmptyBucket
-                    Set .nextBucket.PreviousBucket = EmptyBucket
+                    Set .PreviousBucket = EmptyBucket                                                                                                              
                     
-'                    Set myclass.Head.PreviousBucket.nextBucket = EmptyBucket
-'                    Set myclass.Head.PreviousBucket = EmptyBucket
                     .State = (HAS_ENTRY Or .State) '!
                     .HashCode = Hash.Code
                     Set .Key = Key: Set .Value = Value
@@ -545,16 +541,13 @@ End Function
 
 Private Sub LoadIterator( _
                             ByRef Iterator As Iterator, _
-                            ByVal Map As GenericLinkedMap, _
                             ByVal Head As GenericBucket, _
                             ByVal t As DictionaryData)
     
     With Iterator
         .Type = t
-        Set .Map = Map
         Set .Head = Head
         Set .Bucket = Head.nextBucket
-        Set .Current = Nothing
         .HasLoaded = True
     End With
     
@@ -726,26 +719,24 @@ Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterato
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
   
     With myclass.Iterator
-        If .Bucket Is Nothing = False Then
-            If (.Bucket Is .Head = False) Then
+        If (.Bucket Is .Head = False) Then
                 
-                If .Type = KeyData Then
-                    Set .Current = .Bucket.Key
+            If .Type = KeyData Then
+                Set .Current = .Bucket.Key
         
-                ElseIf .Type = ValueData Then
-                    Set .Current = .Bucket.Value
+            ElseIf .Type = ValueData Then
+                Set .Current = .Bucket.Value
                 
-                Else
-                    Set .Current = .Bucket.ToPair
-                
-                End If
-                
-                Set Out = .Current
-                Set .Bucket = .Bucket.nextBucket
-                IGenericIterator_HasNext = True
-                exit function
+            Else
+                Set .Current = .Bucket.ToPair
                 
             End If
+                
+            Set Out = .Current
+            Set .Bucket = .Bucket.nextBucket
+            IGenericIterator_HasNext = True
+            exit function
+            
         end if
        
         If .HasLoaded = False Then _
@@ -763,7 +754,7 @@ Private Sub IGenericIterator_Reset()
          If .HasLoaded = False Then _
             Call System.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
             
-        Call LoadIterator(myclass.Iterator, .Map, .Head, .Type)
+        Call LoadIterator(myclass.Iterator, .Head, .Type)
     End With
 End Sub
 
