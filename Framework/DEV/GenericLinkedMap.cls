@@ -664,7 +664,7 @@ Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value 
 Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = Me.Item(Key): End Property
 Private Property Get IGenericDictionary_Count() As Long: IGenericDictionary_Count = myclass.Count: End Property
 
-Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
+Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.Contains(Key:=Item): End Function
 Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Boolean
         
     Dim Bucket As GenericBucket
