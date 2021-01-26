@@ -742,22 +742,18 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
                 
                 Set Out = .Current
                 Set .Bucket = .Bucket.nextBucket
-                
                 IGenericIterator_HasNext = True
-              
+                exit function
+                
             End If
-            
-        Else
+        end if
+       
+        If .HasLoaded = False Then _
+            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
         
-            If .HasLoaded = False Then _
-                Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-        
-            Set .Bucket = Nothing
-            Set .Current = Nothing
-            
-            IGenericIterator_HasNext = False
-            
-        End If
+        Set .Bucket = Nothing
+        Set .Current = Nothing
+
     End With
     
 End Function
