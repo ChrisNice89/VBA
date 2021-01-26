@@ -280,17 +280,14 @@ Public Function Iterator(Optional ByVal Index As Long, Optional ByVal Count As L
     
     Dim c As Member
     
-    If Index = 0 Then _
-        Index = myclass.Items.LowerBound
-        
     If Count = 0 Then _
         Count = myclass.Size
     
-    If (Index < myclass.Items.LowerBound) Or (Index > myclass.Size + myclass.Items.LowerBound) Then _
-        Call System.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myClass.Items.LowerBound) Or (Index > myClass.Size + myClass.Items.LowerBound)")
+    If (Index < myclass.Items.LowerBound) Then _
+        Call System.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myclass.Items.LowerBound)")
 
-    If (Count < 0) Or (Count > myclass.Size - Index + myclass.Items.LowerBound) Then _
-        Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myClass.Size - Index + myClass.Items.LowerBound)")
+    If (Count < 0) Or (Count > myclass.Size - Index ) Then _
+        Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myclass.Size - Index )")
         
     Call LoadIterator(c.Iterator, myclass.Items, Index, Count)
     Set Iterator = System.CreateInstance(New GenericList, VarPtr(c), LenB(c))
