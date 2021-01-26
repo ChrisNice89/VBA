@@ -125,13 +125,13 @@ Public Function GetKeys() As GenericArray
     Dim Keys As GenericArray
     Dim Index As Long
     Dim Bucket As GenericBucket
-    Set Bucket = myclass.Head
+    Set Bucket = myclass.Head.NextBucket
     
     Set Keys = GenericArray.Build(Me.Count)
     
     With Keys
         Index = .LowerBound - 1
-        Do While Bucket Is Nothing
+        Do while (Bucket Is myclass.Head = False)
             Set .ElementAt(InterlockedIncrement(Index)) = Bucket.Key
             Set Bucket = Bucket.nextBucket
         Loop
@@ -146,13 +146,13 @@ Public Function GetValues() As GenericArray
     Dim Values As GenericArray
     Dim Index As Long
     Dim Bucket As GenericBucket
-    Set Bucket = myclass.Head
+    Set Bucket = myclass.Head.nextBucket
     
     Set Values = GenericArray.Build(Me.Count)
     
     With Values
         Index = .LowerBound - 1
-        Do While Bucket Is Nothing
+        Do while (Bucket Is myclass.Head = False)
             Set .ElementAt(InterlockedIncrement(Index)) = Bucket.Value
             Set Bucket = Bucket.nextBucket
         Loop
@@ -673,23 +673,23 @@ Private Property Get IGenericDictionary_Count() As Long: IGenericDictionary_Coun
 Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.TryGetValue(Key, Nothing): End Function
 Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Boolean
         
-'        Dim i As Long
-'
-'        If Not Value Is Nothing Then
-'            For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-'                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-'                    If (Value.Equals(myclass.Buckets(i).Value)) Then _
-'                        IGenericDictionary_ContainsValue = True: Exit Function
-'            Next
-'
-'        Else
-'            For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-'                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-'                    If (myclass.Buckets(i).Value Is Nothing) Then _
-'                        IGenericDictionary_ContainsValue = True: Exit Function
-'            Next
-'        End If
-'
+    Dim Bucket As GenericBucket
+    Set Bucket = myclass.Head.NextBucket
+    
+    if (Value is nothing) = false then
+        Do while (Bucket Is myclass.Head = False)
+            if (Value.equals(Bucket.Value) then _
+                IGenericDictionary_ContainsValue=true:exit function
+            Set Bucket = Bucket.nextBucket
+        Loop
+    else
+        Do while (Bucket Is myclass.Head = False)
+            if (Bucket.Value is nothing) then _
+                IGenericDictionary_ContainsValue=true:exit function
+            Set Bucket = Bucket.nextBucket
+        Loop
+    end if
+
 End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
