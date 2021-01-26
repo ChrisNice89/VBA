@@ -720,15 +720,14 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             Set .Current = .Items.ElementAt(InterlockedIncrement(.Index))
             Set Out= .Current
             IGenericIterator_HasNext=True
-            
-        ElseIf .HasLoaded = False Then 
-            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-        
-        Else
-            set .current=nothing
-            Set Out= .Current
-            IGenericIterator_HasNext=false
+            exit function
         end if
+        
+        If .HasLoaded = False Then 
+            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+
+        set .current=nothing
+        Set Out= .Current
      
     End With
     
