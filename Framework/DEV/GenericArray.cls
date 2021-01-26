@@ -886,12 +886,11 @@ Private Sub LoadIterator( _
      Iterator.Descriptor = Values.Descriptor
      Iterator.Rank = Values.Rank
      Iterator.StartIndex = StartIndex
-     Iterator.EndIndex = StartIndex + Count - 1&
+     Iterator.Index = StartIndex - 1
+     Iterator.EndIndex = StartIndex + Count
      Iterator.Count = Count
     
-     If (Iterator.Rank = 1) Then
-         Iterator.Index = StartIndex - 1
-     Else
+     If not (Iterator.Rank = 1) Then
          ReDim Iterator.Indices(Iterator.Rank - 1)
          Iterator.ptrIndices = VarPtr(Iterator.Indices(0))
      End If
