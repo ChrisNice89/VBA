@@ -186,7 +186,7 @@ Public Function Build( _
        Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
     
     'InitialSize
-    newMap.Size = getPrime(6)
+    newMap.Size = getPrime(DEFAULT_CAPACITY)
     
     If RawSize > newMap.Size Then _
         newMap.Size = getPrime(RawSize)
