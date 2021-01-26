@@ -2138,26 +2138,25 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     With myclass.Iterator
         If (.Rank = 1) Then
             If .Index < .EndIndex Then
-                Set .Current = .Values(InterlockedIncrement(.Index))
-                Set Out = .Current
-                IGenericIterator_HasNext = True
-                Exit Function
-            End If
-        
-            If .HasLoaded = False Then _
-                Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-            
-            Set .Current = Nothing
-            IGenericIterator_HasNext = False
-            Exit Function
+                Set .Current = .Items.ElementAt(InterlockedIncrement(.Index))
+                Set Out= .Current
+                IGenericIterator_HasNext=True
+                exit function
+            end if
            
         Else
-        
+   
             Call System.Throw(Me, "Private Function IGenericIterator_HasNext").NotImplemented("multi dim not implemented yet")
             
         End If
     End With
     
+    If .HasLoaded = False Then 
+        Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
+
+    set .current=nothing
+    Set Out= .Current
+        
 End Function
 
 Private Sub IGenericIterator_Reset()
