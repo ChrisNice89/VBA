@@ -167,7 +167,7 @@ Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
 Public Function Build( _
-                        Optional ByVal Capacity As Long = DEFAULT_CAPACITY, _
+                        Optional ByVal Capacity As Long, _
                         Optional ByVal LoadFactor As Double = DEFAULT_LOADFACTOR) As GenericLinkedMap
     
     Dim newMap As Member
@@ -185,7 +185,7 @@ Public Function Build( _
     If (RawSize > MAXPRIME) Then _
        Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
     
-    'InitialSize
+    'InitialSize 
     newMap.Size = getPrime(DEFAULT_CAPACITY)
     
     If RawSize > newMap.Size Then _
