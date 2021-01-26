@@ -206,15 +206,8 @@ Public Function Build( _
 End Function
 
 Public Sub Clear()
-    
-    If Not myclass.Buckets Is Nothing Then _
-        Call myclass.Buckets.Clear
-    
-    Dim Bucket As GenericBucket
-    Set Bucket = myclass.Head
-    Do While Bucket Is Nothing = False
-        Call Bucket.Invalidate
-    Loop
+    call DisposeLinkedBuckets(myclass.head)
+    'call myclass.Buckets.clear-Reuse Buckets                                      
     myclass.Count = 0
     myclass.Occupancy = 0
 End Sub
@@ -439,13 +432,14 @@ Public Sub Add( _
             State = IS_EMPTY
             Set Bucket = .Buckets.ElementAt(Hash.Index)
             
-            If Bucket Is Nothing = False Then _
+            If Bucket Is Nothing = False Then 
                 State = Bucket.State
                                                     
-            If (EmptyBucket Is Nothing) Then _
-                If (State = HAS_COLLISION) Then _
-                    Set EmptyBucket = Bucket
-          
+                If (EmptyBucket Is Nothing) Then _
+                    If not (State = HAS_ENTRY) Then _
+                        Set EmptyBucket = Bucket
+            end if
+            
             If (State = IS_EMPTY) Then
             
                 If EmptyBucket Is Nothing Then
