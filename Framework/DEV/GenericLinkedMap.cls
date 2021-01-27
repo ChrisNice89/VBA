@@ -367,42 +367,39 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     Dim oldBucket As GenericBucket
     Dim newBucket As GenericBucket
     Dim Hash As HashItem
-    
-    With myclass
-        .Occupancy = 0
+   
+    myclass.Occupancy = 0 
+    Set oldBucket = myclass.Head.nextBucket
         
-        Set oldBucket = myclass.Head.nextBucket
-        
-        Do While oldBucket Is .Head = False
+    Do While oldBucket Is myclass.Head = False
            
-            If Not ForceNewHashing Then
-                Call LoadHash(Hash, oldBucket.HashCode, Size)
-            Else
-                Call LoadHash(Hash, oldBucket.Key.HashValue, Size)
-            End If
+        If Not ForceNewHashing Then
+            Call LoadHash(Hash, oldBucket.HashCode, Size)
+        Else
+            Call LoadHash(Hash, oldBucket.Key.HashValue, Size)
+        End If
             
-            oldBucket.State = HAS_ENTRY
+        oldBucket.State = HAS_ENTRY
             
-            Do
-                Set newBucket = NewBuckets(Hash.Index)
+        Do
+            Set newBucket = NewBuckets(Hash.Index)
                 
-                If newBucket Is Nothing Then _
-                    Set NewBuckets(Hash.Index) = oldBucket: Exit Do
+            If newBucket Is Nothing Then _
+                Set NewBuckets(Hash.Index) = oldBucket: Exit Do
                 
-                If Not (newBucket.State And HAS_COLLISION) = HAS_COLLISION Then _
-                    newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(myclass.Occupancy)
+            If Not (newBucket.State And HAS_COLLISION) = HAS_COLLISION Then _
+                newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(myclass.Occupancy)
                 
-                Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
-            Loop
-            
-            Set oldBucket = oldBucket.nextBucket
-            
+            Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
         Loop
-       
-        Set .Buckets = NewBuckets
-        .LoadSize = Int(.LoadFactor * Size)
-        .Size = Size
-    End With
+            
+         Set oldBucket = oldBucket.nextBucket
+            
+    Loop
+                                                                                                          
+    Set myclass.Buckets = NewBuckets
+    myclass.LoadSize = Int(myclass.LoadFactor * Size)
+    myclass.Size = Size
     
 End Sub
 
