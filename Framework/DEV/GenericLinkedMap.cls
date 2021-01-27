@@ -207,7 +207,9 @@ End Function
 
 Public Sub Clear()
     call DisposeLinkedBuckets(myclass.head)
-    'call myclass.Buckets.clear-Reuse Buckets                                      
+    Set myclass.head.PreviousBucket = myclass.head
+    Set myclass.head.nextBucket = myclass.head                                           
+    'call myclass.Buckets.clear->Reuse Buckets                                      
     myclass.Count = 0
     myclass.Occupancy = 0
 End Sub
@@ -617,22 +619,22 @@ Private Function IGeneric_Clone() As IGeneric
    
 End Function
 
-Private Sub DisposeLinkedBuckets(ByVal Head As GenericBucket)
+Private Sub DisposeLinkedBuckets(Byval Head as GenericBucket)
     
     Dim Bucket As GenericBucket
-    Dim nextBucket As GenericBucket
+    Dim oldBucket As GenericBucket
 
-    If Head Is Nothing Then Exit Sub
+    If Bucket Is Nothing Then _
+        Exit Sub
+    Set Bucket=Head.NextBucket
     
-    Set nextBucket = Head.nextBucket
-    
-    Do While nextBucket Is Head = False
-        Set Bucket = nextBucket.nextBucket
-        Call nextBucket.Invalidate
-        Set nextBucket = Bucket
+    Do While Bucket Is Head = False
+        Set oldBucket = Bucket
+        set Bucket=oldBucket.NextBucket
+        Call oldBucket.Invalidate
     Loop
     
-    Call Head.Invalidate
+    call head.Invalidate
     
 End Sub
 
