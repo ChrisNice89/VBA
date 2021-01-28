@@ -112,7 +112,7 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
         If Not TypeOf GenericValues(i) Is IGeneric Then _
             Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
             
-        Call SortedSet.Add(GenericValues(i))
+        Call SortedSet.Add(Value:=GenericValues(i),Overwrite:=True)
         
     Next
     
