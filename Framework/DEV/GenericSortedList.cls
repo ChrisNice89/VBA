@@ -102,7 +102,6 @@ Private Type Member
     Items As GenericArray
     Comparer As IGenericComparer
     Size As Long
-    IsReadOnly As Boolean
     SortOrder As SortOrder
     Iterator As Iterator
 End Type
