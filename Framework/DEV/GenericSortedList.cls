@@ -205,6 +205,47 @@ Public Function BuildFrom(ByVal Dictionary As IGenericDictionary, Optional ByVal
     
 End Function
 
+Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As GenericSortedSet
+        
+    Dim i As Long
+    Dim Values As GenericArray
+    Dim newList As Member
+    
+    If IsMissing(GenericValues) Then _
+        Call System.Throw(Me, "Public Function Create").Instantiation("ParamArray GenericValues are missing")
+        
+    If Comparer Is Nothing Then _
+        Set Comparer = IGenericComparer
+    
+    Set newList.Comparer = Comparer
+    newList.SortOrder = Ascending  
+                                                                                    
+    Set newList.Values = GenericArray.Build(UBound(GenericValues) + 1)
+    
+    With newList.Values
+        For i = LBound(GenericValues) To UBound(GenericValues)
+            
+            If Not VarType(GenericValues(i)) = vbObject Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+            
+            If (GenericValues(i) Is Nothing) Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Element is nothing")
+            
+            If Not TypeOf GenericValues(i) Is IGeneric Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+                
+            Set .ElementAt(i) = GenericValues(i)
+          
+        Next
+        
+        Call .Sort(Order:=newList.SortOrder, Index:=.LowerBound, Length:=.Length, Comparer:=newList.Comparer)  
+                                                                                            
+    End With
+                                                                           
+    Set Create =   System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
+    
+End Function
+                                                                                        
 Private Sub Class_Terminate()
     Call IGeneric_Dispose
 End Sub
