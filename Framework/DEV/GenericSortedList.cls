@@ -331,31 +331,44 @@ Public Function Iterator(Optional ByVal Index As Long, Optional ByVal Count As L
     If Count = 0 Then _
         Count = myclass.Size
     
-    If (Index < myclass.Items.LowerBound) Or (Index > myclass.Size) Then _
-        Call System.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myclass.Items.LowerBound) Or (Index > myclass.Size)")
+    If (Index < myclass.Items.LowerBound) Then _
+        Call System.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myclass.Items.LowerBound)")
 
-    If (Count < 0) Or (Count > myclass.Size - Index) Then _
-        Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myclass.Size - Index) ")
-    
-    Call LoadIterator(c.Iterator, myclass.Items,  Index, Count)
+    If (Count < 0) Or (Count > myclass.Size - Index ) Then _
+        Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myclass.Size - Index )")
+        
+    Call LoadIterator(c.Iterator, myclass.Items, Index, Count)
     Set Iterator = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
 
 End Function
 
+Public Sub CopyTo( _
+                    ByVal Index As Long, _
+                    ByVal GArray As GenericArray, _
+                    ByVal ArrayIndex As Long, _
+                    Optional ByVal Count As Long = 0)
+
+    If (Count = 0) Then _
+        Count = myclass.Size
+        
+    If (myclass.Size - Index < Count) Then _
+        Call System.Throw(Me, "Public Sub CopyTo").ArgOutOfRange("(myclass.Size - Index<count)")
+    
+    Call GenericArray.CopyArrays(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Count)
+
+End Sub                                                                                          
 Private Sub LoadIterator( _
                             ByRef Iterator As Iterator, _
                             ByVal Items As GenericArray, _
                             ByVal StartIndex As Long, _
                             ByVal Count As Long)
- 
-    With Iterator
-        Set .Items = Keys
-        .StartIndex = StartIndex
-        .Count = Count
-        .Index = .StartIndex - 1
-        .EndIndex = .Index + .Count
-        .HasLoaded = True
-    End With
+
+    Set Iterator.Items = Items
+    Iterator.StartIndex = StartIndex
+    Iterator.Count = Count
+    Iterator.Index = StartIndex - 1
+    Iterator.EndIndex = StartIndex + Count 
+    Iterator.HasLoaded = True
     
 End Sub
 
@@ -372,15 +385,13 @@ Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: I
 Private Function IGeneric_Clone() As IGeneric
     
     Dim c As Member
-    
-    With c
-        Set .Items = myclass.Items.Copy
-        .Size = myclass.Size
-        .SortOrder = myclass.SortOrder
-    End With
-    
+
+    Set c.Items = myclass.Items.Copy
+    c.Size = myclass.Size
+    c.SortOrder=myclass.sortorder                                                                                                                
+ 
     Set IGeneric_Clone = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
-  
+   
 End Function
 
 Private Sub IGeneric_Dispose()
@@ -432,24 +443,22 @@ Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGeneric
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
-     
+    
     With myclass.Iterator
-        If .Index = .EndIndex Then
-            If .HasLoaded = False Then _
-                Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-            
-            Set Out = Nothing
-            Set .Current = Nothing
-            Exit Function
-        End If
+    
+        If .Index < .EndIndex Then
+            Set .Current = .Items.ElementAt(InterlockedIncrement(.Index))
+            Set Out= .Current
+            IGenericIterator_HasNext=True
+            exit function
+        end if
         
-        .Index = .Index + 1
+        If .HasLoaded = False Then 
+            Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
 
-        Set .Current = .Items.ElementAt(.Index)
-
-        Set Out = .Current
-        IGenericIterator_HasNext = True
-            
+        set .current=nothing
+        Set Out= .Current
+     
     End With
     
 End Function
@@ -458,8 +467,9 @@ Private Sub IGenericIterator_Reset()
     With myclass.Iterator
         If .HasLoaded = False Then _
             Call System.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
-                
-        Call LoadIterator(myclass.Iterator,  .Items, .StartIndex, .Count)
+        
+        Call LoadIterator(myclass.Iterator, .Items, .StartIndex, .Count)
     End With
 End Sub
+
 
