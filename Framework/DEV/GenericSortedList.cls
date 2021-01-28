@@ -89,15 +89,13 @@ Private Const S_OK As Long = &H0&
 Private Const DEFAULT_CAPACITY As Long = 16
 
 Private Type Iterator
-    Type As DictionaryData
     StartIndex As Long
     EndIndex As Long
     Count As Long
     Index As Long
     HasLoaded As Boolean
     Current As IGeneric
-    Keys As GenericArray
-    Values As GenericArray
+    Items As GenericArray
 End Type
 
 Private Type Member
@@ -110,10 +108,10 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Public Property Get First() As Long: First = myclass.Keys.LowerBound: End Property
+Public Property Get First() As Long: First = myclass.Items.LowerBound: End Property
 Public Property Get Last() As Long
     
-    Last = myclass.Keys.LowerBound
+    Last = myclass.Items.LowerBound
     
     If myclass.Size > 0 Then _
         Last = myclass.Size - Last - 1
@@ -129,7 +127,7 @@ Attribute ElementAt.VB_UserMemId = 0
     If (Index >= myclass.Size) Then _
         Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index >= myclass.size)")
     
-    Set ElementAt = myclass.Values(Index)
+    Set ElementAt = myclass.Items.ElementAt(Index)
     
 End Property
 
@@ -145,7 +143,7 @@ Public Property Let Capacity(ByVal Value As Long)
     If Not (Value = myclass.Items.Length) Then
         If (Value > 0) Then
 
-            Dim newItems As GenericArray: Set newValues = GenericArray.Build(Value)
+            Dim newItems As GenericArray: Set newItems = GenericArray.Build(Value)
             
             If (myclass.Size > 0) Then
                 With myclass.Items
@@ -241,7 +239,7 @@ Public Sub TrimExcess()
 
 End Sub
 
-Public Function Contains(ByVal Value As IGeneric) As Long: ContainsKey = Me.IndexOf(Value) > -1: End Function
+Public Function Contains(ByVal Value As IGeneric) As Long: Contains = Me.IndexOf(Value) > -1: End Function
 
 Public Function Remove(ByVal Value As IGeneric) As Boolean
 
@@ -288,15 +286,15 @@ Private Sub Insert(ByVal Index As Long,  ByVal Value As IGeneric)
 
     If (myclass.Size = myclass.Items.Length) Then _
         Call EnsureCapacity(myclass.Size + 1)
-
-    If (Index < myclass.Size) Then
-        With myclass.Items
+    
+    With myclass.Items                                                                                  
+        If (Index < myclass.Size) Then _
             Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index)): _
             Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
-        End With
-    End If
     
-    Set myclass.Items.ElementAt(Index) = Value
+        Set .ElementAt(Index) = Value
+    end with                                                                                      
+    
     myclass.Size = myclass.Size + 1
 
 End Sub
@@ -310,7 +308,7 @@ End Sub
 Public Function IndexOf(ByVal Value As IGeneric) As Long
      
     If (Value Is Nothing) Then _
-        Call System.Throw(Me, "Public Function IndexOfKey").IsNothing("(Key Is Nothing)")
+        Call System.Throw(Me, "Public Function IndexOf").IsNothing("(Value Is Nothing)")
     
     Dim ret As Long
     ret = Not myclass.Items.BinarySearch(Value:=Value, Index:=myclass.Itemss.LowerBound, Length:=myclass.Size, Order:=myclass.SortOrder, Comparer:=myclass.Comparer)
@@ -429,14 +427,14 @@ Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGen
     
 End Property
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Value:=Item): End Function
-Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(ValueData, GArray, ArrayIndex, "Private Sub IGenericReadOnlyList_CopyTo"): End Sub
+Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Count:=myclass.Size): End Sub
 Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator: End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myclass.items.copy: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.IndexOf(Value:=Item): End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(PairData, GArray, ArrayIndex, "Private Sub IGenericCollection_CopyTo"): End Sub
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.contains(Value:=Item): End Function
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Count:=myclass.Size): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator: End Function
 
