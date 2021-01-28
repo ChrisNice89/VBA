@@ -87,7 +87,7 @@ Implements IGenericIterator
 
 Private Const S_OK As Long = &H0&
 Private Const DEFAULT_CAPACITY As Long = 16
-
+                              
 Private Type Iterator
     StartIndex As Long
     EndIndex As Long
