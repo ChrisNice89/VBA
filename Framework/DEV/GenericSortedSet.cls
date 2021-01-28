@@ -49,6 +49,7 @@ Implements IGenericIterator
 #End If
 
 Private Const BASE_INDEX As Long = 0
+Private Const SORT_ORDER As Long = 1 'Ascending
 
 Private Type InternalStack
     Size As Long
@@ -71,8 +72,9 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Public Property Get IsHeightBalanced(): IsHeightBalanced = CheckHeightBalance(myclass.Root): End Property
-Public Property Get IsBalanced(): IsBalanced = CheckRedBlackBalance(myclass.Root): End Property
+Public Property Get SortOrder() As SortOrder: SortOrder = SORT_ORDER: End Property
+Private Property Get IsHeightBalanced(): IsHeightBalanced = CheckHeightBalance(myclass.Root): End Property
+Private Property Get IsBalanced(): IsBalanced = CheckRedBlackBalance(myclass.Root): End Property
 Public Property Get Count() As Long: Count = SizeOf(myclass.Root): End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
 
@@ -112,7 +114,7 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
         If Not TypeOf GenericValues(i) Is IGeneric Then _
             Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
             
-        Call SortedSet.Add(Value:=GenericValues(i),Overwrite:=True)
+        Call SortedSet.Add(Value:=GenericValues(i), Overwrite:=True)
         
     Next
     
@@ -169,7 +171,7 @@ Private Function RankOf(ByVal Value As IGeneric, ByVal Node As GenericNode) As L
     Dim Order As CompareResult
     
     Do While Node Is Nothing = False
-        Order = myclass.Comparer.Compare(Value, Node.Value)
+        Order = myclass.Comparer.Compare(Value, Node.Value) '* SORT_ORDER
         
         If (Order = 0) Then _
             RankOf = RankOf + SizeOf(Node.Left): Exit Function
@@ -512,7 +514,7 @@ Public Sub IntersectWith(ByVal Collection As IGenericCollection)
             With myclass.Comparer
             
                 Do
-                    Order = .Compare(Value, Current.Value)
+                    Order = .Compare(Value, Current.Value) '*SORT_ORDER
         
                     Current.Count = Current.Count + 1
                     
@@ -574,7 +576,7 @@ Private Function FindNode(ByVal Value As IGeneric) As GenericNode
     With myclass.Comparer
         Do While (Current Is Nothing) = False
         
-            Order = .Compare(Value, Current.Value)
+            Order = .Compare(Value, Current.Value) '*SORT_ORDER
            
             If (Order = 0) Then _
                 Set FindNode = Current: Exit Function
@@ -633,7 +635,7 @@ Private Function InsertLeftLeaning(ByVal Node As GenericNode, ByVal Value As IGe
     
     With Node
         .Count = .Count + 1
-        Select Case myclass.Comparer.Compare(Value, .Value)
+        Select Case myclass.Comparer.Compare(Value, .Value) '*SORT_ORDER
             Case Is < 0: Set .Left = InsertLeftLeaning(.Left, Value)
             Case Is > 0: Set .Right = InsertLeftLeaning(.Right, Value)
             Case Else: Set .Value = Value
@@ -685,7 +687,7 @@ Public Function Add( _
     Set Current = myclass.Root
     With myclass.Comparer
         Do
-            Order = .Compare(Value, Current.Value)
+            Order = .Compare(Value, Current.Value) '*SORT_ORDER
            
             If (Order = 0) Then
                 myclass.Root.IsRed = False

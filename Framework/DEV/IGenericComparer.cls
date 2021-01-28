@@ -11,8 +11,8 @@ Attribute VB_Exposed = True
 Option Compare Database
 
 Public Enum SortOrder
-    Descending = -1
-    Ascending = 1
+    descending = -1
+    ascending = 1
 End Enum
 
 Public Enum CompareResult

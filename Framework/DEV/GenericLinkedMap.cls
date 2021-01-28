@@ -98,7 +98,7 @@ Private Type Member
     LoadSize As Long
     LoadFactor As Double
     Buckets As GenericArray
-Head As GenericBucket 
+Head As GenericBucket
     Iterator As Iterator
 End Type
 Private myclass As Member
@@ -118,20 +118,20 @@ Public Property Get Item(ByVal Key As IGeneric) As IGeneric
     Set Item = Bucket(i).Value: Exit Property
 
 End Property
-Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) >= 0: End Function 'TryGetValue(Key, Nothing): End Function
+Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) > -1: End Function 'TryGetValue(Key, Nothing): End Function
 
 Public Function GetKeys() As GenericArray
 
     Dim Keys As GenericArray
     Dim Index As Long
     Dim Bucket As GenericBucket
-    Set Bucket = myclass.Head.NextBucket
+    Set Bucket = myclass.Head.nextBucket
     
     Set Keys = GenericArray.Build(Me.Count)
     
     With Keys
         Index = .LowerBound - 1
-        Do while (Bucket Is myclass.Head = False)
+        Do While (Bucket Is myclass.Head = False)
             Set .ElementAt(InterlockedIncrement(Index)) = Bucket.Key
             Set Bucket = Bucket.nextBucket
         Loop
@@ -152,7 +152,7 @@ Public Function GetValues() As GenericArray
     
     With Values
         Index = .LowerBound - 1
-        Do while (Bucket Is myclass.Head = False)
+        Do While (Bucket Is myclass.Head = False)
             Set .ElementAt(InterlockedIncrement(Index)) = Bucket.Value
             Set Bucket = Bucket.nextBucket
         Loop
@@ -185,7 +185,7 @@ Public Function Build( _
     If (RawSize > MAXPRIME) Then _
        Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
     
-    'InitialSize 
+    'InitialSize
     newMap.Size = getPrime(DEFAULT_CAPACITY)
     
     If RawSize > newMap.Size Then _
@@ -206,10 +206,10 @@ Public Function Build( _
 End Function
 
 Public Sub Clear()
-    call DisposeLinkedBuckets(myclass.head)
-    Set myclass.head.PreviousBucket = myclass.head
-    Set myclass.head.nextBucket = myclass.head                                           
-    'call myclass.Buckets.clear->Reuse Buckets                                      
+    Call DisposeLinkedBuckets(myclass.Head)
+    Set myclass.Head.PreviousBucket = myclass.Head
+    Set myclass.Head.nextBucket = myclass.Head
+    'call myclass.Buckets.clear->Reuse Buckets
     myclass.Count = 0
     myclass.Occupancy = 0
 End Sub
@@ -368,7 +368,7 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     Dim newBucket As GenericBucket
     Dim Hash As HashItem
    
-    myclass.Occupancy = 0 
+    myclass.Occupancy = 0
     Set oldBucket = myclass.Head.nextBucket
         
     Do While oldBucket Is myclass.Head = False
@@ -431,13 +431,13 @@ Public Sub Add( _
             State = IS_EMPTY
             Set Bucket = .Buckets.ElementAt(Hash.Index)
             
-            If Bucket Is Nothing = False Then 
+            If Bucket Is Nothing = False Then
                 State = Bucket.State
                                                     
                 If (EmptyBucket Is Nothing) Then _
-                    If not (State = HAS_ENTRY) Then _
+                    If Not (State = HAS_ENTRY) Then _
                         Set EmptyBucket = Bucket
-            end if
+            End If
             
             If (State = IS_EMPTY) Then
             
@@ -446,11 +446,11 @@ Public Sub Add( _
                     Set myclass.Buckets(Hash.Index) = EmptyBucket
                 End If
             
-                Set EmptyBucket.nextBucket = myclass.Head                                                                                                                
+                Set EmptyBucket.nextBucket = myclass.Head
                 With myclass.Head
                     Set EmptyBucket.PreviousBucket = .PreviousBucket
                     Set .PreviousBucket.nextBucket = EmptyBucket
-                    Set .PreviousBucket = EmptyBucket                                                                                                              
+                    Set .PreviousBucket = EmptyBucket
                     
                     .State = (HAS_ENTRY Or .State) '!
                     .HashCode = Hash.Code
@@ -527,7 +527,7 @@ Public Function IteratorOf(ByVal t As DictionaryData) As IGenericIterator
                      
     Dim c As Member
     
-    Call LoadIterator(c.Iterator, Me, myclass.Head, t)
+    Call LoadIterator(c.Iterator, myclass.Head, t)
     Set IteratorOf = System.CreateInstance(New GenericLinkedMap, VarPtr(c), LenB(c))
     
 End Function
@@ -616,22 +616,22 @@ Private Function IGeneric_Clone() As IGeneric
    
 End Function
 
-Private Sub DisposeLinkedBuckets(Byval Head as GenericBucket)
+Private Sub DisposeLinkedBuckets(ByVal Head As GenericBucket)
     
     Dim Bucket As GenericBucket
     Dim oldBucket As GenericBucket
 
     If Bucket Is Nothing Then _
         Exit Sub
-    Set Bucket=Head.NextBucket
+    Set Bucket = Head.nextBucket
     
     Do While Bucket Is Head = False
         Set oldBucket = Bucket
-        set Bucket=oldBucket.NextBucket
+        Set Bucket = oldBucket.nextBucket
         Call oldBucket.Invalidate
     Loop
     
-    call head.Invalidate
+    Call Head.Invalidate
     
 End Sub
 
@@ -663,25 +663,25 @@ Private Property Set IGenericDictionary_Item(ByVal Key As IGeneric, ByVal Value 
 Private Property Get IGenericDictionary_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericDictionary_Item = Me.Item(Key): End Property
 Private Property Get IGenericDictionary_Count() As Long: IGenericDictionary_Count = myclass.Count: End Property
 
-Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.Contains(Key:=Item): End Function
+Private Function IGenericDictionary_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericDictionary_ContainsKey = Me.Contains(Key:=Key): End Function
 Private Function IGenericDictionary_ContainsValue(ByVal Value As IGeneric) As Boolean
         
     Dim Bucket As GenericBucket
-    Set Bucket = myclass.Head.NextBucket
+    Set Bucket = myclass.Head.nextBucket
     
-    if (Value is nothing) = false then
-        Do while (Bucket Is myclass.Head = False)
-            if (Value.equals(Bucket.Value) then _
-                IGenericDictionary_ContainsValue=true:exit function
+    If (Value Is Nothing) = False Then
+        Do While (Bucket Is myclass.Head = False)
+            If Value.Equals(Bucket.Value) Then _
+                IGenericDictionary_ContainsValue = True: Exit Function
             Set Bucket = Bucket.nextBucket
         Loop
-    else
-        Do while (Bucket Is myclass.Head = False)
-            if (Bucket.Value is nothing) then _
-                IGenericDictionary_ContainsValue=true:exit function
+    Else
+        Do While (Bucket Is myclass.Head = False)
+            If (Bucket.Value Is Nothing) Then _
+                IGenericDictionary_ContainsValue = True: Exit Function
             Set Bucket = Bucket.nextBucket
         Loop
-    end if
+    End If
 
 End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
@@ -728,9 +728,9 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
             Set Out = .Current
             Set .Bucket = .Bucket.nextBucket
             IGenericIterator_HasNext = True
-            exit function
+            Exit Function
             
-        end if
+        End If
        
         If .HasLoaded = False Then _
             Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator

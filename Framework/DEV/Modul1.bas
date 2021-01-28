@@ -164,7 +164,7 @@ Sub TestArrayIterator2()
     Dim s As GString
     Set s = GString("Ich bin ein Fuchs")
     
-    With s.ToArray.Iterator
+    With s.ToArray.Shuffle(12, 5).Iterator(12, 5)
         Do While .HasNext(Char)
             Debug.Print Char
         Loop
@@ -217,12 +217,12 @@ Sub TestArrayGetter()
 
 End Sub
 
-Sub TestArraySort()
+Sub ListSort()
     Dim t As CTimer
     Set t = New CTimer
     
     Dim i As Long, N As Long
-    N = 40000
+    N = 35
     
     Dim List As GenericList
     Set List = GenericList.Build(N)
@@ -231,19 +231,22 @@ Sub TestArraySort()
 '        Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Call List.Add(GNumeric(i))
     Next
-    Call List.Sort(Random)
-    
-    t.StartCounter
-    Call List.Sort(Descending)
-    Debug.Print t.TimeElapsed
-    
     Dim Item As IGeneric
-    With List.Iterator
+    
+    With List.Shuffle.Iterator(5, 10)
         Do While .HasNext(Item)
-          
+            Debug.Print Item
         Loop
     End With
     
+    t.StartCounter
+    
+    With List.Sort(ascending).Iterator(5, 10)
+        Do While .HasNext(Item)
+            Debug.Print Item
+        Loop
+    End With
+    Debug.Print t.TimeElapsed
 End Sub
 
 Sub TestEquals()
@@ -347,7 +350,7 @@ Sub TestSortedListIterator()
     
     N = 50
     For i = 1 To N
-        Call sl.Add(GNumeric(i), GNumeric(i))
+        Call sl.Add(GNumeric(i))
     Next
     
     Dim c As GenericSortedList
@@ -355,7 +358,7 @@ Sub TestSortedListIterator()
     
     t.StartCounter
     Dim Item As IGeneric
-    With c.IteratorOf(t:=KeyData)
+    With c.Iterator
         Do While .HasNext(Item)
            Debug.Print Item
         Loop
@@ -379,8 +382,8 @@ Sub TestMaps()
         For i = 1 To N
             Call RandomList.Add(GenericPair(GNumeric(i), GNumeric(i)))
         Next
-        Call RandomList.Sort(Random)
-        Call RandomList.Sort(Ascending, GenericPair)
+        Call RandomList.Shuffle
+        Call RandomList.Sort(ascending, GenericPair)
     End If
  
     Dim P As GenericPair
@@ -427,22 +430,17 @@ Sub TestSortedList()
     t.StartCounter
     
     Dim sl As GenericSortedList
-    Set sl = GenericSortedList.Build()
-    
     Dim i As Long, N As Long
     
-    N = 100
-    For i = N To 1 Step -1
-        Call sl.Add(GNumeric(i), GNumeric(i))
-    Next
+    Set sl = GenericSortedList.Create(IGenericComparer, GNumeric(3), GNumeric(4), GNumeric(1), GNumeric(5), GNumeric(2), GNumeric(0), GNumeric(3))
     Debug.Print t.TimeElapsed
     
     Dim c As GenericSortedList
     Set c = System.Clone(sl)
     
     Dim Item As IGeneric
-
-    With c.IteratorOf(PairData)
+    
+    With c.Iterator '(0, 3)
         Do While .HasNext(Item)
            Debug.Print Item
         Loop
@@ -583,7 +581,7 @@ Sub TestArray2()
         Call .SetValue(GString("a"), 90)
         Call .SetValue(GString("a"), 99)
         t.StartCounter
-        Call .Sort(Descending)
+        Call .Sort(descending)
         Debug.Print t.TimeElapsed
         
         For i = 1 To .Length - 1
@@ -591,7 +589,7 @@ Sub TestArray2()
                 Debug.Print "i: " & i & "  " & ga(i)
         Next
 
-        Debug.Print .BinarySearch(GString("zzz"), 1, .Length - 1, Descending, IGenericValue.Comparer)
+        Debug.Print .BinarySearch(GString("zzz"), 1, .Length - 1, descending, IGenericValue.Comparer)
         Call .Reverse
         Call .Clear
     End With

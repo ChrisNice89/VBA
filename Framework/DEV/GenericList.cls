@@ -139,20 +139,24 @@ Public Property Let Capacity(ByVal Value As Long)
     
     If Not (Value = myclass.Items.Length) Then
         If (Value > 0) Then
-            Dim newItems As GenericArray
             
-            With GenericArray
-                Set newItems = .Build(Value)
+            Dim newItems As GenericArray: Set newItems = GenericArray.Build(Value)
+            
+            With myclass.Items
                 If (myclass.Size > 0) Then _
-                    Call CopyMemory(Dst:=ByVal newItems.AdressOf(Index:=.LowerBound), Src:=ByVal myclass.Items.AdressOf(Index:=.LowerBound), Length:=myclass.Items.Size): _
-                    Call ZeroMemory(Dst:=ByVal myclass.Items.AdressOf(Index:=.LowerBound), Length:=myclass.Items.Size)
+                    Call CopyMemory(Dst:=ByVal newItems.AdressOf(Index:=.LowerBound), Src:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size): _
+                    Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size)
             End With
             
             Set myclass.Items = newItems
+            
         Else
+        
             Call myclass.Items.Clear
+            
         End If
     End If
+    
 End Property
 
 Private Sub EnsureCapacity(ByVal min As Long)
@@ -181,7 +185,7 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     If (Capacity < 0) Then _
         Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
 
-    newList.SortOrder = Ascending
+    newList.SortOrder = ascending
     Set newList.Items = GenericArray.Build(Capacity)
   
     Set Build = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
@@ -229,7 +233,7 @@ Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
     If (Collection.Count < 0) Then _
         Call System.Throw(Me, "Build").ArgOutOfRange("Collection.Count < 0")
         
-    newList.SortOrder = Ascending
+    newList.SortOrder = ascending
     If (Collection Is Nothing) = False Then
         Set newList.Items = GenericArray.Build(Collection.Count)
         Call Collection.CopyTo(GArray:=newList.Items, ArrayIndex:=newList.Items.LowerBound)
@@ -244,7 +248,7 @@ Private Function AsList(ByRef Items As GenericArray) As GenericList
 
     Dim newList As Member
     
-    newList.SortOrder = Ascending
+    newList.SortOrder = ascending
     Set newList.Items = Items
     newList.Size = Items.Length
     Set Items = Nothing
@@ -286,7 +290,7 @@ Public Function Iterator(Optional ByVal Index As Long, Optional ByVal Count As L
     If (Index < myclass.Items.LowerBound) Then _
         Call System.Throw(Me, "Private Sub LoadIterator").IndexOutofRange("(Index < myclass.Items.LowerBound)")
 
-    If (Count < 0) Or (Count > myclass.Size - Index ) Then _
+    If (Count < 0) Or (Count > myclass.Size - Index) Then _
         Call System.Throw(Me, "Public Function Iterator").ArgOutOfRange("(Count < 0) Or (Count > myclass.Size - Index )")
         
     Call LoadIterator(c.Iterator, myclass.Items, Index, Count)
@@ -473,15 +477,6 @@ Public Sub CopyTo( _
 
 End Sub
 
-'ToArray returns a new Object array containing the contents of the List.
-'This requires copying the List, which is an O(n) operation.
-Public Function ToArray() As GenericArray
-   
-    Set ToArray = GenericArray.Build(myclass.Size)
-    Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=ToArray, ArrayIndex:=ToArray.LowerBound)
-
-End Function
-
 Public Function IsEqual(ByVal First As IGenericReadOnlyList, ByVal second As IGenericReadOnlyList) As Boolean
 
     If First Is Nothing Or second Is Nothing Then _
@@ -513,7 +508,7 @@ Public Function IsEqual(ByVal First As IGenericReadOnlyList, ByVal second As IGe
     
 End Function
 
-Public Sub Sort(ByVal Order As SortOrder, Optional ByVal Comparer As IGenericComparer, Optional ByVal Index As Long = 0, Optional ByVal Count As Long = 0)
+Public Function Sort(ByVal Order As SortOrder, Optional ByVal Comparer As IGenericComparer, Optional ByVal Index As Long = 0, Optional ByVal Count As Long = 0) As GenericList
 
     If Count = 0 Then _
         Count = myclass.Size
@@ -528,14 +523,18 @@ Public Sub Sort(ByVal Order As SortOrder, Optional ByVal Comparer As IGenericCom
         Call System.Throw(Me, "Public Sub Sort").ArgOutOfRange("(myclass.Size - Index < Count)")
         
     Call myclass.Items.Sort(Order:=Order, Index:=Index, Length:=Count, Comparer:=Comparer)
+    Set Sort = Me
     
-End Sub
+End Function
 
 Public Sub Clear():
     Call myclass.Items.Clear
     myclass.Size = 0
 End Sub
 
+'ToArray returns a new Object array containing the contents of the List.
+'This requires copying the List, which is an O(n) operation.
+Public Function ToArray() As GenericArray: Set ToArray = myclass.Items.Copy: End Function
 Public Function Contains(Item As IGeneric) As Boolean: Contains = (Me.IndexOf(Item) > myclass.Items.LowerBound): End Function
 
 Public Function BinarySearch( _
@@ -588,6 +587,13 @@ Public Function IndexOf( _
     
 End Function
 
+Public Function Shuffle() As GenericList
+    
+    Call myclass.Items.Shuffle(myclass.Items.LowerBound, myclass.Size)
+    Set Shuffle = Me
+    
+End Function
+
 Public Function Reverse( _
                             Optional ByVal Index As Long, _
                             Optional ByVal Count As Long) As GenericList
@@ -595,19 +601,20 @@ Public Function Reverse( _
     If (Index = 0) Then
         Index = myclass.Items.LowerBound
     ElseIf (Index < 0) Then
-        Call System.Throw(Me, "Public Function IndexOf").ArgOutOfRange("Index < 0")
+        Call System.Throw(Me, "Public Function Reverse").ArgOutOfRange("Index < 0")
     End If
     
     If (Count = 0) Then
         Count = myclass.Size
     ElseIf (Count < 0) Then
-        Call System.Throw(Me, "Public Function IndexOf").ArgOutOfRange("Count < 0")
+        Call System.Throw(Me, "Public Function Reverse").ArgOutOfRange("Count < 0")
     End If
     
     If (myclass.Size - Index < Count) Then _
-        Call System.Throw(Me, "Public Function IndexOf").InvalidInput("(myclass.Size - Index < Count)")
+        Call System.Throw(Me, "Public Function Reverse").InvalidInput("(myclass.Size - Index < Count)")
     
-    Set Reverse = myclass.Items.Reverse(Index:=Index, Length:=Count)
+    Call myclass.Items.Reverse(Index:=Index, Length:=Count)
+    Set Reverse = Me
     
 End Function
 
@@ -636,7 +643,7 @@ Private Sub LoadIterator( _
     Iterator.StartIndex = StartIndex
     Iterator.Count = Count
     Iterator.Index = StartIndex - 1
-    Iterator.EndIndex = StartIndex + Count 
+    Iterator.EndIndex = StartIndex + Count - 1
     Iterator.HasLoaded = True
     
 End Sub
@@ -695,7 +702,7 @@ Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGen
     If (Index >= myclass.Size) Then _
         Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index >= myclass.Size)")
 
-    Set IGenericReadOnlyList_ElementAt = myclass.Items.elementAt(Index)
+    Set IGenericReadOnlyList_ElementAt = myclass.Items.ElementAt(Index)
     
 End Property
 
@@ -706,7 +713,7 @@ Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGener
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Property Get IGenericCollection_IsReadOnly() As Boolean: IGenericCollection_IsReadOnly = False: End Property
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.ToArray: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = me.Contains(Item:=Item): End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Item:=Item): End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator: End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Count:=myclass.Size): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
@@ -719,16 +726,16 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
         If .Index < .EndIndex Then
             Set .Current = .Items.ElementAt(InterlockedIncrement(.Index))
-            Set Out= .Current
-            IGenericIterator_HasNext=True
-            exit function
-        end if
+            Set Out = .Current
+            IGenericIterator_HasNext = True
+            Exit Function
+        End If
         
-        If .HasLoaded = False Then 
+        If .HasLoaded = False Then _
             Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
 
-        set .current=nothing
-        Set Out= .Current
+        Set .Current = Nothing
+        Set Out = .Current
      
     End With
     
