@@ -392,10 +392,11 @@ Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
             Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
          
          Set .ElementAt(Index) = Item
-         myclass.Size = myclass.Size + 1
-         
-    End With
 
+    End With
+    
+    myclass.Size = myclass.Size + 1
+                                                                                                  
 End Sub
 
 Public Function Remove(ByVal Item As IGeneric) As Boolean
