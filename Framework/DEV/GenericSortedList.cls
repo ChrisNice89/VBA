@@ -208,8 +208,8 @@ End Function
 Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As GenericSortedSet
         
     Dim i As Long
-    Dim Values As GenericArray
-    Dim newList As Member
+    Dim newSortedList as GenericSortedList                                                                        
+    Dim Values As () Igeneric
     
     If IsMissing(GenericValues) Then _
         Call System.Throw(Me, "Public Function Create").Instantiation("ParamArray GenericValues are missing")
@@ -217,12 +217,8 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
     
-    Set newList.Comparer = Comparer
-    newList.SortOrder = Ascending  
-                                                                                    
-    Set newList.Values = GenericArray.Build(UBound(GenericValues) + 1)
-    
-    With newList.Values
+    Redim Values(UBound(GenericValues))
+
         For i = LBound(GenericValues) To UBound(GenericValues)
             
             If Not VarType(GenericValues(i)) = vbObject Then _
@@ -234,15 +230,22 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
             If Not TypeOf GenericValues(i) Is IGeneric Then _
                 Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
                 
-            Set .ElementAt(i) = GenericValues(i)
+            Set Values(i) = GenericValues(i)
           
         Next
-        
-        Call .Sort(Order:=newList.SortOrder, Index:=.LowerBound, Length:=.Length, Comparer:=newList.Comparer)  
-                                                                                            
-    End With
-                                                                           
-    Set Create =   System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
+    
+    If i > 1 Then _
+        Call GenericArray.SortArray(Objects:=Values, LowerBound:=LBound(Values), UpperBound:=Upperbound(Values), Order:=Ascending, Comparer:=Comparer)                                                                                    
+                                                                               
+    set newSortedList=GenericList.Build(i,Comparer)
+    
+    with newSortedList                                                                                        
+        For i = LBound(Values) To UBound(Values)                                                                                     
+            call .Add(Value:=Values(i),Overwrite:=True)                                                                                 
+        next   
+    end with                                                                                    
+    
+    Set Create = newSortedList
     
 End Function
                                                                                         
