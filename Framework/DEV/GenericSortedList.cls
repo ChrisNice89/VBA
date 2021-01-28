@@ -307,7 +307,7 @@ Public Sub RemoveAt(ByVal Index As Long)
     
 End Sub
 
-Public Function Add(ByVal Value As IGeneric) As Long
+Public Function Add(ByVal Value As IGeneric,Optional ByVal Overwrite As Boolean) As Long
    
     If (Value Is Nothing) Then _
         Call System.Throw(Me, "Public Function Add").IsNothing("(Value Is Nothing)")
@@ -315,11 +315,19 @@ Public Function Add(ByVal Value As IGeneric) As Long
     Dim i As Long
     i = Not myclass.Items.BinarySearch(Value:=Key, Order:=myclass.SortOrder, Index:=myclass.Items.LowerBound, Length:=myclass.Size, Comparer:=myclass.Comparer)
    
-    If (i >= 0) Then _
-        Call System.Throw(Me, "Public Function Add").InvalidInput("Value duplicated")
-
+    If (i >= 0) Then 
+        if not Overwrite then _
+            Call System.Throw(Me, "Public Function Add").InvalidInput("Value duplicated")
+        
+        set myclass.items.elementAt(i)=Value
+        Add=Not i                                                                                              
+        Exit Function
+    end if
+                                                                                                  
     Call Insert(Index:=Not i, Value:=Value)
-
+    
+    Add=Not i
+                                                                                                      
 End Function
 
 Private Sub Insert(ByVal Index As Long,  ByVal Value As IGeneric)
