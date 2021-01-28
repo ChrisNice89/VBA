@@ -353,7 +353,17 @@ Public Sub CopyTo( _
     
     Call GenericArray.CopyArrays(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Count)
 
-End Sub                                                                                          
+End Sub   
+                                                                                                  
+'ToArray returns a new Object array containing the contents of the List.
+'This requires copying the List, which is an O(n) operation.
+Public Function ToArray() As GenericArray
+   
+    Set ToArray = GenericArray.Build(myclass.Size)
+    Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=ToArray, ArrayIndex:=ToArray.LowerBound)
+
+End Function
+                                                                                                    
 Private Sub LoadIterator( _
                             ByRef Iterator As Iterator, _
                             ByVal Items As GenericArray, _
@@ -431,7 +441,7 @@ Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGener
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
-Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myclass.items.copy: End Function
+Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = me.toarray: End Function
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.contains(Value:=Item): End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Count:=myclass.Size): End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
