@@ -694,7 +694,7 @@ Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGen
     If (Index >= myclass.Size) Then _
         Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index >= myclass.Size)")
 
-    Set IGenericReadOnlyList_ElementAt = myclass.Items(Index)
+    Set IGenericReadOnlyList_ElementAt = myclass.Items.elementAt(Index)
     
 End Property
 
