@@ -92,12 +92,13 @@ Private Type Iterator
 End Type
 '
 Private Type Member
+    Capacity as Long
     Occupancy As Long
     Count As Long
     Size As Long
     LoadSize As Long
     Buckets As GenericArray
-Head As GenericBucket
+    Head As GenericBucket
     Iterator As Iterator
 End Type
 Private myclass As Member
@@ -177,31 +178,33 @@ Public Function Build(Optional ByVal Capacity As Long As GenericLinkedMap
        Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     'Avoid null
-    Set newMap.Buckets =GenericArray                             
-    If (Capacity > 0) Then  
-                                      
-        RawSize = Capacity / Load_factor
-    
-        If (RawSize > MAXPRIME) Then _
-            Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
-
-        newMap.Size = getPrime(RawSize)
-        newMap.LoadSize = Int(Load_factor * newMap.Size)   
-                                      
-        If Not (newMap.LoadSize < newMap.Size) Then _
-            Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")                              
-        Set newMap.Buckets = GenericArray.Build(newMap.Size)
-                                            
-    end if                                    
-                                        
-    Set newMap.Head = New GenericBucket
-    Set newMap.Head.PreviousBucket = newMap.Head
-    Set newMap.Head.nextBucket = newMap.Head
-  
+    Set newMap.Buckets =GenericArray   
+                                    
+    If (Capacity > 0) Then _  
+        call Initialize((Capacity / Load_factor))                                  
+                                 
     Set Build = System.CreateInstance(New GenericLinkedMap, VarPtr(newMap), LenB(newMap))
     
 End Function
 
+private Sub Initialize(Byval Capacity as Long)      
+    
+    If (Capacity > MAXPRIME) Then _
+        Call System.Throw(Me, "private Sub Initialize").Overflow("Capacity > MAXPRIME")                                              
+    
+    newMap.Size = getPrime(Capacity)
+    newMap.LoadSize = Int(Load_factor * newMap.Size)   
+                                      
+    If Not (newMap.LoadSize < newMap.Size) Then _
+        Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")                              
+    Set newMap.Buckets = GenericArray.Build(newMap.Size)     
+                                              
+    Set newMap.Head = New GenericBucket
+    Set newMap.Head.PreviousBucket = newMap.Head
+    Set newMap.Head.nextBucket = newMap.Head
+                                                                                          
+end sub
+                                                
 Public Sub Clear()
     Call DisposeLinkedBuckets(myclass.Head)
     Set myclass.Head.PreviousBucket = myclass.Head
@@ -416,9 +419,16 @@ Public Sub Add( _
     With myclass
     
         If (.Count >= .LoadSize) Then
-            Call Rehash(ExpandPrime(iif(.Size=0,Default_Capacity,.Size)), False)
+                                                                                                                      
+            if .size> 0 then    
+                Call Rehash(ExpandPrime(.Size), False)
+            else                                                                                                          
+                Call Initialize(Default_Capacity)
+            end if                                                                                                         
+        
         ElseIf (.Occupancy > .LoadSize) Then
             Call Rehash(getPrime(.Size + 1), False)
+        
         End If
         
         Call LoadHash(Hash, Key.HashValue, .Size)
