@@ -169,33 +169,34 @@ Public Function Build(Optional ByVal Capacity As Long As GenericLinkedMap
     
     Dim newMap As Member
     Dim RawSize As Long
-
-    If (Capacity < 0) Then _
-       Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     If Not (Load_factor >= 0.1 And Load_factor <= 1#) Then _
        Call System.Throw(Me, "Build").ArgOutOfRange("Not (LoadFactor >= 0.1 And LoadFactor <= 1#")
     
-    RawSize = Capacity / Load_factor
+    If (Capacity < 0) Then _
+       Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
-    If (RawSize > MAXPRIME) Then _
-       Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
+    'Avoid null
+    Set newMap.Buckets =GenericArray                             
+    If (Capacity > 0) Then  
+                                      
+        RawSize = Capacity / Load_factor
     
-    'InitialSize
-    newMap.Size = getPrime(DEFAULT_CAPACITY)
-    
-    If RawSize > newMap.Size Then _
+        If (RawSize > MAXPRIME) Then _
+            Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
+
         newMap.Size = getPrime(RawSize)
-        
-    Set newMap.Buckets = GenericArray.Build(newMap.Size)
+        newMap.LoadSize = Int(Load_factor * newMap.Size)   
+                                      
+        If Not (newMap.LoadSize < newMap.Size) Then _
+            Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")                              
+        Set newMap.Buckets = GenericArray.Build(newMap.Size)
+                                            
+    end if                                    
+                                        
     Set newMap.Head = New GenericBucket
     Set newMap.Head.PreviousBucket = newMap.Head
     Set newMap.Head.nextBucket = newMap.Head
-    
-    newMap.LoadSize = Int(Load_factor * newMap.Size)
-    
-    If Not (newMap.LoadSize < newMap.Size) Then _
-        Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")
   
     Set Build = System.CreateInstance(New GenericLinkedMap, VarPtr(newMap), LenB(newMap))
     
@@ -415,7 +416,7 @@ Public Sub Add( _
     With myclass
     
         If (.Count >= .LoadSize) Then
-            Call Rehash(ExpandPrime(.Size), False)
+            Call Rehash(ExpandPrime(iif(.Size=0,Default_Capacity,.Size)), False)
         ElseIf (.Occupancy > .LoadSize) Then
             Call Rehash(getPrime(.Size + 1), False)
         End If
