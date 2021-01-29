@@ -64,9 +64,9 @@ Implements IGenericIterator
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
 
+Privte Const LOAD_FACTOR as Double =0.7
 Private Const MAXPRIME As Long = 2 ^ 31 - 1
 Private Const HASHPRIME As Long = 101
-Private Const DEFAULT_LOADFACTOR As Double = 0.7
 Private Const DEFAULT_CAPACITY As Long = 32
 
 'Bucketstate
@@ -96,7 +96,6 @@ Private Type Member
     Count As Long
     Size As Long
     LoadSize As Long
-    LoadFactor As Double
     Buckets As GenericArray
 Head As GenericBucket
     Iterator As Iterator
@@ -105,7 +104,7 @@ Private myclass As Member
 
 Private Property Get Bucket(ByVal Index As Long) As GenericBucket: Set Bucket = myclass.Buckets(Index): End Property
 Public Property Get LoadSize() As Long: LoadSize = myclass.LoadSize: End Property
-Public Property Get LoadFactor() As Double: LoadFactor = myclass.LoadFactor: End Property
+Public Property Get LoadFactor() As Double: LoadFactor = Load_factor: End Property
 Public Property Get Count() As Long: Count = myclass.Count: End Property
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric
@@ -166,9 +165,7 @@ Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = 
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
-Public Function Build( _
-                        Optional ByVal Capacity As Long, _
-                        Optional ByVal LoadFactor As Double = DEFAULT_LOADFACTOR) As GenericLinkedMap
+Public Function Build(Optional ByVal Capacity As Long As GenericLinkedMap
     
     Dim newMap As Member
     Dim RawSize As Long
@@ -176,11 +173,10 @@ Public Function Build( _
     If (Capacity < 0) Then _
        Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
-    If Not (LoadFactor >= 0.1 And LoadFactor <= 1#) Then _
+    If Not (Load_factor >= 0.1 And Load_factor <= 1#) Then _
        Call System.Throw(Me, "Build").ArgOutOfRange("Not (LoadFactor >= 0.1 And LoadFactor <= 1#")
     
-    newMap.LoadFactor = LoadFactor
-    RawSize = Capacity / LoadFactor
+    RawSize = Capacity / Load_factor
     
     If (RawSize > MAXPRIME) Then _
        Call System.Throw(Me, "Build").Overflow("RawSize > MAXPRIME")
@@ -196,7 +192,7 @@ Public Function Build( _
     Set newMap.Head.PreviousBucket = newMap.Head
     Set newMap.Head.nextBucket = newMap.Head
     
-    newMap.LoadSize = Int(newMap.LoadFactor * newMap.Size)
+    newMap.LoadSize = Int(Load_factor * newMap.Size)
     
     If Not (newMap.LoadSize < newMap.Size) Then _
         Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")
@@ -398,7 +394,7 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     Loop
                                                                                                           
     Set myclass.Buckets = NewBuckets
-    myclass.LoadSize = Int(myclass.LoadFactor * Size)
+    myclass.LoadSize = Int(Load_factor * Size)
     myclass.Size = Size
     
 End Sub
@@ -567,7 +563,6 @@ Private Function IGeneric_Clone() As IGeneric
         .Size = myclass.Size
         .Occupancy = 0
         .LoadSize = myclass.LoadSize
-        .LoadFactor = myclass.LoadFactor
         .Count = myclass.Count
         
         Set .Buckets = GenericArray.Build(.Size)
