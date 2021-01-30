@@ -163,44 +163,42 @@ End Function
 Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As GenericSortedList
         
     Dim i As Long
-    Dim newSortedList As GenericSortedList
-    Dim Values() As IGeneric
+    Dim newList As Member
     
     If IsMissing(GenericValues) Then _
         Call System.Throw(Me, "Public Function Create").Instantiation("ParamArray GenericValues are missing")
         
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
+                                                                    
+    Set newList.Comparer = Comparer
+    Set newList.Items = GenericArray.Build(UBound(GenericValues) + 1)
     
-    ReDim Values(UBound(GenericValues))
-
-    For i = 0& To UBound(GenericValues)
-        
-        If Not VarType(GenericValues(i)) = vbObject Then _
-            Call System.Throw(Me, "Public Function Create").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
-        
-        If (GenericValues(i) Is Nothing) Then _
-            Call System.Throw(Me, "Public Function Create").InvalidInput("Element is nothing")
-        
-        If Not TypeOf GenericValues(i) Is IGeneric Then _
-            Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+    With newList.Items
+        For i = LBound(GenericValues) To UBound(GenericValues)
             
-        Set Values(i) = GenericValues(i)
-      
-    Next
-    
-    If i > 1 Then _
-        Call GenericArray.SortArray(Objects:=Values, LowerBound:=0&, UpperBound:=i - 1, Order:=SORT_ORDER, Comparer:=Comparer)
-                                                                               
-    Set newSortedList = GenericSortedList.Build(i - 1, Comparer)
-    
-    With newSortedList
-        For i = 0& To UBound(Values)
-            Call .Add(Value:=Values(i), Overwrite:=True)
-        Next
-    End With
-    
-    Set Create = newSortedList
+            If Not VarType(GenericValues(i)) = vbObject Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+            
+            If (GenericValues(i) Is Nothing) Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Element is nothing")
+            
+            If Not TypeOf GenericValues(i) Is IGeneric Then _
+                Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+                
+            Set .ElementAt(i) = GenericValues(i)
+          
+        Next 
+                                                                              
+        call .Sort(Order:=SORT_ORDER, Index:=.lowerbound, Length:=.length, Comparer:=Comparer)          
+        
+        For i = .lowerbound +1 To .length -1
+            if comparer.compare(.ElementAt(i-1),.ElementAt(i))=IsEqual then _
+                Call System.Throw(Me, "Public Function Create").DuplicateNotAllowed(.ElementAt(i))                                                             
+        next                                                                 
+    end with                                                                    
+
+    Set Create = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))                                                               
     
 End Function
                                                                                         
