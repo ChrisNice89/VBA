@@ -170,9 +170,10 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
         
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
-                                                                    
-    Set newList.Comparer = Comparer
-    Set newList.Items = GenericArray.Build(UBound(GenericValues) + 1)
+    
+    newList.size=UBound(GenericValues) + 1                                                             
+    Set newList.Comparer = Comparer                                                                
+    Set newList.Items = GenericArray.Build(newList.size)
     
     With newList.Items
         For i = LBound(GenericValues) To UBound(GenericValues)
@@ -187,7 +188,7 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
                 Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
                 
             Set .ElementAt(i) = GenericValues(i)
-          
+            
         Next 
                                                                               
         call .Sort(Order:=SORT_ORDER, Index:=.lowerbound, Length:=.length, Comparer:=Comparer)          
@@ -197,7 +198,7 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
                 Call System.Throw(Me, "Public Function Create").DuplicateNotAllowed(.ElementAt(i))                                                             
         next                                                                 
     end with                                                                    
-
+                                                                          
     Set Create = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))                                                               
     
 End Function
