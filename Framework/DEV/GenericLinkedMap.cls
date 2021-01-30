@@ -181,27 +181,27 @@ Public Function Build(Optional ByVal Capacity As Long As GenericLinkedMap
     Set newMap.Buckets =GenericArray   
                                     
     If (Capacity > 0) Then _  
-        call Initialize((Capacity / Load_factor))                                  
+        call Initialize(newMap,(Capacity / Load_factor))                                  
                                  
     Set Build = System.CreateInstance(New GenericLinkedMap, VarPtr(newMap), LenB(newMap))
     
 End Function
 
-private Sub Initialize(Byval Capacity as Long)      
+private Sub Initialize(Byref Struct as Member,Byval Capacity as Long)      
     
     If (Capacity > MAXPRIME) Then _
         Call System.Throw(Me, "private Sub Initialize").Overflow("Capacity > MAXPRIME")                                              
     
-    newMap.Size = getPrime(Capacity)
-    newMap.LoadSize = Int(Load_factor * newMap.Size)   
+    Struct.Size = getPrime(Capacity)
+    Struct.LoadSize = Int(Load_factor * newMap.Size)   
                                       
-    If Not (newMap.LoadSize < newMap.Size) Then _
+    If Not (Struct.LoadSize < Struct.Size) Then _
         Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")                              
-    Set newMap.Buckets = GenericArray.Build(newMap.Size)     
-                                              
-    Set newMap.Head = New GenericBucket
-    Set newMap.Head.PreviousBucket = newMap.Head
-    Set newMap.Head.nextBucket = newMap.Head
+    
+    Set Struct.Buckets = GenericArray.Build(Struct.Size)                                            
+    Set Struct.Head = New GenericBucket
+    Set Struct.Head.PreviousBucket = Struct.Head
+    Set Struct.Head.nextBucket = Struct.Head
                                                                                           
 end sub
                                                 
@@ -423,7 +423,7 @@ Public Sub Add( _
             if .size> 0 then    
                 Call Rehash(ExpandPrime(.Size), False)
             else                                                                                                          
-                Call Initialize(Default_Capacity)
+                Call Initialize(myclass,Default_Capacity)
             end if                                                                                                         
         
         ElseIf (.Occupancy > .LoadSize) Then
