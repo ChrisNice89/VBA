@@ -323,6 +323,31 @@ Public Function IndexOf(ByVal Value As IGeneric) As Long
     
 End Function
 
+'Pops an item from the top of the stack.  If the stack is empty, Pop
+'throws an InvalidOperationException.
+Public Function Pop() As IGeneric
+    
+    Dim i As Long: i = Me.Last
+    
+    With Me
+        Set Pop = .ElementAt(i)
+        Call .RemoveAt(i)
+    End With
+    
+End Function
+'Pushes an item to the top of the stack.
+Public Function Push(ByVal Value As IGeneric) As GenericList
+    Call Me.Add(Value)
+    Set Push = Me
+End Function
+'Returns the top object on the stack without removing it.  If the stack
+'is empty, Peek throws an InvalidOperationException.
+Public Function Peek() As IGeneric
+    With Me
+        Set Peek = .ElementAt(Me.Last)
+    End With
+End Function
+                                                                                            
 Public Sub Clear():
     Call myclass.Items.Clear
     myclass.Size = 0
