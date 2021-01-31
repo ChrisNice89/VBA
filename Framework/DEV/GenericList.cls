@@ -324,7 +324,7 @@ End Function
 
 Public Function Add(ByVal Item As IGeneric) As Long
     
-    If (myclass.Size = Me.Capacity) Then _
+    If (myclass.Size = myclass.items.length) Then _
         Call EnsureCapacity(myclass.Size + 1)
     
     Set myclass.Items.ElementAt(myclass.Size) = Item
