@@ -152,9 +152,12 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY, Option
     
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
-    
     Set newList.Comparer = Comparer
-    Set newList.Items = GenericArray.Build(Capacity)
+    
+    'Avoid null
+    Set newList.Items =GenericArray                                    
+    If (Capacity > 0) Then _  
+        Set newList.Items = GenericArray.Build(Capacity)
 
     Set Build = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
     
