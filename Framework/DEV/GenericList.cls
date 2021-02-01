@@ -77,7 +77,8 @@ Implements IGenericIterator
 #End If
 
 Private Const DEFAULT_CAPACITY As Long = 16
-
+Private Const SORT_ORDER As Long = 1 'Ascending
+                          
 Private Type Iterator
     StartIndex As Long
     EndIndex As Long
@@ -91,7 +92,6 @@ End Type
 Private Type Member
     Items As GenericArray
     Size As Long
-    SortOrder As SortOrder
     Iterator As Iterator
 End Type
 Private myclass As Member
@@ -107,7 +107,6 @@ Public Property Get Last() As Long
 End Property
 
 Public Property Get Count() As Long: Count = myclass.Size: End Property
-Public Property Get SortOrder() As SortOrder: SortOrder = myclass.SortOrder: End Property
 Public Property Let SortOrder(ByVal Order As SortOrder):    myclass.SortOrder = Order: End Property
 Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
    
@@ -185,7 +184,6 @@ Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As Gen
     If (Capacity < 0) Then _
         Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
 
-    newList.SortOrder = ascending
     Set newList.Items = GenericArray.Build(Capacity)
   
     Set Build = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
@@ -233,7 +231,6 @@ Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
     If (Collection.Count < 0) Then _
         Call System.Throw(Me, "Build").ArgOutOfRange("Collection.Count < 0")
         
-    newList.SortOrder = ascending
     If (Collection Is Nothing) = False Then
         Set newList.Items = GenericArray.Build(Collection.Count)
         Call Collection.CopyTo(GArray:=newList.Items, ArrayIndex:=newList.Items.LowerBound)
@@ -247,8 +244,7 @@ End Function
 Private Function AsList(ByRef Items As GenericArray) As GenericList
 
     Dim newList As Member
-    
-    newList.SortOrder = ascending
+
     Set newList.Items = Items
     newList.Size = Items.Length
     Set Items = Nothing
@@ -508,7 +504,11 @@ Public Function IsEqual(ByVal First As IGenericReadOnlyList, ByVal second As IGe
     
 End Function
 
-Public Function Sort(ByVal Order As SortOrder, Optional ByVal Comparer As IGenericComparer, Optional ByVal Index As Long = 0, Optional ByVal Count As Long = 0) As GenericList
+Public Function Sort( _
+                       Optional ByVal Order As SortOrder=SORT_ORDER, _
+                       Optional ByVal Comparer As IGenericComparer, _
+                       Optional ByVal Index As Long , _
+                       Optional ByVal Count As Long ) As GenericList
 
     If Count = 0 Then _
         Count = myclass.Size
@@ -539,6 +539,7 @@ Public Function Contains(Item As IGeneric) As Boolean: Contains = (Me.IndexOf(It
 
 Public Function BinarySearch( _
                                 ByVal Item As IGeneric, _
+                                Optional ByVal Order As SortOrder=SORT_ORDER,                                                                                                                  
                                 Optional ByVal Comparer As IGenericComparer, _
                                 Optional ByVal Index As Long, _
                                 Optional ByVal Count As Long) As Long
@@ -558,7 +559,7 @@ Public Function BinarySearch( _
     If (myclass.Size - Index < Count) Then _
         Call System.Throw(Me, "Public Function BinarySearch").InvalidInput("(myclass.Size - Index < Count)")
     
-    BinarySearch = myclass.Items.BinarySearch(Value:=Item, Order:=myclass.SortOrder, Index:=Index, Length:=Count, Comparer:=Comparer)
+    BinarySearch = myclass.Items.BinarySearch(Value:=Item, Order:=Order, Index:=Index, Length:=Count, Comparer:=Comparer)
     
 End Function
 
