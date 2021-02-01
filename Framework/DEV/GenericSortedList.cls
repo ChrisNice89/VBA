@@ -143,7 +143,7 @@ Public Property Let Capacity(ByVal Value As Long)
     End If
 End Property
 
-Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY, Optional ByVal Comparer As IGenericComparer) As GenericSortedList
+Public Function Build(Optional ByVal Capacity As Long, Optional ByVal Comparer As IGenericComparer) As GenericSortedList
     
     Dim newList As Member
     
