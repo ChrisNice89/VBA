@@ -226,31 +226,29 @@ End Function
 
 Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
     
-    Dim newList As Member
+    Dim Items As Genericarray
     
     If (Collection Is Nothing) Then _
         Call System.Throw(Me, "Public Function BuildFrom").IsNothing("(Collection Is Nothing)")
     
-    If (Collection.Count < 0) Then _
-        Call System.Throw(Me, "Build").ArgOutOfRange("Collection.Count < 0")
-        
-    If (Collection Is Nothing) = False Then
-        Set newList.Items = GenericArray.Build(Collection.Count)
-        Call Collection.CopyTo(GArray:=newList.Items, ArrayIndex:=newList.Items.LowerBound)
-        newList.Size = Collection.Count
-    End If
+    if Collection.Count>0 then
+        Set Items = GenericArray.Build(Collection.Count)
+        Call Collection.CopyTo(GArray:=Items, ArrayIndex:=Items.LowerBound)
+    end if
    
-    Set BuildFrom = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
+    Set BuildFrom = asList(Items)
     
 End Function
 
-Private Function AsList(ByRef Items As GenericArray) As GenericList
+Private Function AsList(Byval Items As GenericArray) As GenericList
 
     Dim newList As Member
-
+    
+    if Items is nothing then _
+        set Items=GenericArray                                                                      
+                                                                            
     Set newList.Items = Items
     newList.Size = Items.Length
-    Set Items = Nothing
     
     Set AsList = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
 
