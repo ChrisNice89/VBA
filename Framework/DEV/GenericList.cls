@@ -177,15 +177,18 @@ Private Sub EnsureCapacity(ByVal min As Long)
     End With
 End Sub
 
-Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY) As GenericList
+Public Function Build(Optional ByVal Capacity As Long) As GenericList
     
     Dim newList As Member
     
     If (Capacity < 0) Then _
         Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
-
-    Set newList.Items = GenericArray.Build(Capacity)
-  
+    
+    'Avoid null
+    Set newList.Items =GenericArray                                    
+    If (Capacity > 0) Then _  
+        Set newList.Items = GenericArray.Build(Capacity)
+    
     Set Build = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
     
 End Function
