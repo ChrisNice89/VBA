@@ -194,7 +194,7 @@ Private myclass As Member
 
 Public Property Get MaxLength() As Long: MaxLength = MAX_ARRAY_LENGHT: End Property
 Public Property Get LowerBound() As Long: LowerBound = MIN_INDEX: End Property
-Public Property Get IsEmpty() As Boolean: IsEmpty = (myclass.Descriptor = 0) Or (myclass.Struct.pvData = 0): End Property
+Public Property Get IsEmpty() As Boolean: IsEmpty= (myclass.Elements = 0): End Property
 Public Property Get Descriptor() As LongPtr: Descriptor = myclass.Descriptor: End Property
 'Public Property Get LengthOf(ByVal Dimension As Long) As Long: Call Catch(SafeArrayGetUBound(ByVal myclass.Descriptor, Dimension, LengthOf)): End Property
 Public Property Get LengthOf(ByVal Dimension As Long) As Long: LengthOf = myclass.Struct.Bounds(myclass.Struct.cDims - Dimension).cElements: End Property
