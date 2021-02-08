@@ -64,7 +64,7 @@ Implements IGenericIterator
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
 
-Privte Const LOAD_FACTOR as Double =0.7
+Private Const LOAD_FACTOR As Double = 0.7
 Private Const MAXPRIME As Long = 2 ^ 31 - 1
 Private Const HASHPRIME As Long = 101
 Private Const DEFAULT_CAPACITY As Long = 32
@@ -92,7 +92,7 @@ Private Type Iterator
 End Type
 '
 Private Type Member
-    Capacity as Long
+    Capacity As Long
     Occupancy As Long
     Count As Long
     Size As Long
@@ -105,7 +105,7 @@ Private myclass As Member
 
 Private Property Get Bucket(ByVal Index As Long) As GenericBucket: Set Bucket = myclass.Buckets(Index): End Property
 Public Property Get LoadSize() As Long: LoadSize = myclass.LoadSize: End Property
-Public Property Get LoadFactor() As Double: LoadFactor = Load_factor: End Property
+Public Property Get LoadFactor() As Double: LoadFactor = LOAD_FACTOR: End Property
 Public Property Get Count() As Long: Count = myclass.Count: End Property
 Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric
@@ -166,44 +166,44 @@ Private Function Modulo(ByVal a As Double, ByVal m As Double) As Long: Modulo = 
 Private Function Decrement(ByRef i As Long) As Long: i = (Not -i): Decrement = i: End Function
 Private Function Increment(ByRef i As Long) As Long: i = (-(Not i)): Increment = i: End Function
 
-Public Function Build(Optional ByVal Capacity As Long As GenericLinkedMap
+Public Function Build(Optional ByVal Capacity As Long) As GenericLinkedMap
     
     Dim newMap As Member
     Dim RawSize As Long
     
-    If Not (Load_factor >= 0.1 And Load_factor <= 1#) Then _
+    If Not (LOAD_FACTOR >= 0.1 And LOAD_FACTOR <= 1#) Then _
        Call System.Throw(Me, "Build").ArgOutOfRange("Not (LoadFactor >= 0.1 And LoadFactor <= 1#")
     
     If (Capacity < 0) Then _
        Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     'Avoid null
-    Set newMap.Buckets =GenericArray   
+    Set newMap.Buckets = GenericArray
                                     
-    If (Capacity > 0) Then _  
-        call Initialize(newMap,(Capacity / Load_factor))                                  
+    If (Capacity > 0) Then _
+        Call Initialize(newMap, (Capacity / LOAD_FACTOR))
                                  
     Set Build = System.CreateInstance(New GenericLinkedMap, VarPtr(newMap), LenB(newMap))
     
 End Function
 
-private Sub Initialize(Byref Struct as Member,Byval Capacity as Long)      
+Private Sub Initialize(ByRef Struct As Member, ByVal Capacity As Long)
     
     If (Capacity > MAXPRIME) Then _
-        Call System.Throw(Me, "private Sub Initialize").Overflow("Capacity > MAXPRIME")                                              
+        Call System.Throw(Me, "private Sub Initialize").Overflow("Capacity > MAXPRIME")
     
     Struct.Size = getPrime(Capacity)
-    Struct.LoadSize = Int(Load_factor * newMap.Size)   
+    Struct.LoadSize = Int(LOAD_FACTOR * Struct.Size)
                                       
     If Not (Struct.LoadSize < Struct.Size) Then _
-        Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")                              
+        Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")
     
-    Set Struct.Buckets = GenericArray.Build(Struct.Size)                                            
+    Set Struct.Buckets = GenericArray.Build(Struct.Size)
     Set Struct.Head = New GenericBucket
     Set Struct.Head.PreviousBucket = Struct.Head
     Set Struct.Head.nextBucket = Struct.Head
                                                                                           
-end sub
+End Sub
                                                 
 Public Sub Clear()
     Call DisposeLinkedBuckets(myclass.Head)
@@ -398,7 +398,7 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     Loop
                                                                                                           
     Set myclass.Buckets = NewBuckets
-    myclass.LoadSize = Int(Load_factor * Size)
+    myclass.LoadSize = Int(LOAD_FACTOR * Size)
     myclass.Size = Size
     
 End Sub
@@ -420,11 +420,11 @@ Public Sub Add( _
     
         If (.Count >= .LoadSize) Then
                                                                                                                       
-            if .size> 0 then    
+            If .Size > 0 Then
                 Call Rehash(ExpandPrime(.Size), False)
-            else                                                                                                          
-                Call Initialize(myclass,Default_Capacity)
-            end if                                                                                                         
+            Else
+                Call Initialize(myclass, DEFAULT_CAPACITY)
+            End If
         
         ElseIf (.Occupancy > .LoadSize) Then
             Call Rehash(getPrime(.Size + 1), False)
@@ -657,7 +657,7 @@ Private Function IGeneric_ToString() As String
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
                             "Size: " & .Size & vbNewLine & _
-                            "LoadFactor: " & .LoadFactor & vbNewLine & _
+                            "LoadFactor: " & LOAD_FACTOR & vbNewLine & _
                             "LoadSize: " & .LoadSize & vbNewLine & _
                             "Elements: " & .Count & vbNewLine & _
                             "Occupancy: " & .Occupancy

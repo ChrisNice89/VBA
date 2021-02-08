@@ -146,17 +146,27 @@ Sub TestMultiDimArray()
     
 End Sub
 Sub testArrayConstructor()
-
+    
+    Dim t As CTimer
+    Set t = New CTimer
+    
     Dim List As GenericList
-    Set List = GenericList.Create(GNumeric(VBA.Now), GString("   now: " & VBA.Now & "!   "), GDateTime(VBA.Now))
+    Dim i As Long
+     
+    t.StartCounter
+   
+    For i = 1 To 100
+        Set List = GenericList.Create(GString, GNumeric)
+    Next
+    Debug.Print t.TimeElapsed
     
-    Dim Element As IGeneric
-    With List.Iterator
-        Do While .HasNext(Element)
-            Debug.Print Element
-        Loop
-    End With
-    
+'    Dim Element As IGeneric
+'    With List.Iterator
+'        Do While .HasNext(Element)
+'            Debug.Print Element
+'        Loop
+'    End With
+'
 End Sub
 Sub TestArrayIterator2()
     
@@ -432,7 +442,7 @@ Sub TestSortedList()
     Dim sl As GenericSortedList
     Dim i As Long, N As Long
     
-    Set sl = GenericSortedList.Create(IGenericComparer, GNumeric(3), GNumeric(4), GNumeric(1), GNumeric(5), GNumeric(2), GNumeric(0), GNumeric(3))
+    Set sl = GenericSortedList.Create(IGenericComparer, GNumeric(3), GNumeric(4), GNumeric(1), GNumeric(5), GNumeric(2), GNumeric(0))
     Debug.Print t.TimeElapsed
     
     Dim c As GenericSortedList

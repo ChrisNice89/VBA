@@ -155,8 +155,8 @@ Public Function Build(Optional ByVal Capacity As Long, Optional ByVal Comparer A
     Set newList.Comparer = Comparer
     
     'Avoid null
-    Set newList.Items =GenericArray                                    
-    If (Capacity > 0) Then _  
+    Set newList.Items = GenericArray
+    If (Capacity > 0) Then _
         Set newList.Items = GenericArray.Build(Capacity)
 
     Set Build = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
@@ -174,9 +174,9 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
     
-    newList.size=UBound(GenericValues) + 1                                                             
-    Set newList.Comparer = Comparer                                                                
-    Set newList.Items = GenericArray.Build(newList.size)
+    newList.Size = UBound(GenericValues) + 1
+    Set newList.Comparer = Comparer
+    Set newList.Items = GenericArray.Build(newList.Size)
     
     With newList.Items
         For i = LBound(GenericValues) To UBound(GenericValues)
@@ -192,17 +192,17 @@ Public Function Create(ByVal Comparer As IGenericComparer, ParamArray GenericVal
                 
             Set .ElementAt(i) = GenericValues(i)
             
-        Next 
+        Next
                                                                               
-        call .Sort(Order:=SORT_ORDER, Index:=.lowerbound, Length:=.length, Comparer:=Comparer)          
+        Call .Sort(Order:=SORT_ORDER, Index:=.LowerBound, Length:=.Length, Comparer:=Comparer)
         
-        For i = .lowerbound +1 To .length -1
-            if comparer.compare(.ElementAt(i-1),.ElementAt(i))=IsEqual then _
-                Call System.Throw(Me, "Public Function Create").DuplicateNotAllowed(.ElementAt(i))                                                             
-        next                                                                 
-    end with                                                                    
+        For i = .LowerBound + 1 To .Length - 1
+            If Comparer.Compare(.ElementAt(i - 1), .ElementAt(i)) = IsEqual Then _
+                Call System.Throw(Me, "Public Function Create").DuplicateNotAllowed(.ElementAt(i))
+        Next
+    End With
                                                                           
-    Set Create = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))                                                               
+    Set Create = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
     
 End Function
                                                                                         

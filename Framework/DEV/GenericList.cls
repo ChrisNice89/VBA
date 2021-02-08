@@ -107,7 +107,6 @@ Public Property Get Last() As Long
 End Property
 
 Public Property Get Count() As Long: Count = myclass.Size: End Property
-Public Property Let SortOrder(ByVal Order As SortOrder):    myclass.SortOrder = Order: End Property
 Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric)
    
     If (Index >= myclass.Size) Then _
@@ -185,8 +184,8 @@ Public Function Build(Optional ByVal Capacity As Long) As GenericList
         Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     'Avoid null
-    Set newList.Items =GenericArray                                    
-    If (Capacity > 0) Then _  
+    Set newList.Items = GenericArray
+    If (Capacity > 0) Then _
         Set newList.Items = GenericArray.Build(Capacity)
     
     Set Build = System.CreateInstance(New GenericList, VarPtr(newList), LenB(newList))
@@ -226,26 +225,26 @@ End Function
 
 Public Function BuildFrom(ByVal Collection As IGenericCollection) As GenericList
     
-    Dim Items As Genericarray
+    Dim Items As GenericArray
     
     If (Collection Is Nothing) Then _
         Call System.Throw(Me, "Public Function BuildFrom").IsNothing("(Collection Is Nothing)")
     
-    if Collection.Count>0 then
+    If Collection.Count > 0 Then
         Set Items = GenericArray.Build(Collection.Count)
         Call Collection.CopyTo(GArray:=Items, ArrayIndex:=Items.LowerBound)
-    end if
+    End If
    
-    Set BuildFrom = asList(Items)
+    Set BuildFrom = AsList(Items)
     
 End Function
 
-Private Function AsList(Byval Items As GenericArray) As GenericList
+Private Function AsList(ByVal Items As GenericArray) As GenericList
 
     Dim newList As Member
     
-    if Items is nothing then _
-        set Items=GenericArray                                                                      
+    If Items Is Nothing Then _
+        Set Items = GenericArray
                                                                             
     Set newList.Items = Items
     newList.Size = Items.Length
@@ -321,7 +320,7 @@ End Function
 
 Public Function Add(ByVal Item As IGeneric) As Long
     
-    If (myclass.Size = myclass.items.length) Then _
+    If (myclass.Size = myclass.Items.Length) Then _
         Call EnsureCapacity(myclass.Size + 1)
     
     Set myclass.Items.ElementAt(myclass.Size) = Item
@@ -506,10 +505,10 @@ Public Function IsEqual(ByVal First As IGenericReadOnlyList, ByVal second As IGe
 End Function
 
 Public Function Sort( _
-                       Optional ByVal Order As SortOrder=SORT_ORDER, _
+                       Optional ByVal Order As SortOrder = SORT_ORDER, _
                        Optional ByVal Comparer As IGenericComparer, _
-                       Optional ByVal Index As Long , _
-                       Optional ByVal Count As Long ) As GenericList
+                       Optional ByVal Index As Long, _
+                       Optional ByVal Count As Long) As GenericList
 
     If Count = 0 Then _
         Count = myclass.Size
@@ -540,7 +539,7 @@ Public Function Contains(Item As IGeneric) As Boolean: Contains = (Me.IndexOf(It
 
 Public Function BinarySearch( _
                                 ByVal Item As IGeneric, _
-                                Optional ByVal Order As SortOrder=SORT_ORDER,                                                                                                                  
+                                Optional ByVal Order As SortOrder = SORT_ORDER, _
                                 Optional ByVal Comparer As IGenericComparer, _
                                 Optional ByVal Index As Long, _
                                 Optional ByVal Count As Long) As Long
