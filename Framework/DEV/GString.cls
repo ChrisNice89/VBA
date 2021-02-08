@@ -22,9 +22,9 @@ Implements IGenericIterator
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
-    'Groﬂ- und Kleinschreibung spielt keine Rolle
+    'Gro√ü- und Kleinschreibung spielt keine Rolle
     Private Declare Function lstrcmpi Lib "kernel32.dll" Alias "lstrcmpiA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
-    'Groﬂ- und Kleinschreibung wird beachtet
+    'Gro√ü- und Kleinschreibung wird beachtet
     Private Declare Function lstrcmp Lib "kernel32.dll" Alias "lstrcmpA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
     Private Declare Function CompareString Lib "kernel32.dll" Alias "CompareStringA" (ByVal Locale As Long, ByVal dwCmpFlags As Long, ByVal lpString1 As String, ByVal cchCount1 As Long, ByVal lpString2 As String, ByVal cchCount2 As Long) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
@@ -35,18 +35,18 @@ Implements IGenericIterator
 '        SORT_STRINGSORT, .List(i), Len(.List(i)), .List(j), Len(.List(j)))
 '        If Retval = CSTR_LESS_THAN Or Retval = CSTR_EQUAL Then
 '
-' CompareString R¸ckgabe-Konstanten
+' CompareString R√ºckgabe-Konstanten
 Private Const CSTR_LESS_THAN = 1 ' Kleiner als
 Private Const CSTR_EQUAL = 2 ' Gleich
-Private Const CSTR_GREATER_THAN = 3 ' Grˆﬂer als
+Private Const CSTR_GREATER_THAN = 3 ' Gr√∂√üer als
  
 ' CompareString Locale-Konstanten
 Private Const LOCALE_SYSTEM_DEFAULT = &H400 ' Standard-Systemsprache
 Private Const LOCALE_USER_DEFAULT = &H800 ' Standard-Benutzersprache
  
 ' CompareString dwCmpFlags-Konstanten
-Private Const NORM_IGNORECASE = &H1 ' Groﬂ und Kleinschreibung nicht beachten
-Private Const NORM_IGNOREKANATYPE = &H10000 ' F¸r Japanischen Zeichensatz.
+Private Const NORM_IGNORECASE = &H1 ' Gro√ü und Kleinschreibung nicht beachten
+Private Const NORM_IGNOREKANATYPE = &H10000 ' F√ºr Japanischen Zeichensatz.
 ' Macht keine Unterschiede zwischen Hiragana und Katakana
 Private Const NORM_IGNORENONSPACE = &H2 ' Ignoriert Leerzeichen
 Private Const NORM_IGNORESYMBOLS = &H4 ' Ignoriert Sonderzeichen
@@ -91,15 +91,7 @@ Public Property Get IsDefault() As Boolean: IsDefault = Me Is GString: End Prope
 Public Property Get IsNumeric() As Boolean: IsNumeric = VBA.IsNumeric(myclass.Value): End Property
 Public Property Get Length() As Long: Length = myclass.Length: End Property
 Public Property Get LastChar() As String: LastChar = VBA.Mid$(myclass.Value, Len(myclass.Value), 1): End Property
-Public Property Get IsNullOrEmpty() As Boolean
-    
-    If myclass.Value = vbNullString Then _
-        IsNullOrEmpty = True: Exit Property
-    
-    If Me Is GString Then _
-        IsNullOrEmpty = True: Exit Property
-        
-End Property
+Public Property Get IsNullOrEmpty() As Boolean:myclass.Value = vbNullString:End Property
 
 Public Function ToFormat(ByVal Format As StringFormat) As String
     
