@@ -18,9 +18,7 @@ Sub TestString()
     N = 1000
     
     Dim Text As IGeneric, newText As GString
-    Dim Map As IGenericDictionary
-    Set Map = GenericMap.Build()
-    
+   
     t.StartCounter
     For i = 1 To N
         Set newText = GString.Build("abcdefghijklmnopqrstuvwxyz" & i)
@@ -37,13 +35,13 @@ Sub TestString()
     Debug.Print t.TimeElapsed
     
     t.StartCounter
-    For i = 1 To 10
-        With GString("bcdefghijklmnopqrstuvwxyz").ToArray.Reverse.Iterator
-            Do While .HasNext(Char)
-    '            Debug.Print Char.ToString
-            Loop
-        End With
-    Next
+    
+    With GString.AsciiList.Sort.Iterator
+        Do While .HasNext(Char)
+'            Debug.Print Char.ToString
+        Loop
+    End With
+  
     Debug.Print t.TimeElapsed
 End Sub
 
@@ -205,13 +203,13 @@ Sub TestArrayGetter()
     
     t.StartCounter
     For i = 1 To N
-        Set List(i) = GNumeric(i)
+        Set List(i) = GNumeric.Build(i)
     Next
     Debug.Print t.TimeElapsed
     
     t.StartCounter
     For i = 1 To N
-        Set x(i) = GNumeric(i)
+        Set x(i) = GNumeric.Build(i)
     Next
     Debug.Print t.TimeElapsed
     
@@ -414,7 +412,7 @@ Sub TestMaps()
   
     Dim ga As GenericArray
     Set ga = GenericArray.Build(Map.Count)
-    Call Map.CopyOf(PairData, ga, ga.LowerBound)
+   
     
     Dim GenericPairComparer As IGenericComparer
     Set GenericPairComparer = GenericPair
@@ -424,7 +422,7 @@ Sub TestMaps()
     Next
 '
     t.StartCounter
-    With Map.IteratorOf(PairData)
+    With Map.Iterator()
         Do While .HasNext(Item)
             Debug.Print Item
         Loop
@@ -519,7 +517,7 @@ Sub TestGenericCollection()
     Dim List As GenericList
     Set List = GenericList.Build
     
-    Call List.AddAll(c.IteratorOf(PairData)) 'size is unknown
+    Call List.AddAll(c.Iterator()) 'size is unknown
     'Call List.AddAll(c)' faster because size is known
    
     Dim Clone As IGenericReadOnlyList
@@ -632,7 +630,7 @@ Public Sub ListTest()
     Debug.Print List2(500)
 
     Dim List3 As GenericList
-    Set List3 = List.GetRange(500, 509)
+    Set List3 = List.GetRange(500, 10)
     
     Dim readOnly As IGenericReadOnlyList
     Set readOnly = List3.AsReadOnly
@@ -653,38 +651,11 @@ Sub testMap()
     Set t = New CTimer
     
     t.StartCounter
-    For i = 1 To 5
+    For i = 1 To 11
         Call hm.Add(GString("Key " & i), GNumeric(i))
     Next
     Debug.Print t.TimeElapsed
-    
-    t.StartCounter
-    For i = 1 To 5
-         If hm.Contains(GString("Key " & i)) = False Then
-            Debug.Print "nicht gefunden"
-         End If
-    Next
-    Debug.Print t.TimeElapsed
-    
-    Dim Clone As IGenericDictionary
-    Set Clone = System.Generic(hm).Clone
     Set hm = Nothing
-    
-    Dim Item As IGeneric
-    t.StartCounter
-    With Clone.IteratorOf(PairData)
-        Do While .HasNext(Item)
-            Debug.Print Item
-        Loop
-    End With
-    Debug.Print t.TimeElapsed
-    Debug.Print System.Generic(Clone)
-'
-'    With GenericSortedList.BuildFrom(Clone, IGenericValue.Comparer).IteratorOf(PairData)
-'        Do While .HasNext(Item)
-''            Debug.Print Item
-'        Loop
-'    End With
-
+     
 End Sub
 

@@ -194,7 +194,7 @@ Private myclass As Member
 
 Public Property Get MaxLength() As Long: MaxLength = MAX_ARRAY_LENGHT: End Property
 Public Property Get LowerBound() As Long: LowerBound = MIN_INDEX: End Property
-Public Property Get IsEmpty() As Boolean: IsEmpty= (myclass.Elements = 0): End Property
+Public Property Get IsEmpty() As Boolean: IsEmpty = (myclass.Elements = 0): End Property
 Public Property Get Descriptor() As LongPtr: Descriptor = myclass.Descriptor: End Property
 'Public Property Get LengthOf(ByVal Dimension As Long) As Long: Call Catch(SafeArrayGetUBound(ByVal myclass.Descriptor, Dimension, LengthOf)): End Property
 Public Property Get LengthOf(ByVal Dimension As Long) As Long: LengthOf = myclass.Struct.Bounds(myclass.Struct.cDims - Dimension).cElements: End Property
@@ -229,7 +229,7 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
     newArray.Struct.cbElements = ELEMENT_SIZE
         
     For i = LB To UB
-        If Not (Indices(i) > 0) Then _
+        If Not (Indices(i) >= 0) Then _
             Call System.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
 
         SAB(i).cElements = Indices(i)

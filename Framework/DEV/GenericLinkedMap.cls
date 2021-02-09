@@ -82,7 +82,6 @@ Private Type HashItem
 End Type
 '
 Private Type Iterator
-    Type As DictionaryData
     Index As Long
     Size As Long
     HasLoaded As Boolean
@@ -452,18 +451,20 @@ Public Sub Add( _
                     Set EmptyBucket = New GenericBucket
                     Set myclass.Buckets(Hash.Index) = EmptyBucket
                 End If
-            
-                Set EmptyBucket.nextBucket = myclass.Head
-                With myclass.Head
-                    Set EmptyBucket.PreviousBucket = .PreviousBucket
-                    Set .PreviousBucket.nextBucket = EmptyBucket
-                    Set .PreviousBucket = EmptyBucket
-                    
+                
+                With EmptyBucket
+                    Set .nextBucket = myclass.Head
                     .State = (HAS_ENTRY Or .State) '!
                     .HashCode = Hash.Code
                     Set .Key = Key: Set .Value = Value
                 End With
                 
+                With myclass.Head
+                    Set EmptyBucket.PreviousBucket = .PreviousBucket
+                    Set .PreviousBucket.nextBucket = EmptyBucket
+                    Set .PreviousBucket = EmptyBucket
+                End With
+                   
                 Call InterlockedIncrement(myclass.Count)
                 Exit Sub
                 
@@ -494,58 +495,20 @@ Private Sub Class_Terminate()
     Call IGeneric_Dispose
 End Sub
 
-Private Function CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long, ByVal Caller As String) As GenericArray
-    
-'    If (GArray Is Nothing) Then _
-'        Call System.Throw(Me, Caller).IsNothing("(GArray Is Nothing)")
-'
-'    If (ArrayIndex < GArray.LowerBound) Or (ArrayIndex > GArray.Length) Then _
-'        Call System.Throw(Me, Caller).IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
-'
-'    If (GArray.Length - ArrayIndex + GArray.LowerBound < myclass.Count) Then _
-'        Call System.Throw(Me, Caller).InvalidInput("(GArray.Length - Index < myClass.Count)")
-'
-'    Dim i As Long
-'
-'    Select Case True
-'        Case t = KeyData
-'            For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-'                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-'                    Set GArray(ArrayIndex) = myclass.Buckets(i).Key: Call InterlockedIncrement(ArrayIndex)
-'
-'            Next
-'        Case t = ValueData
-'            For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-'                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-'                    Set GArray(ArrayIndex) = myclass.Buckets(i).Value: Call InterlockedIncrement(ArrayIndex)
-'            Next
-'        Case Else
-'             For i = LBound(myclass.Buckets) To UBound(myclass.Buckets)
-'                If (myclass.Buckets(i).State And HAS_ENTRY) = HAS_ENTRY Then _
-'                    Set GArray(ArrayIndex) = GenericPair(myclass.Buckets(i).Key, myclass.Buckets(i).Value): Call InterlockedIncrement(ArrayIndex)
-'            Next
-'    End Select
-'
-'    Set CopyOf = GArray
-    
-End Function
-
-Public Function IteratorOf(ByVal t As DictionaryData) As IGenericIterator
+Public Function Iterator() As IGenericIterator
                      
     Dim c As Member
     
-    Call LoadIterator(c.Iterator, myclass.Head, t)
-    Set IteratorOf = System.CreateInstance(New GenericLinkedMap, VarPtr(c), LenB(c))
+    Call LoadIterator(c.Iterator, myclass.Head)
+    Set Iterator = System.CreateInstance(New GenericLinkedMap, VarPtr(c), LenB(c))
     
 End Function
 
 Private Sub LoadIterator( _
                             ByRef Iterator As Iterator, _
-                            ByVal Head As GenericBucket, _
-                            ByVal t As DictionaryData)
+                            ByVal Head As GenericBucket)
     
     With Iterator
-        .Type = t
         Set .Head = Head
         Set .Bucket = Head.nextBucket
         .HasLoaded = True
@@ -561,7 +524,7 @@ Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer 
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = ObjPtr(Me): End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
-Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericMap):  End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GenericLinkedMap):  End Property
 
 Private Function IGeneric_Clone() As IGeneric
     
@@ -627,12 +590,13 @@ Private Sub DisposeLinkedBuckets(ByVal Head As GenericBucket)
     Dim Bucket As GenericBucket
     Dim oldBucket As GenericBucket
 
-    If Bucket Is Nothing Then _
+    If Head Is Nothing Then _
         Exit Sub
+    
     Set Bucket = Head.nextBucket
     
     Do While Bucket Is Head = False
-        Set oldBucket = Bucket
+    Set oldBucket = Bucket
         Set Bucket = oldBucket.nextBucket
         Call oldBucket.Invalidate
     Loop
@@ -693,14 +657,13 @@ End Function
 Private Function IGenericDictionary_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericDictionary_TryGetValue = Me.TryGetValue(Key, Value): End Function
 Private Sub IGenericDictionary_Remove(ByVal Key As IGeneric): Call Me.Remove(Key): End Sub
 Private Sub IGenericDictionary_Add(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, False): End Sub
-Private Sub IGenericDictionary_CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=t, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericDictionary_CopyOf"): End Sub
 Private Sub IGenericDictionary_Clear(): Call Me.Clear: End Sub
-Private Function IGenericDictionary_IteratorOf(ByVal t As DictionaryData) As IGenericIterator: Set IGenericDictionary_IteratorOf = Me.IteratorOf(t:=t): End Function
+Private Function IGenericDictionary_Iterator() As IGenericIterator: Set IGenericDictionary_Iterator = Me.Iterator(): End Function
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = Me.Count: End Property
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.Contains(Key:=Item): End Function
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call CopyOf(t:=PairData, GArray:=GArray, ArrayIndex:=ArrayIndex, Caller:="Private Sub IGenericCollection_CopyTo"): End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long):: End Sub
 Private Sub IGenericCollection_Clear(): Call Me.Clear: End Sub
 Private Function IGenericCollection_ToArray() As GenericArray
     
@@ -711,7 +674,7 @@ Private Function IGenericCollection_ToArray() As GenericArray
     Set IGenericCollection_ToArray = GArray
     
 End Function
-Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.IteratorOf(t:=PairData): End Function
+Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = Me.Iterator(): End Function
 
 'IGenericIterator
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
@@ -720,17 +683,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     With myclass.Iterator
         If (.Bucket Is .Head = False) Then
                 
-            If .Type = KeyData Then
-                Set .Current = .Bucket.Key
-        
-            ElseIf .Type = ValueData Then
-                Set .Current = .Bucket.Value
-                
-            Else
-                Set .Current = .Bucket.ToPair
-                
-            End If
-                
+            Set .Current = .Bucket.ToPair
             Set Out = .Current
             Set .Bucket = .Bucket.nextBucket
             IGenericIterator_HasNext = True
@@ -753,7 +706,7 @@ Private Sub IGenericIterator_Reset()
          If .HasLoaded = False Then _
             Call System.Throw(Me, "Private Sub IGenericIterator_Reset").InvalidIterator
             
-        Call LoadIterator(myclass.Iterator, .Head, .Type)
+        Call LoadIterator(myclass.Iterator, .Head)
     End With
 End Sub
 

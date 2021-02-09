@@ -163,7 +163,7 @@ Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericV
 
 Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue
 
-    If IsNull(Value) Then _
+    If Isnull(Value) Then _
         Set IGenericValue_Convert = IGeneric_Default: Exit Function
     
     If VarType(Value) = vbString Then 'try parse

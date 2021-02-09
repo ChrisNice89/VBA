@@ -14,6 +14,7 @@ Option Explicit
 Implements IGeneric
 Implements IGenericValue
 
+Private Const DEFAULT_VALUE As Boolean = False
 Private Const TRUE_STRING As String = "True"
 Private Const FALSE_STRING As String = "False"
 Private Const TRUE_VALUE As Byte = 1
@@ -135,10 +136,9 @@ Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericV
 
 Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue
 
-    If IsNull(Value) Then _
-        Set IGenericValue_Convert = IGeneric_Default: Exit Function
-    
     Select Case VarType(Value)
+        Case VbVarType.vbNull
+            Set IGenericValue_Convert = GBool.Build(DEFAULT_VALUE)
         Case VbVarType.vbByte, VbVarType.vbInteger, VbVarType.vbLong
             If Value = TRUE_VALUE Then
                 Set IGenericValue_Convert = GBool.Build(True)

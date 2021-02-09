@@ -11,12 +11,6 @@ Attribute VB_Exposed = True
 Option Explicit
 '@Folder "<T>Enumerable"
 
-Public Enum DictionaryData
-    KeyData = 0
-    ValueData
-    PairData
-End Enum
-
 Public Property Get Count() As Long: End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: End Property
 Attribute Item.VB_UserMemId = 0
@@ -29,8 +23,7 @@ Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric): End Sub
 Public Sub Remove(ByVal Key As IGeneric): End Sub
 Public Sub Clear(): End Sub
 
-Public Sub CopyOf(ByVal t As DictionaryData, ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
-Public Function IteratorOf(ByVal t As DictionaryData) As IGenericIterator: End Function
+Public Function Iterator() As IGenericIterator: End Function
     
 
 'Private Sub Class_Initialize()

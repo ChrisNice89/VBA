@@ -61,7 +61,8 @@ Private Const DEFAULT_DELIMITER As String = ","
 Private Const MAXVALUE As Double = 2 ^ 31
 Private Const LEFTSHIFT As Long = 2& ^ 5
 Private Const RIGHTSHIFT As Long = 2& ^ 27
-    
+Private Const DEFAULT_VALUE As String = VBA.vbNullString
+
 Public Enum StringFormat
     [_First] = -1
     DefaultString = 0
@@ -85,37 +86,47 @@ End Type
 Private myclass As Member
 
 Public Property Get Pointer() As LongPtr: Pointer = StrPtr(myclass.Value): End Property
-Public Property Get ElementAt(ByVal Index As Long) As GString: Set ElementAt = GString.Build(Mid$(myclass.Value, Index + 1, 1)): End Property
-
+Public Property Get ElementAt(ByVal Index As Long) As GString: Set ElementAt = GString.Build(VBA.Mid$(myclass.Value, Index + 1, 1)): End Property
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GString: End Property
 Public Property Get IsNumeric() As Boolean: IsNumeric = VBA.IsNumeric(myclass.Value): End Property
 Public Property Get Length() As Long: Length = myclass.Length: End Property
-Public Property Get LastChar() As String: LastChar = VBA.Mid$(myclass.Value, Len(myclass.Value), 1): End Property
-Public Property Get IsNullOrEmpty() As Boolean:myclass.Value = vbNullString:End Property
-
-Public Function ToFormat(ByVal Format As StringFormat) As String
-    
-    Select Case Format
-        Case StringFormat.DefaultString: ToFormat = myclass.Value: Exit Function
-        Case StringFormat.Trim: ToFormat = VBA.Trim$(myclass.Value): Exit Function
-        Case StringFormat.LTrim: ToFormat = VBA.LTrim$(myclass.Value): Exit Function
-        Case StringFormat.RTrim: ToFormat = VBA.RTrim$(myclass.Value): Exit Function
-    End Select
- 
-End Function
+Public Property Get LastChar() As GString: Set LastChar = Me.ElementAt(myclass.Length - 1): End Property
+Public Property Get IsNullOrEmpty() As Boolean: myclass.Length = 0: End Property
 Public Property Get Value() As String: Value = myclass.Value: End Property
+Public Property Get Default(Optional ByRef Value As String = DEFAULT_VALUE) As GString
 
-Public Function Build(ByVal Value As String, Optional ByVal Intern As Boolean = False) As GString
+        If Not (Me Is GString) Then _
+            Set Default = GString.Default(Value): Exit Property
+        
+        myclass.Length = Len(Value)
+        myclass.Value = Value
+        myclass.Hash = 0 '!
+
+        Set Default = Me
+
+End Property
+
+Public Function Build(ByRef Value As String) As GString
 Attribute Build.VB_UserMemId = 0
-    
-    If Value = vbNullString Then _
-        Set Build = GString: Exit Function
     
     If Not (Me Is GString) Then _
         Set Build = GString.Build(Value): Exit Function
-        
+
+    If Value = DEFAULT_VALUE Then
+        Static EmptyString As GString
+        If EmptyString Is Nothing Then
+            myclass.Value = DEFAULT_VALUE
+            myclass.Length = 0
+            Set EmptyString = New GString
+            myclass = EmptyStructure
+        End If
+
+        Set Build = EmptyString
+        Exit Function
+    End If
+
     myclass.Length = Len(Value)
-    
+
     If myclass.Length = 1 Then
 
         Static Chars As GenericArray
@@ -138,9 +149,10 @@ Attribute Build.VB_UserMemId = 0
         Set Build = Char
         Exit Function
     End If
-
+        
     myclass.Value = Value
-    Set Build = New GString: myclass = EmptyStructure
+    Set Build = New GString
+    myclass = EmptyStructure
   
 End Function
 
@@ -149,7 +161,16 @@ Private Sub Class_Initialize()
         myclass.Value = .Value: myclass.Length = .Length
     End With
 End Sub
-
+Public Function ToFormat(ByVal Format As StringFormat) As String
+    
+    Select Case Format
+        Case StringFormat.DefaultString: ToFormat = myclass.Value: Exit Function
+        Case StringFormat.Trim: ToFormat = VBA.Trim$(myclass.Value): Exit Function
+        Case StringFormat.LTrim: ToFormat = VBA.LTrim$(myclass.Value): Exit Function
+        Case StringFormat.RTrim: ToFormat = VBA.RTrim$(myclass.Value): Exit Function
+    End Select
+ 
+End Function
 Public Function ToLower() As GString: Set ToLower = GString.Build(LCase(myclass.Value)): End Function
 Public Function ToUpper() As GString: Set ToUpper = GString.Build(UCase(myclass.Value)): End Function
 Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString.Build(VBA.Replace$(myclass.Value, Find, ReplaceWith)): End Function
@@ -164,6 +185,21 @@ Public Function Iterator() As IGenericIterator
     Set Iterator = Me
 End Function
 
+Public Function AsciiList() As GenericArray
+    
+    Dim Ascii As GenericArray
+    Set Ascii = GenericArray.Build(255)
+    
+    Dim i As Long
+    With Ascii
+        For i = 0 To 255 - 1
+            Set .ElementAt(i) = GString.Build(VBA.Chr$(i))
+        Next
+    End With
+    
+    Set AsciiList = Ascii
+    
+End Function
 Public Function CountChar(ByVal c As String) As Long
     
     Dim i As Long
@@ -227,10 +263,12 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     strings = VBA.Split(myclass.Value, Delimiter)
     Set Parts = GenericArray.Build(UBound(strings) + 1)
     
-    For i = LBound(strings) To UBound(strings)
-        Set Parts.ElementAt(i) = GString.Build(strings(i))
-    Next
-    
+    With Parts
+        For i = LBound(strings) To UBound(strings)
+            Set .ElementAt(i) = GString.Build(CStr(strings(i)))
+        Next
+    End With
+
     Set Split = Parts
     
 End Function
@@ -240,6 +278,7 @@ Public Function ToArray() As GenericArray
     Dim Chars As GenericArray
     Dim i As Long
     
+    Set Chars = GenericArray
     If Not myclass.Length = 0 Then
         Set Chars = GenericArray.Build(myclass.Length)
          
@@ -248,12 +287,6 @@ Public Function ToArray() As GenericArray
                 Set .ElementAt(i) = Me.ElementAt(i)
             Next
         End With
-    
-    Else
-    
-        Set Chars = GenericArray.Build(1)
-        Set Chars.ElementAt(Chars.LowerBound) = GString
-        
     End If
     
     Set ToArray = Chars
@@ -269,12 +302,12 @@ Public Function Join(ByVal Values As IGenericReadOnlyList, Optional ByVal Delimi
         Call System.Throw(Me, "Public Function Join").IsNothing("(Values Is Nothing)")
 
     With Values
-        ReDim strings(.First To .Count - .First - 1) As String
+        ReDim strings(.Count) As String
         
-        For i = .First To .Count - 1 + .First
+        For i = .First To .Last
             Set s = .ElementAt(i)
             If Not s Is Nothing Then _
-                strings(i - .First) = s.ToString
+                strings(i) = s.ToString
         Next
     End With
     
@@ -295,7 +328,7 @@ Public Function HashValueOf(ByRef Text As String) As Long
     
     numChars = Len(Text)
     If numChars = 1 Then _
-        HashValueOf = AscW(Text): Exit Function
+        HashValueOf = VBA.AscW(Text): Exit Function
     
     h1 = 352654597#
     h2 = h1 'LeftShift(5381,16))+5381
@@ -381,19 +414,11 @@ End Function
 Private Property Get IGenericValue_VarType() As VbVarType: IGenericValue_VarType = vbString: End Property
 Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
 Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.VarWChar_Type: End Property
-
 Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue = myclass.Value: End Property
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
 Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue
-
-    If IsNull(Value) Then _
-        Set IGenericValue_Convert = IGeneric_Default: Exit Function
-
-    Set IGenericValue_Convert = GString.Build(Value)
-
-End Function
+Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Convert = GString.Build(VBA.IIf(VBA.Isnull(Value), DEFAULT_VALUE, Value)): End Function
 Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
     
     If Other Is Nothing Then _
@@ -433,8 +458,8 @@ Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_
 Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Text:=Item.ToString): End Function
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
-    If (Index > myclass.Length) Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("Index not valid")
+    If (Index >= myclass.Length) Then _
+        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index >= myclass.Length)")
 
     Set IGenericReadOnlyList_ElementAt = Me.ElementAt(Index)
     

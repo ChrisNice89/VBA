@@ -392,10 +392,11 @@ Public Sub InsertInto(ByVal TableName As String, ByVal Parameters As IGenericRea
     Dim sql As GString
     Dim i As Long
   
-    With GString 'Used a trick here to avoid .Sequence(Parameters.Count, "?").ToArray !
-        Set sql = .Build("INSERT INTO " & TableName & " VALUES (") _
+    With GString 'Used String Readonly here to avoid .Repeat(Parameters.Count, "?").ToArray !
+        Set sql = .Default("INSERT INTO " & TableName & " VALUES (") _
                   .Concat(.Join(.Repeat(Parameters.Count, "?"), ",")) _
-                  .Concat(.Build(")"))
+                  .Concat(.Default(")"))
+                 
     End With
 
     Call Me.Execute(sql.Value, Parameters)
@@ -543,7 +544,7 @@ Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Con
     
     With oConnection
         .CursorLocation = ISqlConnectionCursorLocation.Connection_UseServer
-        .CommandTimeout = 0
+        .CommandTimeout = 10
         .Mode = ISqlConnectionMode.ReadWrite_ConnectionMode
         '.Properties("Mode") = Credentials.Mode
         

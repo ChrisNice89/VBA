@@ -26,6 +26,7 @@ Private Const MAXVALUE As Currency = 922337203685477@
 Private Const MAXLONG As Long = 2 ^ 31 - 1
 Private Const NUMERIC_SCALE As Long = 8
 Private Const PRECISION As Long = 4
+Private Const DEFAULT_VALUE As Currency = 0@
 
 Public Enum NumericFormat
     [_First]
@@ -82,6 +83,15 @@ Public Property Get IsNegative() As Boolean: IsNegative = myclass.Value < 0: End
 Public Property Get Fraction() As Currency: Fraction = myclass.Value - Int(myclass.Value): End Property
 Public Property Get IsEven() As Boolean: IsEven = (Me.Modulus(myclass.Value, 2@) = 0): End Property
 
+Public Property Get Default(Optional ByRef Value As Currency = DEFAULT_VALUE) As GNumeric
+
+        If Not (Me Is GNumeric) Then _
+            Set Default = GNumeric.Default(Value): Exit Property
+        
+        myclass.Value = Value
+        Set Default = Me
+
+End Property
 Public Function Build(ByVal Value As Currency) As GNumeric
 Attribute Build.VB_UserMemId = 0
     
@@ -209,15 +219,7 @@ Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue =
 Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
 Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue
-
-     If IsNull(Value) Then _
-        Set IGenericValue_Convert = IGeneric_Default: Exit Function
-
-    Set IGenericValue_Convert = Me.Build(Value)
-    
-End Function
-
+Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Convert = GNumeric.Build(VBA.IIf(VBA.Isnull(Value), DEFAULT_VALUE, Value)): End Function
 Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
     
     If Other Is Nothing Then _
