@@ -154,7 +154,7 @@ Sub testArrayConstructor()
     t.StartCounter
    
     For i = 1 To 100
-        Set List = GenericList.Create(GString, GNumeric)
+        Set List = GenericList.Create(GString, GNumeric, GNumeric)
     Next
     Debug.Print t.TimeElapsed
     

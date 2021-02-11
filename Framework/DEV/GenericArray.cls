@@ -156,7 +156,11 @@ Private Type SAFEARRAYSTRUCT
     fFeatures    As Integer
     cbElements   As Long
     cLocks       As Long
-    pvData       As LongPtr
+    #If Win64 Then
+        pvData       As LongPtr
+    #Else
+        pvData       As Long
+    #End If
     Bounds() As SAFEARRAYBOUND
 End Type
 
@@ -221,33 +225,36 @@ Public Function Build(ParamArray Indices() As Variant) As GenericArray
    
     ReDim newArray.Indices(LB To UB)
     ReDim SAB(LB To UB)
-    ReDim newArray.Struct.Bounds(LB To UB)
     
     newArray.Elements = 1
     newArray.Struct.cDims = UB + 1
     newArray.Struct.fFeatures = F_FEATURES
     newArray.Struct.cbElements = ELEMENT_SIZE
+    ReDim newArray.Struct.Bounds(LB To UB)
         
     For i = LB To UB
         If Not (Indices(i) >= 0) Then _
             Call System.Throw(Me, "Build").ArgOutOfRange("A zero(one)-based array indexed array has its first item indexed as 0(1) and need to have at least one element")
-
+        
+'        newArray.Struct.Bounds(i).cElements = Indices(i)
+'        newArray.Struct.Bounds(i).lLbound = MIN_INDEX
         SAB(i).cElements = Indices(i)
         SAB(i).lLbound = MIN_INDEX
-       
+
         newArray.Elements = newArray.Elements * Indices(i)
         newArray.Indices(i) = MIN_INDEX
         newArray.Struct.Bounds(UB - i) = SAB(i)
     Next i
 
     newArray.Descriptor = SafeArrayCreateEx(ELEMENT_TYPE, newArray.Struct.cDims, SAB(LB), ByVal 0&)
-        
+'    newArray.Descriptor = SafeArrayCreateEx(ELEMENT_TYPE, newArray.Struct.cDims, newArray.Struct.Bounds(LB), ByVal 0&)
+    
     If (newArray.Descriptor = 0) Then _
         Call System.Throw(Me, "Public Function Build").InvalidOperation("Descriptor = 0")
-        
+    Call LoadArray(newArray.Internal, newArray.Descriptor)
+'    Call CopyMemory(Dst:=newArray.Struct, Src:=ByVal newArray.Descriptor, Length:=LenB(newArray.Struct) + UB * 8&)
     Call Catch(SafeArrayPtrOfIndex(ByVal newArray.Descriptor, newArray.Indices(LB), newArray.Struct.pvData))
-    Call CopyMemory(Dst:=ByVal VarPtrArray(newArray.Internal), Src:=ByVal VarPtr(newArray.Descriptor), Length:=POINTERSIZE)
-   
+ 
     Set Build = System.CreateInstance(New GenericArray, VarPtr(newArray), LenB(newArray))
     
 End Function
