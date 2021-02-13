@@ -352,7 +352,7 @@ Public Function ExecuteSchema(ByVal Schema As ISqlDBSchema, ParamArray Args() As
     
 End Function
 
-Public Function ExecuteRowMapper(ByVal sql As String, Optional ByVal Parameters As IGenericReadOnlyList) As IGenericIterator
+Public Function Query(ByVal sql As String, Optional ByVal Parameters As IGenericReadOnlyList) As IGenericIterator
     
     Dim Cmd As ADODB.Command
     Dim Rs As ADODB.Recordset
@@ -377,29 +377,48 @@ Public Function ExecuteRowMapper(ByVal sql As String, Optional ByVal Parameters 
         Set Rs = Me.CreateRecordset(ISqlRecodsetType.Disconnected_Recordset)
         Call Rs.Open(Cmd, , , , IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
     
-        Do While Cmd.State And ISqlObjectState.IsExecuting_State
-            If DEBUG_MODE Then _
-                Debug.Print "is executing..."
-        Loop
+'        Do While Cmd.State And ISqlObjectState.IsExecuting_State
+'            If DEBUG_MODE Then _
+'                Debug.Print "is executing..."
+'        Loop
     On Error GoTo 0
    
-    Set ExecuteRowMapper = Me.RowMapper(Rs)
+    Set Query = Me.RowMapper(Rs)
 
 End Function
 
-Public Sub InsertInto(ByVal TableName As String, ByVal Parameters As IGenericReadOnlyList)
-
+Public Sub UpdateWhere(ByVal TableName As GString, ByVal Where As GenericPair, ByVal Updates As GenericLinkedMap)
+    
+    Const UPDATE_STATEMENT As String = "UPDATE [] SET "
     Dim sql As GString
-    Dim i As Long
-  
-    With GString 'Used String Readonly here to avoid .Repeat(Parameters.Count, "?").ToArray !
-        Set sql = .Default("INSERT INTO " & TableName & " VALUES (") _
-                  .Concat(.Join(.Repeat(Parameters.Count, "?"), ",")) _
-                  .Concat(.Default(")"))
-                 
+    
+    With GString
+        Set sql = .Use(UPDATE_STATEMENT) _
+                    .Insert(15, .Join(Updates.GetKeys, "=?,")) _
+                    .Insert(9, TableName) _
+                    .Concat(.Build(" WHERE " & Where.Key & "=?"))
     End With
+    
+    Call Updates.Add(Where.Key, Where.Value)
+    Call Me.Execute(sql.Value, Updates.GetValues)
+    Call Updates.Remove(Where.Key)
 
-    Call Me.Execute(sql.Value, Parameters)
+End Sub
+
+Public Sub InsertInto(ByVal TableName As GString, ByVal Updates As GenericLinkedMap)
+
+    Const INSERT_STATEMENT As String = "INSERT INTO [] () VALUES ()"
+    Dim sql As GString
+    
+    'Used String Readonly here to avoid .Repeat(Parameters.Count, "?").ToArray !
+    With GString
+        Set sql = .Use(INSERT_STATEMENT) _
+                    .Insert(27, .Join(.Repeat(Updates.Count, "?"), ",")) _
+                    .Insert(17, .Join(Updates.GetKeys, ",")) _
+                    .Insert(14, TableName)
+    End With
+      
+    Call Me.Execute(sql.Value, Updates.GetValues)
     
 End Sub
 
@@ -624,7 +643,7 @@ Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Con
         .Properties("Persist Security Info") = False
         .Properties("Prompt") = Credentials.Prompt
         
-        Dim P As ADODB.Property
+        Dim p As ADODB.Property
         If DEBUG_MODE Then
 '            Debug.Print "Provider :: " & .Provider
 '            For Each p In .Properties
@@ -763,8 +782,9 @@ Private Sub Database_ExecuteComplete(ByVal RecordsAffected As Long, ByVal pError
     
     Set pCommand.ActiveConnection = Nothing
     
-    If CLOSE_CONNECTION_IMMEDIATELY And myclass.Locks = 0 Then _
-        Call pConnection.Close
+    If CLOSE_CONNECTION_IMMEDIATELY Then _
+        If myclass.Locks = 0 Then _
+            Call pConnection.Close
     
 End Sub
 
@@ -805,8 +825,8 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
     If (Records Is Nothing) Then _
         Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records Is Nothing)")
     
-'    If (Records.State = ISqlObjectState.IsClosed_State) Then _
-'        Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
+    If (Records.State = ISqlObjectState.IsClosed_State) Then _
+        Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlCommandState.StateClosed)")
     
     Set newClass.Iterator.Records = Records
     With newClass.Iterator.Records
@@ -822,7 +842,7 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset) As IGenericIterator
             ReDim newClass.Iterator.Converter(.Fields.Count - 1)
             
             For i = 0 To .Fields.Count - 1
-                Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type
+'                Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type
                 Select Case .Fields(i).Type
                     Case Is = ISqlDataType.Boolean_Type: Set newClass.Iterator.Converter(i) = GBool
                     Case Is = ISqlDataType.Char_Type: Set newClass.Iterator.Converter(i) = GString
@@ -863,6 +883,10 @@ Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
             For i = 0 To .Count - 1
                 Set Row.ElementAt(i) = myclass.Iterator.Converter(i).Convert(.Item(i).Value)
             Next
+            
+            If DEBUG_MODE Then _
+                Debug.Print "Row mapped"
+                
         End With
         
         Call myclass.Iterator.Records.MoveNext

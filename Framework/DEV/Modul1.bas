@@ -36,9 +36,9 @@ Sub TestString()
     
     t.StartCounter
     
-    With GString.AsciiList.Sort.Iterator
+    With GString.AsciiList.Sort.Iterator(119, 136)
         Do While .HasNext(Char)
-'            Debug.Print Char.ToString
+            Debug.Print Char.ToString
         Loop
     End With
   
@@ -63,47 +63,38 @@ Sub TestCreaet()
 End Sub
 
 Public Sub TestSql()
+
     
-    Dim Path As String
-    Path = "C:\Users\cnitz\Desktop\iCAT Neu\Backend\Vers. 2.5\2020-02-24 iCAT-Backend Vers. 2.5.accdb"
-    Dim PW As String
-    PW = "OpenSesame"
-    
-    Set sql = GenericSqlManager.BuildSqlConnection(ServerName:="192.168.2.112", InitialCatalog:="TEST", User:="SA", Password:="Specialguest89$")
-'    Set Sql = GenericSqlManager.BuildAccessConnection(Path:=Path, Filepassword:=PW)
+'    Set sql = GenericSqlManager.BuildSqlConnection(ServerName:="192.168.2.112", InitialCatalog:="TEST", User:="SA", Password:="******")
+    Set sql = GenericSqlManager.BuildAccessConnection(Path:="C:\Users\cnitz\Desktop\iCAT Neu\Backend\Vers. 2.5\2020-02-24 iCAT-Backend Vers. 2.5.accdb", Filepassword:="OpenSesame")
     
 '    Call Sql.Execute(CreateTables.Test)
 
-    Call sql.InsertInto("TEST", _
-                    GenericArray.Create( _
-                                                GNumeric(111), _
-                                                GDateTime(#1/1/1900#), _
-                                                GString("Testlauf"), _
-                                                GNumeric(103.51), _
-                                                GString("abcdefghijklmnopqrstuvwxyz"), _
-                                                GBool(1)) _
-                                            )
+    Dim Updates As GenericLinkedMap
+    Set Updates = GenericLinkedMap.Build
+    
+    Call Updates.Add(GString("Feld1"), GNumeric(100))
+    Call Updates.Add(GString("Feld2"), GNumeric(101))
+    Call Updates.Add(GString("Feld3"), GNumeric(102))
+    Call Updates.Add(GString("Feld4"), GNumeric(103))
+    Call Updates.Add(GString("Feld5"), GNumeric(104))
+    Call Updates.Add(GString("Feld6"), GNumeric(105))
+    
+'    Call sql.UpdateWhere(GString("TEST"), GenericPair(GString("ID"), GNumeric(1)), Updates)
+'    Call sql.InsertInto(GString("TEST"), Updates)
 
 
-
-
-
-
-
-
-
-'    Dim Row As GenericArray, Item As IGenericValue
-'    Dim Rows As IGenericIterator
-''
-'    Set Rows = Sql.ExecuteRowMapper("Select * FROM TEST WHERE KNE=?", GenericArray.BuildWith(GNumeric(101)))
-'    Do While Rows.HasNext(Row)
-'        With Row.Iterator
-'            Do While .HasNext(Item)
-'                Debug.Print Item.ToValue
-'            Loop
-'        End With
-'    Loop
-
+    Dim Row As GenericArray, Item As IGenericValue
+   
+    With sql.Query("Select * FROM tblG_00_Basis WHERE ID<5") ', GenericArray.Create(GNumeric(1), GNumeric(2)))
+        Do While .HasNext(Row)
+            With Row.Iterator
+                Do While .HasNext(Item)
+'                    Debug.Print Item.ToValue
+                Loop
+            End With
+        Loop
+    End With
     
 '    Call Sql.Execute(CreateTables.Überblick)
 '    Call Sql.Execute(CreateTables.Normal)
@@ -394,20 +385,20 @@ Sub TestMaps()
         Call RandomList.Sort(ascending, GenericPair)
     End If
  
-    Dim P As GenericPair
+    Dim p As GenericPair
     Dim Item As IGeneric
     
     Set t = New CTimer
     t.StartCounter
     For i = RandomList.First To RandomList.Count - 1
-        Set P = RandomList(i)
-        Call Map.Add(P.Key, P.Value)
+        Set p = RandomList(i)
+        Call Map.Add(p.Key, p.Value)
     Next
     Debug.Print N & " :: "; t.TimeElapsed
 
     For i = RandomList.First To RandomList.Count - 1
-        Set P = RandomList(i)
-        Set Item = Map.Item(P.Key)
+        Set p = RandomList(i)
+        Set Item = Map.Item(p.Key)
     Next
   
     Dim ga As GenericArray
@@ -644,18 +635,32 @@ End Sub
 
 Sub testMap()
 
-    Dim i As Long
+    Dim i As Long, Pair As GenericPair, Item As IGeneric
+    
     Dim hm As GenericLinkedMap
     Set hm = GenericLinkedMap.Build()
     Dim t As CTimer
     Set t = New CTimer
     
     t.StartCounter
-    For i = 1 To 11
+    For i = 1 To 10000
         Call hm.Add(GString("Key " & i), GNumeric(i))
     Next
-    Debug.Print t.TimeElapsed
+    
+    With hm.Iterator
+        Do While .HasNext(Pair)
+'            Debug.Print Pair.Key
+        Loop
+    End With
+    
+    With hm.GetValues.Iterator(0, 10)
+        Do While .HasNext(Item)
+'            Debug.Print Item.ToString
+        Loop
+    End With
+    
     Set hm = Nothing
-     
+    Debug.Print t.TimeElapsed
+    
 End Sub
 

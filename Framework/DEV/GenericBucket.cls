@@ -72,7 +72,7 @@ Public Function ToPair() As GenericPair
 End Function
 
 Private Sub Class_Terminate()
-    Debug.Print "Node_Terminate"
+'    Debug.Print "Node_Terminate"
 End Sub
 
 'IGeneric

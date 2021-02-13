@@ -69,11 +69,11 @@ End Enum
 Public Property Get ToValue() As Variant: ToValue = Null: End Property
 Attribute ToValue.VB_UserMemId = 0
 Public Property Get SqlType() As ISqlDataType: SqlType = Variant_Type: End Property
-Public Property Get VarType() As VbVarType: End Property
+Public Property Get VarType() As VbVarType: VarType = vbVariant: End Property
 Public Property Get Size() As Byte: End Property
 Public Property Get Instance() As IGeneric: Set Instance = Me: End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = IGenericComparer: End Property
-Public Function Convert(ByVal Value As Variant) As IGenericValue: Set Create = Me: End Function
+Public Function Convert(ByVal Value As Variant) As IGenericValue: Set Convert = Me: End Function
 Public Function CompareTo(ByVal Other As IGenericValue) As CompareResult
         
         If Other Is Nothing Then _

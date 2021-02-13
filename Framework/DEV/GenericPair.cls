@@ -46,9 +46,9 @@ Private Sub Class_Terminate()
 End Sub
 'IGenericComparer -Key comparer
 Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long
-    Dim pair As GenericPair
-    Set pair = Obj
-    IGenericComparer_GetHashCode = System.DefaultComparer.GetHashCode(pair.Key)
+    Dim Pair As GenericPair
+    Set Pair = Obj
+    IGenericComparer_GetHashCode = System.DefaultComparer.GetHashCode(Pair.Key)
 End Function
 
 Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult

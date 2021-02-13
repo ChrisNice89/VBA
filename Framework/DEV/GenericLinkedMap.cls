@@ -102,7 +102,7 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Private Property Get Bucket(ByVal Index As Long) As GenericBucket: Set Bucket = myclass.Buckets(Index): End Property
+Private Property Get GetBucket(ByVal Index As Long) As GenericBucket: Set GetBucket = myclass.Buckets.ElementAt(Index): End Property
 Public Property Get LoadSize() As Long: LoadSize = myclass.LoadSize: End Property
 Public Property Get LoadFactor() As Double: LoadFactor = LOAD_FACTOR: End Property
 Public Property Get Count() As Long: Count = myclass.Count: End Property
@@ -114,7 +114,7 @@ Public Property Get Item(ByVal Key As IGeneric) As IGeneric
     If (i < 0) Then _
         Call System.Throw(Me, "Public Property Get Item").NoSuchElement
     
-    Set Item = Bucket(i).Value: Exit Property
+    Set Item = GetBucket(i).Value: Exit Property
 
 End Property
 Public Function Contains(ByVal Key As IGeneric) As Boolean: Contains = FindEntry(Key) > -1: End Function 'TryGetValue(Key, Nothing): End Function
@@ -218,7 +218,7 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
     Dim i As Long: i = FindEntry(Key)
     
     If (i >= 0) Then _
-        Set Value = Bucket(i).Value: TryGetValue = True
+        Set Value = GetBucket(i).Value: TryGetValue = True
         
 End Function
 
@@ -239,10 +239,11 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
         
         If (Bucket Is Nothing) Then _
             FindEntry = -1: Exit Function
-                                       
-'      If ((Bucket.State And HAS_ENTRY) = HAS_ENTRY) Then _
-
+                                    
         With Bucket
+'            If .State = IS_EMPTY Then _
+'                FindEntry = -1: Exit Function
+
             If .HashCode = Hash.Code Then _
                 If Key.Equals(.Key) Then _
                     FindEntry = Hash.Index: Exit Function
@@ -264,24 +265,30 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
 End Function
 
 Public Sub Remove(ByVal Key As IGeneric)
-    
-    Dim B As GenericBucket
+   
     Dim i As Long: i = FindEntry(Key)
     
     If (i >= 0) Then
-        Set B = Bucket(i)
-        B.State = (B.State And Not HAS_ENTRY)
-        B.HashCode = -1
-        Set B.Key = Nothing
-        Set B.Value = Nothing
+        With GetBucket(i) 'remain as empty bucket
+            .State = (.State And Not HAS_ENTRY)
+            .HashCode = -1
+            Set .Key = Nothing: Set .Value = Nothing
+        
+            Set .nextBucket.PreviousBucket = .PreviousBucket
+            Set .PreviousBucket.nextBucket = .nextBucket
+            Set .PreviousBucket = Nothing
+            Set .nextBucket = Nothing
+        End With
+        
         Call InterlockedDecrement(myclass.Count)
+        
     End If
     
 End Sub
 
 Private Static Function getPrime(Optional ByVal min As Long = 0) As Long
     
-    Dim P As Long
+    Dim p As Long
     Dim i As Long
     Dim Primes() As Long
     
@@ -303,15 +310,15 @@ Private Static Function getPrime(Optional ByVal min As Long = 0) As Long
         Next
     End If
     
-    For P = LBound(Primes) To UBound(Primes) Step 2
-        If Primes(P) >= min Then _
-            getPrime = Primes(P): Exit Function
+    For p = LBound(Primes) To UBound(Primes) Step 2
+        If Primes(p) >= min Then _
+            getPrime = Primes(p): Exit Function
     Next
     
-    For P = min To MAXPRIME
-        If IsPrime(P) Then _
-            If (((P - 1) Mod HASHPRIME) = 0 = False) Then _
-                getPrime = P: Exit Function
+    For p = min To MAXPRIME
+        If IsPrime(p) Then _
+            If (((p - 1) Mod HASHPRIME) = 0 = False) Then _
+                getPrime = p: Exit Function
     Next
    
     getPrime = min
@@ -371,7 +378,7 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
     Set oldBucket = myclass.Head.nextBucket
         
     Do While oldBucket Is myclass.Head = False
-           
+        
         If Not ForceNewHashing Then
             Call LoadHash(Hash, oldBucket.HashCode, Size)
         Else
@@ -381,10 +388,10 @@ Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
         oldBucket.State = HAS_ENTRY
             
         Do
-            Set newBucket = NewBuckets(Hash.Index)
+            Set newBucket = NewBuckets.ElementAt(Hash.Index)
                 
             If newBucket Is Nothing Then _
-                Set NewBuckets(Hash.Index) = oldBucket: Exit Do
+                Set NewBuckets.ElementAt(Hash.Index) = oldBucket: Exit Do
                 
             If Not (newBucket.State And HAS_COLLISION) = HAS_COLLISION Then _
                 newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(myclass.Occupancy)
@@ -441,15 +448,16 @@ Public Sub Add( _
                 State = Bucket.State
                                                     
                 If (EmptyBucket Is Nothing) Then _
-                    If Not (State = HAS_ENTRY) Then _
+                    If Not (State And HAS_ENTRY) = HAS_ENTRY Then _
                         Set EmptyBucket = Bucket
+                
             End If
             
             If (State = IS_EMPTY) Then
             
                 If EmptyBucket Is Nothing Then
                     Set EmptyBucket = New GenericBucket
-                    Set myclass.Buckets(Hash.Index) = EmptyBucket
+                    Set myclass.Buckets.ElementAt(Hash.Index) = EmptyBucket
                 End If
                 
                 With EmptyBucket

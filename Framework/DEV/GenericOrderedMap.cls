@@ -150,18 +150,18 @@ End Sub
 
 Public Sub AddAll(ByVal Map As IGenericDictionary)
     
-    Dim P As GenericPair
+    Dim p As GenericPair
   
     With Map.Iterator()
-        Do While .HasNext(P): Call Me.AddPair(P): Loop
+        Do While .HasNext(p): Call Me.AddPair(p): Loop
     End With
     
 End Sub
 
-Public Sub AddPair(ByVal pair As GenericPair)
+Public Sub AddPair(ByVal Pair As GenericPair)
     
-    Call myclass.HashTable.Add(pair.Key, pair.Value)
-    Call myclass.Internal.Add(pair)
+    Call myclass.HashTable.Add(Pair.Key, Pair.Value)
+    Call myclass.Internal.Add(Pair)
    
 End Sub
 Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: ContainsKey = myclass.HashTable.ContainsKey(Key): End Function
@@ -320,7 +320,7 @@ Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_L
 Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Count: End Property
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
-    Dim P As GenericPair
+    Dim p As GenericPair
     
     If (Index >= myclass.Internal.Count) Then _
         Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index >= myclass.Size)")
@@ -358,7 +358,7 @@ Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGeneric
 Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
-    Dim P As GenericPair
+    Dim p As GenericPair
     
     With myclass.Iterator
        

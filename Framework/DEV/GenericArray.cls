@@ -208,7 +208,6 @@ Public Property Get Size() As LongPtr: Size = Me.SizeOf(myclass.Elements): End P
 Public Property Get Rank() As Long: Rank = myclass.Struct.cDims: End Property
 Public Property Set ElementAt(ByVal Index As Long, ByVal Value As IGeneric): Set myclass.Internal(Index) = Value: End Property
 Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myclass.Internal(Index): End Property
-Attribute ElementAt.VB_UserMemId = 0
 
 Public Function Build(ParamArray Indices() As Variant) As GenericArray
     
@@ -411,10 +410,6 @@ Public Function AdressOfIndex(ParamArray Indices() As Variant) As LongPtr
 
 End Function
 
-Private Function IsValidAdress(ByVal Pointer As LongPtr) As Boolean
-
-End Function
-
 Private Sub SwitchTo(ByVal Descriptor As LongPtr, ByRef s As SAFEARRAYSTRUCT)
     Call CopyMemory(Dst:=ByVal Descriptor, Src:=ByVal VarPtr(s), Length:=16&)
     Call CopyMemory(Dst:=ByVal Descriptor + 16&, Src:=ByVal VarPtr(s.Bounds(LBound(s.Bounds))), Length:=s.cDims * 8&)
@@ -494,13 +489,13 @@ Public Function Copy() As GenericArray
     
     If (Clone.Descriptor = 0) Then _
         Call System.Throw(Me, "Public Function Copy").InvalidOperation("Descriptor = 0")
+    Call LoadArray(Clone.Internal, Clone.Descriptor)
     
     For i = LBound(Clone.Indices) To UBound(Clone.Indices)
         Clone.Indices(i) = MIN_INDEX
     Next
     
     Call Catch(SafeArrayPtrOfIndex(ByVal Clone.Descriptor, Clone.Indices(0), Clone.Struct.pvData))
-    Call LoadArray(Clone.Internal, Clone.Descriptor)
 
     Set Copy = System.CreateInstance(New GenericArray, VarPtr(Clone), LenB(Clone))
 
@@ -1960,6 +1955,8 @@ Private Sub IGenericIterator_Reset()
         Call LoadIterator(myclass.Iterator, .Values, .StartIndex, .Count)
     End With
 End Sub
+
+
 
 
 

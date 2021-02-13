@@ -239,10 +239,10 @@ End Function
 
 Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
-    Dim P As ADODB.Parameter
-    Set P = New ADODB.Parameter
+    Dim p As ADODB.Parameter
+    Set p = New ADODB.Parameter
     
-    With P
+    With p
         .Direction = Direction
         .Attributes = adParamNullable '64
         .PRECISION = PRECISION
@@ -252,7 +252,7 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = P
+    Set IGenericValue_ToSqlParameter = p
     
 End Function
 

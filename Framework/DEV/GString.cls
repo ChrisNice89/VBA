@@ -94,16 +94,16 @@ Public Property Get Length() As Long: Length = myclass.Length: End Property
 Public Property Get LastChar() As GString: Set LastChar = Me.ElementAt(myclass.Length - 1): End Property
 Public Property Get IsNullOrEmpty() As Boolean: myclass.Length = 0: End Property
 Public Property Get Value() As String: Value = myclass.Value: End Property
-Public Property Get Default(Optional ByRef Value As String = DEFAULT_VALUE) As GString
+Public Property Get Use(Optional ByRef Value As String = DEFAULT_VALUE) As GString
 
         If Not (Me Is GString) Then _
-            Set Default = GString.Default(Value): Exit Property
+            Set Use = GString.Use(Value): Exit Property
         
         myclass.Length = Len(Value)
         myclass.Value = Value
         myclass.Hash = 0 '!
 
-        Set Default = Me
+        Set Use = Me
 
 End Property
 
@@ -218,16 +218,16 @@ Public Function CountChar(ByVal c As String) As Long
     
 End Function
 
-Public Function Insert(ByVal Index As Long, Text As String) As GString
+Public Function Insert(ByVal Index As Long, Text As GString) As GString
 
     If Index < 1 Then _
         Index = 1
-    
+ 
     If myclass.Length < Index Then _
         Index = myclass.Length + 1
 
     Set Insert = GString.Build(VBA.Mid$(myclass.Value, 1, Index - 1) _
-                        & Text _
+                        & Text.Value _
                         & VBA.Mid$(myclass.Value, Index, myclass.Length - Index + 1))
 
 
@@ -245,6 +245,10 @@ End Function
 Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVal Delimiter As String = vbNullString) As GString
     
     Dim i As Long
+        
+    If Number <= 0 Then _
+        Set Repeat = GString.Build(DEFAULT_VALUE): Exit Function
+        
     ReDim strings(Number - 1) As String
     
     For i = LBound(strings) To UBound(strings)
@@ -252,7 +256,8 @@ Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVa
     Next
     
     Set Repeat = GString.Build(VBA.Join$(strings, Delimiter))
-    
+
+
 End Function
 
 Public Function Split(ByVal Delimiter As String) As GenericArray
@@ -303,7 +308,7 @@ Public Function Join(ByVal Values As IGenericReadOnlyList, Optional ByVal Delimi
         Call System.Throw(Me, "Public Function Join").IsNothing("(Values Is Nothing)")
 
     With Values
-        ReDim strings(.Count) As String
+        ReDim strings(.Count - 1) As String
         
         For i = .First To .Last
             Set s = .ElementAt(i)
@@ -394,10 +399,10 @@ Private Function IGenericValue_ToParameter( _
                                           Optional ByVal Name As GString, _
                                           Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As Variant
     
-    Dim P As ADODB.Parameter
-    Set P = New ADODB.Parameter
+    Dim p As ADODB.Parameter
+    Set p = New ADODB.Parameter
     
-    With P
+    With p
         .Direction = Direction
         .Name = Name.Value
         .Attributes = adParamNullable '64
@@ -406,7 +411,7 @@ Private Function IGenericValue_ToParameter( _
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToParameter = P
+    Set IGenericValue_ToParameter = p
     
 End Function
 
@@ -438,10 +443,10 @@ Private Function IGenericValue_ToSqlParameter( _
                                                  Optional ByVal Direction As ISqlParameterDirection = 1&, _
                                                  Optional ByVal Name As String) As Object
     
-    Dim P As ADODB.Parameter
-    Set P = New ADODB.Parameter
+    Dim p As ADODB.Parameter
+    Set p = New ADODB.Parameter
     
-    With P
+    With p
         .Direction = Direction
         .Name = Name
         .Attributes = adParamNullable '64
@@ -450,7 +455,7 @@ Private Function IGenericValue_ToSqlParameter( _
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = P
+    Set IGenericValue_ToSqlParameter = p
     
 End Function
 
