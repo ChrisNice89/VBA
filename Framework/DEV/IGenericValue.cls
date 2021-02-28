@@ -8,6 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@Folder "<T>Class"
+Option Explicit
 Option Compare Text
 
 Implements IGeneric
@@ -93,37 +94,44 @@ Private Sub Class_Initialize()
 End Sub
 
 'IGenericCompare IGenericValue Variant comparer
-Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long: IGenericComparer_GetHashCode = Obj.HashValue: End Function
-Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult
+Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long
+    If Not (Obj Is Nothing) Then _
+        IGenericComparer_GetHashCode = Obj.HashValue
+End Function
+Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult
 
     Dim x As IGenericValue, y As IGenericValue
     Dim i As Variant, j As Variant
     
-    If a Is Nothing Then _
+    If A Is Nothing Then _
         IGenericComparer_Compare = IIf(B Is Nothing, CompareResult.IsEqual, CompareResult.IsLower): Exit Function
     
     If B Is Nothing Then _
         IGenericComparer_Compare = CompareResult.IsGreater: Exit Function
         
-    Set x = a: i = x.ToValue: Set y = B: j = y.ToValue
+    Set x = A: i = x.ToValue: Set y = B: j = y.ToValue
     
     Select Case True
-        Case i > j: IGenericValue_CompareTo = IsGreater
-        Case i < j: IGenericValue_CompareTo = IsLower
-        Case Else: IGenericValue_CompareTo = IsEqual
+        Case i > j: IGenericComparer_Compare = IsGreater
+        Case i < j: IGenericComparer_Compare = IsLower
+        Case Else: IGenericComparer_Compare = IsEqual
     End Select
 
 End Function
 
-Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal B As IGeneric) As Boolean
-
-    If x Is Nothing = False Then _
-        IGenericComparer_Equals = x.Equals(y): Exit Function
-
-    If y Is Nothing = False Then _
+Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
+    
+    Dim x As IGenericValue, y As IGenericValue
+    
+    If A Is B Then _
+        IGenericComparer_Equals = True: Exit Function
+        
+    If A Is Nothing Or B Is Nothing Then _
         IGenericComparer_Equals = False: Exit Function
-
-    IGenericComparer_Equals = True: Exit Function
+    
+    Set x = A: Set y = B
+    
+    IGenericComparer_Equals = x.ToValue = y.ToValue
 
 End Function
 
@@ -139,5 +147,4 @@ Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: I
 Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_Equals = Other Is IGeneric: End Function
 Private Function IGeneric_ToString() As String: IGeneric_ToString = "Class: " & TypeName$(IGenericValue) & " :: Default": End Function
 Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = IGeneric: End Function
-Private Sub IGeneric_Dispose(): End Sub
 

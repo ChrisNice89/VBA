@@ -24,7 +24,6 @@ Public Function Equals(ByVal Other As IGeneric) As Boolean: Equals = Other Is Me
 Public Function ToString() As String: ToString = "Class: " & TypeName$(Me) & " :: Default": End Function
 Attribute ToString.VB_UserMemId = 0
 Public Function Clone() As IGeneric: Set Clone = IGeneric: End Function
-Public Sub Dispose(): End Sub
 
 Private Sub Class_Initialize()
     If Not Me.IsDefault Then _

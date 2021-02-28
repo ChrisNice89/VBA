@@ -108,7 +108,6 @@ Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = myclass
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GBool):  End Property
 
-Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me: End Function
 

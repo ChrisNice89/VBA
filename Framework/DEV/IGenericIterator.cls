@@ -29,7 +29,7 @@ Attribute VB_Exposed = True
 Option Explicit
 '@Folder "<T>Enumerable"
 
-Public Property Get Current() As IGeneric: End Property
+Public Property Get current() As IGeneric: End Property
 Public Function HasNext(ByRef Out As IGeneric) As Boolean: End Function
 Attribute HasNext.VB_UserMemId = 0
 Public Sub Reset(): End Sub

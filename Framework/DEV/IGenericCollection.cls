@@ -15,7 +15,8 @@ Public Property Get Count() As Long: End Property
 
 Public Function Iterator() As IGenericIterator: End Function
 Public Function ToArray() As GenericArray: End Function
-Public Function Contains(ByVal Item As IGeneric) As Boolean: End Function
+Public Function Copy() As IGenericCollection: End Function
+Public Function Contains(ByVal Element As IGeneric) As Boolean: End Function
 Public Sub CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): End Sub
 Public Sub Clear(): End Sub
 

@@ -13,6 +13,7 @@ Option Explicit
 Implements IGeneric
 Implements IGenericValue
 Implements IGenericReadOnlyList
+Implements IGenericCollection
 Implements IGenericIterator
 
 #If Win64 Then
@@ -73,7 +74,7 @@ Public Enum StringFormat
 End Enum
 
 Private Type Iterator
-    Current As GString
+    current As GString
     Index As Long
 End Type
 
@@ -86,6 +87,7 @@ Private Type Member
 End Type
 Private myclass As Member
 
+Public Property Get Chars() As IGenericCollection: Set Chars = Me: End Property
 Public Property Get Pointer() As LongPtr: Pointer = myclass.Ptr: End Property
 Public Property Get ElementAt(ByVal Index As Long) As GString: Set ElementAt = GString.Build(VBA.Mid$(myclass.Value, Index + 1, 1)): End Property
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GString: End Property
@@ -94,18 +96,6 @@ Public Property Get Length() As Long: Length = myclass.Length: End Property
 Public Property Get LastChar() As GString: Set LastChar = Me.ElementAt(myclass.Length - 1): End Property
 Public Property Get IsNullOrEmpty() As Boolean: myclass.Length = 0: End Property
 Public Property Get Value() As String: Value = myclass.Value: End Property
-Public Property Get Use(Optional ByRef Value As String = DEFAULT_VALUE) As GString
-
-        If Not (Me Is GString) Then _
-            Set Use = GString.Use(Value): Exit Property
-        
-        myclass.Length = Len(Value)
-        myclass.Value = Value
-        myclass.Hash = 0 '!
-
-        Set Use = Me
-
-End Property
 
 Public Function Build(ByRef Value As String) As GString
 Attribute Build.VB_UserMemId = 0
@@ -113,18 +103,8 @@ Attribute Build.VB_UserMemId = 0
     If Not (Me Is GString) Then _
         Set Build = GString.Build(Value): Exit Function
 
-    If Value = DEFAULT_VALUE Then
-        Static EmptyString As GString
-        If EmptyString Is Nothing Then
-            myclass.Value = DEFAULT_VALUE
-            myclass.Length = 0
-            Set EmptyString = New GString
-            myclass = EmptyStructure
-        End If
-
-        Set Build = EmptyString
-        Exit Function
-    End If
+    If Value = DEFAULT_VALUE Then _
+        Set Build = GString: Exit Function
 
     myclass.Length = Len(Value)
 
@@ -181,10 +161,6 @@ Public Function StartsWith(ByVal RegEx As String) As Boolean: StartsWith = (mycl
 Public Function EndsWith(ByVal RegEx As String) As Boolean: EndsWith = (myclass.Value Like (RegEx & "%")): End Function
 Public Function Contains(ByRef Text As String) As Boolean: Contains = Not (Me.IndexOf(Text:=Text) = 0): End Function
 Public Function IndexOf(ByRef Text As String) As Long: IndexOf = InStr(1, myclass.Value, Text, vbTextCompare): End Function
-Public Function Iterator() As IGenericIterator
-    Call IGenericIterator_Reset
-    Set Iterator = Me
-End Function
 
 Public Function AsciiList() As GenericArray
     
@@ -222,14 +198,14 @@ Public Function Insert(ByVal Index As Long, Text As GString) As GString
 
     If Index < 1 Then _
         Index = 1
- 
-    If myclass.Length < Index Then _
-        Index = myclass.Length + 1
-
-    Set Insert = GString.Build(VBA.Mid$(myclass.Value, 1, Index - 1) _
+    
+    If myclass.Length >= Index Then
+        Set Insert = GString.Build(VBA.Mid$(myclass.Value, 1, Index - 1) _
                         & Text.Value _
                         & VBA.Mid$(myclass.Value, Index, myclass.Length - Index + 1))
-
+    Else
+        Set Insert = Me.Concat(Text)
+    End If
 
 End Function
 
@@ -249,14 +225,13 @@ Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVa
     If Number <= 0 Then _
         Set Repeat = GString.Build(DEFAULT_VALUE): Exit Function
         
-    ReDim strings(Number - 1) As String
+    ReDim Strings(1 To Number) As String
     
-    For i = LBound(strings) To UBound(strings)
-        strings(i) = Text
+    For i = 1 To Number
+        Strings(i) = Text
     Next
     
-    Set Repeat = GString.Build(VBA.Join$(strings, Delimiter))
-
+    Set Repeat = GString.Build(VBA.Join$(Strings, Delimiter))
 
 End Function
 
@@ -264,14 +239,14 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     
     Dim i As Long
     Dim Parts As GenericArray
-    Dim strings As Variant
+    Dim Strings As Variant
     
-    strings = VBA.Split(myclass.Value, Delimiter)
-    Set Parts = GenericArray.Build(UBound(strings) + 1)
+    Strings = VBA.Split(myclass.Value, Delimiter)
+    Set Parts = GenericArray.Build(UBound(Strings) + 1)
     
     With Parts
-        For i = LBound(strings) To UBound(strings)
-            Set .ElementAt(i) = GString.Build(CStr(strings(i)))
+        For i = LBound(Strings) To UBound(Strings)
+            Set .ElementAt(i) = GString.Build(CStr(Strings(i)))
         Next
     End With
 
@@ -279,45 +254,28 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     
 End Function
 
-Public Function ToArray() As GenericArray
-    
-    Dim Chars As GenericArray
-    Dim i As Long
-    
-    Set Chars = GenericArray
-    If Not myclass.Length = 0 Then
-        Set Chars = GenericArray.Build(myclass.Length)
-         
-        With Chars
-            For i = .LowerBound To .Length - 1
-                Set .ElementAt(i) = Me.ElementAt(i)
-            Next
-        End With
-    End If
-    
-    Set ToArray = Chars
-    
-End Function
-
-Public Function Join(ByVal Values As IGenericReadOnlyList, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
+Public Function Join(ByVal Values As IGenericCollection, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
     Dim s As IGeneric
     Dim i As Long
   
     If (Values Is Nothing) Then _
         Call System.Throw(Me, "Public Function Join").IsNothing("(Values Is Nothing)")
-
-    With Values
-        ReDim strings(.Count - 1) As String
-        
-        For i = .First To .Last
-            Set s = .ElementAt(i)
+    
+    If (Values.Count <= 0) Then _
+        Call System.Throw(Me, "Public Function Join").IsNothing("(Values Is Nothing)")
+    
+    ReDim Strings(Values.Count - 1) As String
+    
+    With Values.Iterator
+        Do While .HasNext(s)
             If Not s Is Nothing Then _
-                strings(i) = s.ToString
-        Next
+                Strings(i) = s.ToString
+            i = i + 1
+        Loop
     End With
     
-    Set Join = GString(VBA.Join$(strings, Delimiter))
+    Set Join = GString(VBA.Join$(Strings, Delimiter))
     
 End Function
 
@@ -370,7 +328,6 @@ End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GString):  End Property
 
-Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me: End Function
 
@@ -460,10 +417,11 @@ Private Function IGenericValue_ToSqlParameter( _
 End Function
 
 'IGenericReadOnlyList
+Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = GenericArray.LowerBound: End Property
 Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = myclass.Length - GenericArray.LowerBound - 1: End Property
-Private Property Get IGenericReadOnlyList_Count() As Long: IGenericReadOnlyList_Count = Me.Length: End Property
-Private Function IGenericReadOnlyList_IndexOf(ByVal Item As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Text:=Item.ToString): End Function
+
+Private Function IGenericReadOnlyList_IndexOf(ByVal Element As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Text:=Element.ToString): End Function
 Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
     
     If (Index >= myclass.Length) Then _
@@ -491,28 +449,91 @@ Private Sub IGenericReadOnlyList_CopyTo(ByVal GArray As GenericArray, ByVal Arra
     Next
 
 End Sub
-Private Function IGenericReadOnlyList_Iterator() As IGenericIterator: Set IGenericReadOnlyList_Iterator = Me.Iterator: End Function
 
-'IGenericIterator
-Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
-Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
+'IGenericCollection
+Private Sub IGenericCollection_Clear()
+
+End Sub
+
+Private Function IGenericCollection_Contains(ByVal Element As IGeneric) As Boolean
+
+
+
+End Function
+
+Private Function IGenericCollection_Copy() As IGenericCollection: Set IGenericCollection_Copy = Me: End Function
+
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
     
-    With myclass.Iterator
-        If .Index = Me.Length Then
-            Set Out = Nothing
-            Set .Current = Nothing
-            Exit Function
-        End If
-
-        Set .Current = Me.ElementAt(InterlockedIncrement(.Index))
-       
-        Set Out = .Current
-        IGenericIterator_HasNext = True
+    If (GArray Is Nothing) Then _
+        Call System.Throw(Me, "Private Sub IGenericCollection_CopyTo").IsNothing("(GArray Is Nothing)")
+    
+    With GArray
+        If (ArrayIndex < .LowerBound) Or (ArrayIndex > .Length) Then _
+            Call System.Throw(Me, "Private Sub IGenericCollection_CopyTo").IndexOutofRange("(Index < 0) Or (Index > GArray.Length)")
+    
+        If (.Length - ArrayIndex + .LowerBound < myclass.Length) Then _
+            Call System.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray.Length - Index < String.Length)")
+            
     End With
+    
+    Dim i As Long
+    For i = IGenericReadOnlyList_First To Me.Length
+        Set GArray(ArrayIndex) = Me.ElementAt(i)
+        ArrayIndex = ArrayIndex + 1
+    Next
+    
+End Sub
+
+Private Property Get IGenericCollection_Count() As Long: IGenericCollection_Count = myclass.Length: End Property
+
+Private Function IGenericCollection_Iterator() As IGenericIterator
+    
+    Set IGenericCollection_Iterator = Me
+    Call IGenericCollection_Iterator.Reset
     
 End Function
 
+Private Function IGenericCollection_ToArray() As GenericArray
+    
+    Dim Chars As GenericArray
+    Dim i As Long
+    
+    Set Chars = GenericArray
+    If Not myclass.Length = 0 Then
+        Set Chars = GenericArray.Build(myclass.Length)
+         
+        With Chars
+            For i = .LowerBound To .Length - 1
+                Set .ElementAt(i) = Me.ElementAt(i)
+            Next
+        End With
+    End If
+    
+    Set IGenericCollection_ToArray = Chars
+    
+End Function
+
+'IGenericIterator
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.current: End Property
+Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
+    
+    With myclass.Iterator
+        If .Index < Me.Chars.Count Then
+            Set .current = Me.ElementAt(.Index)
+            .Index = .Index + 1
+            Set Out = .current
+            IGenericIterator_HasNext = True
+            Exit Function
+        End If
+    End With
+    
+    Set Out = Nothing
+    Set myclass.Iterator.current = Nothing
+            
+End Function
+
 Private Sub IGenericIterator_Reset()
-   myclass.Iterator.Index = IGenericReadOnlyList_First
+   myclass.Iterator.Index = 0
 End Sub
 

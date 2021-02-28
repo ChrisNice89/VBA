@@ -18,8 +18,8 @@ Private Type Member
     Key As IGeneric
     Value As IGeneric
     HashCode As Long
-    nextBucket As GenericBucket
-    PreviousBucket As GenericBucket
+    After As GenericBucket
+    Before As GenericBucket
     State As Byte
 End Type
 Private myclass As Member
@@ -30,11 +30,11 @@ Public Property Let HashCode(ByVal Value As Long):  myclass.HashCode = Value: En
 Public Property Get State() As Byte: State = myclass.State: End Property
 Public Property Let State(ByVal Value As Byte):  myclass.State = Value: End Property
 
-Public Property Get nextBucket() As GenericBucket: Set nextBucket = myclass.nextBucket: End Property
-Public Property Set nextBucket(ByVal B As GenericBucket): Set myclass.nextBucket = B: End Property
+Public Property Get After() As GenericBucket: Set After = myclass.After: End Property
+Public Property Set After(ByVal B As GenericBucket): Set myclass.After = B: End Property
 
-Public Property Get PreviousBucket() As GenericBucket: Set PreviousBucket = myclass.PreviousBucket: End Property
-Public Property Set PreviousBucket(ByVal B As GenericBucket): Set myclass.PreviousBucket = B: End Property
+Public Property Get Before() As GenericBucket: Set Before = myclass.Before: End Property
+Public Property Set Before(ByVal B As GenericBucket): Set myclass.Before = B: End Property
 
 Public Property Get Key() As IGeneric: Set Key = myclass.Key: End Property
 Public Property Set Key(ByVal K As IGeneric): Set myclass.Key = K: End Property
@@ -46,32 +46,31 @@ Public Sub Invalidate()
     myclass = EmptyStructure
 End Sub
 
-Public Function Build( _
-                        ByVal Key As IGeneric, _
-                        ByVal Value As IGeneric, _
-                        Optional ByVal PreviousBucket As GenericBucket) As GenericNode
-    
-    If (Me Is GenericBucket) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
-    
-    Dim newBucket As GenericBucket
-    Set newBucket = New GenericBucket
-    
-    With newBucket
-        Set .Key = Key
-        Set .Value = Value
-        Set .PreviousBucket = PreviousBucket
-    End With
-    
-    Set Build = newBucket
-    
-End Function
+'Public Function Build( _
+'                        ByVal Key As IGeneric, _
+'                        ByVal Value As IGeneric, _
+'                        Optional ByVal Before As GenericBucket) As GenericNode
+'
+'    If (Me Is GenericBucket) = False Then _
+'        Call System.Throw(Me, "Public Function Build").BuildExeption
+'
+'    Dim newBucket As GenericBucket
+'    Set newBucket = New GenericBucket
+'
+'    With newBucket
+'        Set .Key = Key
+'        Set .Value = Value
+'        Set .Before = Before
+'    End With
+'
+'    Set Build = newBucket
+'
+'End Function
 
-Public Function ToPair() As GenericPair
-    Set ToPair = GenericPair(myclass.Key, myclass.Value)
-End Function
+Public Function ToPair() As GenericPair: Set ToPair = GenericPair(myclass.Key, myclass.Value): End Function
 
 Private Sub Class_Terminate()
+    myclass = EmptyStructure
 '    Debug.Print "Node_Terminate"
 End Sub
 
@@ -84,23 +83,21 @@ Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB
 Private Property Get IGeneric_HashValue() As Long
     
     Const MAXLONG = 2 ^ 31 - 1
-    Static Hash As Currency
+    Dim Hash As Currency
+    Hash = 13
     
-    If Hash = 0 Then _
-        Hash = (13 * CDbl(13 * 27 + myclass.Key.HashValue)) + myclass.Value.HashValue
+    If Not myclass.Key Is Nothing Then _
+        Hash = (Hash * CDbl(Hash * 27 + myclass.Key.HashValue))
+    
+    If Not myclass.Value Is Nothing Then _
+        Hash = Hash + myclass.Value.HashValue
     
     IGeneric_HashValue = CLng(Hash - (Fix(Hash / MAXLONG) * MAXLONG))
         
 End Property
 
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = True: End Property
-Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean
-
-End Property
-
-Private Sub IGeneric_Dispose()
-    Call Me.Invalidate
-End Sub
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean:  IGeneric_IsRelatedTo = TypeOf Other Is GenericBucket: End Property
 
 Private Function EmptyStructure() As Member: End Function
 

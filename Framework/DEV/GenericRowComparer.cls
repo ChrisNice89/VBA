@@ -40,9 +40,9 @@ Private Sub Class_Initialize()
 End Sub
 
 Public Function Compare(ByVal x As IGenericReadOnlyList, ByVal y As IGenericReadOnlyList) As CompareResult: Compare = myclass.ElementComparer.Compare(x.ElementAt(myclass.SelectedIndex), y.ElementAt(myclass.SelectedIndex)): End Function
-Private Function IGenericComparer_Compare(ByVal a As IGeneric, ByVal B As IGeneric) As CompareResult: IGenericComparer_Compare = Me.Compare(a, B): End Function
+Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult: IGenericComparer_Compare = Me.Compare(A, B): End Function
 
-Private Function IGenericComparer_Equals(ByVal a As IGeneric, ByVal B As IGeneric) As Boolean
+Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
 
 End Function
 

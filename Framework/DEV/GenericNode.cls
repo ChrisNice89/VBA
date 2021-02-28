@@ -39,7 +39,7 @@ Public Property Get Left() As GenericNode: Set Left = myclass.Left: End Property
 Public Property Set Left(ByVal l As GenericNode): Set myclass.Left = l: End Property
 
 Public Property Get Right() As GenericNode: Set Right = myclass.Right: End Property
-Public Property Set Right(ByVal R As GenericNode): Set myclass.Right = R: End Property
+Public Property Set Right(ByVal r As GenericNode): Set myclass.Right = r: End Property
 
 Public Property Get Parent() As GenericNode: Set Parent = myclass.Parent: End Property
 Public Property Set Parent(ByVal p As GenericNode): Set myclass.Parent = p: End Property
@@ -103,30 +103,6 @@ Public Function InOrderPrevious() As GenericNode
         
 End Function
 
-Public Function Build( _
-                        ByVal Value As IGeneric, _
-                        Optional ByVal Parent As GenericNode, _
-                        Optional ByVal IsRed As Boolean = True, _
-                        Optional ByVal Count As Long = 1) As GenericNode
-Attribute Build.VB_UserMemId = 0
-    
-    If (Me Is GenericNode) = False Then _
-        Call System.Throw(Me, "Public Function Build").BuildExeption
-    
-    Dim newNode As GenericNode
-    Set newNode = New GenericNode
-    
-    With newNode
-        Set .Value = Value
-        Set .Parent = Parent
-        .IsRed = IsRed
-        .Count = Count
-    End With
-    
-    Set Build = newNode
-    
-End Function
-
 Private Sub Class_Terminate()
 '    Debug.Print "Node_Terminate"
 End Sub
@@ -140,10 +116,11 @@ Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB
 Private Property Get IGeneric_HashValue() As Long
     
     Const MAXLONG = 2 ^ 31 - 1
-    Static Hash As Currency
+    Dim Hash As Currency
+    Hash = 13
     
-    If Hash = 0 Then _
-        Hash = (13 * CDbl(13 * 27 + myclass.Value.HashValue))
+    If Not myclass.Value Is Nothing Then _
+        Hash = (Hash * CDbl(Hash * 27 + myclass.Value.HashValue))
     
     IGeneric_HashValue = CLng(Hash - (Fix(Hash / MAXLONG) * MAXLONG))
         
@@ -162,10 +139,6 @@ Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean
     IGeneric_IsRelatedTo = myclass.Value.IsRelatedTo(otherNode.Value)
 
 End Property
-
-Private Sub IGeneric_Dispose()
-    Call Me.Invalidate
-End Sub
 
 Private Function EmptyStructure() As Member: End Function
 'Todo adjust to DeepCopy

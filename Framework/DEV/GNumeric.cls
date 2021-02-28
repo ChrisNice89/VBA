@@ -44,7 +44,7 @@ Private Type Range
     Start As Long
     Last As Long
     i As Long
-    Current As IGeneric
+    current As IGeneric
 End Type
 
 Private Type Member
@@ -175,7 +175,7 @@ Public Function LOGn(ByVal Base As Byte) As Long: LOGn = Log(myclass.Value) / Lo
 Public Function Multiply(ByVal Other As GNumeric) As GNumeric: Set Multiply = GNumeric.Build(myclass.Value * Other.Value): End Function
 Public Function Minus(ByVal Other As GNumeric) As GNumeric: Set Minus = GNumeric.Build(myclass.Value - Other.Value): End Function
 Public Function Plus(ByVal Other As GNumeric) As GNumeric: Set Plus = GNumeric.Build(myclass.Value + Other.Value): End Function
-Public Function Modulus(ByRef a As Currency, ByRef B As Currency) As Currency: Modulus = (a - (Int(a / B) * B)): End Function
+Public Function Modulus(ByRef A As Currency, ByRef B As Currency) As Currency: Modulus = (A - (Int(A / B) * B)): End Function
 Public Function Modulo(ByVal Other As GNumeric) As GNumeric: Set Modulo = GNumeric.Build(Me.Modulus(myclass.Value, Other.Value)): End Function
 Public Function Add(ByVal Factor As Currency) As GNumeric: Set Add = GNumeric.Build(myclass.Value + Factor): End Function
 Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / MAXLONG) * MAXLONG)): End Function
@@ -190,7 +190,6 @@ Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = myclass
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GNumeric):  End Property
 
-Private Sub IGeneric_Dispose(): End Sub
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me: End Function
 
@@ -257,14 +256,14 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
 End Function
 
 'IGenericIterator
-Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Range.Current: End Property
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Range.current: End Property
 Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
     
     With myclass.Range
         If .i = .Last Then _
-            Set .Current = Nothing: Set Out = Nothing: Exit Function
+            Set .current = Nothing: Set Out = Nothing: Exit Function
             
-        Set .Current = GNumeric(InterlockedIncrement(.i)): Set Out = .Current
+        Set .current = GNumeric(InterlockedIncrement(.i)): Set Out = .current
         IGenericIterator_HasNext = True
       
     End With
@@ -272,7 +271,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
 End Function
 
 Private Sub IGenericIterator_Reset()
-    Set myclass.Range.Current = Nothing
+    Set myclass.Range.current = Nothing
     myclass.Range.i = myclass.Range.Start
 End Sub
 
