@@ -557,7 +557,7 @@ Sub TestArray2()
         Call .SetValue(GString("a"), 90)
         Call .SetValue(GString("a"), 99)
         t.StartCounter
-        Call .Sort(descending)
+        Call .Sort(descending, Comparer:=Nothing)
         Debug.Print t.TimeElapsed
         
         For i = .LowerBound To .Length - 1
@@ -594,7 +594,11 @@ Public Sub TestList()
     Call List.RemoveAll(GenericArray.AsArray(GString("test3"), GString("test1")))
     Dim ArrayList As GenericArray
     Set ArrayList = GenericArray.Build(List.Elements.Count)
+
     Call List.CopyTo(ArrayList, ArrayList.LowerBound)
+    Call List.Elements.Clear
+    Call ArrayList.Elements.CopyTo(GenericArray, 0)
+    
     With ArrayList.Elements.Iterator
         Do While .HasNext(Item)
             Debug.Print Item

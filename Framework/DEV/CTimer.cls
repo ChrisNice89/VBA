@@ -27,12 +27,12 @@ Private m_crFrequency As Double
 Private Const TWO_32 = 4294967296# ' = 256# * 256# * 256# * 256#
 
 Private Function LI2Double(LI As LARGE_INTEGER) As Double
-Dim Low As Double
-    Low = LI.lowpart
-    If Low < 0 Then
-        Low = Low + TWO_32
+Dim low As Double
+    low = LI.lowpart
+    If low < 0 Then
+        low = low + TWO_32
     End If
-    LI2Double = LI.highpart * TWO_32 + Low
+    LI2Double = LI.highpart * TWO_32 + low
 End Function
 
 Private Sub Class_Initialize()

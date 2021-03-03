@@ -294,12 +294,10 @@ End Function
 Public Function Add(ByVal Element As IGeneric) As Boolean
        
     Dim i As Long
-    Dim LB As Long
- 
-    LB = myclass.Items.LowerBound
-    i = myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Index:=LB, Length:=myclass.Size, Comparer:=myclass.Comparer)
    
-    If (i < LB) Then _
+    i = myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer)
+   
+    If (i < 0&) Then _
         Call Insert(Index:=Not i, Element:=Element): Add = True
                                                                                                       
 End Function

@@ -82,7 +82,9 @@ Private Const ELEMENT_SIZE As Long = 4&
 Private Const ELEMENT_TYPE As Integer = 9 'vbvartype.vbObject
 
 Private Const DEFAULT_SORTORDER As Integer = 1 'SortOrder.Ascending
-Private Const QUICKSORT_DEPTH_THRESHOLD As Long = 30
+Private Const QUICKSORT_DEPTH_THRESHOLD As Long = 30 'Should be <=32
+Private Const INSERTIONSORT_THRESHOLD As Long = 16 'Sould be small
+Private Const COPYMEMORY_THRESHOLD As Long = 128 'Depends on machine
 
 Public Enum SortMethod
     RandomSort = 0
@@ -441,7 +443,7 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     Set SlizeColumn = Column
     
 End Function
-
+'TODO change to CopyTo
 Public Sub CopyArrays( _
                         ByVal SrcArray As GenericArray, _
                         ByVal SrcIndex As Long, _
@@ -466,7 +468,7 @@ Public Sub CopyArrays( _
     If (DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex) Then _
         Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex)")
     
-    If DstArray.Rank = 1 And SrcArray.Rank = 1 And Elements <= 128 Then
+    If DstArray.Rank = 1 And SrcArray.Rank = 1 And Elements <= COPYMEMORY_THRESHOLD Then
         With SrcArray
             For i = SrcIndex To SrcIndex + Elements - 1
                 Set DstArray.ElementAt(DstIndex) = .ElementAt(i): DstIndex = DstIndex + 1
@@ -646,7 +648,10 @@ Public Function BinarySearch( _
     If Length = -1 Then _
         Length = myclass.Elements - Index
         
-    Call Validate("Public Function BinarySearch", Me, Index, Length)
+'    if (me.Rank != 1)
+'    if (Index < min_index or Index > me.Length )
+'    if (Length < 0 or Length > me.Length - Index)
+'    Call Validate("Public Function BinarySearch", Me, Index, Length) 'GenericSortedList.Build().AddAll(anyCollection) throws error
     BinarySearch = Me.BinarySearchArray(Objects:=myclass.Internal, Value:=Value, LowerBound:=Index, UpperBound:=Length + Index - 1, Order:=Order, Comparer:=Comparer)
   
 End Function
@@ -659,8 +664,12 @@ Public Function IndexOf( _
   
     If Length = -1 Then _
         Length = myclass.Elements - Index
+        
+'    if (me.Rank != 1)
+'    if (Index < min_index or Index > me.Length )
+'    if (Length < 0 or Length > me.Length - Index)
     
-    Call Validate("Public Function IndexOf", Me, Index, Length)
+'    Call Validate("Public Function IndexOf", Me, Index, Length)
     IndexOf = Me.IndexOfArray(Objects:=myclass.Internal, Value:=Value, LowerBound:=Index, UpperBound:=Length + Index - 1, Comparer:=Comparer)
     
 End Function
@@ -672,7 +681,10 @@ Public Function Reverse( _
     If Length = -1 Then _
         Length = myclass.Elements - Index
     
-    Call Validate("Public Function Reverse", Me, Index, Length)
+'    if (me.Rank != 1)
+'    if (Index < min_index or Index > me.Length )
+'    if (Length < 0 or Length > me.Length - Index)
+'    Call Validate("Public Function Reverse", Me, Index, Length)
     Call GenericArray.ReverseArray(Objects:=myclass.Internal, LowerBound:=Index, UpperBound:=Length + Index - 1)
     
     Set Reverse = Me
@@ -713,17 +725,22 @@ End Function
 
 Private Sub Validate(ByRef Caller As String, ByVal GArray As GenericArray, ByVal Index As Long, ByVal Count As Long)
     
+    If (GArray Is Nothing) Then _
+        Call System.Throw(Me, Caller).InvalidInput("(GArray Is Nothing)")
+        
     With GArray
-        If Not (.IsEmpty) Then
-            If Not .Rank = 1 Then _
-                Call System.Throw(Me, Caller).NotSupported("Rank != 1")
-                
-            If (Index < MIN_INDEX Or Index > .Length) Then _
-                Call System.Throw(Me, Caller).ArgOutOfRange("(Index < MIN_INDEX Or Index > Length)")
-                
-            If (Count < 0 Or Count > .Length - Index) Then _
-                Call System.Throw(Me, Caller).ArgOutOfRange("(Count < 0 Or Count > .Length - Index) ")
-        End If
+        If (.IsEmpty) Then _
+            Call System.Throw(Me, Caller).InvalidOperation("(IsEmpty)")
+        
+        If Not .Rank = 1 Then _
+            Call System.Throw(Me, Caller).NotSupported("Rank != 1")
+            
+        If (Index < MIN_INDEX Or Index > .Length) Then _
+            Call System.Throw(Me, Caller).ArgOutOfRange("(Index < MIN_INDEX Or Index > Length)")
+            
+        If (Count < 0 Or Count > .Length - Index) Then _
+            Call System.Throw(Me, Caller).ArgOutOfRange("(Count < 0 Or Count > .Length - Index) ")
+    
     End With
 
 End Sub
@@ -828,6 +845,7 @@ End Sub
 'is larger than the given search value. This is also the index at which
 'the search value should be inserted into the list in order for the list
 'to remain sorted.
+
 Public Function BinarySearchArray( _
                                     ByRef Objects() As IGeneric, _
                                     ByVal Value As IGeneric, _
@@ -971,9 +989,9 @@ Public Sub SortArray( _
                         Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
     
     If Comparer Is Nothing Or Comparer Is IGenericComparer Then
-        Call DepthLimitedQuicksort(Objects, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order)   'Try Convert to GenericValue
+        Call DepthLimitedQuickSort(Objects, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order)   'Try Convert to GenericValue
     Else
-        Call DepthLimitedQuicksort_Comparer(Objects, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
+        Call DepthLimitedQuickSort_Comparer(Objects, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
     End If
 
 End Sub
@@ -987,9 +1005,9 @@ Public Sub SortArrayWithItems( _
                                 Optional ByVal Order As SortOrder = DEFAULT_SORTORDER)
  
     If Comparer Is Nothing Or Comparer Is IGenericComparer Then
-        Call DepthLimitedQuicksortWithItems(Keys, Items, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order)  'Try Convert to GenericValue
+        Call DepthLimitedQuickSortWithItems(Keys, Items, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order)  'Try Convert to GenericValue
     Else
-        Call DepthLimitedQuicksortWithItems_Comparer(Keys, Items, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
+        Call DepthLimitedQuickSortWithItems_Comparer(Keys, Items, LowerBound, UpperBound, QUICKSORT_DEPTH_THRESHOLD, Order, Comparer)
     End If
    
 End Sub
@@ -1044,7 +1062,104 @@ Private Sub ShuffleWithItems(ByRef Keys() As IGeneric, ByRef Items() As Object, 
 
 End Sub
 
-Private Sub DepthLimitedQuicksort_Comparer( _
+Private Sub BinarySort( _
+                            ByRef Element() As IGeneric, _
+                            ByVal Left As Long, _
+                            ByVal Right As Long, _
+                            ByVal DepthLimit As Long, _
+                            ByVal Order As SortOrder, _
+                            ByVal Comparer As IGenericComparer)
+
+
+    Dim i As Long
+    Dim low As Long
+    Dim high As Long
+    Dim tmp As IGeneric
+    
+
+
+End Sub
+
+Private Sub InsertionSort_Comparer( _
+                                        ByRef Elements() As IGeneric, _
+                                        ByVal Left As Long, _
+                                        ByVal Right As Long, _
+                                        ByVal Order As SortOrder, _
+                                        ByVal Comparer As IGenericComparer)
+
+    Dim i As Long
+    Dim j As Long
+    Dim tmp As IGeneric
+   
+    With Comparer 'Works
+        For i = Left To Right - 1
+            j = i
+            Set tmp = Elements(i + 1)
+            Do While (j >= Left)
+                If Not .Compare(tmp, Elements(j)) * Order = IsLower Then _
+                    Exit Do
+             
+                Set Elements(j + 1) = Elements(j)
+                j = j - 1
+            Loop
+            Set Elements(j + 1) = tmp
+        Next
+    End With
+
+End Sub
+
+Private Sub InsertionSort( _
+                            ByRef Elements() As IGeneric, _
+                            ByVal Left As Long, _
+                            ByVal Right As Long, _
+                            ByVal Order As SortOrder)
+
+    Dim i As Long
+    Dim j As Long
+    Dim tmp As IGenericValue 'try cast
+    
+    If Order = ascending Then
+        For i = Left To Right - 1
+            j = i
+            Set tmp = Elements(i + 1)
+            If Not tmp Is Nothing Then
+                Do While (j >= Left)
+                    If Not tmp.CompareTo(Elements(j)) = IsLower Then _
+                        Exit Do
+                    
+                    Set Elements(j + 1) = Elements(j)
+                    j = j - 1
+                Loop
+            Else
+                Do While (j >= Left)
+                    Set Elements(j + 1) = Elements(j)
+                    j = j - 1
+                Loop
+            End If
+            Set Elements(j + 1) = tmp
+        Next
+        
+    Else
+    
+        For i = Left To Right - 1
+            j = i
+            Set tmp = Elements(i + 1)
+            If Not tmp Is Nothing Then
+                Do While (j >= Left)
+                    If Not tmp.CompareTo(Elements(j)) = IsGreater Then _
+                        Exit Do
+                    
+                    Set Elements(j + 1) = Elements(j)
+                    j = j - 1
+                Loop
+            End If
+            Set Elements(j + 1) = tmp
+        Next
+    End If
+    
+End Sub
+
+Private Sub DepthLimitedQuickSort_Comparer( _
                                             ByRef Element() As IGeneric, _
                                             ByVal Left As Long, _
                                             ByVal Right As Long, _
@@ -1055,57 +1170,134 @@ Private Sub DepthLimitedQuicksort_Comparer( _
     Dim i As Long
     Dim j As Long
     Dim middle As Long
+    Dim PartitionSize As Long
 
     Dim Pivot As IGeneric
-    Dim Tmp As IGeneric
-
+    Dim tmp As IGeneric
+    
     If (Left > Right) Then _
         Exit Sub
-    
-    Do
-        If (DepthLimit = 0) Then _
-            Call HeapSort_Comparer(Element, Left, Right, Order, Comparer): Exit Sub
-
-        i = Left: j = Right
-        middle = i + ((j - i) / 2)
-
-        Call SwapIfGreater_Comparer(Element, i, middle, Comparer)
-        Call SwapIfGreater_Comparer(Element, i, j, Comparer)
-        Call SwapIfGreater_Comparer(Element, middle, j, Comparer)
-
-        Set Pivot = Element(middle)
-        With Comparer
-            Do
         
-                Do While (.Compare(Pivot, Element(i)) * Order = IsGreater): i = i + 1: Loop
-                Do While (.Compare(Pivot, Element(j)) * Order = IsLower): j = j - 1: Loop
-                
-                If (i > j) Then _
-                    Exit Do
+    PartitionSize = Right - Left + 1
     
-                If (i < j) Then _
-                    Set Tmp = Element(i): _
-                    Set Element(i) = Element(j): _
-                    Set Element(j) = Tmp
+    If (PartitionSize <= INSERTIONSORT_THRESHOLD) Then
     
-                i = i + 1: j = j - 1
+        If (PartitionSize = 1) Then _
+            Exit Sub
+        
+        If (PartitionSize = 2) Then _
+            Call SwapIfGreater_Comparer(Element, Left, Right, Order, Comparer): _
+            Exit Sub
+        
+        If (PartitionSize = 3) Then _
+            Call SwapIfGreater_Comparer(Element, Left, Right - 1, Order, Comparer): _
+            Call SwapIfGreater_Comparer(Element, Left, Right, Order, Comparer): _
+            Call SwapIfGreater_Comparer(Element, Right - 1, Right, Order, Comparer): _
+            Exit Sub
+        
+        Call InsertionSort_Comparer(Elements:=Element, Left:=Left, Right:=Right, Order:=Order, Comparer:=Comparer)
+        Exit Sub
+    End If
     
-            Loop While (i <= j)
-        End With
-
-        DepthLimit = DepthLimit - 1
-
-        If (j - Left) <= (Right - i) Then
-            If (Left < j) Then _
-                Call DepthLimitedQuicksort_Comparer(Element, Left, j, DepthLimit, Order, Comparer)
-            Left = i
-        Else
-            If (i < Right) Then _
-                Call DepthLimitedQuicksort_Comparer(Element, i, Right, DepthLimit, Order, Comparer)
-            Right = j
-        End If
-
-    Loop While (Left < Right)
+    If Order = ascending Then
+        Do
+            If (DepthLimit = 0) Then _
+                Call HeapSort_Comparer(Element, Left, Right, Order, Comparer): Exit Sub
+    
+            i = Left: j = Right
+            middle = i + ((j - i) / 2)
+    
+            Call SwapIfGreater_Comparer(Element, i, middle, Order, Comparer)
+            Call SwapIfGreater_Comparer(Element, i, j, Order, Comparer)
+            Call SwapIfGreater_Comparer(Element, middle, j, Order, Comparer)
+    
+            Set Pivot = Element(middle)
+            With Comparer
+                Do
+                    If (Pivot Is Nothing) Then
+                        Do While Not (Element(j) Is Nothing): j = j - 1: Loop
+                    Else
+                        Do While (.Compare(Pivot, Element(i)) * Order = IsGreater): i = i + 1: Loop
+                        Do While (.Compare(Pivot, Element(j)) * Order = IsLower): j = j - 1: Loop
+                    End If
+                    
+                    If (i > j) Then _
+                        Exit Do
+        
+                    If (i < j) Then _
+                        Set tmp = Element(i): _
+                        Set Element(i) = Element(j): _
+                        Set Element(j) = tmp
+        
+                    i = i + 1: j = j - 1
+        
+                Loop While (i <= j)
+            End With
+           
+            DepthLimit = DepthLimit - 1
+            
+            If (j - Left) <= (Right - i) Then
+                If (Left < j) Then _
+                    Call DepthLimitedQuickSort_Comparer(Element, Left, j, DepthLimit, Order, Comparer)
+                Left = i
+            Else
+                If (i < Right) Then _
+                    Call DepthLimitedQuickSort_Comparer(Element, i, Right, DepthLimit, Order, Comparer)
+                Right = j
+            End If
+    
+        Loop While (Left < Right)
+    
+    Else
+        
+        Do
+            If (DepthLimit = 0) Then _
+                Call HeapSort_Comparer(Element, Left, Right, Order, Comparer): Exit Sub
+    
+            i = Left: j = Right
+            middle = i + ((j - i) / 2)
+    
+            Call SwapIfGreater_Comparer(Element, i, middle, Order, Comparer)
+            Call SwapIfGreater_Comparer(Element, i, j, Order, Comparer)
+            Call SwapIfGreater_Comparer(Element, middle, j, Order, Comparer)
+    
+            Set Pivot = Element(middle)
+            With Comparer
+                Do
+                    If (Pivot Is Nothing) Then
+                        Do While Not (Element(i) Is Nothing): i = i + 1: Loop
+                    Else
+                        Do While (.Compare(Pivot, Element(i)) = IsLower): i = i + 1: Loop
+                        Do While (.Compare(Pivot, Element(j)) = IsGreater): j = j - 1: Loop
+                    End If
+                    
+                    If (i > j) Then _
+                        Exit Do
+        
+                    If (i < j) Then _
+                        Set tmp = Element(i): _
+                        Set Element(i) = Element(j): _
+                        Set Element(j) = tmp
+        
+                    i = i + 1: j = j - 1
+        
+                Loop While (i <= j)
+            End With
+           
+            DepthLimit = DepthLimit - 1
+            
+            If (j - Left) <= (Right - i) Then
+                If (Left < j) Then _
+                    Call DepthLimitedQuickSort_Comparer(Element, Left, j, DepthLimit, Order, Comparer)
+                Left = i
+            Else
+                If (i < Right) Then _
+                    Call DepthLimitedQuickSort_Comparer(Element, i, Right, DepthLimit, Order, Comparer)
+                Right = j
+            End If
+    
+        Loop While (Left < Right)
+    End If
 
 End Sub
 
@@ -1195,7 +1387,7 @@ Private Sub MinHeap_Comparer(ByRef Keys() As IGeneric, ByVal i As Long, ByVal N 
 
 End Sub
 
-Private Sub DepthLimitedQuicksort( _
+Private Sub DepthLimitedQuickSort( _
                                     ByRef Element() As IGeneric, _
                                     ByVal Left As Long, _
                                     ByVal Right As Long, _
@@ -1205,61 +1397,136 @@ Private Sub DepthLimitedQuicksort( _
     Dim i As Long
     Dim j As Long
     Dim middle As Long
-
+    Dim PartitionSize As Long
+    
     Dim Pivot As IGenericValue
-    Dim Tmp As IGeneric
-
+    Dim tmp As IGeneric
+    
     If (Left > Right) Then _
         Exit Sub
-   
-    Do
-        If (DepthLimit = 0) Then _
-            Call HeapSort(Element, Left, Right, Order): Exit Sub
-
-        i = Left: j = Right
-        middle = i + ((j - i) / 2)
-
-        Call SwapIfGreater(Element, i, middle, Order)
-        Call SwapIfGreater(Element, i, j, Order)
-        Call SwapIfGreater(Element, middle, j, Order)
-
-        Set Pivot = Element(middle) 'try to cast
-        With Pivot
-            Do
         
-                If (Pivot Is Nothing) Then
-                    Do While Not (Element(j) Is Nothing): j = j - 1: Loop
-                Else
-                    Do While (.CompareTo(Element(i)) * Order = IsGreater): i = i + 1: Loop
-                    Do While (.CompareTo(Element(j)) * Order = IsLower): j = j - 1: Loop
-                End If
+    PartitionSize = Right - Left + 1
     
-                If (i > j) Then _
-                    Exit Do
+    If (PartitionSize <= INSERTIONSORT_THRESHOLD) Then
+
+        If (PartitionSize = 1) Then _
+            Exit Sub
+
+        If (PartitionSize = 2) Then _
+            Call SwapIfGreater(Element, Left, Right, Order): _
+            Exit Sub
+
+        If (PartitionSize = 3) Then _
+            Call SwapIfGreater(Element, Left, Right - 1, Order): _
+            Call SwapIfGreater(Element, Left, Right, Order): _
+            Call SwapIfGreater(Element, Right - 1, Right, Order): _
+            Exit Sub
+
+        Call InsertionSort(Elements:=Element, Left:=Left, Right:=Right, Order:=Order)
+        Exit Sub
+    End If
+
+    If Order = ascending Then
+        Do
+            If (DepthLimit = 0) Then _
+                Call HeapSort(Element, Left, Right, Order): Exit Sub
     
-                If (i < j) Then _
-                    Set Tmp = Element(i): _
-                    Set Element(i) = Element(j): _
-                    Set Element(j) = Tmp
+            i = Left: j = Right
+            middle = i + ((j - i) / 2)
     
-                i = i + 1: j = j - 1
+            Call SwapIfGreater(Element, i, middle, Order)
+            Call SwapIfGreater(Element, i, j, Order)
+            Call SwapIfGreater(Element, middle, j, Order)
     
-            Loop While (i <= j)
-        End With
+            Set Pivot = Element(middle) 'try to cast
+            With Pivot
+                Do
+            
+                    If (Pivot Is Nothing) Then
+                        Do While Not (Element(j) Is Nothing): j = j - 1: Loop
+                    Else
+                        Do While (.CompareTo(Element(i)) = IsGreater): i = i + 1: Loop
+                        Do While (.CompareTo(Element(j)) = IsLower): j = j - 1: Loop
+                    End If
         
-        DepthLimit = DepthLimit - 1
-
-        If (j - Left) <= (Right - i) Then
-            If (Left < j) Then _
-                Call DepthLimitedQuicksort(Element, Left, j, DepthLimit, Order)
-            Left = i
-        Else
-            If (i < Right) Then _
-                Call DepthLimitedQuicksort(Element, i, Right, DepthLimit, Order)
-            Right = j
-        End If
-
-    Loop While (Left < Right)
+                    If (i > j) Then _
+                        Exit Do
+        
+                    If (i < j) Then _
+                        Set tmp = Element(i): _
+                        Set Element(i) = Element(j): _
+                        Set Element(j) = tmp
+        
+                    i = i + 1: j = j - 1
+        
+                Loop While (i <= j)
+            End With
+            
+            DepthLimit = DepthLimit - 1
+    
+            If (j - Left) <= (Right - i) Then
+                If (Left < j) Then _
+                    Call DepthLimitedQuickSort(Element, Left, j, DepthLimit, Order)
+                Left = i
+            Else
+                If (i < Right) Then _
+                    Call DepthLimitedQuickSort(Element, i, Right, DepthLimit, Order)
+                Right = j
+            End If
+    
+        Loop While (Left < Right)
+        
+    Else
+    
+        Do
+            If (DepthLimit = 0) Then _
+                Call HeapSort(Element, Left, Right, Order): Exit Sub
+    
+            i = Left: j = Right
+            middle = i + ((j - i) / 2)
+    
+            Call SwapIfGreater(Element, i, middle, Order)
+            Call SwapIfGreater(Element, i, j, Order)
+            Call SwapIfGreater(Element, middle, j, Order)
+    
+            Set Pivot = Element(middle) 'try to cast
+            With Pivot
+                Do
+            
+                    If (Pivot Is Nothing) Then
+                        Do While Not (Element(i) Is Nothing): i = i + 1: Loop
+                    Else
+                        Do While (.CompareTo(Element(i)) = IsLower): i = i + 1: Loop
+                        Do While (.CompareTo(Element(j)) = IsGreater): j = j - 1: Loop
+                    End If
+        
+                    If (i > j) Then _
+                        Exit Do
+        
+                    If (i < j) Then _
+                        Set tmp = Element(i): _
+                        Set Element(i) = Element(j): _
+                        Set Element(j) = tmp
+        
+                    i = i + 1: j = j - 1
+        
+                Loop While (i <= j)
+            End With
+            
+            DepthLimit = DepthLimit - 1
+    
+            If (j - Left) <= (Right - i) Then
+                If (Left < j) Then _
+                    Call DepthLimitedQuickSort(Element, Left, j, DepthLimit, Order)
+                Left = i
+            Else
+                If (i < Right) Then _
+                    Call DepthLimitedQuickSort(Element, i, Right, DepthLimit, Order)
+                Right = j
+            End If
+    
+        Loop While (Left < Right)
+    End If
    
 End Sub
                               
@@ -1348,7 +1615,7 @@ Private Sub MinHeap(ByRef Keys() As IGeneric, ByVal i As Long, ByVal N As Long, 
 
 End Sub
                       
-Private Sub DepthLimitedQuicksortWithItems( _
+Private Sub DepthLimitedQuickSortWithItems( _
                                             ByRef Keys() As IGeneric, _
                                             ByRef Items() As Object, _
                                             ByVal Left As Long, _
@@ -1359,63 +1626,136 @@ Private Sub DepthLimitedQuicksortWithItems( _
     Dim i As Long
     Dim j As Long
     Dim middle As Long
+    Dim PartitionSize As Long
 
     Dim Pivot As IGenericValue
-    Dim Tmp As IGeneric
+    Dim tmp As IGeneric
 
     If (Left > Right) Then _
         Exit Sub
-
-    Do
-        If (DepthLimit = 0) Then _
-            Call HeapSortWithItems(Keys, Items, Left, Right, Order): Exit Sub
-
-        i = Left: j = Right
-        middle = i + ((j - i) / 2)
-
-        Call SwapIfGreaterWithItem(Keys, Items, i, middle, Order)
-        Call SwapIfGreaterWithItem(Keys, Items, i, j, Order)
-        Call SwapIfGreaterWithItem(Keys, Items, middle, j, Order)
-
-        Set Pivot = Keys(middle) 'try to cast
-        With Pivot
-            Do
-            
-                If (Pivot Is Nothing) Then
-                    Do While Not (Keys(i) Is Nothing): i = i + 1: Loop
-                Else
-                    Do While (.CompareTo(Keys(i)) * Order = IsGreater): i = i + 1: Loop
-                    Do While (.CompareTo(Keys(j)) * Order = IsLower): j = j - 1: Loop
-                End If
+        
+    PartitionSize = Right - Left + 1
     
-                If (i > j) Then _
-                    Exit Do
+    If (PartitionSize <= INSERTIONSORT_THRESHOLD) Then
+        
+        If (PartitionSize = 1) Then _
+            Exit Sub
+        
+        If (PartitionSize = 2) Then _
+            Call SwapIfGreaterWithItem(Keys, Items, Left, Right, Order): _
+            Exit Sub
+        
+        If (PartitionSize = 3) Then _
+            Call SwapIfGreaterWithItem(Keys, Items, Left, Right - 1, Order): _
+            Call SwapIfGreaterWithItem(Keys, Items, Left, Right, Order): _
+            Call SwapIfGreaterWithItem(Keys, Items, Right - 1, Right, Order): _
+            Exit Sub
             
-                If (i < j) Then _
-                    Set Tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = Tmp: _
-                    Set Tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = Tmp
-            
-                i = i + 1: j = j - 1
+        Call InsertionSort(Elements:=Keys, Left:=Left, Right:=Right, Order:=Order)
+        Exit Sub
+        
+    End If
+    
+    If Order = ascending Then
+        Do
+            If (DepthLimit = 0) Then _
+                Call HeapSortWithItems(Keys, Items, Left, Right, Order): Exit Sub
+    
+            i = Left: j = Right
+            middle = i + ((j - i) / 2)
+    
+            Call SwapIfGreaterWithItem(Keys, Items, i, middle, Order)
+            Call SwapIfGreaterWithItem(Keys, Items, i, j, Order)
+            Call SwapIfGreaterWithItem(Keys, Items, middle, j, Order)
+    
+            Set Pivot = Keys(middle) 'try to cast
+            With Pivot
+                Do
                 
-            Loop While (i <= j)
-        End With
+                    If (Pivot Is Nothing) Then
+                        Do While Not (Keys(j) Is Nothing): j = j - 1: Loop
+                    Else
+                        Do While (.CompareTo(Keys(i)) = IsGreater): i = i + 1: Loop
+                        Do While (.CompareTo(Keys(j)) = IsLower): j = j - 1: Loop
+                    End If
         
-        DepthLimit = DepthLimit - 1
-
-        If (j - Left) <= (Right - i) Then
-            If (Left < j) Then _
-                Call DepthLimitedQuicksortWithItems(Keys, Items, Left, j, DepthLimit, Order)
-            Left = i
-        Else
-            If (i < Right) Then _
-                Call DepthLimitedQuicksortWithItems(Keys, Items, i, Right, DepthLimit, Order)
-            Right = j
-        End If
-
-    Loop While (Left < Right)
+                    If (i > j) Then _
+                        Exit Do
+                
+                    If (i < j) Then _
+                        Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
+                        Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                
+                    i = i + 1: j = j - 1
+                    
+                Loop While (i <= j)
+            End With
+            
+            DepthLimit = DepthLimit - 1
+    
+            If (j - Left) <= (Right - i) Then
+                If (Left < j) Then _
+                    Call DepthLimitedQuickSortWithItems(Keys, Items, Left, j, DepthLimit, Order)
+                Left = i
+            Else
+                If (i < Right) Then _
+                    Call DepthLimitedQuickSortWithItems(Keys, Items, i, Right, DepthLimit, Order)
+                Right = j
+            End If
+    
+        Loop While (Left < Right)
         
-  
-
+    Else
+    
+        Do
+            If (DepthLimit = 0) Then _
+                Call HeapSortWithItems(Keys, Items, Left, Right, Order): Exit Sub
+    
+            i = Left: j = Right
+            middle = i + ((j - i) / 2)
+    
+            Call SwapIfGreaterWithItem(Keys, Items, i, middle, Order)
+            Call SwapIfGreaterWithItem(Keys, Items, i, j, Order)
+            Call SwapIfGreaterWithItem(Keys, Items, middle, j, Order)
+    
+            Set Pivot = Keys(middle) 'try to cast
+            With Pivot
+                Do
+                
+                    If (Pivot Is Nothing) Then
+                        Do While Not (Keys(i) Is Nothing): i = i + 1: Loop
+                    Else
+                        Do While (.CompareTo(Keys(i)) = IsLower): i = i + 1: Loop
+                        Do While (.CompareTo(Keys(j)) = IsGreater): j = j - 1: Loop
+                    End If
+        
+                    If (i > j) Then _
+                        Exit Do
+                
+                    If (i < j) Then _
+                        Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
+                        Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                
+                    i = i + 1: j = j - 1
+                    
+                Loop While (i <= j)
+            End With
+            
+            DepthLimit = DepthLimit - 1
+    
+            If (j - Left) <= (Right - i) Then
+                If (Left < j) Then _
+                    Call DepthLimitedQuickSortWithItems(Keys, Items, Left, j, DepthLimit, Order)
+                Left = i
+            Else
+                If (i < Right) Then _
+                    Call DepthLimitedQuickSortWithItems(Keys, Items, i, Right, DepthLimit, Order)
+                Right = j
+            End If
+    
+        Loop While (Left < Right)
+    End If
+        
 End Sub
 
 Private Sub HeapSortWithItems( _
@@ -1522,7 +1862,7 @@ Private Sub MinHeapWithItems( _
     
 End Sub
 
-Private Sub DepthLimitedQuicksortWithItems_Comparer( _
+Private Sub DepthLimitedQuickSortWithItems_Comparer( _
                                                         ByRef Keys() As IGeneric, _
                                                         ByRef Items() As Object, _
                                                         ByVal Left As Long, _
@@ -1534,57 +1874,134 @@ Private Sub DepthLimitedQuicksortWithItems_Comparer( _
     Dim i As Long
     Dim j As Long
     Dim middle As Long
+    Dim PartitionSize As Long
 
     Dim Pivot As IGeneric
-    Dim Tmp As IGeneric
+    Dim tmp As IGeneric
 
     If (Left > Right) Then _
         Exit Sub
+        
+    PartitionSize = Right - Left + 1
     
-    Do
-        If (DepthLimit = 0) Then _
-            Call HeapSortWithItems_Comparer(Keys, Items, Left, Right, Order, Comparer): Exit Sub
-
-        i = Left: j = Right
-        middle = i + ((j - i) / 2)
-
-        Call SwapIfGreaterWithItem_Comparer(Keys, Items, i, middle, Order, Comparer)
-        Call SwapIfGreaterWithItem_Comparer(Keys, Items, i, j, Order, Comparer)
-        Call SwapIfGreaterWithItem_Comparer(Keys, Items, middle, j, Order, Comparer)
-
-        Set Pivot = Keys(middle)
-        With Comparer
-            Do
+    If (PartitionSize <= INSERTIONSORT_THRESHOLD) Then
+         
+        If (PartitionSize = 1) Then _
+            Exit Sub
+        
+        If (PartitionSize = 2) Then _
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, Left, Right, Order, Comparer): _
+            Exit Sub
+        
+        If (PartitionSize = 3) Then _
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, Left, Right - 1, Order, Comparer): _
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, Left, Right, Order, Comparer): _
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, Right - 1, Right, Order, Comparer): _
+            Exit Sub
             
-                Do While (.Compare(Pivot, Keys(i)) * Order = IsGreater): i = i + 1: Loop
-                Do While (.Compare(Pivot, Keys(j)) * Order = IsLower): j = j - 1: Loop
+        Call InsertionSort_Comparer(Elements:=Keys, Left:=Left, Right:=Right, Order:=Order, Comparer:=Comparer)
+        Exit Sub
+        
+    End If
     
-                If (i > j) Then _
-                    Exit Do
-            
-                If (i < j) Then _
-                    Set Tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = Tmp: _
-                    Set Tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = Tmp
-            
-                i = i + 1: j = j - 1
+    If Order = ascending Then
+        Do
+            If (DepthLimit = 0) Then _
+                Call HeapSortWithItems_Comparer(Keys, Items, Left, Right, Order, Comparer): Exit Sub
+    
+            i = Left: j = Right
+            middle = i + ((j - i) / 2)
+    
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, i, middle, Order, Comparer)
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, i, j, Order, Comparer)
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, middle, j, Order, Comparer)
+    
+            Set Pivot = Keys(middle)
+            With Comparer
+                Do
+                    
+                    If (Pivot Is Nothing) Then
+                        Do While Not (Keys(j) Is Nothing): j = j - 1: Loop
+                    Else
+                        Do While (.Compare(Pivot, Keys(i)) * Order = IsGreater): i = i + 1: Loop
+                        Do While (.Compare(Pivot, Keys(j)) * Order = IsLower): j = j - 1: Loop
+                    End If
+                    
+                    If (i > j) Then _
+                        Exit Do
                 
-            Loop While (i <= j)
-        End With
-
-        DepthLimit = DepthLimit - 1
-
-        If (j - Left) <= (Right - i) Then
-            If (Left < j) Then _
-                Call DepthLimitedQuicksortWithItems_Comparer(Keys, Items, Left, j, DepthLimit, Order, Comparer)
-            Left = i
-        Else
-            If (i < Right) Then _
-                Call DepthLimitedQuicksortWithItems_Comparer(Keys, Items, i, Right, DepthLimit, Order, Comparer)
-            Right = j
-        End If
-
-    Loop While (Left < Right)
-
+                    If (i < j) Then _
+                        Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
+                        Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                
+                    i = i + 1: j = j - 1
+                    
+                Loop While (i <= j)
+            End With
+    
+            DepthLimit = DepthLimit - 1
+    
+            If (j - Left) <= (Right - i) Then
+                If (Left < j) Then _
+                    Call DepthLimitedQuickSortWithItems_Comparer(Keys, Items, Left, j, DepthLimit, Order, Comparer)
+                Left = i
+            Else
+                If (i < Right) Then _
+                    Call DepthLimitedQuickSortWithItems_Comparer(Keys, Items, i, Right, DepthLimit, Order, Comparer)
+                Right = j
+            End If
+    
+        Loop While (Left < Right)
+    
+    Else
+    
+        Do
+            If (DepthLimit = 0) Then _
+                Call HeapSortWithItems_Comparer(Keys, Items, Left, Right, Order, Comparer): Exit Sub
+    
+            i = Left: j = Right
+            middle = i + ((j - i) / 2)
+    
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, i, middle, Order, Comparer)
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, i, j, Order, Comparer)
+            Call SwapIfGreaterWithItem_Comparer(Keys, Items, middle, j, Order, Comparer)
+    
+            Set Pivot = Keys(middle)
+            With Comparer
+                Do
+                    If (Pivot Is Nothing) Then
+                        Do While Not (Keys(i) Is Nothing): i = i + 1: Loop
+                    Else
+                        Do While (.Compare(Pivot, Keys(i)) = IsLower): i = i + 1: Loop
+                        Do While (.Compare(Pivot, Keys(j)) = IsGreater): j = j - 1: Loop
+                    End If
+                    
+                    If (i > j) Then _
+                        Exit Do
+                
+                    If (i < j) Then _
+                        Set tmp = Keys(i): Set Keys(i) = Keys(j): Set Keys(j) = tmp: _
+                        Set tmp = Items(i): Set Items(i) = Items(j): Set Items(j) = tmp
+                
+                    i = i + 1: j = j - 1
+                    
+                Loop While (i <= j)
+            End With
+    
+            DepthLimit = DepthLimit - 1
+    
+            If (j - Left) <= (Right - i) Then
+                If (Left < j) Then _
+                    Call DepthLimitedQuickSortWithItems_Comparer(Keys, Items, Left, j, DepthLimit, Order, Comparer)
+                Left = i
+            Else
+                If (i < Right) Then _
+                    Call DepthLimitedQuickSortWithItems_Comparer(Keys, Items, i, Right, DepthLimit, Order, Comparer)
+                Right = j
+            End If
+    
+        Loop While (Left < Right)
+    End If
 End Sub
 
 Private Sub HeapSortWithItems_Comparer( _
@@ -1754,13 +2171,13 @@ Private Sub SwapIfGreaterWithItem_Comparer(ByRef Keys() As IGeneric, ByRef Items
     
 End Sub
 
-Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As Long, ByVal Comparer As IGenericComparer)
+Private Sub SwapIfGreater_Comparer(ByRef Keys() As IGeneric, ByVal A As Long, ByVal B As Long, ByVal Order As SortOrder, ByVal Comparer As IGenericComparer)
     
     Dim t As IGeneric
    
     If Not (A = B) Then
         If Not (Keys(A) Is Nothing) Then
-            If (Comparer.Compare(Keys(A), Keys(B)) = IsGreater) Then
+            If (Comparer.Compare(Keys(A), Keys(B)) * Order = IsGreater) Then
                 Set t = Keys(A)
                 Set Keys(A) = Keys(B)
                 Set Keys(B) = t
@@ -1844,8 +2261,40 @@ Private Sub IGenericCollection_Clear()
     Call Catch(SafeArrayPtrOfIndex(ByVal myclass.Descriptor, myclass.Indices(i + 1), myclass.Struct.pvData))
     
 End Sub
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call GenericArray.CopyArrays(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length): End Sub
+'TODO Rewrite CopyArrays -> CopyTo
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
+    
+    Dim i As Long, j As Long
+    
+    If (GArray Is Nothing) Then _
+        Call System.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray Is Nothing)")
+            
+    If (myclass.Elements > GArray.Length - ArrayIndex) Then _
+        Call System.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(myclass.Elements > GArray.Length - ArrayIndex")
+    
+    If myclass.Elements = 0 Then _
+        Exit Sub
+        
+    If myclass.Struct.cDims = 1 Then
+        If myclass.Elements <= COPYMEMORY_THRESHOLD Then
+            With GArray
+                For i = MIN_INDEX To myclass.Elements - 1 + MIN_INDEX
+                    Set .ElementAt(ArrayIndex) = myclass.Internal(i)
+                    ArrayIndex = ArrayIndex + 1
+                Next
+            End With
+       End If
+       
+    Else 'TODO - Avoid CopyArrays -> new CopyTo
+        
+        Call GenericArray.CopyArrays(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length)
+    
+    End If
+
+End Sub
+
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.Elements.Copy: End Function
+
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean
     
     Dim Element As IGeneric

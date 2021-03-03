@@ -691,7 +691,7 @@ Private Function IGenericCollection_ToArray() As GenericArray
 
 End Function
 
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Not (myclass.Items.IndexOf(Value:=Item, Length:=myclass.Size, Comparer:=IGenericComparer) = -1): End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = (myclass.Items.IndexOf(Value:=Item, Length:=myclass.Size, Comparer:=IGenericComparer) >= 0): End Function
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Count:=myclass.Size): End Sub
 
 Private Sub IGenericCollection_Clear()
