@@ -443,31 +443,69 @@ Public Function SlizeColumn(ByVal Index As Long) As GenericArray
     Set SlizeColumn = Column
     
 End Function
-'TODO change to CopyTo
-Public Sub CopyArrays( _
+
+Public Sub CopyTo( _
+                    ByVal GArray As GenericArray, _
+                    ByVal ArrayIndex As Long, _
+                    Optional ByVal Index As Long = MIN_INDEX, _
+                    Optional ByVal Length As Long = -1)
+
+    Dim i As Long
+   
+    If (GArray Is Nothing) Then _
+        Call System.Throw(Me, "Public Sub CopyTo").InvalidInput("(GArray Is Nothing)")
+            
+    If (myclass.Elements > GArray.Length - ArrayIndex) Then _
+        Call System.Throw(Me, "Public Sub CopyTo").InvalidInput("(myclass.Elements > GArray.Length - ArrayIndex")
+    
+    If myclass.Elements = 0 Then _
+        Exit Sub
+    
+    If Length = -1 Then _
+        Length = myclass.Elements
+        
+    If myclass.Struct.cDims = 1 And GArray.Rank = myclass.Struct.cDims Then
+        If myclass.Elements <= COPYMEMORY_THRESHOLD Then
+            With GArray
+                For i = Index To Length - 1
+                    Set .ElementAt(ArrayIndex) = myclass.Internal(i)
+                    ArrayIndex = ArrayIndex + 1
+                Next
+            End With
+       End If
+    
+    Else
+    
+        Call CopyArrays(Me, Index, GArray, ArrayIndex, Length)
+  
+    End If
+
+End Sub
+
+Private Sub CopyArrays( _
                         ByVal SrcArray As GenericArray, _
                         ByVal SrcIndex As Long, _
                         ByVal DstArray As GenericArray, _
                         ByVal DstIndex As Long, _
                         ByVal Elements As Long)
-                    
+
     Dim i As Long
     Dim Overlay As SAFEARRAYSTRUCT
     Dim Src As SAFEARRAYSTRUCT
     Dim Dst As SAFEARRAYSTRUCT
- 
+
     If (SrcArray Is Nothing) Or (DstArray Is Nothing) Then _
         Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("SrcArray Is Nothing) Or (DstArray Is Nothing)")
-                                                                                                                                  
+
     If (Elements < 1) Then _
         Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("Elements to copy  <  1")
-    
+
     If (SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex) Then _
         Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(SrcIndex < MIN_INDEX) Or (Elements > SrcArray.Length - SrcIndex)")
-        
+
     If (DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex) Then _
         Call System.Throw(Me, "Public Sub CopyArrays").InvalidInput("(DstIndex < MIN_INDEX) Or (Elements > DstArray.Length - DstIndex)")
-    
+
     If DstArray.Rank = 1 And SrcArray.Rank = 1 And Elements <= COPYMEMORY_THRESHOLD Then
         With SrcArray
             For i = SrcIndex To SrcIndex + Elements - 1
@@ -476,28 +514,28 @@ Public Sub CopyArrays( _
         End With
         Exit Sub
     End If
-    
+
     Overlay.cDims = 1
     Overlay.fFeatures = F_FEATURES
     Overlay.cbElements = ELEMENT_SIZE
     ReDim Overlay.Bounds(0)
     Overlay.Bounds(0).cElements = Elements
     Overlay.Bounds(0).lLbound = MIN_INDEX
-  
+
     With SrcArray
         Call LoadArrayStructure(Src, .Descriptor)
         Overlay.pvData = .AdressOf(Index:=SrcIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
-    
+
     With DstArray
         Call LoadArrayStructure(Dst, .Descriptor)
         Overlay.pvData = .AdressOf(Index:=DstIndex)
         Call SwitchTo(.Descriptor, Overlay)
     End With
-    
+
     Call Catch(SafeArrayCopyData(ByVal SrcArray.Descriptor, ByVal DstArray.Descriptor))
-    
+
     Call SwitchTo(SrcArray.Descriptor, Src)
     Call SwitchTo(DstArray.Descriptor, Dst)
 
@@ -2262,36 +2300,7 @@ Private Sub IGenericCollection_Clear()
     
 End Sub
 'TODO Rewrite CopyArrays -> CopyTo
-Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
-    
-    Dim i As Long, j As Long
-    
-    If (GArray Is Nothing) Then _
-        Call System.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(GArray Is Nothing)")
-            
-    If (myclass.Elements > GArray.Length - ArrayIndex) Then _
-        Call System.Throw(Me, "Private Sub IGenericCollection_CopyTo").InvalidInput("(myclass.Elements > GArray.Length - ArrayIndex")
-    
-    If myclass.Elements = 0 Then _
-        Exit Sub
-        
-    If myclass.Struct.cDims = 1 Then
-        If myclass.Elements <= COPYMEMORY_THRESHOLD Then
-            With GArray
-                For i = MIN_INDEX To myclass.Elements - 1 + MIN_INDEX
-                    Set .ElementAt(ArrayIndex) = myclass.Internal(i)
-                    ArrayIndex = ArrayIndex + 1
-                Next
-            End With
-       End If
-       
-    Else 'TODO - Avoid CopyArrays -> new CopyTo
-        
-        Call GenericArray.CopyArrays(SrcArray:=Me, SrcIndex:=MIN_INDEX, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Me.Length)
-    
-    End If
-
-End Sub
+Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, Index:=MIN_INDEX, Length:=myclass.Elements): End Sub
 
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = Me.Elements.Copy: End Function
 

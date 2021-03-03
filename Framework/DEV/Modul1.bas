@@ -104,11 +104,11 @@ Sub TestMultiDimArray()
     End With
     
     'Insert/ Copy Column into Matrix first column
-    Call GenericArray.CopyArrays(Column, Column.LowerBound, ga, ga.LowerBound, Column.Length)
+    Call Column.CopyTo(ga, ga.LowerBound)
     Debug.Print ga.GetValue(0, 0).Equals(ga.GetValue(0, 2))
     
     Call ga.Transpose
-    Debug.Print ga.GetValue(2, 0).Equals(Column(0))
+    Debug.Print ga.GetValue(2, 0).Equals(Column.ElementAt(0))
      Call Column.Elements.Clear
     
 End Sub

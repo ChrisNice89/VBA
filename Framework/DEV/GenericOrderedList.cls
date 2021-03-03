@@ -372,7 +372,6 @@ Public Function RemoveAll(ByVal Collection As IGenericCollection) As Long
     Dim Enumerable As IGenericIterator
     
     Dim result As Long
-    Dim i As Long
     Dim r As Long
     Dim w As Long
     Dim found As Boolean
@@ -404,14 +403,10 @@ Public Function RemoveAll(ByVal Collection As IGenericCollection) As Long
                 r = r + 1
             Loop
             
-            If Not (r = myclass.Size) Then
-                Debug.Print "error"
-            End If
-            
-            For i = w To myclass.Size - 1
-                Set .ElementAt(i) = Nothing
-            Next
-            
+            If Not (r = myclass.Size) Then _
+                Call System.Throw(Me, "Public Sub RemoveAll").IsNothing("(Collection Is Nothing)")
+          
+            For r = w To myclass.Size - 1: Set .ElementAt(r) = Nothing: Next
             result = myclass.Size - w
            
         End With
@@ -437,7 +432,7 @@ Public Function GetRange(ByVal Index As Long, ByVal Count As Long) As GenericOrd
    
     With GenericArray
         Set newList.Items = .Build(Count)
-        Call .CopyArrays(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=newList.Items, DstIndex:=.LowerBound, Elements:=Count)
+        Call myclass.Items.CopyTo(GArray:=newList.Items, ArrayIndex:=newList.Items.LowerBound, Index:=Index, Length:=Count)
     End With
     
     newList.Size = Count
@@ -457,7 +452,7 @@ Public Sub CopyTo( _
     If (myclass.Size - Index < Count) Then _
         Call System.Throw(Me, "Public Sub CopyTo").ArgOutOfRange("(myclass.Size - Index < Count)")
     
-    Call GenericArray.CopyArrays(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Count)
+    Call myclass.Items.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, Index:=Index, Length:=Count)
 
 End Sub
 

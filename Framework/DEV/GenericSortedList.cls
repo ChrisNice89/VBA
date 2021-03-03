@@ -270,25 +270,34 @@ Public Function RemoveAll(ByVal Collection As IGenericCollection) As Long
 
     Dim Candidate As IGeneric
     Dim result As Long
-    Dim i As Long
-
+    Dim r As Long
+    Dim w As Long
+    
     If (Collection Is Nothing) Then _
         Call System.Throw(Me, "Public Sub RemoveAll").IsNothing("(Collection Is Nothing)")
     
     If (Collection.Count > 0) Then
-        With Collection.Iterator
-            Do While .HasNext(Candidate)
-                i = Me.IndexOf(Element:=Candidate)
-                If i >= 0 Then _
-                    Call Me.RemoveAt(i): result = result + 1
-                 
+        With myclass.Items
+            Do While (r < myclass.Size)
+                Set Candidate = .ElementAt(r)
+                If Not Collection.Contains(Candidate) Then _
+                    Set .ElementAt(w) = Candidate: w = w + 1
+              
+                r = r + 1
             Loop
+            
+            If Not (r = myclass.Size) Then _
+                Call System.Throw(Me, "Public Sub RemoveAll").IsNothing("(Collection Is Nothing)")
+          
+            For r = w To myclass.Size - 1: Set .ElementAt(r) = Nothing: Next
+            result = myclass.Size - w
+           
         End With
     End If
     
     myclass.Size = myclass.Size - result
     RemoveAll = result
-
+    
 End Function
 
 Public Function Add(ByVal Element As IGeneric) As Boolean
@@ -407,7 +416,7 @@ Public Sub CopyTo( _
     If (myclass.Size - Index < Count) Then _
         Call System.Throw(Me, "Public Sub CopyTo").ArgOutOfRange("(myclass.Size - Index < Count)")
     
-    Call GenericArray.CopyArrays(SrcArray:=myclass.Items, SrcIndex:=Index, DstArray:=GArray, DstIndex:=ArrayIndex, Elements:=Count)
+    Call myclass.Items.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, Index:=Index, Length:=Count)
 
 End Sub
                                                                                                     
