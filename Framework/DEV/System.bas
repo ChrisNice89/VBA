@@ -40,37 +40,37 @@ End Function
 
 Public Function CreateInstance(ByVal Prototype As IGeneric, ByVal Source As LongPtr, ByVal Size As Long) As IGeneric
         
-    Call CopyBytesZero(ByVal Size, ByVal Prototype.VirtualPointer, ByVal Source) 'works
-'    Call CopySystemmory_byVar(ByVal Prototype.VirtualPointer, ByVal Source, Size): Call ZeroSystemmory(ByVal Source, Size)
+    Call CopyBytesZero(ByVal Size, ByVal Prototype.VirtualPointer, ByVal Source)
+'    Call Copymemory_byVar(ByVal Prototype.VirtualPointer, ByVal Source, Size): Call Zeromemory(ByVal Source, Size)
     Set CreateInstance = Prototype
 End Function
 
 Public Function HashValue(ByRef Ascii() As Byte) As Long
     
-    Dim h As Double
+    Dim H As Double
     Dim i As Long
     
     Dim Length As Long: Length = UBound(Ascii) + 1
     Dim N As Long
     
     For N = (Length / 2) To 1 Step -1
-        h = h + Ascii(i)
-        h = System.X0R(System.X0R(LEFTSHIFT(h, 16), System.LEFTSHIFT(Ascii(i + 1), 11)), h)
-        h = h + System.RIGHTSHIFT(h, 11)
+        H = H + Ascii(i)
+        H = System.X0R(System.X0R(LEFTSHIFT(H, 16), System.LEFTSHIFT(Ascii(i + 1), 11)), H)
+        H = H + System.RIGHTSHIFT(H, 11)
         i = i + 2
     Next
     
     If ((Length Mod 2) = 1) Then
-        h = h + Ascii(i) + 1566083941
-        h = System.X0R(h, LEFTSHIFT(h, 10))
-        h = h + System.RIGHTSHIFT(h, 1)
+        H = H + Ascii(i) + 1566083941
+        H = System.X0R(H, LEFTSHIFT(H, 10))
+        H = H + System.RIGHTSHIFT(H, 1)
     End If
     
-    h = System.X0R(h, System.LEFTSHIFT(h, 3)): h = h + System.RIGHTSHIFT(h, 5)
-    h = System.X0R(h, System.LEFTSHIFT(h, 4)): h = h + System.RIGHTSHIFT(h, 17)
-    h = System.X0R(h, System.LEFTSHIFT(h, 25)): h = h + System.RIGHTSHIFT(h, 6)
+    H = System.X0R(H, System.LEFTSHIFT(H, 3)): H = H + System.RIGHTSHIFT(H, 5)
+    H = System.X0R(H, System.LEFTSHIFT(H, 4)): H = H + System.RIGHTSHIFT(H, 17)
+    H = System.X0R(H, System.LEFTSHIFT(H, 25)): H = H + System.RIGHTSHIFT(H, 6)
     
-    HashValue = CLng(h - (Fix(h / MAXVALUE) * MAXVALUE))
+    HashValue = CLng(H - (Fix(H / MAXVALUE) * MAXVALUE))
 
 End Function
 

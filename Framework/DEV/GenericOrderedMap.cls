@@ -41,7 +41,7 @@ End Type
 Private myclass As Member
 
 Public Property Get Elements() As IGenericCollection: Set Elements = Me: End Property
-Public Property Get Map() As GenericLinkedMap: Set Map = Me: End Property
+Public Property Get Map() As IGenericMap: Set Map = Me: End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
 Public Property Get First() As Long: First = myclass.KeyList.First: End Property
 Public Property Get Last() As Long: Last = myclass.KeyList.Last: End Property
@@ -56,26 +56,28 @@ Public Property Get GetKey(ByVal Index As Long) As IGeneric
 End Property
 
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myclass.LookupTable.Item(Key): End Property
-Attribute Item.VB_UserMemId = 0
 Public Property Set Item(ByVal Key As IGeneric, ByVal Item As IGeneric)
     
     If (myclass.LookupTable.Add(Key, Item, Overwrite:=True)) Then _
         Call myclass.KeyList.Add(Key)
         
 End Property
-Public Property Get ElementAt(ByVal Index As Long): Set ElementAt = myclass.LookupTable.Item(Me.GetKey(Index)): End Property
+Public Property Get ElementAt(ByVal Index As Long) As IGeneric: Set ElementAt = myclass.LookupTable.Item(Me.GetKey(Index)): End Property
 Public Property Set ElementAt(ByVal Index As Long, ByVal Item As IGeneric): Set myclass.LookupTable.Item(Me.GetKey(Index)) = Item: End Property
 
-Public Function Build(Optional ByVal Capacity As Long = DEFAULT_CAPACITY, Optional ByVal Comparer As IGenericComparer) As GenericOrderedMap
+Public Function Build(Optional ByVal Capacity As Long, Optional ByVal Comparer As IGenericComparer) As GenericOrderedMap
     
     Dim newMap As Member
+    
+    If (Capacity < 0) Then _
+       Call System.Throw(Me, "Build").ArgOutOfRange("Capacity < 0")
     
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
     Set newMap.Comparer = Comparer
     
     Set newMap.KeyList = GenericOrderedList.Build(Capacity)
-    Set newMap.LookupTable = GenericLinkedMap.Build(Capacity * 2, newMap.Comparer)
+    Set newMap.LookupTable = GenericLinkedMap.Build(Capacity, newMap.Comparer)
     
     Set Build = System.CreateInstance(New GenericOrderedMap, VarPtr(newMap), LenB(newMap))
 
@@ -98,6 +100,7 @@ Public Sub Add(ByVal Key As IGeneric, ByVal Item As IGeneric)
         Call myclass.KeyList.Add(Key)
    
 End Sub
+
 
 Public Sub AddAll(ByVal Map As GenericLinkedMap)
     
@@ -188,14 +191,14 @@ Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set 
 Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = myclass.KeyList.First: End Property
 Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = myclass.KeyList.Last: End Property
 
-Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
+Private Function IGenericReadOnlyList_GetAt(ByVal Index As Long) As IGeneric
     
     If (Index >= myclass.KeyList.Elements.Count) Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index >= myclass.KeyList.Count)")
+        Call System.Throw(Me, "Private Function IGenericReadOnlyList_GetAt").IndexOutofRange("(Index >= myclass.KeyList.Elements.Count)")
     
-    Set IGenericReadOnlyList_ElementAt = Me.GetEntry(Index)
+    Set IGenericReadOnlyList_GetAt = Me.GetEntry(Index)
     
-End Property
+End Function
 
 Private Function IGenericReadOnlyList_IndexOf(ByVal Element As IGeneric) As Long
   
@@ -208,59 +211,20 @@ Private Function IGenericReadOnlyList_IndexOf(ByVal Element As IGeneric) As Long
 End Function
 
 'IGenericMap
-Private Property Get IGenericMap_Elements() As IGenericCollection
-    Set IGenericMap_Elements = Me
-End Property
+Private Property Get IGenericMap_Elements() As IGenericCollection: Set IGenericMap_Elements = Me: End Property
+Private Property Set IGenericMap_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set myclass.LookupTable.Item(Key) = Item: End Property
+Private Property Get IGenericMap_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericMap_Item = myclass.LookupTable.Item(Key): End Property
+Private Property Get IGenericMap_Comparer() As IGenericComparer: Set IGenericMap_Comparer = myclass.Comparer: End Property
 
-Private Property Set IGenericMap_Item(ByVal Key As IGeneric, ByVal Item As IGeneric)
-
-End Property
-
-Private Property Get IGenericMap_Item(ByVal Key As IGeneric) As IGeneric
-
-End Property
-
-Private Property Get IGenericMap_Comparer() As IGenericComparer
-
-End Property
-
-Private Function IGenericMap_GetKeys() As GenericArray
-    Set IGenericMap_GetKeys = Me.GetKeys
-End Function
-
-Private Function IGenericMap_GetValues() As GenericArray
-    Set IGenericMap_GetValues = Me.GetValues
-End Function
-
-Private Function IGenericMap_ContainsKey(ByVal Key As IGeneric) As Boolean
-    
-End Function
-
-Private Function IGenericMap_ContainsValue(ByVal Value As IGeneric) As Boolean
-
-End Function
-
-Private Function IGenericMap_Add(ByVal Key As IGeneric, ByVal Value As IGeneric, Optional ByVal Overwrite As Boolean) As Boolean
-
-End Function
-
-Private Sub IGenericMap_AddAll(ByVal Map As IGenericMap, Optional ByVal Overwrite As Boolean)
-
-End Sub
-
-Private Function IGenericMap_Remove(ByVal Key As IGeneric) As Boolean
-
-End Function
-
-Private Function IGenericMap_RemoveAll(ByVal Collection As IGenericCollection) As Long
-
-    
-
-End Function
-
-Private Function IGenericMap_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean
-
-End Function
+Private Function IGenericMap_GetKeys() As GenericArray: Set IGenericMap_GetKeys = Me.GetKeys: End Function
+Private Function IGenericMap_GetValues() As GenericArray: Set IGenericMap_GetValues = Me.GetValues: End Function
+Private Function IGenericMap_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericMap_ContainsKey = myclass.LookupTable.ContainsKey(Key): End Function
+Private Function IGenericMap_ContainsValue(ByVal Value As IGeneric) As Boolean: IGenericMap_ContainsValue = myclass.LookupTable.ContainsValue(Value): End Function
+Private Function IGenericMap_Add(ByVal Key As IGeneric, ByVal Value As IGeneric, Optional ByVal Overwrite As Boolean) As Boolean: IGenericMap_Add = myclass.LookupTable.Add(Key, Value, Overwrite:=Overwrite): End Function
+Private Function IGenericMap_Remove(ByVal Key As IGeneric) As Boolean: IGenericMap_Remove = myclass.LookupTable.Remove(Key): End Function
+Private Function IGenericMap_RemoveAll(ByVal Collection As IGenericCollection) As Long: IGenericMap_RemoveAll = myclass.LookupTable.RemoveAll(Collection): End Function
+Private Function IGenericMap_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericMap_TryGetValue = myclass.LookupTable.TryGetValue(Key, Value): End Function
+Private Sub IGenericMap_AddAll(ByVal Map As IGenericMap, Optional ByVal Overwrite As Boolean): Call myclass.LookupTable.AddAll(Map, Overwrite:=Overwrite): End Sub
 
 'IGenericCollection
 Private Property Get IGenericCollection_Count() As Long
@@ -282,7 +246,7 @@ Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayI
 End Sub
 
 Private Sub IGenericCollection_Clear()
-    
+        
     If Not (myclass.KeyList Is Nothing) Then _
         Call myclass.KeyList.Elements.Clear
        
@@ -291,17 +255,18 @@ Private Sub IGenericCollection_Clear()
 
 End Sub
 Private Function IGenericCollection_ToArray() As GenericArray: Set IGenericCollection_ToArray = myclass.LookupTable.Elements.ToArray: End Function
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Me.ContainsKey(Item): End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = myclass.LookupTable.Elements.Contains(Element:=Item): End Function
+Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericCollection) As Boolean: IGenericCollection_ContainsAll = myclass.LookupTable.Elements.ContainsAll(Collection:=Collection):: End Function
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = myclass.LookupTable.Elements.Iterator: End Function
 Private Function IGenericCollection_Copy() As IGenericCollection
     
-    Dim c As Member
+    Dim C As Member
     
-    Set c.Comparer = myclass.Comparer
-    Set c.LookupTable = myclass.LookupTable.Elements.Copy
-    Set c.KeyList = myclass.KeyList.Elements.Copy
+    Set C.Comparer = myclass.Comparer
+    Set C.LookupTable = myclass.LookupTable.Elements.Copy
+    Set C.KeyList = myclass.KeyList.Elements.Copy
     
-    Set IGenericCollection_Copy = System.CreateInstance(New GenericOrderedMap, VarPtr(c), LenB(c))
+    Set IGenericCollection_Copy = System.CreateInstance(New GenericOrderedMap, VarPtr(C), LenB(C))
     
 End Function
 

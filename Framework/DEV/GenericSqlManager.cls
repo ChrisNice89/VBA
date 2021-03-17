@@ -7,8 +7,27 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-'@Folder "Sql"
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  GenericSqlManager
+'*
+'* Purpose:
+'*
+'*
+'*
+'* Notes:
+'*
+'*
+'*
+'*
+'*
+'*======================================================================================================================
 
+'@Folder "Sql"
 Option Explicit
 '@PredeclaredId
 
@@ -17,10 +36,10 @@ Implements IGenericIterator
 
 Public Event result(ByVal Data As ADODB.Recordset)
 
-Private Const ASYNC_OPTION As Long = 16&
 Private Const EXECUTE_ASYNC As Boolean = False
 Private Const CLOSE_CONNECTION_IMMEDIATELY  As Boolean = True
 Private Const DEBUG_MODE  As Boolean = True
+Private Const ASYNC_OPTION As Long = 16& 'Dont change!
 
 Public Enum ISqlCursorLocation
     UseClient = 3 'Bedeutet, daß die Daten komplett auf den Client gezogen werden sollen. Dies bringt jedoch einen eventuell großen Speicherbedarf auf dem Client.
@@ -188,14 +207,14 @@ End Enum
 
 Private Type SqlField
     Name As IGeneric
-    SqlType As IGenericValue
+    SqlType As GenericValue
 End Type
 
 Private Type Iterator
     Records As ADODB.Recordset
     Fields() As SqlField
     Buffer As GenericOrderedMap
-    current As IGeneric
+    Current As IGeneric
     HasRows As Boolean
     HasLoaded  As Boolean
 End Type
@@ -231,7 +250,7 @@ End Type
 Private Type Member
     Credentials As Credentials
     Locks As Long
-    ParameterList As GenericOrderedList
+    ParameterList As IGenericList
     Iterator As Iterator
 End Type
 Private myclass As Member
@@ -239,7 +258,7 @@ Private myclass As Member
 Private WithEvents Database As ADODB.Connection
 Attribute Database.VB_VarHelpID = -1
 
-Private Property Get ParameterList() As GenericOrderedList
+Private Property Get ParameterList() As IGenericList
     Set ParameterList = GenericOrderedList.Build(64)
 End Property
 
@@ -329,7 +348,7 @@ Public Function ExecuteSchema(ByVal Schema As ISqlDBSchema, ParamArray Args() As
             Set Rs = .OpenSchema(Schema, Args)
         End If
         
-        Call .Close
+'        Call .Close
         
     End With
     
@@ -339,37 +358,48 @@ Public Function ExecuteSchema(ByVal Schema As ISqlDBSchema, ParamArray Args() As
     
 End Function
 
-Public Function SelectWhere(ByVal Table As GString, ByVal Fields As IGenericReadOnlyList, ByVal Where As GenericPair) As IGenericIterator
+Public Function SelectWhere(ByVal Table As GString, ByVal Fields As IGenericReadOnlyList, ByVal Where As GenericPair, ByVal Operator As GString) As IGenericIterator
    
-    Const SELECT_STATEMENT As String = "SELECT  FROM [] "
+    Const SELECT_STATEMENT As String = "SELECT [] FROM [] WHERE []"
     Dim Sql As GString
     
+    If (Fields Is Nothing) Then _
+        Call System.Throw(Me, "Public Function SelectWhere").IsNothing("(Fields Is Nothing)")
+        
     With GString
         Set Sql = .Build(SELECT_STATEMENT) _
-                    .Insert(15, Table) _
-                    .Insert(8, .Join(Fields, ",")) _
-                    .Concat(.Build("WHERE " & Where.Key & "=?"))
+                    .Insert(26, .Build(Where.Key)).Concat(.Build(Operator.Value & "?")) _
+                    .Insert(17, Table) _
+                    .Insert(9, .Join(Fields, "],["))
+                   
     End With
     
-    Set SelectWhere = Me.RowMapper(Me.Query(Sql.Value, myclass.ParameterList.Push(Where.Value)), Fields)
-
+    Call myclass.ParameterList.Add(Where.Value)
+    Set SelectWhere = Me.RowMapper(Me.Query(Sql.Value, myclass.ParameterList), Fields)
+    Call myclass.ParameterList.Pop
+    
 End Function
 
-Public Sub UpdateWhere(ByVal Table As GString, ByVal Updates As IGenericMap, ByVal Where As GenericPair)
+Public Sub UpdateWhere(ByVal Table As GString, ByVal Updates As IGenericMap, ByVal Where As GenericPair, ByVal Operator As GString)
     
-    Const UPDATE_STATEMENT As String = "UPDATE [] SET "
+    Const UPDATE_STATEMENT As String = "UPDATE [] SET []=? WHERE []"
     Dim Sql As GString
     
+    If (Updates Is Nothing) Then _
+        Call System.Throw(Me, "Public Sub UpdateWhere").IsNothing("(Updates Is Nothing)")
+        
     With GString
         Set Sql = .Build(UPDATE_STATEMENT) _
-                    .Insert(15, .Join(Updates.GetKeys, "=?,")) _
-                    .Insert(9, Table) _
-                    .Concat(.Build(" WHERE " & Where.Key & "=?"))
+                    .Insert(27, .Build(Where.Key)).Concat(.Build(Operator.Value & "?")) _
+                    .Insert(16, .Join(Updates.GetKeys, "]=?,[")) _
+                    .Insert(9, Table)
     End With
     
     Call myclass.ParameterList.AddAll(Updates.GetValues)
-    Call Me.Execute(Sql.Value, myclass.ParameterList.Push(Where.Value))
-
+    Call myclass.ParameterList.Add(Where.Value)
+    Call Me.Execute(Sql.Value, myclass.ParameterList)
+    Call myclass.ParameterList.Elements.Clear
+    
 End Sub
 
 Public Sub InsertInto(ByVal Table As GString, ByVal Updates As IGenericMap)
@@ -377,6 +407,9 @@ Public Sub InsertInto(ByVal Table As GString, ByVal Updates As IGenericMap)
     Const INSERT_STATEMENT As String = "INSERT INTO [] () VALUES ()"
     Dim Sql As GString
     
+    If (Updates Is Nothing) Then _
+        Call System.Throw(Me, "Public Sub InsertInto").IsNothing("(Updates Is Nothing)")
+        
     'Used String Readonly here to avoid .Repeat(Parameters.Count, "?").ToArray !
     With GString
         Set Sql = .Build(INSERT_STATEMENT) _
@@ -468,12 +501,16 @@ Public Sub Prepare(ByVal Command As ADODB.Command, ByVal Sql As String, ByVal Op
         End If
     End With
     
-    Dim Value As IGenericValue
+    Dim Value As GenericValue
     If Not Parameters Is Nothing Then
         If Parameters.Elements.Count > 0 Then
             With Parameters.Elements.Iterator
                 Do While .HasNext(Value)
-                    Call Command.Parameters.Append(Value.ToSqlParameter)
+                    If Not Value.Instance.IsDefault Then
+                        Call Command.Parameters.Append(Value.ToSqlParameter)
+                    Else
+                        Call Command.Parameters.Append(Command.CreateParameter(Type:=Value.SqlType, Direction:=ISqlParameterDirection.ParamInput, Size:=1, Value:=Null)) 'Size=? for type 202 TODO
+                    End If
                 Loop
             End With
         End If
@@ -503,6 +540,30 @@ End Function
 
 Private Function TableStructure(ByVal Table As String) As ADODB.Recordset
     Set TableStructure = Me.ExecuteSchema(SchemaColumns, Empty, Empty, Table, Empty) '.ToArray("COLUMN_NAME"))
+End Function
+
+Public Function ColumnsOf(ByVal Table As GString) As IGenericReadOnlyList
+    
+    Dim Columns As IGenericList
+    Dim Field As String, fieldList As String
+    
+    With TableStructure(Table.Value)
+        Set Columns = GenericOrderedList.Build(255)
+        Do While Not (.EOF)
+            Call Columns.Add(GString.Build(.Fields.Item("COLUMN_NAME").Value))
+            
+'            Field = VBA.Replace$(.Fields.Item("COLUMN_NAME").Value, " ", "_")
+'            Field = VBA.Replace$(Field, ":", "_")
+'            Field = VBA.Replace$(Field, "-", "_")
+'            Debug.Print Field & " AS GString"
+'            Debug.Print "Set ." & Field & "=GString.Build(""" & .Fields.Item("COLUMN_NAME").Value & """)"
+    
+            .MoveNext
+        Loop
+    End With
+
+    Set ColumnsOf = Columns
+    
 End Function
 
 Public Function CreateRecordset(ByVal Setting As ISqlRecodsetType) As ADODB.Recordset
@@ -716,7 +777,7 @@ End Function
 Private Function IsFetching(ByVal Command As ADODB.Command) As Boolean
     
     Const BREAK As Long = 5000000
-    Dim Counter As Long
+    Dim counter As Long
     
     If Not Command Is Nothing Then
         If Not Command.ActiveConnection Is Nothing Then
@@ -847,15 +908,16 @@ End Function
  
 Private Function EmptyStructure() As Member: End Function
 
-'IGenericIterator
+'RowMapper - IGenericIterator
 Public Function RowMapper(ByVal Records As ADODB.Recordset, ByVal Fields As IGenericReadOnlyList) As IGenericIterator
     
     Dim newClass As Member
     Dim Field As ADODB.Field
+    Dim FieldName As IGeneric
     Dim i As Long
 
     If (Records Is Nothing) Then _
-        Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records Is Nothing)")
+        Call System.Throw(Me, "Public Function RowMapper").IsNothing("Records")
     
     If (Records.State = ISqlObjectState.IsClosed_State) Then _
         Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Records.State = ISqlObjectState.IsClosed_State)")
@@ -863,10 +925,24 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset, ByVal Fields As IGen
     If (Fields Is Nothing) Then _
         Call System.Throw(Me, "Public Function RowMapper").InvalidInput("(Fields Is Nothing)")
     
-    ReDim newClass.Iterator.Fields(Fields.Elements.Count - 1)
+    With Fields
+        ReDim newClass.Iterator.Fields(.Elements.Count - 1)
+        Set newClass.Iterator.Buffer = GenericOrderedMap.Build(.Elements.Count)
+        
+        For i = .First To .Last
+            Set FieldName = .GetAt(i)
+            
+            If (FieldName Is Nothing) Then _
+                Call System.Throw(Me, "Public Function RowMapper").IsNothing("Fields")
+            
+            Set newClass.Iterator.Fields(i).Name = FieldName
+            Call newClass.Iterator.Buffer.Add(FieldName, Nothing)
+        Next
+        
+    End With
+    
     Set newClass.Iterator.Records = Records
-    Set newClass.Iterator.Buffer = GenericOrderedMap.Build(Fields.Elements.Count)
-  
+    
     With newClass.Iterator.Records
     
         Do While (.State And ISqlObjectState.IsExecuting_State) = ISqlObjectState.IsExecuting_State
@@ -884,29 +960,29 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset, ByVal Fields As IGen
             
             For i = 0 To .Fields.Count - 1
 '                Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type
-                Set newClass.Iterator.Fields(i).Name = Fields.ElementAt(i)
-                Call newClass.Iterator.Buffer.Add(Fields.ElementAt(i), Nothing)
                 Select Case .Fields(i).Type
                     Case Is = ISqlDataType.Boolean_Type: Set newClass.Iterator.Fields(i).SqlType = GBool
                     Case Is = ISqlDataType.Char_Type: Set newClass.Iterator.Fields(i).SqlType = GString
-                    Case Is = ISqlDataType.Numeric_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
-                    Case Is = ISqlDataType.Single_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
+                    Case Is = ISqlDataType.Numeric_Type, ISqlDataType.SmallInt_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
                     Case Is = ISqlDataType.Currency_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
-                    Case Is = ISqlDataType.Double_Type: Set newClass.Iterator.Fields(i).SqlType = GString
+                    Case Is = ISqlDataType.Single_Type, ISqlDataType.Double_Type: Set newClass.Iterator.Fields(i).SqlType = GString
                     Case Is = ISqlDataType.Decimal_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
                     Case Is = ISqlDataType.Integer_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
                     Case Is = ISqlDataType.BigInt_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
+                    Case Is = ISqlDataType.UnsignedTinyInt_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
                     Case Is = ISqlDataType.Date_Type: Set newClass.Iterator.Fields(i).SqlType = GDateTime
                     Case Is = ISqlDataType.VarWChar_Type: Set newClass.Iterator.Fields(i).SqlType = GString
                     Case Is = ISqlDataType.LongVarChar_Type: Set newClass.Iterator.Fields(i).SqlType = GString
                     Case Is = ISqlDataType.LongVarWChar_Type: Set newClass.Iterator.Fields(i).SqlType = GString '203 Gibt eine lange Null-terminierte Unicode-Zeichenfolgenwert an.
                     Case Else
-                        Set newClass.Iterator.Fields(i).SqlType = GString
+                        If DEBUG_MODE Then _
+                            Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type & " // Unknown Sql Field - Mapped to GenericValue"
+                        Set newClass.Iterator.Fields(i).SqlType = GenericValue
                 End Select
             Next
         
         ElseIf DEBUG_MODE Then _
-            Debug.Print "is fetching..."
+            Debug.Print "No rows for mapping returned"
             
         End If
     End With
@@ -916,9 +992,10 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset, ByVal Fields As IGen
     
 End Function
 
-Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.current: End Property
+'IGenericIterator
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
 
-Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
+Private Function IGenericIterator_HasNext(Optional Out As IGeneric) As Boolean
     
     Dim i As Long
     
@@ -929,16 +1006,13 @@ Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
                 Set myclass.Iterator.Buffer.Item(myclass.Iterator.Fields(i).Name) = myclass.Iterator.Fields(i).SqlType.Convert(.Item(i).Value)
             Next
             
-            If DEBUG_MODE Then _
-                Debug.Print "Row mapped"
-                
         End With
         
         Call myclass.Iterator.Records.MoveNext
         myclass.Iterator.HasRows = Not myclass.Iterator.Records.EOF
         
-        Set myclass.Iterator.current = myclass.Iterator.Buffer
-        Set Out = myclass.Iterator.current 'Avoid converting twice
+        Set myclass.Iterator.Current = myclass.Iterator.Buffer
+        Set Out = myclass.Iterator.Current 'Avoid converting twice
     
         IGenericIterator_HasNext = True
         Exit Function
@@ -947,11 +1021,9 @@ Private Function IGenericIterator_HasNext(Out As IGeneric) As Boolean
         
     If myclass.Iterator.HasLoaded = False Then _
         Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
-    
-    Call myclass.Iterator.Buffer.Elements.Clear 'TODO Should we do that ?!
-    Set myclass.Iterator.current = Nothing
-    Set Out = Nothing
-
+  
+    Set myclass.Iterator.Current = Nothing
+ 
 End Function
 
 Private Sub IGenericIterator_Reset()

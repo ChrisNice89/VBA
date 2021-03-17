@@ -227,8 +227,8 @@ Private Function EmptyStructure() As Member: End Function
 
 Private Function IGeneric_Clone() As IGeneric
     
-    Dim c As Member: c = myclass 'hardcopy
-    Set IGeneric_Clone = System.CreateInstance(New GenericThrowhelper, VarPtr(c), Virtual.Size)
+    Dim C As Member: C = myclass 'hardcopy
+    Set IGeneric_Clone = System.CreateInstance(New GenericThrowhelper, VarPtr(C), Virtual.Size)
 
 End Function
 

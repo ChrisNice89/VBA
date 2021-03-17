@@ -17,7 +17,6 @@ Attribute VB_Exposed = True
 '*
 '* Purpose: The GenericSortedList class represents a collection of elements that are sorted
 '*          (based on the associated Comparer implementation) and are accessible by index.
-'*          An element cannot be null and must be unique.
 '*          For example, if the values are of primitive types, then the SortedList is sorted in ascending order of the values.
 '*          A sorted list internally maintains an array that stores the values.
 '*          The capacity of a SortedList object is the number of elements the SortedList can hold.
@@ -27,9 +26,7 @@ Attribute VB_Exposed = True
 '*          However, the SortedList offers better performance on search operations.
 '*
 '* Notes:   A SortedList object internally maintains an array to store the elements of the list
-'*          Elements of a SortedList object are sorted according to the associated Comparer implementation
-'*          By default, this collection sort the elements in ascending order.
-'*          A element must be unique and cannot be null.
+'*          It maintains ascending order (according to the associated Comparer implementation) and does not store duplicate elements.
 '*          An element can be accessed by its index.
 '*
 '*
@@ -42,6 +39,7 @@ Option Explicit
 
 Implements IGeneric
 Implements IGenericReadOnlyList
+Implements IGenericList
 Implements IGenericCollection
 Implements IGenericIterator
 
@@ -75,7 +73,7 @@ Private Type Iterator
     HasLoaded As Boolean
     Index As Long
     Count As Long
-    current As IGeneric
+    Current As IGeneric
     Items As GenericArray
 End Type
 
@@ -100,16 +98,6 @@ End Property
 
 Public Property Get SortOrder() As SortOrder: SortOrder = SORT_ORDER: End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
-
-Public Property Get ElementAt(ByVal Index As Long) As IGeneric
-Attribute ElementAt.VB_UserMemId = 0
-
-    If (Index >= myclass.Size) Then _
-        Call System.Throw(Me, "Public Property Get ElementAt").IndexOutofRange("(Index >= myclass.size)")
-    
-    Set ElementAt = myclass.Items.ElementAt(Index)
-    
-End Property
 
 Public Property Get Capacity() As Long: Capacity = myclass.Items.Length: End Property
 Public Property Let Capacity(ByVal Value As Long)
@@ -162,13 +150,14 @@ Public Function Build(Optional ByVal Capacity As Long, Optional ByVal Comparer A
     
 End Function
 
-Public Function AsList(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As GenericSortedList
+Public Function AsList(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As IGenericList
         
     Dim i As Long
+    Dim Element As IGeneric, ElementBefore As IGeneric
     Dim newList As Member
     
     If IsMissing(GenericValues) Then _
-        Call System.Throw(Me, "Public Function Create").Instantiation("ParamArray GenericValues are missing")
+        Call System.Throw(Me, "Public Function Create").NoSuchElement("ParamArray GenericValues are missing")
         
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
@@ -181,24 +170,27 @@ Public Function AsList(ByVal Comparer As IGenericComparer, ParamArray GenericVal
         For i = LBound(GenericValues) To UBound(GenericValues)
             
             If Not VarType(GenericValues(i)) = vbObject Then _
-                Call System.Throw(Me, "Public Function Create").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+                Call System.Throw(Me, "Public Function AsList").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
             
             If (GenericValues(i) Is Nothing) Then _
-                Call System.Throw(Me, "Public Function Create").InvalidInput("Element is nothing")
+                Call System.Throw(Me, "Public Function AsList").InvalidInput("Element is nothing")
             
             If Not TypeOf GenericValues(i) Is IGeneric Then _
-                Call System.Throw(Me, "Public Function Create").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+                Call System.Throw(Me, "Public Function AsList").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
                 
             Set .ElementAt(i) = GenericValues(i)
             
         Next
                                                                               
-        Call .Sort(Order:=SORT_ORDER, Index:=.LowerBound, Length:=.Length, Comparer:=Comparer)
+        Call .Sort(Order:=SORT_ORDER, Comparer:=Comparer)
         
-        For i = .LowerBound + 1 To .Length - 1
-            If Comparer.Compare(.ElementAt(i - 1), .ElementAt(i)) = IsEqual Then _
-                Call System.Throw(Me, "Public Function Create").DuplicateNotAllowed(.ElementAt(i))
-        Next
+        For i = .LowerBound To .Length - 1
+                Set Element = .ElementAt(i)
+                If newList.Comparer.Compare(ElementBefore, Element) = IsEqual Then _
+                    Call System.Throw(Me, "Public Function AsList").DuplicateNotAllowed(.ElementAt(i))
+                Set ElementBefore = Element
+            Next
+            
     End With
                                                                           
     Set AsList = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
@@ -209,19 +201,28 @@ Private Sub Class_Terminate()
     myclass = EmptyStructure
 End Sub
 
-Private Sub EnsureCapacity(ByVal min As Long)
+Public Function GetAt(ByVal Index As Long) As IGeneric
+
+    If (Index >= myclass.Size) Then _
+        Call System.Throw(Me, "Public Function GetAt").IndexOutofRange("(Index >= myclass.size)")
+    
+    Set GetAt = myclass.Items.ElementAt(Index)
+    
+End Function
+
+Private Sub EnsureCapacity(ByVal Min As Long)
     
     Dim newCapacity As Long
     
     With myclass.Items
-        If (.Length < min) Then
+        If (.Length < Min) Then
             newCapacity = IIf(.Length = 0, DEFAULT_CAPACITY, .Length * 2)
             
             If (newCapacity > .MaxLength) Then _
                 newCapacity = .MaxLength
             
-            If (newCapacity < min) Then _
-                newCapacity = min
+            If (newCapacity < Min) Then _
+                newCapacity = Min
         
             Me.Capacity = newCapacity
         End If
@@ -238,7 +239,7 @@ Public Sub TrimExcess()
 
 End Sub
 
-Public Function Contains(ByVal Element As IGeneric) As Long: Contains = Me.IndexOf(Element:=Element) > -1: End Function
+Public Function Contains(ByVal Element As IGeneric) As Long: Contains = myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer) >= 0: End Function
 
 Public Function Remove(ByVal Element As IGeneric) As Boolean
 
@@ -266,39 +267,8 @@ Public Sub RemoveAt(ByVal Index As Long)
     
 End Sub
 
-Public Function RemoveAll(ByVal Collection As IGenericCollection) As Long
-
-    Dim Candidate As IGeneric
-    Dim result As Long
-    Dim r As Long
-    Dim w As Long
-    
-    If (Collection Is Nothing) Then _
-        Call System.Throw(Me, "Public Sub RemoveAll").IsNothing("(Collection Is Nothing)")
-    
-    If (Collection.Count > 0) Then
-        With myclass.Items
-            Do While (r < myclass.Size)
-                Set Candidate = .ElementAt(r)
-                If Not Collection.Contains(Candidate) Then _
-                    Set .ElementAt(w) = Candidate: w = w + 1
-              
-                r = r + 1
-            Loop
-            
-            If Not (r = myclass.Size) Then _
-                Call System.Throw(Me, "Public Sub RemoveAll").IsNothing("(Collection Is Nothing)")
-          
-            For r = w To myclass.Size - 1: Set .ElementAt(r) = Nothing: Next
-            result = myclass.Size - w
-           
-        End With
-    End If
-    
-    myclass.Size = myclass.Size - result
-    RemoveAll = result
-    
-End Function
+Public Function RetainAll(ByVal Collection As IGenericCollection) As Long: RetainAll = RemoveBulk(Collection:=Collection, Check:=True): End Function
+Public Function RemoveAll(ByVal Collection As IGenericCollection) As Long: RemoveAll = RemoveBulk(Collection:=Collection, Check:=False): End Function
 
 Public Function Add(ByVal Element As IGeneric) As Boolean
        
@@ -313,31 +283,70 @@ End Function
 
 Public Sub AddAll(ByVal Collection As IGenericCollection)
 
-    Dim Element As IGeneric, ElementBefore As IGeneric
+    Dim Element As IGeneric
     Dim Enumerable As IGenericIterator
-    Dim Count As Long, i As Long
-  
+    Dim newElements As GenericArray
+    Dim elementCounter As Long
+
+    Dim uniqueCount As Long
+    Dim i As Long
+            
     If (Collection Is Nothing) Then _
         Call System.Throw(Me, "Public Sub AddAll").IsNothing("(Collection Is Nothing)")
     
     If (Collection Is Me) Then _
         Exit Sub
+
+    If (Collection.Count > 0) Then
+   
+        Set newElements = GenericArray.Build(Collection.Count)
         
-    Count = Collection.Count
-    If (Count > 0) Then
+        If myclass.Size > 0 Then
+        
+            Set Enumerable = Collection.Iterator
+            With Enumerable 'Fill only with distinct elements
+                Do While .HasNext(Element)
+                    If Not Me.Contains(Element:=Element) Then _
+                        Set newElements.ElementAt(elementCounter) = Element: elementCounter = elementCounter + 1
+                Loop
+            End With
+            
+        Else
+            
+            Call Collection.CopyTo(newElements, newElements.LowerBound)
+            elementCounter = newElements.Length
+            
+        End If
     
-        With Collection.ToArray.Sort(Order:=SORT_ORDER, Index:=GenericArray.LowerBound, Length:=Count, Comparer:=myclass.Comparer)
-            For i = .LowerBound To .Length - 1
-                Set Element = .ElementAt(i)
-                If Not myclass.Comparer.Compare(Element, ElementBefore) = IsEqual Then _
-                    Call Me.Add(Element:=Element)
-                Set ElementBefore = Element
+        'inplace
+        With newElements
+            'We have todo this anyway, exept we could check: "(Collection.IsSorted AND Collection.Comparer is myclass.Comparer)"
+            Call .Sort(Order:=SORT_ORDER, Length:=elementCounter, Comparer:=myclass.Comparer)
+            
+            uniqueCount = .LowerBound + 1 'first element doesnt need to be shifted
+            
+            'Find first dup element
+            Do While (uniqueCount < elementCounter)
+                If (myclass.Comparer.Compare(.ElementAt(uniqueCount - 1), .ElementAt(uniqueCount)) = IsEqual) Then _
+                    Exit Do
+                uniqueCount = uniqueCount + 1
+            Loop
+            'Shift unique elements
+            For i = uniqueCount + 1 To elementCounter - 1
+                If Not (myclass.Comparer.Compare(.ElementAt(i - 1), .ElementAt(i)) = IsEqual) Then
+                    Set .ElementAt(uniqueCount) = .ElementAt(i)
+                    uniqueCount = uniqueCount + 1
+                End If
             Next
+    
         End With
         
+        Set myclass.Items = GenericArray.Merge(SortedA:=myclass.Items, LengthA:=myclass.Size, SortedB:=newElements, LengthB:=uniqueCount, Comparer:=myclass.Comparer)
+        myclass.Size = myclass.Items.Length
+        
     Else
-    
-        Set Enumerable = Collection 'Try
+        'Do it the hard way
+        Set Enumerable = Collection
         With Enumerable
             Do While .HasNext(Element): Call Me.Add(Element:=Element): Loop
         End With
@@ -386,7 +395,7 @@ Public Function Pop() As IGeneric
     
     With Me
         i = .Last
-        Set Pop = .ElementAt(i)
+        Set Pop = .GetAt(i)
         Call .RemoveAt(i)
     End With
     
@@ -400,7 +409,7 @@ End Function
 'is empty, Peek throws an InvalidOperationException.
 Public Function Peek() As IGeneric
     With Me
-        Set Peek = .ElementAt(.Last)
+        Set Peek = .GetAt(.Last)
     End With
 End Function
                                                                                             
@@ -416,10 +425,44 @@ Public Sub CopyTo( _
     If (myclass.Size - Index < Count) Then _
         Call System.Throw(Me, "Public Sub CopyTo").ArgOutOfRange("(myclass.Size - Index < Count)")
     
-    Call myclass.Items.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, Index:=Index, Length:=Count)
+    Call myclass.Items.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, Index:=Index, Count:=Count)
 
 End Sub
                                                                                                     
+Private Function RemoveBulk(ByVal Collection As IGenericCollection, ByVal Check As Boolean) As Long
+    
+    Dim Candidate As IGeneric
+    Dim result As Long
+    Dim r As Long
+    Dim w As Long
+    
+    If (Collection Is Nothing) Then _
+        Call System.Throw(Me, "Public Function RemoveAll").IsNothing("(Collection Is Nothing)")
+    
+    If (Collection.Count > 0) Then
+        With myclass.Items
+            Do While (r < myclass.Size)
+                Set Candidate = .ElementAt(r)
+                If (Collection.Contains(Candidate) = Check) Then _
+                    Set .ElementAt(w) = Candidate: w = w + 1
+              
+                r = r + 1
+            Loop
+            
+            If Not (r = myclass.Size) Then _
+                Call System.Throw(Me, "Public Sub RemoveAll").InvalidOperation
+          
+            For r = w To myclass.Size - 1: Set .ElementAt(r) = Nothing: Next
+            result = myclass.Size - w
+           
+        End With
+    End If
+    
+    myclass.Size = myclass.Size - result
+    RemoveBulk = result
+    
+End Function
+
 Private Sub LoadIterator(ByRef Iterator As Iterator, ByVal Items As GenericArray, ByVal Count As Long)
     
     If (Items Is Nothing) Then _
@@ -468,19 +511,32 @@ Private Function IGeneric_ToString() As String
     End With
 End Function
 
+'IGenericList
+Private Property Get IGenericList_Elements() As IGenericCollection: Set IGenericList_Elements = Me: End Property
+Private Function IGenericList_Add(ByVal Element As IGeneric) As Boolean: IGenericList_Add = Me.Add(Element:=Element): End Function
+Private Sub IGenericList_AddAll(ByVal Collection As IGenericCollection): Call Me.AddAll(Collection:=Collection): End Sub
+Private Sub IGenericList_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long, Optional ByVal Index As Long = 0&, Optional ByVal Count As Long = 0&): Call Me.CopyTo(GArray:=GArray, ArrayIndex:=ArrayIndex, Index:=Index, Count:=Count): End Sub
+Private Function IGenericList_GetAt(ByVal Index As Long) As IGeneric: Set IGenericList_GetAt = Me.GetAt(Index:=Index): End Function
+Private Function IGenericList_IndexOf(ByVal Element As IGeneric) As Long: IGenericList_IndexOf = Me.IndexOf(Element:=Element): End Function
+Private Function IGenericList_Pop() As IGeneric: Set IGenericList_Pop = Me.Pop: End Function
+Private Function IGenericList_Remove(ByVal Element As IGeneric) As Boolean: IGenericList_Remove = Me.Remove(Element:=Element): End Function
+Private Function IGenericList_RemoveAll(ByVal Collection As IGenericCollection) As Long: IGenericList_RemoveAll = Me.RemoveAll(Collection:=Collection): End Function
+Private Function IGenericList_RetainAll(ByVal Collection As IGenericCollection) As Long: IGenericList_RetainAll = RemoveBulk(Collection:=Collection, Check:=True): End Function
+Private Sub IGenericList_RemoveAt(ByVal Index As Long): Call Me.RemoveAt(Index:=Index): End Sub
+
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
 Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = Me.First: End Property
 Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = Me.Last: End Property
 
-Private Property Get IGenericReadOnlyList_ElementAt(ByVal Index As Long) As IGeneric
+Private Function IGenericReadOnlyList_GetAt(ByVal Index As Long) As IGeneric
     
     If (Index >= myclass.Size) Then _
-        Call System.Throw(Me, "Private Property Get IGenericReadOnlyList_ElementAt").IndexOutofRange("(Index >= myclass.size)")
+        Call System.Throw(Me, "IGenericReadOnlyList_GetAt").IndexOutofRange("(Index >= myclass.size)")
     
-    Set IGenericReadOnlyList_ElementAt = myclass.Items.ElementAt(Index)
+    Set IGenericReadOnlyList_GetAt = myclass.Items.ElementAt(Index)
     
-End Property
+End Function
 Private Function IGenericReadOnlyList_IndexOf(ByVal Element As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.IndexOf(Element:=Element): End Function
 
 'IGenericCollection
@@ -498,6 +554,36 @@ Private Function IGenericCollection_ToArray() As GenericArray
 End Function
 
 Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = myclass.Items.BinarySearch(Value:=Item, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer) >= 0: End Function
+
+Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericCollection) As Boolean
+    
+    Dim Candidate As IGeneric
+    Dim Enumerable As IGenericIterator
+    
+    If (Collection Is Nothing) Then _
+        Call System.Throw(Me, "Private Function IGenericCollection_ContainsAll").IsNothing("(Collection Is Nothing)")
+    
+    If Not (Collection Is Me) Then
+    
+        If (Collection.Count > 0) Then
+            Set Enumerable = Collection.Iterator
+        Else
+            Set Enumerable = Collection
+        End If
+        
+        With Enumerable
+            Do While .HasNext(Candidate)
+                If (myclass.Items.BinarySearch(Value:=Candidate, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer) < 0) Then _
+                    Exit Function
+            Loop
+        End With
+        
+    End If
+
+    IGenericCollection_ContainsAll = True
+
+End Function
+
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long): Call Me.CopyTo(Index:=myclass.Items.LowerBound, GArray:=GArray, ArrayIndex:=ArrayIndex, Count:=myclass.Size): End Sub
 
 Private Sub IGenericCollection_Clear()
@@ -510,34 +596,34 @@ End Sub
 
 Private Function IGenericCollection_Copy() As IGenericCollection
     
-    Dim c As Member
+    Dim C As Member
     
-    Set c.Comparer = myclass.Comparer
-    Set c.Items = myclass.Items.Elements.Copy
-    c.Size = myclass.Size
+    Set C.Comparer = myclass.Comparer
+    Set C.Items = myclass.Items.Elements.Copy
+    C.Size = myclass.Size
  
-    Set IGenericCollection_Copy = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
+    Set IGenericCollection_Copy = System.CreateInstance(New GenericSortedList, VarPtr(C), LenB(C))
     
 End Function
 
 Private Function IGenericCollection_Iterator() As IGenericIterator
 
-    Dim c As Member
+    Dim C As Member
     
-    Call LoadIterator(c.Iterator, myclass.Items, myclass.Size)
-    Set IGenericCollection_Iterator = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
+    Call LoadIterator(C.Iterator, myclass.Items, myclass.Size)
+    Set IGenericCollection_Iterator = System.CreateInstance(New GenericSortedList, VarPtr(C), LenB(C))
 
 End Function
 
 'IGenericIterator
-Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.current: End Property
-Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
+Private Function IGenericIterator_HasNext(Optional ByRef Out As IGeneric) As Boolean
     
     With myclass.Iterator
         If .Index < .Count Then
-            Set .current = .Items.ElementAt(.Index)
+            Set .Current = .Items.ElementAt(.Index)
             .Index = .Index + 1
-            Set Out = .current
+            Set Out = .Current
             IGenericIterator_HasNext = True
             Exit Function
         End If
@@ -545,8 +631,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
         If .HasLoaded = False Then _
             Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
 
-        Set .current = Nothing
-        Set Out = .current
+        Set .Current = Nothing
      
     End With
     

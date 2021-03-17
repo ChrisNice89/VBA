@@ -22,13 +22,13 @@ Private Sub Heapify(Keys, Index() As Long, ByVal i1 As Long, ByVal N As Long)
    Dim nDiv2 As Long: nDiv2 = N \ 2
    Dim i As Long: i = i1
    Do While i < nDiv2
-      Dim K As Long: K = 2 * i + 1
-      If K + 1 < N Then
-         If Keys(Index(Base + K)) < Keys(Index(Base + K + 1)) Then K = K + 1
+      Dim k As Long: k = 2 * i + 1
+      If k + 1 < N Then
+         If Keys(Index(Base + k)) < Keys(Index(Base + k + 1)) Then k = k + 1
          End If
-      If Keys(Index(Base + i)) >= Keys(Index(Base + K)) Then Exit Do
-      Exchange Index, i, K
-      i = K
+      If Keys(Index(Base + i)) >= Keys(Index(Base + k)) Then Exit Do
+      Exchange Index, i, k
+      i = k
       Loop
    End Sub
 

@@ -47,10 +47,6 @@ Public Property Set Parent(ByVal p As GenericNode): Set myclass.Parent = p: End 
 Public Property Get Value() As IGeneric: Set Value = myclass.Value: End Property
 Public Property Set Value(ByVal V As IGeneric): Set myclass.Value = V: End Property
 
-Public Sub Invalidate()
-    myclass = EmptyStructure
-End Sub
-
 Public Function InOrderNext() As GenericNode
     
     Dim p As GenericNode
@@ -102,10 +98,6 @@ Public Function InOrderPrevious() As GenericNode
     Set InOrderPrevious = p
         
 End Function
-
-Private Sub Class_Terminate()
-'    Debug.Print "Node_Terminate"
-End Sub
 
 'IGeneric
 Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property

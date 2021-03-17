@@ -12,7 +12,7 @@ Option Explicit
 '@PredeclaredId
 
 Implements IGeneric
-Implements IGenericValue
+Implements GenericValue
 
 Private Const DEFAULT_VALUE As Boolean = False
 Private Const TRUE_STRING As String = "True"
@@ -125,65 +125,66 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
 End Function
 Private Function IGeneric_ToString() As String: IGeneric_ToString = Me.ToFormat(Format:=Default_bool): End Function
 
-'IGenericValue
-Private Property Get IGenericValue_VarType() As VbVarType: IGenericValue_VarType = vbBoolean: End Property
-Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
-Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Binary_Type: End Property
-Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue = myclass.Value: End Property
-Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
-Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
+'GenericValue
+Private Property Get GenericValue_VarType() As VbVarType: GenericValue_VarType = vbBoolean: End Property
+Private Property Get GenericValue_Size() As Byte: GenericValue_Size = LenB(myclass.Value): End Property
+Private Property Get GenericValue_SqlType() As ISqlDataType: GenericValue_SqlType = ISqlDataType.Binary_Type: End Property
+Private Property Get GenericValue_ToValue() As Variant: GenericValue_ToValue = myclass.Value: End Property
+Private Property Get GenericValue_Instance() As IGeneric: Set GenericValue_Instance = Me: End Property
+Private Property Get GenericValue_Comparer() As IGenericComparer: Set GenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue
+Private Function GenericValue_Convert(ByVal Value As Variant) As GenericValue
 
+    If VBA.IsNull(Value) Then _
+        Set GenericValue_Convert = IGeneric_Default: Exit Function
+        
     Select Case VarType(Value)
-        Case VbVarType.vbNull
-            Set IGenericValue_Convert = GBool.Build(DEFAULT_VALUE)
         Case VbVarType.vbByte, VbVarType.vbInteger, VbVarType.vbLong
             If Value = TRUE_VALUE Then
-                Set IGenericValue_Convert = GBool.Build(True)
+                Set GenericValue_Convert = GBool.Build(True)
             Else
-                Set IGenericValue_Convert = GBool.Build(False)
+                Set GenericValue_Convert = GBool.Build(False)
             End If
         Case VbVarType.vbBoolean
             If Value = True Then
-                Set IGenericValue_Convert = GBool.Build(True)
+                Set GenericValue_Convert = GBool.Build(True)
             Else
-                Set IGenericValue_Convert = GBool.Build(False)
+                Set GenericValue_Convert = GBool.Build(False)
             End If
         Case VbVarType.vbString
             If VBA.StrComp(VBA.Trim$(Value), TRUE_STRING, vbTextCompare) = 0 Then
-                Set IGenericValue_Convert = GBool.Build(True)
+                Set GenericValue_Convert = GBool.Build(True)
             Else
-                Set IGenericValue_Convert = GBool.Build(False)
+                Set GenericValue_Convert = GBool.Build(False)
             End If
         Case Else
             If CBool(Value) Then
-                Set IGenericValue_Convert = GBool.Build(True)
+                Set GenericValue_Convert = GBool.Build(True)
             Else
-                Set IGenericValue_Convert = GBool.Build(False)
+                Set GenericValue_Convert = GBool.Build(False)
             End If
     End Select
 
 End Function
 
-Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
+Private Function GenericValue_CompareTo(ByVal Other As GenericValue) As CompareResult
     
     If Other Is Nothing Then _
-        IGenericValue_CompareTo = IsGreater: Exit Function
+        GenericValue_CompareTo = IsGreater: Exit Function
     
     Dim otherBool As GBool: Set otherBool = Other
     
     If myclass.Value = otherBool.Value Then _
-        IGenericValue_CompareTo = IsEqual: Exit Function
+        GenericValue_CompareTo = IsEqual: Exit Function
     
     If myclass.Value = FALSE_VALUE Then _
-        IGenericValue_CompareTo = IsLower: Exit Function
+        GenericValue_CompareTo = IsLower: Exit Function
         
-    IGenericValue_CompareTo = IsGreater
+    GenericValue_CompareTo = IsGreater
      
 End Function
 
-Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
+Private Function GenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
     Dim p As ADODB.Parameter
     Set p = New ADODB.Parameter
@@ -191,12 +192,12 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
     With p
         .Direction = Direction
         .Attributes = adParamNullable '64
-        .Type = IGenericValue_VarType
+        .Type = GenericValue_VarType
         .Name = Name
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = p
+    Set GenericValue_ToSqlParameter = p
     
 End Function
 

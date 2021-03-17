@@ -11,8 +11,7 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Implements IGeneric
-Implements IGenericValue
-Implements IGenericIterator
+Implements GenericValue
 
 #If Win64 Then
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
@@ -39,40 +38,14 @@ Public Enum NumericFormat
     [_Last]
 End Enum
 
-'
-Private Type Range
-    Start As Long
-    Last As Long
-    i As Long
-    current As IGeneric
-End Type
-
 Private Type Member
     Value As Currency
-    Range As Range
 End Type
 Private myclass As Member
 Private Formats() As String
 
-Public Property Get min() As Currency: min = -922337203685477@: End Property
+Public Property Get Min() As Currency: Min = -922337203685477@: End Property
 Public Property Get Max() As Currency: Max = MAXVALUE: End Property
-
-Public Property Get Range(ByVal Start As Long, ByVal Last As Long) As IGenericIterator
-    
-    Dim c As Member
-    
-    If Start > Last Then _
-        Call System.Throw(Me, "Public Property Get Range").InvalidInput("Start > Last")
-        
-    With c.Range
-        .Start = Start
-        .Last = Last
-        .i = .Start - 1
-    End With
-   
-    Set Range = System.CreateInstance(New GNumeric, VarPtr(c), LenB(c))
-
-End Property
 
 Public Property Get HasFraction() As Boolean: HasFraction = Not (Me.Modulus(myclass.Value, 1@) = 0): End Property
 Public Property Get IsDefault() As Boolean: IsDefault = Me Is GNumeric: End Property
@@ -83,21 +56,26 @@ Public Property Get IsNegative() As Boolean: IsNegative = myclass.Value < 0: End
 Public Property Get Fraction() As Currency: Fraction = myclass.Value - Int(myclass.Value): End Property
 Public Property Get IsEven() As Boolean: IsEven = (Me.Modulus(myclass.Value, 2@) = 0): End Property
 
-Public Property Get Default(Optional ByRef Value As Currency = DEFAULT_VALUE) As GNumeric
-
-        If Not (Me Is GNumeric) Then _
-            Set Default = GNumeric.Default(Value): Exit Property
-        
-        myclass.Value = Value
-        Set Default = Me
-
-End Property
-Public Function Build(ByVal Value As Currency) As GNumeric
+Public Static Function Build(ByVal Value As Currency) As GNumeric
 Attribute Build.VB_UserMemId = 0
+    
+    Dim Zero As GNumeric
     
     If Not (Me Is GNumeric) Then _
         Set Build = GNumeric.Build(Value): Exit Function
-        
+    
+    If Value = 0 Then
+    
+        If Zero Is Nothing Then
+            myclass.Value = 0
+            Set Zero = New GNumeric
+            myclass = EmptyStructure
+        End If
+    
+        Set Build = Zero
+       
+    End If
+    
     myclass.Value = Value
     Set Build = New GNumeric: myclass = EmptyStructure
 
@@ -186,7 +164,8 @@ Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.Is
 Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GNumeric: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
-Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = myclass.Value: End Property
+Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = CLng(myclass.Value - (Fix(myclass.Value / MAXLONG) * MAXLONG)): End Property
+
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
 Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GNumeric):  End Property
 
@@ -210,33 +189,41 @@ End Function
 
 Private Function IGeneric_ToString() As String: IGeneric_ToString = myclass.Value: End Function
 
-'IGenericValue
-Private Property Get IGenericValue_VarType() As VbVarType: IGenericValue_VarType = vbCurrency: End Property
-Private Property Get IGenericValue_Size() As Byte: IGenericValue_Size = LenB(myclass.Value): End Property
-Private Property Get IGenericValue_SqlType() As ISqlDataType: IGenericValue_SqlType = ISqlDataType.Numeric_Type: End Property
-Private Property Get IGenericValue_ToValue() As Variant: IGenericValue_ToValue = myclass.Value: End Property
-Private Property Get IGenericValue_Instance() As IGeneric: Set IGenericValue_Instance = Me: End Property
-Private Property Get IGenericValue_Comparer() As IGenericComparer: Set IGenericValue_Comparer = IGenericComparer: End Property
+'GenericValue
+Private Property Get GenericValue_VarType() As VbVarType: GenericValue_VarType = vbCurrency: End Property
+Private Property Get GenericValue_Size() As Byte: GenericValue_Size = LenB(myclass.Value): End Property
+Private Property Get GenericValue_SqlType() As ISqlDataType: GenericValue_SqlType = ISqlDataType.Numeric_Type: End Property
+Private Property Get GenericValue_ToValue() As Variant: GenericValue_ToValue = myclass.Value: End Property
+Private Property Get GenericValue_Instance() As IGeneric: Set GenericValue_Instance = Me: End Property
+Private Property Get GenericValue_Comparer() As IGenericComparer: Set GenericValue_Comparer = IGenericComparer: End Property
 
-Private Function IGenericValue_Convert(ByVal Value As Variant) As IGenericValue: Set IGenericValue_Convert = GNumeric.Build(VBA.IIf(VBA.Isnull(Value), DEFAULT_VALUE, Value)): End Function
-Private Function IGenericValue_CompareTo(ByVal Other As IGenericValue) As CompareResult
+Private Function GenericValue_Convert(ByVal Value As Variant) As GenericValue
+
+    If VBA.IsNull(Value) Then _
+        Set GenericValue_Convert = IGeneric_Default: Exit Function
+        
+    Set GenericValue_Convert = GNumeric.Build(Value)
+    
+End Function
+
+Private Function GenericValue_CompareTo(ByVal Other As GenericValue) As CompareResult
     
     If Other Is Nothing Then _
-        IGenericValue_CompareTo = IsGreater: Exit Function
+        GenericValue_CompareTo = IsGreater: Exit Function
     
     Dim N As GNumeric:  Set N = Other
     Dim i As Currency
     i = N.Value
     
     Select Case True
-        Case myclass.Value > i: IGenericValue_CompareTo = IsGreater
-        Case myclass.Value < i: IGenericValue_CompareTo = IsLower
-        Case Else: IGenericValue_CompareTo = IsEqual
+        Case myclass.Value > i: GenericValue_CompareTo = IsGreater
+        Case myclass.Value < i: GenericValue_CompareTo = IsLower
+        Case Else: GenericValue_CompareTo = IsEqual
     End Select
     
 End Function
 
-Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
+Private Function GenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
     Dim p As ADODB.Parameter
     Set p = New ADODB.Parameter
@@ -246,32 +233,12 @@ Private Function IGenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPa
         .Attributes = adParamNullable '64
         .PRECISION = PRECISION
         .NumericScale = NUMERIC_SCALE
-        .Type = IGenericValue_VarType
+        .Type = GenericValue_VarType
         .Name = Name
         .Value = myclass.Value
     End With
     
-    Set IGenericValue_ToSqlParameter = p
+    Set GenericValue_ToSqlParameter = p
     
 End Function
-
-'IGenericIterator
-Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Range.current: End Property
-Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
-    
-    With myclass.Range
-        If .i = .Last Then _
-            Set .current = Nothing: Set Out = Nothing: Exit Function
-            
-        Set .current = GNumeric(InterlockedIncrement(.i)): Set Out = .current
-        IGenericIterator_HasNext = True
-      
-    End With
-    
-End Function
-
-Private Sub IGenericIterator_Reset()
-    Set myclass.Range.current = Nothing
-    myclass.Range.i = myclass.Range.Start
-End Sub
 

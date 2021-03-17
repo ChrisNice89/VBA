@@ -7,6 +7,26 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  IGeneric
+'*
+'* Purpose: Base Class of all instances in this Framework
+'*
+'*
+'*
+'* Notes:
+'*
+'*
+'*
+'*
+'*
+'*======================================================================================================================
+
 '@Exposed
 Option Explicit
 '@Folder "Base"
@@ -26,7 +46,7 @@ Attribute ToString.VB_UserMemId = 0
 Public Function Clone() As IGeneric: Set Clone = IGeneric: End Function
 
 Private Sub Class_Initialize()
-    If Not Me.IsDefault Then _
+    If Not Me Is IGeneric Then _
         Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 End Sub
 

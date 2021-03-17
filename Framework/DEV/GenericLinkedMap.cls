@@ -15,11 +15,13 @@ Attribute VB_Exposed = True
 '*
 '* Class:  GenericLinkedMap
 '*
-'* Purpose: A GenericLinkedMap represents a data structure that can store objects as key value pairs.
+'* Purpose: A GenericLinkedMap represents a Hash table and linked list implementation with predictable iteration order.
+'*          This implementation differs from a HashMap (pseudo random order determined by hashes calculated from keys)
+'*          in that it maintains a doubly-linked list running through all of its entries.
+'*          This linked list defines the iteration ordering, which is normally the order in which keys were inserted into the map (insertion-order).
+'*
 '*          It is dynamic in nature means the size of the map is growing according to the need.
 '*          You can search for a value in an instance of GenericLinkedMap class using the corresponding key.
-'*          It holds both keys and values (A key cannot be null, but a value can be) in a
-'*          pseudo random order determined by hashes calculated from keys.
 '*          It is also sparse, with unoccupied holes in a pre-allocated array.
 '*          A GenericLinkedMap object consists of buckets that contain the elements of the collection.
 '*          A bucket is a virtual subgroup of elements within the map, which makes searching and retrieving easier and faster than in most collections.
@@ -30,19 +32,23 @@ Attribute VB_Exposed = True
 '*          thus substantially reducing the number of key comparisons required to find an element.
 '*          The load factor of a map determines the maximum ratio of elements to buckets.
 '*          Smaller load factors cause faster average lookup times at the cost of increased memory consumption.
-'*          The default load factor of 0.72 generally provides the best balance between speed and size.
-'*          A different load factor can also be specified when the map is created.
+'*          The default load factor of 0.7 generally provides the best balance between speed and size.
+'*          A different load factor can also be specified (see Private Const LOAD_FACTOR)
 '*          As elements are added to a map, the actual load factor of the map increases.
 '*          When the actual load factor reaches the specified load factor, the number of buckets in the map is automatically
-'*          increased to the smallest prime number that is larger than twice the current number of Hashtable buckets.
+'*          increased to the smallest prime number that is larger than twice the current number of Map buckets.
 '*          If a specified key already exists in the map, setting the Item() property overwrites the old value.
-'*          In contrast, the Add method throws an exception if an element with the specified key already exists.
 '*
-'* Notes:   Key objects must be immutable as long as they are used as keys in the Hashtable.
-'*          A key cannot be null, but a value can be.
+'* Notes:   Key objects must be immutable as long as they are used as keys in the GenericLinkedMap.
+'*          If a key can be null,depends on the current Comparer
 '*          Each key object in the map must provide its own hash function.
-'*          A GenericLinkedMap does maintain the order of stored values.
+'*          A GenericLinkedMap does maintain the order of stored entries.
 '*          This map uses double hashing. There are hashsize buckets in the map, and ech bucket can contain 0 or 1 element.
+'*          Note that insertion order is not affected if a key is re-inserted into the map. (A key k is reinserted into a map m
+'*          if m.Add(k, v,Overwrite:=True) is invoked when m.containsKey(k) would return true immediately prior to the invocation.)
+'*          It provides constant-time performance for the basic operations (add, contains and remove),
+'*          assuming the hash function disperses elements properly among the buckets.
+'*          Performance is likely to be just slightly below that of a ordinary Map, due to the added expense of maintaining the linked list
 '*
 '*======================================================================================================================
 
@@ -64,7 +70,7 @@ Implements IGenericIterator
     Private Declare Function InterlockedDecrement Lib "kernel32" (ByRef lpAddend As Long) As Long
 #End If
 
-Private Const LOAD_FACTOR As Double = 0.7
+Private Const LOAD_FACTOR As Double = 0.72
 Private Const MAXPRIME As Long = 2 ^ 31 - 1
 Private Const HASHPRIME As Long = 101
 Private Const DEFAULT_CAPACITY As Long = 32
@@ -79,11 +85,12 @@ Private Type HashItem
     Size As Long
     Index As Long
     Code As Long
+    Collision As Long
 End Type
 '
 Private Type Iterator
     HasLoaded As Boolean
-    current As IGeneric
+    Current As IGeneric
     Head As GenericBucket
     Bucket As GenericBucket
 End Type
@@ -93,7 +100,6 @@ Private Type Member
     Capacity As Long
     Occupancy As Long
     Count As Long
-    Size As Long
     LoadSize As Long
     Buckets As GenericArray
     Head As GenericBucket
@@ -114,8 +120,9 @@ Public Property Get Item(ByVal Key As IGeneric) As IGeneric
     Set Item = Bucket.Value
 
 End Property
+Public Property Get Capacity() As Long: Capacity = myclass.LoadSize: End Property
 
-Public Function Build(Optional ByVal Capacity As Long, Optional ByVal Comparer As IGenericComparer, Optional Head As GenericBucket) As GenericLinkedMap
+Public Function Build(Optional ByVal Capacity As Long, Optional ByVal Comparer As IGenericComparer) As GenericLinkedMap
     
     Dim newMap As Member
     Dim RawSize As Long
@@ -136,7 +143,6 @@ Public Function Build(Optional ByVal Capacity As Long, Optional ByVal Comparer A
     Set newMap.Head = New GenericBucket
     Set newMap.Head.Before = newMap.Head
     Set newMap.Head.After = newMap.Head
-    Set Head = newMap.Head
     
     If (Capacity > 0) Then _
         Call Initialize(newMap, (Capacity / LOAD_FACTOR))
@@ -224,36 +230,33 @@ Public Function Add( _
                     ByVal Value As IGeneric, _
                     Optional ByVal Overwrite As Boolean) As Boolean
 
-    Dim Try As Long
     Dim Hash As HashItem
     Dim Bucket As GenericBucket, State As Byte
     Dim EmptyBucket As GenericBucket
    
-    If (Key Is Nothing) Then _
-        Call System.Throw(Me, "Public Function Add").IsNothing("(Key Is Nothing)")
-        
     With myclass
     
         If (.Count >= .LoadSize) Then
                                                                                                                       
-            If .Size > 0 Then
-                Call Rehash(ExpandPrime(.Size), False)
+            If .Buckets.Length > 0 Then
+                Call Resize(ExpandPrime(.Buckets.Length), ForceNewHashing:=False)
             Else
                 Call Initialize(myclass, DEFAULT_CAPACITY)
             End If
         
         ElseIf (.Occupancy > .LoadSize) Then
-            Call Rehash(getPrime(.Size + 1), False)
+            Call Resize(.Buckets.Length, ForceNewHashing:=True)
         
         End If
-        
-        Call LoadHash(Hash, Key.HashValue, .Size) 'TODO Should we?! myclass.Comparer.GetHashCode(Key)
+    End With
     
+    With myclass.Buckets 'Dont Call Resize inside loop! Will cause Bugs!
+        
+        Call LoadHash(Hash, myclass.Comparer.GetHashCode(Key), .Length)
+        
         Do
-            
-            State = IS_EMPTY '!
-            Set Bucket = .Buckets.ElementAt(Hash.Index)
-            
+           
+            Set Bucket = .ElementAt(Hash.Index)
             If Bucket Is Nothing = False Then
                 State = Bucket.State
                                                     
@@ -262,12 +265,12 @@ Public Function Add( _
                         Set EmptyBucket = Bucket
                 
             End If
-            
+
             If (State = IS_EMPTY) Then
             
                 If EmptyBucket Is Nothing Then
                     Set EmptyBucket = New GenericBucket
-                    Set myclass.Buckets.ElementAt(Hash.Index) = EmptyBucket
+                    Set .ElementAt(Hash.Index) = EmptyBucket
                 End If
                 
                 With EmptyBucket
@@ -290,7 +293,7 @@ Public Function Add( _
             End If
             
             If Bucket.HashCode = Hash.Code Then
-                If .Comparer.Equals(Bucket.Key, Key) Then
+                If myclass.Comparer.Equals(Bucket.Key, Key) Then
                     If (Overwrite) Then _
                         Set Bucket.Value = Value
                     Exit Function
@@ -300,14 +303,16 @@ Public Function Add( _
             If (EmptyBucket Is Nothing) Then _
                 If (Not (State And HAS_COLLISION) = HAS_COLLISION) Then _
                     Bucket.State = (HAS_COLLISION Or State): Call InterlockedIncrement(myclass.Occupancy)
-
-            Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
-
-        Loop While (InterlockedIncrement(Try) < Hash.Size)
+            
+                
+            State = IS_EMPTY '!
+            
+            Hash.Index = (Hash.Index + Hash.Incr) Mod Hash.Size
+        Loop While InterlockedIncrement(Hash.Collision) < Hash.Size 'DoubleHashing(Hash)
     
     End With
     
-    Call System.Throw(Me, "Public Function Add").InvalidOperation("Can't add :: [" & Key & ";" & Value & "]")
+    Call System.Throw(Me, "Public Function Add").InvalidOperation("Can't add :: " & GenericPair.Build(Key, Value).Instance.ToString)
     
 End Function
 
@@ -382,26 +387,28 @@ End Function
 
 Private Sub Initialize(ByRef Struct As Member, ByVal Capacity As Long)
     
+    Dim Size As Long
+    
     If (Capacity > MAXPRIME) Then _
         Call System.Throw(Me, "private Sub Initialize").Overflow("Capacity > MAXPRIME")
     
-    Struct.Size = getPrime(Capacity)
-    Struct.LoadSize = Int(LOAD_FACTOR * Struct.Size)
+    Size = getPrime(Capacity)
+    Struct.LoadSize = Int(LOAD_FACTOR * Size)
                                       
-    If Not (Struct.LoadSize < Struct.Size) Then _
+    If Not (Struct.LoadSize < Size) Then _
         Call System.Throw(Me, "Build").InvalidInput("Based on the current algorithm, loadSize must be less than Size.")
     
-    Set Struct.Buckets = GenericArray.Build(Struct.Size)
+    Set Struct.Buckets = GenericArray.Build(Size)
                                                                                           
 End Sub
 
-Private Static Function getPrime(Optional ByVal min As Long = 0) As Long
+Private Static Function getPrime(Optional ByVal Min As Long = 0) As Long
     
     Dim p As Long
     Dim i As Long
     Dim Primes() As Long
     
-    If min < 0 Then _
+    If Min < 0 Then _
         Call System.Throw(Me, "getPrime").InvalidInput("Min < 0")
     
     If i = 0 Then
@@ -419,18 +426,18 @@ Private Static Function getPrime(Optional ByVal min As Long = 0) As Long
         Next
     End If
     
-    For p = LBound(Primes) To UBound(Primes) Step 2
-        If Primes(p) >= min Then _
+    For p = LBound(Primes) To UBound(Primes)
+        If Primes(p) >= Min Then _
             getPrime = Primes(p): Exit Function
     Next
     
-    For p = min To MAXPRIME
+    For p = Min To MAXPRIME
         If IsPrime(p) Then _
             If (((p - 1) Mod HASHPRIME) = 0 = False) Then _
                 getPrime = p: Exit Function
     Next
    
-    getPrime = min
+    getPrime = Min
     
 End Function
 
@@ -463,75 +470,94 @@ Private Function ExpandPrime(ByVal oldSize As Long) As Long
     
 End Function
 
-Private Sub LoadHash(ByRef h As HashItem, ByVal HashCode As Long, ByVal Size As Long)
+Private Sub LoadHash(ByRef H As HashItem, ByVal Code As Long, ByVal Size As Long)
     
-    With h
-        .Code = HashCode
+    With H
+        .Collision = 0
+        .Code = Code
         .Size = Size
-        .Index = Modulo(.Code, .Size)
-        .Incr = 1 + Modulo((CDbl(.Code) * HASHPRIME), (.Size - 1))
+        .Index = .Code Mod .Size
+        .Incr = 1 + Modulo((CDbl(.Code) * HASHPRIME), (.Size - 1)) 'Insure 0 < incr < size AND HASHPRIME is not a multiple of size
+'        .Incr = 1 + ((.Code) Mod (.Size - 1)) 'This function would work as well!
     End With
     
 End Sub
 
-Private Sub Rehash(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
-
-    Dim NewBuckets As GenericArray
-    Set NewBuckets = GenericArray.Build(Size)
+Private Sub Resize(ByVal Size As Long, ByVal ForceNewHashing As Boolean)
    
     Dim oldBucket As GenericBucket
     Dim newBucket As GenericBucket
     Dim Hash As HashItem
    
-    myclass.Occupancy = 0
-    Set oldBucket = myclass.Head.After
-        
-    Do While oldBucket Is myclass.Head = False
-        
-        If Not ForceNewHashing Then
-            Call LoadHash(Hash, oldBucket.HashCode, Size)
-        Else
-            Call LoadHash(Hash, oldBucket.Key.HashValue, Size)
-        End If
-            
-        oldBucket.State = HAS_ENTRY
-            
-        Do
-            Set newBucket = NewBuckets.ElementAt(Hash.Index)
-                
-            If newBucket Is Nothing Then _
-                Set NewBuckets.ElementAt(Hash.Index) = oldBucket: Exit Do
-                
-            If Not (newBucket.State And HAS_COLLISION) = HAS_COLLISION Then _
-                newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(myclass.Occupancy)
-                
-            Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
-        Loop
-            
-         Set oldBucket = oldBucket.After
-            
-    Loop
-                                                                                                          
-    Set myclass.Buckets = NewBuckets
+    If (Size < myclass.Count) Then _
+        Call System.Throw(Me, "Private Sub Resize").InvalidInput("(Size < myclass.Count)")
+    
+    If ForceNewHashing Then _
+        Call Rehash
+   
+    'Clear cache and allocate new
+    Set myclass.Buckets = GenericArray.Build(Size)
     myclass.LoadSize = Int(LOAD_FACTOR * Size)
-    myclass.Size = Size
+    myclass.Occupancy = 0 '!
+    
+    With myclass.Buckets
+    
+        Set oldBucket = myclass.Head.After
+        Do While oldBucket Is myclass.Head = False
+            
+            Call LoadHash(Hash, oldBucket.HashCode, Size)
+    
+            oldBucket.State = HAS_ENTRY
+                
+            Do
+                Set newBucket = .ElementAt(Hash.Index)
+                    
+                If newBucket Is Nothing Then _
+                    Set .ElementAt(Hash.Index) = oldBucket: Exit Do
+                    
+                If Not (newBucket.State And HAS_COLLISION) = HAS_COLLISION Then _
+                    newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(myclass.Occupancy)
+                    
+                Hash.Index = (Hash.Index + Hash.Incr) Mod Hash.Size
+        
+            Loop
+                
+             Set oldBucket = oldBucket.After
+                
+        Loop
+        
+    End With
+                                                                                                        
+End Sub
+
+Private Sub Rehash()
+   
+    Dim Bucket As GenericBucket
+    
+    If myclass.Head Is Nothing Then _
+        Exit Sub
+    Set Bucket = myclass.Head.After
+    
+    With myclass.Comparer
+        Do While Bucket Is myclass.Head = False
+            Bucket.HashCode = .GetHashCode(Bucket.Key)
+            Set Bucket = Bucket.After
+        Loop
+    End With
     
 End Sub
 
 Private Function FindBucket(ByVal Key As IGeneric) As GenericBucket
 
-    Dim Try As Long
     Dim Hash As HashItem
     Dim Bucket As GenericBucket
     
-    If (Key Is Nothing) Then _
-        Call System.Throw(Me, "Private Function FindBucket").IsNothing("(Key Is Nothing)")
-
-    Call LoadHash(Hash, Key.HashValue, myclass.Size) 'TODO Should we?! myclass.Comparer.GetHashCode(Key)
-    
     With myclass.Buckets
+    
+        Call LoadHash(Hash, myclass.Comparer.GetHashCode(Key), .Length)
+        
         Do
-            
+   
             Set Bucket = .ElementAt(Hash.Index)
             
             If (Bucket Is Nothing) Then _
@@ -540,37 +566,30 @@ Private Function FindBucket(ByVal Key As IGeneric) As GenericBucket
             With Bucket
                 If .HashCode = Hash.Code Then _
                     If myclass.Comparer.Equals(.Key, Key) Then _
-                        FindBucket = Bucket: Exit Function
+                        Set FindBucket = Bucket: Exit Function
         
                 If (Not (.State And HAS_COLLISION) = HAS_COLLISION) Then _
                     Exit Function
             
             End With
             
-            If ((InterlockedIncrement(Try)) > Hash.Size) Then _
-                Exit Function
-    
-            Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
-            
-        Loop
+            Hash.Index = (Hash.Index + Hash.Incr) Mod Hash.Size
+        Loop While InterlockedIncrement(Hash.Collision) < Hash.Size
     End With
   
 End Function
 
 Private Function FindEntry(ByVal Key As IGeneric) As Long
 
-    Dim Try As Long
     Dim Hash As HashItem
     Dim Bucket As GenericBucket
     
-    If (Key Is Nothing) Then _
-        Call System.Throw(Me, "Private Function FindEntry").IsNothing("(Key Is Nothing)")
-
-    Call LoadHash(Hash, Key.HashValue, myclass.Size) 'TODO Should we?! myclass.Comparer.GetHashCode(Key)
-    
     With myclass.Buckets
+        
+        Call LoadHash(Hash, myclass.Comparer.GetHashCode(Key), .Length)
+
         Do
-            
+
             Set Bucket = .ElementAt(Hash.Index)
             
             If (Bucket Is Nothing) Then _
@@ -589,12 +608,8 @@ Private Function FindEntry(ByVal Key As IGeneric) As Long
             
             End With
             
-            If ((InterlockedIncrement(Try)) > Hash.Size) Then _
-                FindEntry = -1: Exit Function
-    
-            Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
-            
-        Loop
+            Hash.Index = (Hash.Index + Hash.Incr) Mod Hash.Size
+        Loop While InterlockedIncrement(Hash.Collision) < Hash.Size
     End With
     
     FindEntry = -1
@@ -613,28 +628,34 @@ Private Sub LoadIterator( _
     
 End Sub
 
-Private Sub DisposeLinkedBuckets(ByVal Head As GenericBucket)
+Private Sub DisposeLinkedBuckets()
     
-    Dim Bucket As GenericBucket
+    Dim currentBucket As GenericBucket
     Dim oldBucket As GenericBucket
 
-    If Head Is Nothing Then _
+    If myclass.Head Is Nothing Then _
         Exit Sub
     
-    Set Bucket = Head.After
+    Set currentBucket = myclass.Head.After
     
-    Do While Bucket Is Head = False
-    Set oldBucket = Bucket
-        Set Bucket = oldBucket.After
-        Call oldBucket.Invalidate
+    Do While currentBucket Is myclass.Head = False
+        Set oldBucket = currentBucket
+        With oldBucket
+            Set currentBucket = .After
+            Set .After = Nothing
+            Set .Before = Nothing
+        End With
     Loop
     
-    Call Head.Invalidate
+    With myclass.Head
+        Set .After = Nothing
+        Set .Before = Nothing
+    End With
     
 End Sub
 
 Private Sub Class_Terminate()
-    Call DisposeLinkedBuckets(myclass.Head)
+    Call DisposeLinkedBuckets
     myclass = EmptyStructure
 End Sub
 
@@ -666,7 +687,7 @@ Private Function IGeneric_ToString() As String
     With myclass
         IGeneric_ToString = _
                             "Class: " & TypeName$(Me) & vbNewLine & _
-                            "Size: " & .Size & vbNewLine & _
+                            "Size: " & .Buckets.Length & vbNewLine & _
                             "LoadFactor: " & LOAD_FACTOR & vbNewLine & _
                             "LoadSize: " & .LoadSize & vbNewLine & _
                             "Elements: " & .Count & vbNewLine & _
@@ -710,6 +731,24 @@ Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean
         
 End Function
 
+Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericCollection) As Boolean
+
+    Dim Bucket As GenericBucket
+    Dim Pair As GenericPair
+    
+'    If Not Item Is Nothing Then
+'        If Not TypeOf Item Is GenericPair Then _
+'            Exit Function
+'        Set Pair = Item
+'
+'        Set Bucket = FindBucket(Key:=Pair.Key)
+'
+'        If Not Bucket Is Nothing Then _
+'            IGenericCollection_Contains = IGenericComparer.Equals(Bucket.Value, Pair.Value)
+'    End If
+
+End Function
+
 Private Sub IGenericCollection_CopyTo(ByVal GArray As GenericArray, ByVal ArrayIndex As Long)
 
     Dim Bucket As GenericBucket
@@ -733,12 +772,17 @@ End Sub
 
 Private Sub IGenericCollection_Clear()
 
-    Call DisposeLinkedBuckets(myclass.Head)
-    Set myclass.Head.Before = myclass.Head
-    Set myclass.Head.After = myclass.Head
+    Call DisposeLinkedBuckets
+     
+    With myclass.Head
+        Set .Before = myclass.Head
+        Set .After = myclass.Head
+    End With
+    
     'dont call myclass.Buckets.clear '->Reuse Buckets
     myclass.Count = 0
     myclass.Occupancy = 0
+    
 End Sub
 
 Private Function IGenericCollection_ToArray() As GenericArray
@@ -754,39 +798,41 @@ End Function
 
 Private Function IGenericCollection_Copy() As IGenericCollection
     
-    Dim c As Member
+    Dim C As Member
     Dim oldBucket As GenericBucket
     Dim newBucket As GenericBucket
     Dim Hash As HashItem
     
-    With c
+    With C
         Set .Comparer = myclass.Comparer
-        .Size = myclass.Size
-        .Occupancy = 0
         .LoadSize = myclass.LoadSize
         .Count = myclass.Count
         
-        Set .Buckets = GenericArray.Build(.Size)
+        Set .Buckets = GenericArray.Build(myclass.Buckets.Length)
         Set .Head = New GenericBucket
         Set .Head.Before = .Head
         Set .Head.After = .Head
         
+    End With
+    
+    With C.Buckets
+    
+        Hash.Size = .Length
         Set oldBucket = myclass.Head.After
-        
         Do While oldBucket Is myclass.Head = False
-            
-            Call LoadHash(Hash, oldBucket.HashCode, .Size)
+
+            Call LoadHash(Hash, oldBucket.HashCode, Hash.Size)
             
             Do
-                Set newBucket = .Buckets.ElementAt(Hash.Index)
+                Set newBucket = .ElementAt(Hash.Index)
                 
                 If newBucket Is Nothing Then
                     Set newBucket = New GenericBucket
-                    Set .Buckets.ElementAt(Hash.Index) = newBucket
+                    Set .ElementAt(Hash.Index) = newBucket
                     
                     With newBucket
-                        Set .After = c.Head
-                        Set .Before = c.Head.Before
+                        Set .After = C.Head
+                        Set .Before = C.Head.Before
                         Set .Before.After = newBucket
                         Set .After.Before = newBucket
                         .State = (HAS_ENTRY) '!
@@ -798,9 +844,9 @@ Private Function IGenericCollection_Copy() As IGenericCollection
                 End If
                 
                 If Not (newBucket.State And HAS_COLLISION) = HAS_COLLISION Then _
-                    newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(myclass.Occupancy)
+                    newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(C.Occupancy)
                 
-                Hash.Index = Modulo(Hash.Index + Hash.Incr, Hash.Size)
+                Hash.Index = (Hash.Index + Hash.Incr) Mod Hash.Size
             Loop
             
             Set oldBucket = oldBucket.After
@@ -808,27 +854,27 @@ Private Function IGenericCollection_Copy() As IGenericCollection
         Loop
     End With
     
-    Set IGenericCollection_Copy = System.CreateInstance(New GenericLinkedMap, VarPtr(c), LenB(c))
+    Set IGenericCollection_Copy = System.CreateInstance(New GenericLinkedMap, VarPtr(C), LenB(C))
    
 End Function
 
 Private Function IGenericCollection_Iterator() As IGenericIterator
     
-    Dim c As Member
+    Dim C As Member
     
-    Call LoadIterator(c.Iterator, myclass.Head)
-    Set IGenericCollection_Iterator = System.CreateInstance(New GenericLinkedMap, VarPtr(c), LenB(c))
+    Call LoadIterator(C.Iterator, myclass.Head)
+    Set IGenericCollection_Iterator = System.CreateInstance(New GenericLinkedMap, VarPtr(C), LenB(C))
     
 End Function
 
 'IGenericIterator
-Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.current: End Property
-Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
+Private Property Get IGenericIterator_Current() As IGeneric: Set IGenericIterator_Current = myclass.Iterator.Current: End Property
+Private Function IGenericIterator_HasNext(Optional ByRef Out As IGeneric) As Boolean
   
     With myclass.Iterator
         If (.Bucket Is .Head = False) Then
-            Set .current = .Bucket.ToPair
-            Set Out = .current
+            Set .Current = .Bucket.ToPair
+            Set Out = .Current
             Set .Bucket = .Bucket.After
             IGenericIterator_HasNext = True
             Exit Function
@@ -837,8 +883,7 @@ Private Function IGenericIterator_HasNext(ByRef Out As IGeneric) As Boolean
         If .HasLoaded = False Then _
             Call System.Throw(Me, "Private Function IGenericIterator_HasNext").InvalidIterator
         
-        Set .Bucket = Nothing
-        Set .current = Nothing
+        Set .Current = Nothing
 
     End With
     

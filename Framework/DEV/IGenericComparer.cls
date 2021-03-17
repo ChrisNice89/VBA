@@ -7,8 +7,30 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  IGenericComparer
+'*
+'* Purpose: GenericComparer & GenericEquality
+'*          Used as default class if no comparer is specified
+'*
+'*
+'* Notes:   GetHashCode should return CLng(0) for Nothing
+'*
+'*
+'*
+'*
+'*
+'*======================================================================================================================
+
 '@Folder "Base"
 Option Explicit
+
+Implements IGeneric
 
 Public Enum SortOrder
     descending = -1
@@ -22,7 +44,11 @@ Public Enum CompareResult
 End Enum
 
 'IGenericCompare Default comparer
-Public Function GetHashCode(ByVal Obj As IGeneric) As Long: GetHashCode = Obj.HashValue: End Function
+Public Function GetHashCode(ByVal Obj As IGeneric) As Long
+    If (Obj Is Nothing) = False Then _
+        GetHashCode = Obj.HashValue
+End Function
+
 Public Function Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult
     
     If A Is Nothing Then _
@@ -31,24 +57,21 @@ Public Function Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResu
     If B Is Nothing Then _
         Compare = CompareResult.IsGreater: Exit Function
         
-    Dim x As IGenericValue, y As IGenericValue
+    Dim Value As GenericValue
     'try cast
-    Set x = A: Set y = B
-    Compare = x.CompareTo(y): Exit Function
+    Set Value = A
+    Compare = Value.CompareTo(B)
 
 End Function
-'Dont change equality compare! See IGenericCollection -> Contains
+
 Public Function Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
-    
-    If A Is Nothing Then _
-        Equals = B Is Nothing: Exit Function
     
     If A Is B Then _
         Equals = True: Exit Function
-        
-    If B Is Nothing Then _
-        Equals = False: Exit Function
     
+    If A Is Nothing Then _
+        Equals = False: Exit Function 'Or B is nothing
+   
     Equals = A.Equals(B)
     
 End Function
@@ -58,3 +81,15 @@ Private Sub Class_Initialize()
         Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 End Sub
 
+'IGeneric for comparer
+Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
+Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me: End Function
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = IGenericComparer: End Property
+Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean: IGeneric_Equals = Other Is Me: End Function
+Private Property Get IGeneric_HashValue() As Long: IGeneric_HashValue = ObjPtr(Me): End Property
+Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me Is IGenericComparer: End Property
+Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = TypeOf Other Is IGenericComparer: End Property
+Private Function IGeneric_ToString() As String: IGeneric_ToString = "Class: " & TypeName$(Me) & " :: Default": End Function
+Private Property Get IGeneric_VirtualPointer() As Long: End Property
+Private Property Get IGeneric_VirtualSize() As Long:: End Property

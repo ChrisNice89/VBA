@@ -7,8 +7,27 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-'@Folder("<T>Class")
+'*======================================================================================================================
+'*
+'*          Copyright (c) Christoph Nitz.  All rights reserved.
+'*
+'*======================================================================================================================
+'*
+'* Class:  GenericPair
+'*
+'* Purpose:
+'*
+'*
+'*
+'* Notes:
+'*
+'*
+'*
+'*
+'*
+'*======================================================================================================================
 
+'@Folder("<T>Class")
 Option Explicit
 '@PredeclaredId
 
@@ -21,6 +40,7 @@ Private Type Member
 End Type
 Private myclass As Member
 
+Public Property Get Instance() As IGeneric: Set Instance = Me: End Property
 Public Property Get Key() As IGeneric: Set Key = myclass.Key: End Property
 Public Property Get Value() As IGeneric: Set Value = myclass.Value: End Property
 
@@ -116,6 +136,10 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
         IGeneric_Equals = False: Exit Function
         
     Set otherPair = Other
+    
+    If myclass.Key Is otherPair.Key Then _
+        If myclass.Value Is otherPair.Value Then _
+            IGeneric_Equals = True: Exit Function
     
     If myclass.Key Is Nothing = False Then
         If myclass.Key.Equals(otherPair.Key) = False Then _
