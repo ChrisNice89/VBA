@@ -7,10 +7,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
-
-'*===========================================================================================
+'*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
 '*
@@ -28,6 +25,10 @@ Option Explicit
 '*
 '*======================================================================================================================
 
+'@Exposed
+Option Explicit
+'@Folder "<T>Enumerable"
+
 Public Property Get Current() As IGeneric: End Property
 Public Function HasNext(Optional ByRef Out As IGeneric) As Boolean: End Function
 Attribute HasNext.VB_UserMemId = 0
@@ -37,3 +38,4 @@ Private Sub Class_Initialize()
     If Not Me Is IGenericIterator Then _
         Call System.Throw(Me, "Private Sub Class_Initialize").Instantiation
 End Sub
+

@@ -7,9 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
 Option Explicit
-
+'@Exposed
+'@PredeclaredId
+'@Folder "Base"
 Implements IGeneric
 
 Public Event Failed(ByRef raiseGlobal As Boolean)

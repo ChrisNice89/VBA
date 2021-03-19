@@ -7,8 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
 '*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
@@ -28,6 +26,10 @@ Option Explicit
 '*
 '*
 '*======================================================================================================================
+
+'@Exposed
+Option Explicit
+'@Folder "Base"
 
 Public Property Get ClassName() As String: ClassName = TypeName$(Me): End Property
 Public Property Get IsDefault() As Boolean: IsDefault = True: End Property

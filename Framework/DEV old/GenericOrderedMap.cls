@@ -7,9 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
-
 '*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
@@ -18,36 +15,16 @@ Option Explicit
 '*
 '* Class:  GenericOrderedMap
 '*
-'* Purpose: GenericOrderedMap represents a collection of key/value pairs that are accessible by the key or index and offers GenericMap syntax.
-'*          In order to fulfill all of the operations, we require two copies of every TKey and TValue entry - one set in the list,
-'*          and the other in the dictionary. This is required. There is no other way to efficiently provide all of the operations
-'*          without mirroring all of the data between both containers. The trade off is more speed at the cost of more memory.
+'* Purpose: OrderedMap offers GenericLinkedMap syntax with ordering.  Objects
+'*          added or inserted in an OrderedLookupTable must have both a key and an index, and
+'*          can be retrieved by either. A key cannot be null, but a value can be, if the value type is a reference type.
 '*
-'*          It is implemented by storing elements in two separate internal structures: a Hashtable,
-'*          which stores the key/value pairs like a normal Map and an GenericList which stores pair structures containing the key/value pairs.
-'*
-'*          This implementation of an ordered map is very good at lookup operations:
-'*          the list allows O(1) lookups by index, and the map allows O(1) lookups by key.
-'*          However, the necessity of keeping the list synchronized with the map means that insert/delete operations have the performance disadvantage
-'*          of performing those operations on an array (O(n) at worst).
-'*          There is also, of course, the extra memory requirement of storing both data structures.
-'*          Because of these disadvantages, GenericOrderedMap should only be used when insert/delete operations will be minimal
-'*          and there is a need to efficiently access elements by index and/or key.
-'*
-'*          Generally, manipulating the GenericOrderedMap by index is faster than manipulating it by key;
-'*          even if the algorithmic complexity is the same, the actual running time will be less when using an index.
-'*          This is because every modification to an OrderedDictionary requires accessing both the list and the map and converting an index to its
-'*          corresponding key is a O(1) operation (it's just a lookup in the list),
-'*          but converting a key to its corresponding index is a O(n) operation, since it requires a linear search through the list to find the key.
-'*          Put another way, the list is aware of the dictionary's identifier (the key), but the map is not aware of the list's identifier (the index).
-'*          Therefore, you should try to manipulate the GenericOrderedMap  by index where possible.
-'*
-'* Notes:   The elements of an GenericOrderedMap are not sorted by the key.
-'*          Elements can be accessed either by the key or by the index.
-'*          Each element is a key/value pair stored in a GenericPair object.
-'*          Offers IGenericMap syntax
 '*
 '*======================================================================================================================
+
+'@Exposed
+Option Explicit
+'@Folder "<T>Enumerable"
 
 Implements IGeneric
 Implements IGenericMap
@@ -297,3 +274,4 @@ Private Function IGenericCollection_Copy() As IGenericCollection
     Set IGenericCollection_Copy = System.CreateInstance(New GenericOrderedMap, VarPtr(C), LenB(C))
     
 End Function
+

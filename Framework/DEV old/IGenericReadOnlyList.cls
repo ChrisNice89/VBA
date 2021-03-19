@@ -7,9 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
-
 '*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
@@ -30,6 +27,9 @@ Option Explicit
 '*
 '*======================================================================================================================
 
+'@Folder("<T>Enumerable")
+Option Explicit
+
 Public Property Get Elements() As IGenericCollection: End Property
 Public Property Get Last() As Long: End Property
 Public Property Get First() As Long: End Property
@@ -42,4 +42,3 @@ Private Sub Class_Initialize()
     If Not Me Is IGenericReadOnlyList Then _
         Call System.Throw(Me, "Private Sub Class_Initialize()").Instantiation
 End Sub
-

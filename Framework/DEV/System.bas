@@ -1,7 +1,7 @@
 Attribute VB_Name = "System"
 Option Compare Database
 
-Public Const DEFAULT_SORTORDER As Integer = 1 'SortOrder.Ascending
+'Public Const DEFAULT_SORTORDER As Integer = 1 'SortOrder.Ascending
 Public Const MAXVALUE As Double = 2 ^ 31
 Public Const MAX_INT32 As Long = &H7FFFFFFF
 Public Const NullPointer As Long = 0
@@ -51,9 +51,9 @@ Public Function HashValue(ByRef Ascii() As Byte) As Long
     Dim i As Long
     
     Dim Length As Long: Length = UBound(Ascii) + 1
-    Dim N As Long
+    Dim n As Long
     
-    For N = (Length / 2) To 1 Step -1
+    For n = (Length / 2) To 1 Step -1
         H = H + Ascii(i)
         H = System.X0R(System.X0R(LEFTSHIFT(H, 16), System.LEFTSHIFT(Ascii(i + 1), 11)), H)
         H = H + System.RIGHTSHIFT(H, 11)

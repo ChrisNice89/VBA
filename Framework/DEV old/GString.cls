@@ -2,12 +2,12 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "Gstring"
+Attribute VB_Name = "GString"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
+'@Folder "<T>Class"
 Option Explicit
 
 Implements IGeneric
@@ -23,9 +23,9 @@ Implements IGenericIterator
     Private Declare PtrSafe Function InterlockedIncrement Lib "kernel32" (lpAddend As Long) As Long
     Private Declare PtrSafe Function InterlockedDecrement Lib "kernel32" (lpAddend As Long) As Long
 #Else
-    'Groß- und Kleinschreibung spielt keine Rolle
+    'Gro�- und Kleinschreibung spielt keine Rolle
     Private Declare Function lstrcmpi Lib "kernel32.dll" Alias "lstrcmpiA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
-    'Groß- und Kleinschreibung wird beachtet
+    'Gro�- und Kleinschreibung wird beachtet
     Private Declare Function lstrcmp Lib "kernel32.dll" Alias "lstrcmpA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
     Private Declare Function CompareString Lib "kernel32.dll" Alias "CompareStringA" (ByVal Locale As Long, ByVal dwCmpFlags As Long, ByVal lpString1 As String, ByVal cchCount1 As Long, ByVal lpString2 As String, ByVal cchCount2 As Long) As Long
     Private Declare Function InterlockedIncrement Lib "kernel32" (ByRef lpAddend As Long) As Long
@@ -36,18 +36,18 @@ Implements IGenericIterator
 '        SORT_STRINGSORT, .List(i), Len(.List(i)), .List(j), Len(.List(j)))
 '        If Retval = CSTR_LESS_THAN Or Retval = CSTR_EQUAL Then
 '
-' CompareString RÃ¼ckgabe-Konstanten
+' CompareString Rückgabe-Konstanten
 Private Const CSTR_LESS_THAN = 1 ' Kleiner als
 Private Const CSTR_EQUAL = 2 ' Gleich
-Private Const CSTR_GREATER_THAN = 3 ' GrÃ¶ÃŸer als
+Private Const CSTR_GREATER_THAN = 3 ' Größer als
  
 ' CompareString Locale-Konstanten
 Private Const LOCALE_SYSTEM_DEFAULT = &H400 ' Standard-Systemsprache
 Private Const LOCALE_USER_DEFAULT = &H800 ' Standard-Benutzersprache
  
 ' CompareString dwCmpFlags-Konstanten
-Private Const NORM_IGNORECASE = &H1 ' GroÃŸ und Kleinschreibung nicht beachten
-Private Const NORM_IGNOREKANATYPE = &H10000 ' FÃ¼r Japanischen Zeichensatz.
+Private Const NORM_IGNORECASE = &H1 ' Groß und Kleinschreibung nicht beachten
+Private Const NORM_IGNOREKANATYPE = &H10000 ' Für Japanischen Zeichensatz.
 ' Macht keine Unterschiede zwischen Hiragana und Katakana
 Private Const NORM_IGNORENONSPACE = &H2 ' Ignoriert Leerzeichen
 Private Const NORM_IGNORESYMBOLS = &H4 ' Ignoriert Sonderzeichen
@@ -74,7 +74,7 @@ Public Enum StringFormat
 End Enum
 
 Private Type Iterator
-    Current As Gstring
+    Current As GString
     Index As Long
 End Type
 
@@ -88,21 +88,21 @@ Private myclass As Member
 
 Public Property Get Chars() As IGenericCollection: Set Chars = Me: End Property
 Public Property Get Pointer() As LongPtr: Pointer = StrPtr(myclass.Value): End Property
-Public Property Get IsDefault() As Boolean: IsDefault = Me Is Gstring: End Property
+Public Property Get IsDefault() As Boolean: IsDefault = Me Is GString: End Property
 Public Property Get IsNumeric() As Boolean: IsNumeric = VBA.IsNumeric(myclass.Value): End Property
 Public Property Get Length() As Long: Length = myclass.Length: End Property
-Public Property Get LastChar() As Gstring: Set LastChar = Me.GetAt(myclass.Length - 1): End Property
+Public Property Get LastChar() As GString: Set LastChar = Me.GetAt(myclass.Length - 1): End Property
 Public Property Get IsNullOrEmpty() As Boolean: myclass.Length = 0: End Property
 Public Property Get Value() As String: Value = myclass.Value: End Property
 
-Public Function Build(ByRef Value As String) As Gstring
+Public Function Build(ByRef Value As String) As GString
 Attribute Build.VB_UserMemId = 0
     
-    If Not (Me Is Gstring) Then _
-        Set Build = Gstring.Build(Value): Exit Function
+    If Not (Me Is GString) Then _
+        Set Build = GString.Build(Value): Exit Function
 
     If Value = DEFAULT_VALUE Then _
-        Set Build = Gstring: Exit Function
+        Set Build = GString: Exit Function
 
     myclass.Length = Len(Value)
 
@@ -112,7 +112,7 @@ Attribute Build.VB_UserMemId = 0
         If Chars Is Nothing Then _
             Set Chars = GenericArray.Build(2 ^ 16)
 
-        Dim Char As Gstring
+        Dim Char As GString
         Dim Code As Long
 
         Code = AscW(Value)
@@ -120,7 +120,7 @@ Attribute Build.VB_UserMemId = 0
 
         If Char Is Nothing Then
             myclass.Value = ChrW$(Code)
-            Set Char = New Gstring
+            Set Char = New GString
             Set Chars.ElementAt(Code) = Char
             myclass = EmptyStructure
         End If
@@ -130,18 +130,18 @@ Attribute Build.VB_UserMemId = 0
     End If
         
     myclass.Value = Value
-    Set Build = New Gstring
+    Set Build = New GString
     myclass = EmptyStructure
   
 End Function
 
 Private Sub Class_Initialize()
-    With Gstring
+    With GString
         myclass.Value = .Value: myclass.Length = .Length
     End With
 End Sub
 
-Public Function GetAt(ByVal Index As Long) As Gstring: Set GetAt = Gstring.Build(VBA.Mid$(myclass.Value, Index + 1, 1)): End Function
+Public Function GetAt(ByVal Index As Long) As GString: Set GetAt = GString.Build(VBA.Mid$(myclass.Value, Index + 1, 1)): End Function
 
 Public Function ToFormat(ByVal Format As StringFormat) As String
     
@@ -153,9 +153,9 @@ Public Function ToFormat(ByVal Format As StringFormat) As String
     End Select
  
 End Function
-Public Function ToLower() As Gstring: Set ToLower = Gstring.Build(LCase(myclass.Value)): End Function
-Public Function ToUpper() As Gstring: Set ToUpper = Gstring.Build(UCase(myclass.Value)): End Function
-Public Function Replace(ByVal Find As String, ReplaceWith As String) As Gstring: Set Replace = Gstring.Build(VBA.Replace$(myclass.Value, Find, ReplaceWith)): End Function
+Public Function ToLower() As GString: Set ToLower = GString.Build(LCase(myclass.Value)): End Function
+Public Function ToUpper() As GString: Set ToUpper = GString.Build(UCase(myclass.Value)): End Function
+Public Function Replace(ByVal Find As String, ReplaceWith As String) As GString: Set Replace = GString.Build(VBA.Replace$(myclass.Value, Find, ReplaceWith)): End Function
 Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myclass.Value Like Pattern): End Function
 Public Function StartsWith(ByVal RegEx As String) As Boolean: StartsWith = (myclass.Value Like ("%" & RegEx)): End Function
 Public Function EndsWith(ByVal RegEx As String) As Boolean: EndsWith = (myclass.Value Like (RegEx & "%")): End Function
@@ -169,7 +169,7 @@ Public Function AsciiList() As GenericArray
     Dim i As Long
     With Ascii
         For i = 0 To 255 - 1
-            Set .ElementAt(i) = Gstring.Build(VBA.Chr$(i))
+            Set .ElementAt(i) = GString.Build(VBA.Chr$(i))
         Next
     End With
     
@@ -194,13 +194,13 @@ Public Function CountChar(ByVal C As String) As Long
     
 End Function
 
-Public Function Insert(ByVal Index As Long, Text As Gstring) As Gstring
+Public Function Insert(ByVal Index As Long, Text As GString) As GString
 
     If Index < 1 Then _
         Index = 1
     
     If myclass.Length >= Index Then
-        Set Insert = Gstring.Build(VBA.Mid$(myclass.Value, 1, Index - 1) _
+        Set Insert = GString.Build(VBA.Mid$(myclass.Value, 1, Index - 1) _
                         & Text.Value _
                         & VBA.Mid$(myclass.Value, Index, myclass.Length - Index + 1))
     Else
@@ -209,21 +209,21 @@ Public Function Insert(ByVal Index As Long, Text As Gstring) As Gstring
 
 End Function
 
-Public Function Concat(ByVal Other As Gstring, Optional ByVal Delimiter = vbNullString) As Gstring
+Public Function Concat(ByVal Other As GString, Optional ByVal Delimiter = vbNullString) As GString
    
     If Other Is Nothing Then _
         Set Concat = Me: Exit Function
         
-    Set Concat = Gstring.Build(myclass.Value & Delimiter & Other.Value)
+    Set Concat = GString.Build(myclass.Value & Delimiter & Other.Value)
     
 End Function
 
-Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVal Delimiter As String = vbNullString) As Gstring
+Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVal Delimiter As String = vbNullString) As GString
     
     Dim i As Long
         
     If Number <= 0 Then _
-        Set Repeat = Gstring.Build(DEFAULT_VALUE): Exit Function
+        Set Repeat = GString.Build(DEFAULT_VALUE): Exit Function
         
     ReDim Strings(1 To Number) As String
     
@@ -231,7 +231,7 @@ Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVa
         Strings(i) = Text
     Next
     
-    Set Repeat = Gstring.Build(VBA.Join$(Strings, Delimiter))
+    Set Repeat = GString.Build(VBA.Join$(Strings, Delimiter))
 
 End Function
 
@@ -246,7 +246,7 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     
     With Parts
         For i = LBound(Strings) To UBound(Strings)
-            Set .ElementAt(i) = Gstring.Build(CStr(Strings(i)))
+            Set .ElementAt(i) = GString.Build(CStr(Strings(i)))
         Next
     End With
 
@@ -254,7 +254,7 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     
 End Function
 
-Public Function Join(ByVal Values As IGenericCollection, Optional ByVal Delimiter = DEFAULT_DELIMITER) As Gstring
+Public Function Join(ByVal Values As IGenericCollection, Optional ByVal Delimiter = DEFAULT_DELIMITER) As GString
     
     Dim s As IGeneric
     Dim i As Long
@@ -278,7 +278,7 @@ Public Function Join(ByVal Values As IGenericCollection, Optional ByVal Delimite
         ReDim Preserve Strings(i - 1)
     End If
     
-    Set Join = Gstring(VBA.Join$(Strings, Delimiter))
+    Set Join = GString(VBA.Join$(Strings, Delimiter))
     
 End Function
 
@@ -316,7 +316,7 @@ End Function
 'IGeneric
 Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.IsDefault: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = Gstring: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GString: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long
@@ -329,7 +329,7 @@ Private Property Get IGeneric_HashValue() As Long
 End Property
 
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
-Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is Gstring):  End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GString):  End Property
 
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me: End Function
@@ -339,10 +339,10 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then _
         IGeneric_Equals = False: Exit Function
     
-    If Not TypeOf Other Is Gstring Then _
+    If Not TypeOf Other Is GString Then _
         IGeneric_Equals = False: Exit Function
         
-    Dim s As Gstring: Set s = Other
+    Dim s As GString: Set s = Other
 
     If (myclass.Length = s.Length) Then _
         IGeneric_Equals = (StrComp(myclass.Value, s.Value, vbBinaryCompare) = 0)
@@ -356,7 +356,7 @@ Private Function IGeneric_ToString() As String: IGeneric_ToString = myclass.Valu
 
 'GenericValue
 Private Function GenericValue_ToParameter( _
-                                          Optional ByVal Name As Gstring, _
+                                          Optional ByVal Name As GString, _
                                           Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As Variant
     
     Dim p As ADODB.Parameter
@@ -383,13 +383,13 @@ Private Property Get GenericValue_ToValue() As Variant: GenericValue_ToValue = m
 Private Property Get GenericValue_Instance() As IGeneric: Set GenericValue_Instance = Me: End Property
 Private Property Get GenericValue_Comparer() As IGenericComparer: Set GenericValue_Comparer = IGenericComparer: End Property
 
-Private Function GenericValue_Convert(ByVal Value As Variant) As GenericValue: Set GenericValue_Convert = Gstring.Build(VBA.IIf(VBA.IsNull(Value), DEFAULT_VALUE, Value)): End Function
+Private Function GenericValue_Convert(ByVal Value As Variant) As GenericValue: Set GenericValue_Convert = GString.Build(VBA.IIf(VBA.IsNull(Value), DEFAULT_VALUE, Value)): End Function
 Private Function GenericValue_CompareTo(ByVal Other As GenericValue) As CompareResult
     
     If Other Is Nothing Then _
         GenericValue_CompareTo = isgreater: Exit Function
     
-    Dim s As Gstring: Set s = Other
+    Dim s As GString: Set s = Other
     
     If s.IsNullOrEmpty Then _
         GenericValue_CompareTo = IIf(myclass.Length = 0, CompareResult.IsEqual, CompareResult.isgreater): Exit Function
@@ -515,3 +515,4 @@ End Function
 Private Sub IGenericIterator_Reset()
    myclass.Iterator.Index = GenericArray.LowerBound
 End Sub
+

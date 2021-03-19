@@ -7,9 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
-
 '*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
@@ -54,6 +51,11 @@ Option Explicit
 '*          Performance is likely to be just slightly below that of a ordinary Map, due to the added expense of maintaining the linked list
 '*
 '*======================================================================================================================
+
+'@Exposed
+'@PredeclaredId
+'@Folder "<T>Enumerable"
+Option Explicit
 
 Implements IGeneric
 Implements IGenericMap
@@ -924,3 +926,4 @@ Private Sub IGenericIterator_Reset()
         Call LoadIterator(myclass.Iterator, .Head)
     End With
 End Sub
+

@@ -7,8 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
 '*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
@@ -28,6 +26,10 @@ Option Explicit
 '*
 '*
 '*======================================================================================================================
+
+'@Folder "<T>Class"
+Option Explicit
+Option Compare Text
 
 Implements IGeneric
 Implements IGenericComparer
@@ -81,7 +83,7 @@ Public Enum ISqlParameterDirection
     ParamUnknown = 0 'Die Richtung des Parameters ist nicht bekannt.
     ParamInput = 1 'Es handelt sich um einen Input-Parameter
     ParamOutput = 2 'Es handelt sich um einen Output-Parameter
-    ParamInputOutput = 3 'Der Parameter ist sowohl Ãœbergabeparameter, liefert aber auch einen Wert zurÃ¼ck.
+    ParamInputOutput = 3 'Der Parameter ist sowohl Übergabeparameter, liefert aber auch einen Wert zurück.
     ParamReturnValue = 4 'Beschreibt einen Return-Wert
 End Enum
 

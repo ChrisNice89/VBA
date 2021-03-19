@@ -7,9 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
-
 '*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
@@ -30,6 +27,11 @@ Option Explicit
 '*
 '*
 '*======================================================================================================================
+
+'@Exposed
+'@Folder "<T>Enumerable"
+
+Option Explicit
 
 Implements IGenericComparer
 
@@ -136,3 +138,5 @@ Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneri
     IGenericComparer_Equals = True
 
 End Function
+
+

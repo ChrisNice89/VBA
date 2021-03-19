@@ -7,9 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
-
 '*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
@@ -29,6 +26,8 @@ Option Explicit
 '*
 '*
 '*======================================================================================================================
+
+Option Explicit
 
 Public Property Get Elements() As IGenericCollection:  End Property
 Public Property Get Comparer() As IGenericComparer: End Property

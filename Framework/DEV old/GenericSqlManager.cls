@@ -7,8 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
-Option Explicit
 '*======================================================================================================================
 '*
 '*          Copyright (c) Christoph Nitz.  All rights reserved.
@@ -29,6 +27,10 @@ Option Explicit
 '*
 '*======================================================================================================================
 
+'@Folder "Sql"
+Option Explicit
+'@PredeclaredId
+
 Implements IGeneric
 Implements IGenericIterator
 
@@ -46,11 +48,11 @@ Private Enum ISqlQueryStatus
 End Enum
 
 Private Enum ISqlCursorLocation
-    UseClient = 3 'Bedeutet, daÃŸ die Daten komplett auf den Client gezogen werden sollen. Dies bringt jedoch einen eventuell groÃŸen Speicherbedarf auf dem Client.
-    UseServer = 2 'Die Daten werden nicht komplett auf den Client gezogen, sondern nur diese die vom Client aktuell benÃ¶tigt werden. Das spart viel Speicherbedarf auf dem Client. Nachteil ist jedoch, daÃŸ bei manchen Datenanzeige-Controlls wie z.B. DataGrid oder MSHFlexGrid die Daten mit einem serverseitigen Cursor keine Daten angezeigt werden, bzw. ein paar Funktionen nicht mehr verfÃ¼gbar sind.
+    UseClient = 3 'Bedeutet, daß die Daten komplett auf den Client gezogen werden sollen. Dies bringt jedoch einen eventuell großen Speicherbedarf auf dem Client.
+    UseServer = 2 'Die Daten werden nicht komplett auf den Client gezogen, sondern nur diese die vom Client aktuell benötigt werden. Das spart viel Speicherbedarf auf dem Client. Nachteil ist jedoch, daß bei manchen Datenanzeige-Controlls wie z.B. DataGrid oder MSHFlexGrid die Daten mit einem serverseitigen Cursor keine Daten angezeigt werden, bzw. ein paar Funktionen nicht mehr verfügbar sind.
 End Enum
 '
-'Der CommandType gibt an was ausgefÃ¼hrt werden soll. DafÃ¼r liegt das CommandTypeEnum zu Grunde.
+'Der CommandType gibt an was ausgeführt werden soll. Dafür liegt das CommandTypeEnum zu Grunde.
 Private Enum ISqlCommandType
     CmdUnspecified = -1 'Does not specify the command type argument.
     CMDText = 1 'Evaluates CommandText as a textual definition of a command or stored procedure call.
@@ -64,17 +66,17 @@ Private Enum ISqlCommandType
 End Enum
 '
 Private Enum ISqlCursorType
-    OpenForwardOnly = 0 'Dieser Cursor ist der schnellste. Er verbraucht am wenigsten Speicher und Netzresourcen. Cursor kann jedoch nur vorwÃ¤rts bewegt werden. Ã„nderungen sind Zeilenweise mÃ¶glich, jedoch nicht fÃ¼r andere User sichtbar.
-    OpenKeyset = 1 'Dieser Cursor erstellt fÃ¼r jeden Datensatz einen SchlÃ¼ssel. Er ist schneller als der Static- und der Dynamic-Cursor, da er nicht die ganzen DatensÃ¤tze lÃ¤dt sondern nur einen SchlÃ¼ssel auf den Datensatz. Ã„nderungen und lÃ¶schen sind mÃ¶glich und werden anderen Usern angezeigt. Einzig anfÃ¼gen wird anderen Usern nicht angezeigt.
-    OpenDynamic = 2 'Dieser Cursor ist der flexibelste, er ermÃ¶glicht alle Bewegungen. Alle Ã„nderungen werden allen angezeigt. Er ist aber auch der ressourcenbeanspruchenste.
-    OpenStatic = 3 'Ruft eine Kopie der abgefragten Daten ab. Daten kÃ¶nnen nicht geÃ¤ndert werden. Cursor in alle Richtungen beweglich.
+    OpenForwardOnly = 0 'Dieser Cursor ist der schnellste. Er verbraucht am wenigsten Speicher und Netzresourcen. Cursor kann jedoch nur vorwärts bewegt werden. Änderungen sind Zeilenweise möglich, jedoch nicht für andere User sichtbar.
+    OpenKeyset = 1 'Dieser Cursor erstellt für jeden Datensatz einen Schlüssel. Er ist schneller als der Static- und der Dynamic-Cursor, da er nicht die ganzen Datensätze lädt sondern nur einen Schlüssel auf den Datensatz. Änderungen und löschen sind möglich und werden anderen Usern angezeigt. Einzig anfügen wird anderen Usern nicht angezeigt.
+    OpenDynamic = 2 'Dieser Cursor ist der flexibelste, er ermöglicht alle Bewegungen. Alle Änderungen werden allen angezeigt. Er ist aber auch der ressourcenbeanspruchenste.
+    OpenStatic = 3 'Ruft eine Kopie der abgefragten Daten ab. Daten können nicht geändert werden. Cursor in alle Richtungen beweglich.
 End Enum
 '
 Private Enum ISqlLockType
-    LockReadOnly = 1 'Nur Lesen, Daten kÃ¶nnen nicht verÃ¤ndert werden (Default)
-    LockPessimistic = 2 'Daten werden beim Ã–ffnen des Recordsets fÃ¼r andere User gesperrt.
+    LockReadOnly = 1 'Nur Lesen, Daten können nicht verändert werden (Default)
+    LockPessimistic = 2 'Daten werden beim Öffnen des Recordsets für andere User gesperrt.
     LockOptimistic = 3 'Daten werden erst beim Update gesperrt.
-    LockBatchOptimistic = 4 'Dieser Modus wird nur fÃ¼r Stapelaktuallisierung benÃ¼tzt.
+    LockBatchOptimistic = 4 'Dieser Modus wird nur für Stapelaktuallisierung benützt.
 End Enum
 
 Public Enum ISqlRecodsetType
@@ -87,7 +89,7 @@ End Enum
 
 'ModeEnum
 Private Enum ISqlConnectionMode
-    Unknown_ConnectionMode = 0          '"Unkown or unset permissions." -Keine BeschrÃ¤nkungen [= Default]
+    Unknown_ConnectionMode = 0          '"Unkown or unset permissions." -Keine Beschränkungen [= Default]
     Read_ConnectionMode = 1             '"User cannot read data."
     Write_ConnectionMode = 2            '"User cannot write data."
     ReadWrite_ConnectionMode = 3        '"User cannot read nor write data."
@@ -106,17 +108,17 @@ Private Enum ISqlObjectState
 End Enum
 '
 Private Enum ISqlConnectionCursorLocation
-    Connection_UseClient = 3 'Bedeutet, daÃŸ die Daten komplett auf den Client gezogen werden sollen. Dies bringt jedoch einen eventuell groÃŸen Speicherbedarf auf dem Client.
-    Connection_UseServer = 2 'Die Daten werden nicht komplett auf den Client gezogen, sondern nur diese die vom Client aktuell benÃ¶tigt werden. Das spart viel Speicherbedarf auf dem Client. Nachteil ist jedoch, daÃŸ bei manchen Datenanzeige-Controlls wie z.B. DataGrid oder MSHFlexGrid die Daten mit einem serverseitigen Cursor keine Daten angezeigt werden, bzw. ein paar Funktionen nicht mehr verfÃ¼gbar sind.
+    Connection_UseClient = 3 'Bedeutet, daß die Daten komplett auf den Client gezogen werden sollen. Dies bringt jedoch einen eventuell großen Speicherbedarf auf dem Client.
+    Connection_UseServer = 2 'Die Daten werden nicht komplett auf den Client gezogen, sondern nur diese die vom Client aktuell benötigt werden. Das spart viel Speicherbedarf auf dem Client. Nachteil ist jedoch, daß bei manchen Datenanzeige-Controlls wie z.B. DataGrid oder MSHFlexGrid die Daten mit einem serverseitigen Cursor keine Daten angezeigt werden, bzw. ein paar Funktionen nicht mehr verfügbar sind.
 End Enum
 
 'ConnectPromptEnum
 'Specifies whether a dialog box should be displayed to prompt for missing parameters when opening a connection to a data source.
 Private Enum ISqlConnectionPrompt
-    PromptAlways = 1 'Das Fenster wird auf jeden Fall gezeigt (auch wenn die Anmeldedaten eigentlich komplett sein kÃ¶nnten).
-    PromptComplete = 2  'Das Fenster wird angezeigt wenn nicht alle Daten vorhanden sind. Es sind alle Optionen mÃ¶glich.
-    PromptCompleteRequired = 3  'Das Fenster wird gezeigt wenn nicht alle Daten vorhanden sind. Es kÃ¶nnen nur User-Id, Passwort und Servername (SQL-Server) angegeben werden.
-    PromptNever = 4 'Erlaubt im MultiUser-Bereich das Ã–ffnen anderer Verbindungen ohne BeschrÃ¤nkungen (Lesen/Schreiben/Beides).
+    PromptAlways = 1 'Das Fenster wird auf jeden Fall gezeigt (auch wenn die Anmeldedaten eigentlich komplett sein könnten).
+    PromptComplete = 2  'Das Fenster wird angezeigt wenn nicht alle Daten vorhanden sind. Es sind alle Optionen möglich.
+    PromptCompleteRequired = 3  'Das Fenster wird gezeigt wenn nicht alle Daten vorhanden sind. Es können nur User-Id, Passwort und Servername (SQL-Server) angegeben werden.
+    PromptNever = 4 'Erlaubt im MultiUser-Bereich das Öffnen anderer Verbindungen ohne Beschränkungen (Lesen/Schreiben/Beides).
 End Enum
 
 Private Enum ISqlDBSchema
@@ -365,10 +367,10 @@ Private Function ExecuteSchema(ByVal Schema As ISqlDBSchema, ParamArray Args() A
     
 End Function
 
-Public Function SelectWhere(ByVal Table As Gstring, ByVal Fields As IGenericReadOnlyList, ByVal Where As GenericPair, ByVal Operator As Gstring) As IGenericIterator
+Public Function SelectWhere(ByVal Table As GString, ByVal Fields As IGenericReadOnlyList, ByVal Where As GenericPair, ByVal Operator As GString) As IGenericIterator
    
     Const SELECT_STATEMENT As String = "SELECT [] FROM [] WHERE []"
-    Dim Sql As Gstring
+    Dim Sql As GString
     
     If (Fields Is Nothing) Then _
         Call System.Throw(Me, "Public Function SelectWhere").IsNothing("(Fields Is Nothing)")
@@ -376,7 +378,7 @@ Public Function SelectWhere(ByVal Table As Gstring, ByVal Fields As IGenericRead
     Call Me.Prepare
     Call Connect(Database)
 '
-    With Gstring
+    With GString
         Set Sql = .Build(SELECT_STATEMENT) _
                     .Insert(26, .Build(Where.Key)).Concat(.Build(Operator.Value & "?")) _
                     .Insert(17, Table) _
@@ -390,10 +392,10 @@ Public Function SelectWhere(ByVal Table As Gstring, ByVal Fields As IGenericRead
     
 End Function
 
-Public Sub UpdateWhere(ByVal Table As Gstring, ByVal Updates As IGenericMap, ByVal Where As GenericPair, ByVal Operator As Gstring)
+Public Sub UpdateWhere(ByVal Table As GString, ByVal Updates As IGenericMap, ByVal Where As GenericPair, ByVal Operator As GString)
     
     Const UPDATE_STATEMENT As String = "UPDATE [] SET []=? WHERE []"
-    Dim Sql As Gstring
+    Dim Sql As GString
     
     If (Updates Is Nothing) Then _
         Call System.Throw(Me, "Public Sub UpdateWhere").IsNothing("(Updates Is Nothing)")
@@ -401,7 +403,7 @@ Public Sub UpdateWhere(ByVal Table As Gstring, ByVal Updates As IGenericMap, ByV
     Call Me.Prepare
     Call Connect(Database)
 
-    With Gstring
+    With GString
         Set Sql = .Build(UPDATE_STATEMENT) _
                     .Insert(27, .Build(Where.Key)).Concat(.Build(Operator.Value & "?")) _
                     .Insert(16, .Join(Updates.GetKeys, "]=?,[")) _
@@ -415,10 +417,10 @@ Public Sub UpdateWhere(ByVal Table As Gstring, ByVal Updates As IGenericMap, ByV
     
 End Sub
 
-Public Sub InsertInto(ByVal Table As Gstring, ByVal Updates As IGenericMap)
+Public Sub InsertInto(ByVal Table As GString, ByVal Updates As IGenericMap)
 
     Const INSERT_STATEMENT As String = "INSERT INTO [] () VALUES ()"
-    Dim Sql As Gstring
+    Dim Sql As GString
     
     If (Updates Is Nothing) Then _
         Call System.Throw(Me, "Public Sub InsertInto").IsNothing("(Updates)")
@@ -427,7 +429,7 @@ Public Sub InsertInto(ByVal Table As Gstring, ByVal Updates As IGenericMap)
     Call Connect(Database)
     
     'Used String Readonly here to avoid .Repeat(Parameters.Count, "?").ToArray !
-    With Gstring
+    With GString
         Set Sql = .Build(INSERT_STATEMENT) _
                     .Insert(27, .Join(.Repeat(Updates.Elements.Count, "?"), ",")) _
                     .Insert(17, .Join(Updates.GetKeys, ",")) _
@@ -495,7 +497,7 @@ Private Function TableStructure(ByVal Table As String) As ADODB.Recordset
     Set TableStructure = ExecuteSchema(SchemaColumns, Empty, Empty, Table, Empty) '.ToArray("COLUMN_NAME"))
 End Function
 
-Public Function ColumnsOf(ByVal Table As Gstring) As IGenericReadOnlyList
+Public Function ColumnsOf(ByVal Table As GString) As IGenericReadOnlyList
     
     Dim Columns As IGenericList
     Dim Field As String, fieldList As String
@@ -503,7 +505,7 @@ Public Function ColumnsOf(ByVal Table As Gstring) As IGenericReadOnlyList
     With TableStructure(Table.Value)
         Set Columns = GenericOrderedList.Build(255)
         Do While Not (.EOF)
-            Call Columns.Add(Gstring.Build(.Fields.Item("COLUMN_NAME").Value))
+            Call Columns.Add(GString.Build(.Fields.Item("COLUMN_NAME").Value))
             
 '            Field = VBA.Replace$(.Fields.Item("COLUMN_NAME").Value, " ", "_")
 '            Field = VBA.Replace$(Field, ":", "_")
@@ -629,7 +631,7 @@ Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Con
                         .Properties("Extended Properties") = "Excel 12.0 Macro;HDR=YES"
                         .Properties("Jet OLEDB:Database Password") = Credentials.Filepassword
                     
-                    Case "xls" 'Excel 97-2003 Workbook (.xls)'nur fÃ¼r 32-Bit OfficeVersionen
+                    Case "xls" 'Excel 97-2003 Workbook (.xls)'nur für 32-Bit OfficeVersionen
                         .Provider = "Microsoft.Jet.OLEDB.4.0"
                         .Properties("Extended Properties") = "Excel 8.0;HDR=YES"
                         .Properties("Jet OLEDB:Database Password") = Credentials.Filepassword
@@ -674,7 +676,7 @@ Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Con
         End Select
         
         'Diese Property findet man eigentlich bei fast allen DB-Treibern wieder.
-        'Somit hat sie auch dementsprechend verschiedene HintergrÃ¼nde. '
+        'Somit hat sie auch dementsprechend verschiedene Hintergründe. '
         'Bei Access beschreibt der DataSource den Pfad zu der physischen MDB-Datei. '
         'Beim MS-SQL-Server beschreibt der DataSource den Namen des Servers (nicht die Datenbank!). Bei Informix z.B. beschreibt diese Eigenschaft wieder den Server und den Namen der Datenbank.
         .Properties("Data Source") = Credentials.DataSource
@@ -687,8 +689,8 @@ Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Con
             'nur notwendig, wenn Sie "User ID" und "Password" setzen
 '            .Properties("Encrypt Password") = True
         End If
-        'Diese Eigenschaft gibt an, ob nach dem Aufbau der Connection zur Datenbank die Userinformationen aus dem ConnectionString und den Connection-Properties gelÃ¶scht werden sollen
-        'oder gehalten werden sollen. Die Default-Einstellung ist unverstÃ¤ndlicher Weise True (behalten). Dieser Wert sollte also explizit auf False gesetzt werden.
+        'Diese Eigenschaft gibt an, ob nach dem Aufbau der Connection zur Datenbank die Userinformationen aus dem ConnectionString und den Connection-Properties gelöscht werden sollen
+        'oder gehalten werden sollen. Die Default-Einstellung ist unverständlicher Weise True (behalten). Dieser Wert sollte also explizit auf False gesetzt werden.
         .Properties("Persist Security Info") = False
         .Properties("Prompt") = Credentials.Prompt
         
@@ -949,19 +951,19 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset, ByVal Fields As IGen
             For i = 0 To .Fields.Count - 1
 '                Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type
                 Select Case .Fields(i).Type
-                    Case Is = ISqlDataType.Boolean_Type: Set newClass.Iterator.Fields(i).SqlType = Gbool
-                    Case Is = ISqlDataType.Char_Type: Set newClass.Iterator.Fields(i).SqlType = Gstring
-                    Case Is = ISqlDataType.Numeric_Type, ISqlDataType.SmallInt_Type: Set newClass.Iterator.Fields(i).SqlType = Gnumeric
-                    Case Is = ISqlDataType.Currency_Type: Set newClass.Iterator.Fields(i).SqlType = Gnumeric
-                    Case Is = ISqlDataType.Single_Type, ISqlDataType.Double_Type: Set newClass.Iterator.Fields(i).SqlType = Gstring
-                    Case Is = ISqlDataType.Decimal_Type: Set newClass.Iterator.Fields(i).SqlType = Gnumeric
-                    Case Is = ISqlDataType.Integer_Type: Set newClass.Iterator.Fields(i).SqlType = Gnumeric
-                    Case Is = ISqlDataType.BigInt_Type: Set newClass.Iterator.Fields(i).SqlType = Gnumeric
-                    Case Is = ISqlDataType.UnsignedTinyInt_Type: Set newClass.Iterator.Fields(i).SqlType = Gnumeric
-                    Case Is = ISqlDataType.Date_Type: Set newClass.Iterator.Fields(i).SqlType = GdateTime
-                    Case Is = ISqlDataType.VarWChar_Type: Set newClass.Iterator.Fields(i).SqlType = Gstring
-                    Case Is = ISqlDataType.LongVarChar_Type: Set newClass.Iterator.Fields(i).SqlType = Gstring
-                    Case Is = ISqlDataType.LongVarWChar_Type: Set newClass.Iterator.Fields(i).SqlType = Gstring '203 Gibt eine lange Null-terminierte Unicode-Zeichenfolgenwert an.
+                    Case Is = ISqlDataType.Boolean_Type: Set newClass.Iterator.Fields(i).SqlType = GBool
+                    Case Is = ISqlDataType.Char_Type: Set newClass.Iterator.Fields(i).SqlType = GString
+                    Case Is = ISqlDataType.Numeric_Type, ISqlDataType.SmallInt_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
+                    Case Is = ISqlDataType.Currency_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
+                    Case Is = ISqlDataType.Single_Type, ISqlDataType.Double_Type: Set newClass.Iterator.Fields(i).SqlType = GString
+                    Case Is = ISqlDataType.Decimal_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
+                    Case Is = ISqlDataType.Integer_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
+                    Case Is = ISqlDataType.BigInt_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
+                    Case Is = ISqlDataType.UnsignedTinyInt_Type: Set newClass.Iterator.Fields(i).SqlType = GNumeric
+                    Case Is = ISqlDataType.Date_Type: Set newClass.Iterator.Fields(i).SqlType = GDateTime
+                    Case Is = ISqlDataType.VarWChar_Type: Set newClass.Iterator.Fields(i).SqlType = GString
+                    Case Is = ISqlDataType.LongVarChar_Type: Set newClass.Iterator.Fields(i).SqlType = GString
+                    Case Is = ISqlDataType.LongVarWChar_Type: Set newClass.Iterator.Fields(i).SqlType = GString '203 Gibt eine lange Null-terminierte Unicode-Zeichenfolgenwert an.
                     Case Else
                         If DEBUG_MODE Then _
                             Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type & " // Unknown Sql Field - Mapped to GenericValue"
@@ -1027,3 +1029,4 @@ Private Sub IGenericIterator_Reset()
     End With
     
 End Sub
+

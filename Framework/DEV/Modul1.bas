@@ -8,7 +8,7 @@ Private Sql As GenericSqlManager
 Private RandomList As GenericOrderedList
 
 Private Type Table
-    Name As GString
+    Name As Gstring
     
 End Type
 
@@ -19,29 +19,29 @@ Sub TestString()
     Dim s As String
     Dim t As CTimer
     Set t = New CTimer
-    Dim i As Long, N As Long
-    N = 1000
+    Dim i As Long, n As Long
+    n = 1000
     
-    Dim Text As IGeneric, newText As GString
+    Dim Text As IGeneric, newText As Gstring
    
     t.StartCounter
-    For i = 1 To N
-        Set newText = GString.Build("abcdefghijklmnopqrstuvwxyz" & i)
+    For i = 1 To n
+        Set newText = Gstring.Build("abcdefghijklmnopqrstuvwxyz" & i)
 '        Debug.Print newText.ElementAt(5).Value
     Next
     Debug.Print t.TimeElapsed
     
-    Set Text = GString.Build("€tastatstastastsa" & i)
+    Set Text = Gstring.Build("€tastatstastastsa" & i)
     
     t.StartCounter
-    For i = 1 To N
+    For i = 1 To n
        Call Text.Equals(newText)
     Next
     Debug.Print t.TimeElapsed
     
     t.StartCounter
     
-    With GString.AsciiList.Sort.Elements.Iterator()
+    With Gstring.AsciiList.Sort.Elements.Iterator()
         Do While .HasNext(Char)
             Debug.Print Char.ToString
         Loop
@@ -54,7 +54,7 @@ End Sub
 Public Sub TestCollectionComparer()
     
     Dim Collection As IGenericCollection, Clone As IGenericCollection
-    Set Collection = GenericOrderedList.AsList(GNumeric(0), GNumeric(1), GNumeric(2 ^ 36), GString("Test aoxdfidcisoxa,"))
+    Set Collection = GenericOrderedList.AsList(Gnumeric(0), Gnumeric(1), Gnumeric(2 ^ 36), Gstring("Test aoxdfidcisoxa,"))
     
     Dim Map As IGenericMap
     Set Map = GenericLinkedMap.Build(Comparer:=IGenericCollection)
@@ -73,33 +73,35 @@ Public Sub TestSql()
 '    Set Sql = GenericSqlManager.BuildSqlConnection(ServerName:="192.168.0.186", InitialCatalog:="TEST", User:="TestUser", Password:="OpenSesame")
     Set Sql = GenericSqlManager.BuildAccessConnection(Path:="C:\Daten\iCAT\Backend\Vers. 2.5\2020-02-24 iCAT-Backend Vers. 2.5.accdb", Filepassword:="OpenSesame")
     
-    Dim Table As GString
+    Dim Table As Gstring
     Dim Columns As IGenericReadOnlyList
-    Dim Where As GenericPair, Operator As GString
+    Dim Where As GenericPair, Operator As Gstring
     
     Dim Field As IGeneric
     Dim Updates As IGenericMap
     Dim Row As GenericOrderedMap
     
-    Set Table = GString("tblG_00_Basis")
-    Set Where = GenericPair(GString("ID"), GNumeric(1))
-    Set Operator = GString("=")
+    Set Table = Gstring("tblG_00_Basis")
+    Set Where = GenericPair(Gstring("ID"), Gnumeric(1))
+    Set Operator = Gstring("=")
     Set Columns = Sql.ColumnsOf(Table)
     
     t.StartCounter
     With Sql.SelectWhere(Table, Columns, Where, Operator)
+    Debug.Print t.TimeElapsed
         Do While .HasNext(Row)
             With Row.Elements.Iterator 'Row.GetValues.Elements.Iterator
                 Do While .HasNext(Field)
-                    Debug.Print Field
+'                    Debug.Print Field
                 Loop
             End With
         Loop
     End With
-    Debug.Print t.TimeElapsed
+    
+    Debug.Print Sql.IsConnected
     
     
-    Call Sql.UpdateWhere(Table, Row, Where, Operator)
+'    Call Sql.UpdateWhere(Table, Row, Where, Operator)
     
     
 '    Call Sql.Execute(CreateTables.Überblick)
@@ -109,22 +111,26 @@ Public Sub TestSql()
 '    Call Sql.Execute(CreateTables.Abwicklung)
 '    Call Sql.Execute(CreateTables.Paar)
 '    Call Sql.Execute(CreateTables.Abstimmung)
-    
+
 End Sub
 
+Sub CheckSql()
+
+    Debug.Print Sql.IsConnected
+End Sub
 Sub TestMultiDimArray()
 
     Dim ga As GenericArray
     Set ga = GenericArray.Build(3, 4)
     
-    Call ga.PutAt(GNumeric(0), 0, 2)
-    Call ga.PutAt(GNumeric(1), 1, 2)
-    Call ga.PutAt(GNumeric(2), 2, 2)
+    Call ga.PutAt(Gnumeric(0), 0, 2)
+    Call ga.PutAt(Gnumeric(1), 1, 2)
+    Call ga.PutAt(Gnumeric(2), 2, 2)
     
     Dim Column As GenericArray
     Set Column = ga.SlizeColumn(2)
     
-    Dim Element As GNumeric
+    Dim Element As Gnumeric
     With Column.Elements.Iterator
         Do While .HasNext(Element)
             Debug.Print Element.Value
@@ -151,7 +157,7 @@ Sub testArrayConstructor()
     t.StartCounter
    
     For i = 1 To 100
-        Set List = GenericOrderedList.AsList(GString, GNumeric, GNumeric)
+        Set List = GenericOrderedList.AsList(Gstring, Gnumeric, Gnumeric)
     Next
     Debug.Print t.TimeElapsed
     
@@ -166,8 +172,8 @@ End Sub
 Sub TestArrayIterator2()
     
     Dim Char As IGeneric
-    Dim s As GString
-    Set s = GString("Ich bin ein Fuchs")
+    Dim s As Gstring
+    Set s = Gstring("Ich bin ein Fuchs")
     
     With s.Chars.ToArray.Shuffle(12, 5).Elements.Iterator()
         Do While .HasNext(Char)
@@ -193,21 +199,21 @@ Sub TestArrayGetter()
     Dim List As GenericArray
     Dim Element As IGeneric
    
-    Dim i As Long, N As Long
-    N = 1000
+    Dim i As Long, n As Long
+    n = 1000
         
-    Set List = GenericArray.Build(N)
-    ReDim x(1 To N) As IGeneric
+    Set List = GenericArray.Build(n)
+    ReDim x(1 To n) As IGeneric
     
     t.StartCounter
-    For i = 1 To N
-        Set List(i) = GNumeric.Build(i)
+    For i = 1 To n
+        Set List(i) = Gnumeric.Build(i)
     Next
     Debug.Print t.TimeElapsed
     
     t.StartCounter
-    For i = 1 To N
-        Set x(i) = GNumeric.Build(i)
+    For i = 1 To n
+        Set x(i) = Gnumeric.Build(i)
     Next
     Debug.Print t.TimeElapsed
     
@@ -227,15 +233,15 @@ Sub ListSort()
     Dim t As CTimer
     Set t = New CTimer
     
-    Dim i As Long, N As Long
-    N = 35
+    Dim i As Long, n As Long
+    n = 35
     
     Dim List As GenericOrderedList
-    Set List = GenericOrderedList.Build(N)
+    Set List = GenericOrderedList.Build(n)
    
-    For i = 1 To N
+    For i = 1 To n
 '        Call List.Add(GenericPair(GNumeric(i), GNumeric(i)))
-        Call List.Add(GNumeric(i))
+        Call List.Add(Gnumeric(i))
     Next
     Dim Item As IGeneric
     
@@ -264,14 +270,14 @@ Sub TestEquals()
     Dim S1 As IGeneric
     Dim S2 As IGeneric
     
-    Set S1 = GString("asasasfkfnkdfndjcfv falmxxs ejf")
-    Set S2 = GString("asasasfkfnkdfndjcfv falmxxs ejf")
+    Set S1 = Gstring("asasasfkfnkdfndjcfv falmxxs ejf")
+    Set S2 = Gstring("asasasfkfnkdfndjcfv falmxxs ejf")
     
-    Dim i As Long, N As Long
+    Dim i As Long, n As Long
     
     t.StartCounter
-    N = 10000
-    For i = 1 To N
+    n = 10000
+    For i = 1 To n
         S1.Equals S2
     Next
     Debug.Print t.TimeElapsed
@@ -286,11 +292,11 @@ Sub TestListIterator()
     Dim l As GenericOrderedList
     Set l = GenericOrderedList.Build
 
-    Dim i As Long, N As Long
+    Dim i As Long, n As Long
     
-    N = 15
-    For i = 1 To N
-        Call l.Add(GenericPair(GNumeric(i), GNumeric(i)))
+    n = 15
+    For i = 1 To n
+        Call l.Add(GenericPair(Gnumeric(i), Gnumeric(i)))
     Next
     
     Dim C As GenericOrderedList
@@ -315,11 +321,11 @@ Sub TestSortedListIterator()
     Dim sl As GenericSortedList
     Set sl = GenericSortedList.Build
 
-    Dim i As Long, N As Long
+    Dim i As Long, n As Long
     
-    N = 50
-    For i = 1 To N
-        Call sl.Add(GNumeric(i))
+    n = 50
+    For i = 1 To n
+        Call sl.Add(Gnumeric(i))
     Next
     
     Dim C As GenericSortedList
@@ -345,13 +351,13 @@ Sub TestSortedLists()
     Dim List As GenericSortedList
     Set List = GenericSortedList.Build(Comparer:=GenericPair)
     
-    Dim i As Long, N As Long, j As Long
-    N = 30
+    Dim i As Long, n As Long, j As Long
+    n = 30
     
     If RandomList Is Nothing Then
         Set RandomList = GenericOrderedList.Build
-        For i = 1 To N
-            Call RandomList.Add(GenericPair(GNumeric(i), GNumeric(i)))
+        For i = 1 To n
+            Call RandomList.Add(GenericPair(Gnumeric(i), Gnumeric(i)))
         Next
         Call RandomList.Shuffle
         
@@ -368,7 +374,7 @@ Sub TestSortedLists()
         Set p = RandomList(i)
         Call List.Add(p)
     Next
-    Debug.Print N & " elements added :: "; t.TimeElapsed
+    Debug.Print n & " elements added :: "; t.TimeElapsed
 
     For i = RandomList.First To RandomList.Last
         Set p = RandomList(i)
@@ -386,7 +392,41 @@ Sub TestSortedLists()
     Debug.Print t.TimeElapsed
 '
 End Sub
+Sub TestSortedList2()
+    
+    Dim Value As IGeneric
+    Dim Values As GenericOrderedList
+    Set Values = GenericOrderedList.AsList( _
+                                            Gnumeric(1), _
+                                            Gnumeric(3), _
+                                            Gnumeric(5), _
+                                            Gnumeric(7), _
+                                            Gnumeric(9), _
+                                            Gnumeric(11), _
+                                            Gnumeric(13), _
+                                            Gnumeric(15), _
+                                            Gnumeric(17), _
+                                            Gnumeric(19), _
+                                            Gnumeric(21))
+    Call Values.Shuffle
+    
+    Dim i As Long, n As Long
+    
+    Dim sl As GenericSortedList
+    Set sl = GenericSortedList.Build()
+    Call sl.AddAll(Values)
+    Call sl.AddAll(Values)
+    
+    With sl.Distinct.Elements.Iterator
+'    With sl.Elements.Iterator
+        Do While .HasNext(Value)
+            Debug.Print Value
+        Loop
+    End With
+    Debug.Print sl.Contains(Gnumeric(21))
+    
 
+End Sub
 Sub TestSortedList()
     
     Dim t As CTimer
@@ -394,11 +434,16 @@ Sub TestSortedList()
     t.StartCounter
     
     Dim sl As GenericSortedList
-    Dim i As Long, N As Long
+    Dim i As Long, n As Long
     
-    Set sl = GenericSortedList.AsList(IGenericComparer, GNumeric(7), GNumeric(9), GNumeric(3), GNumeric(1), GNumeric(10), GNumeric(11), GNumeric(13), GNumeric(6), GNumeric(8))
-    Call sl.AddAll(GenericArray.AsArray(GNumeric(3), GNumeric(4), GNumeric(1), GNumeric(5), GNumeric(4), GNumeric(2), GNumeric(0), GNumeric(12), GNumeric(3)))
-
+    
+    Set sl = GenericSortedList.AsList(IGenericComparer, Gnumeric(7), Gnumeric(9), Gnumeric(3), Gnumeric(1), Gnumeric(10), Gnumeric(11), Gnumeric(13), Gnumeric(6), Gnumeric(8))
+    
+    Call sl.Add(Gnumeric(13))
+  
+    
+    Call sl.AddAll(GenericArray.AsArray(Gnumeric(3), Gnumeric(4), Gnumeric(1), Gnumeric(5), Gnumeric(4), Gnumeric(2), Gnumeric(0), Gnumeric(12), Gnumeric(3)))
+    
     Debug.Print t.TimeElapsed
     
     Dim C As GenericSortedList
@@ -424,9 +469,9 @@ Sub TestTree()
     
     Dim tree As GenericSortedSet
     Set tree = GenericSortedSet.Build(Comparer:=IGenericComparer)
-    Call tree.DoUnionWith(GenericArray.AsArray(GNumeric(3), GNumeric(4), GNumeric(1), GNumeric(5), GNumeric(2), GNumeric(0), GNumeric(3)))
-    
-    Call tree.DoExeceptWith(tree)
+    Call tree.DoUnionWith(GenericArray.AsArray(Gnumeric(3), Gnumeric(4), Gnumeric(1), Gnumeric(5), Gnumeric(7), Gnumeric(0), Gnumeric(2), Gnumeric(0), Gnumeric(3), Gnumeric(10)))
+'    Call tree.DoExeceptWith(tree)
+
     For i = 0 To tree.Elements.Count - 1
         Debug.Print tree.GetAt(i)
     Next
@@ -445,8 +490,8 @@ Sub TestTree()
     Call tree.Elements.Clear
     Set tree = Nothing
     
-    Debug.Print C.IndexOf(GNumeric(10))
-    Debug.Print C.IndexOf(GNumeric(1))
+    Debug.Print C.IndexOf(Gnumeric(10))
+    Debug.Print C.IndexOf(Gnumeric(1))
     Dim Item As IGeneric
     
     t.StartCounter
@@ -471,7 +516,7 @@ Sub TestGenericCollection()
     
     Dim i As Long
     For i = 1 To 10
-        Call C.Add(GString("Key: " & i), GString("Value: " & i))
+        Call C.Add(Gstring("Key: " & i), Gstring("Value: " & i))
     Next
 
     Dim List As GenericOrderedList
@@ -506,49 +551,49 @@ Sub TestArray2()
     Dim t As CTimer
     Set t = New CTimer
     With ga
-        Call .PutAt(GString("b"), 13)
-        Call .PutAt(GString("c"), 14)
-        Call .PutAt(GString("a"), 15)
-        Call .PutAt(GString("h"), 16)
-        Call .PutAt(GString("s"), 17)
-        Call .PutAt(GString("d"), 18)
-        Call .PutAt(GString("zz"), 19)
-        Call .PutAt(GString("c"), 20)
-        Call .PutAt(GString("x"), 21)
-        Call .PutAt(GString("e"), 22)
-        Call .PutAt(GString("t"), 23)
-        Call .PutAt(GString("a"), 24)
+        Call .PutAt(Gstring("b"), 13)
+        Call .PutAt(Gstring("c"), 14)
+        Call .PutAt(Gstring("a"), 15)
+        Call .PutAt(Gstring("h"), 16)
+        Call .PutAt(Gstring("s"), 17)
+        Call .PutAt(Gstring("d"), 18)
+        Call .PutAt(Gstring("zz"), 19)
+        Call .PutAt(Gstring("c"), 20)
+        Call .PutAt(Gstring("x"), 21)
+        Call .PutAt(Gstring("e"), 22)
+        Call .PutAt(Gstring("t"), 23)
+        Call .PutAt(Gstring("a"), 24)
     
-        Call .PutAt(GString("a"), 50)
-        Call .PutAt(GString("c"), 51)
-        Call .PutAt(GString("a"), 52)
-        Call .PutAt(GString("j"), 53)
-        Call .PutAt(GString("s"), 54)
-        Call .PutAt(GString("ö"), 55)
-        Call .PutAt(GString("q"), 56)
-        Call .PutAt(GString("k"), 57)
-        Call .PutAt(GString("x"), 58)
-        Call .PutAt(GString("h"), 59)
-        Call .PutAt(GString("t"), 60)
-        Call .PutAt(GString("a"), 61)
+        Call .PutAt(Gstring("a"), 50)
+        Call .PutAt(Gstring("c"), 51)
+        Call .PutAt(Gstring("a"), 52)
+        Call .PutAt(Gstring("j"), 53)
+        Call .PutAt(Gstring("s"), 54)
+        Call .PutAt(Gstring("ö"), 55)
+        Call .PutAt(Gstring("q"), 56)
+        Call .PutAt(Gstring("k"), 57)
+        Call .PutAt(Gstring("x"), 58)
+        Call .PutAt(Gstring("h"), 59)
+        Call .PutAt(Gstring("t"), 60)
+        Call .PutAt(Gstring("a"), 61)
     
-        Call .PutAt(GString("z"), 70)
-        Call .PutAt(GString("h"), 71)
-        Call .PutAt(GString("t"), 72)
-        Call .PutAt(GString("ä"), 73)
+        Call .PutAt(Gstring("z"), 70)
+        Call .PutAt(Gstring("h"), 71)
+        Call .PutAt(Gstring("t"), 72)
+        Call .PutAt(Gstring("ä"), 73)
     
-        Call .PutAt(GString("c"), 80)
-        Call .PutAt(GString(""), 81)
-        Call .PutAt(GString("e"), 82)
-        Call .PutAt(GString("f"), 83)
-        Call .PutAt(GString("d"), 84)
-        Call .PutAt(GString("zz"), 85)
-        Call .PutAt(GString("c"), 86)
-        Call .PutAt(GString("x"), 87)
-        Call .PutAt(GString("e"), 88)
-        Call .PutAt(GString("f"), 89)
-        Call .PutAt(GString("a"), 90)
-        Call .PutAt(GString("a"), 99)
+        Call .PutAt(Gstring("c"), 80)
+        Call .PutAt(Gstring(""), 81)
+        Call .PutAt(Gstring("e"), 82)
+        Call .PutAt(Gstring("f"), 83)
+        Call .PutAt(Gstring("d"), 84)
+        Call .PutAt(Gstring("zz"), 85)
+        Call .PutAt(Gstring("c"), 86)
+        Call .PutAt(Gstring("x"), 87)
+        Call .PutAt(Gstring("e"), 88)
+        Call .PutAt(Gstring("f"), 89)
+        Call .PutAt(Gstring("a"), 90)
+        Call .PutAt(Gstring("a"), 99)
         
         t.StartCounter
         Call .Sort(descending, Comparer:=Nothing)
@@ -559,7 +604,7 @@ Sub TestArray2()
                 Debug.Print "i: " & i & "  " & ga.ElementAt(i)
         Next
 
-        Debug.Print .BinarySearch(GString("zzz"), descending, .LowerBound, .Length, GenericValue.Comparer)
+        Debug.Print .BinarySearch(Gstring("zzz"), descending, .LowerBound, .Length, GenericValue.Comparer)
         Call .Reverse
         Call .Elements.Clear
     End With
@@ -577,15 +622,15 @@ Public Sub TestList()
     Set t = New CTimer
 
     t.StartCounter
-    Call List.Add(GString("test0"))
-    Call List.AddAll(GenericArray.AsArray(GString("test1"), GString("test3"), GString("test2"), GString("test4"), GString("test5"), GString("test3")))
+    Call List.Add(Gstring("test0"))
+    Call List.AddAll(GenericArray.AsArray(Gstring("test1"), Gstring("test3"), Gstring("test2"), Gstring("test4"), Gstring("test5"), Gstring("test3")))
     With List.Elements.Iterator
         Do While .HasNext(Item)
             Debug.Print Item
         Loop
     End With
     
-    Call List.RemoveAll(GenericArray.AsArray(GString("test3"), GString("test1")))
+    Call List.RemoveAll(GenericArray.AsArray(Gstring("test3"), Gstring("test1")))
     
     With List.Elements.Iterator
         Do While .HasNext(Item)
@@ -613,17 +658,17 @@ Sub testMap()
     Dim i As Long, Pair As IGeneric, Item As IGeneric
     
     Dim hm As GenericLinkedMap
-    Set hm = GenericLinkedMap.Build(1000)
+    Set hm = GenericLinkedMap.Build(100)
     Dim t As CTimer
     Set t = New CTimer
     
     t.StartCounter
-    For i = 1 To 500
-        Call hm.Add(GString("Key " & i), GNumeric(i))
+    For i = 1 To 5000
+        Call hm.Add(Gstring("Key " & i), Gnumeric(i))
     Next
     Debug.Print t.TimeElapsed
-    Debug.Print "Original"
-    Debug.Print System.Generic(hm)
+'    Debug.Print "Original"
+'    Debug.Print System.Generic(hm)
     
 '    For i = 1 To hm.Elements.Count
 '
@@ -676,7 +721,7 @@ Sub testOrderedMap()
     
     t.StartCounter
     For i = 1 To 30
-        Call hm.Add(GString("Key " & i), GNumeric(i))
+        Call hm.Add(Gstring("Key " & i), Gnumeric(i))
     Next
 
     With hm.Elements.Iterator
