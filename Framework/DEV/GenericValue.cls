@@ -97,7 +97,7 @@ Public Property Get VarType() As VbVarType: VarType = VBA.VarType(myclass.Value)
 Public Property Get Size() As Byte: Size = 16: End Property
 Public Property Get Instance() As IGeneric: Set Instance = Me: End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = Me: End Property
-Public Function Convert(ByVal Value As Variant) As GenericValue
+Public Function Convert(ByRef Value As Variant) As GenericValue
     
     If (VBA.IsNull(Value)) Then _
         Set Convert = GenericValue: Exit Function
@@ -107,6 +107,7 @@ Public Function Convert(ByVal Value As Variant) As GenericValue
     myclass.Value = Null
     
 End Function
+
 Private Function EmptyStructure() As Member: End Function
 
 Public Function CompareTo(ByVal Other As GenericValue) As CompareResult
@@ -176,7 +177,7 @@ End Function
 
 Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult
 
-    Dim x As GenericValue, y As GenericValue
+    Dim X As GenericValue, Y As GenericValue
     Dim i As Variant, j As Variant
     
     If A Is B Then _
@@ -188,7 +189,7 @@ Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGener
     If B Is Nothing Then _
         IGenericComparer_Compare = CompareResult.isgreater: Exit Function
         
-    Set x = A: i = x.ToValue: Set y = B: j = y.ToValue
+    Set X = A: i = X.ToValue: Set Y = B: j = Y.ToValue
     
     Select Case True
         Case i > j: IGenericComparer_Compare = isgreater
@@ -200,7 +201,7 @@ End Function
 
 Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
     
-    Dim x As GenericValue, y As GenericValue
+    Dim X As GenericValue, Y As GenericValue
     
     If A Is B Then _
         IGenericComparer_Equals = True: Exit Function
@@ -208,8 +209,8 @@ Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneri
     If A Is Nothing Or B Is Nothing Then _
         IGenericComparer_Equals = False: Exit Function
     
-    Set x = A: Set y = B
+    Set X = A: Set Y = B
     
-    IGenericComparer_Equals = x.ToValue = y.ToValue
+    IGenericComparer_Equals = X.ToValue = Y.ToValue
 
 End Function

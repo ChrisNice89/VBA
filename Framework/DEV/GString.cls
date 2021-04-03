@@ -57,7 +57,7 @@ Private Const SORT_STRINGSORT = &H1000 ' Benutzt eine String-Sort-Methode
 ' anstatt einer Wort Sortierung. In einer String-Sort-Sortierung kommen
 ' Sonderzeichen wie "?,#;*..." vor den Buchstaben
 
-Private Const INTERNAL_POOL_SIZE As Long = 2 ^ 10
+Private Const INTERNAL_CACHE_SIZE As Long = 2 ^ 16
 Private Const DEFAULT_DELIMITER As String = ","
 Private Const MAXVALUE As Double = 2 ^ 31
 Private Const LEFTSHIFT As Long = 2& ^ 5
@@ -95,42 +95,39 @@ Public Property Get LastChar() As Gstring: Set LastChar = Me.GetAt(myclass.Lengt
 Public Property Get IsNullOrEmpty() As Boolean: myclass.Length = 0: End Property
 Public Property Get Value() As String: Value = myclass.Value: End Property
 
-Public Function Build(ByRef Value As String) As Gstring
-Attribute Build.VB_UserMemId = 0
+Public Function Of(ByRef Value As String) As Gstring
+Attribute Of.VB_UserMemId = 0
     
+    Dim Char As Gstring
+    Dim Code As Long
+    Static CharCache As GenericArray
+        
     If Not (Me Is Gstring) Then _
-        Set Build = Gstring.Build(Value): Exit Function
-
-    If Value = DEFAULT_VALUE Then _
-        Set Build = Gstring: Exit Function
+        Set Of = Gstring.Of(Value): Exit Function
 
     myclass.Length = Len(Value)
 
     If myclass.Length = 1 Then
 
-        Static Chars As GenericArray
-        If Chars Is Nothing Then _
-            Set Chars = GenericArray.Build(2 ^ 16)
-
-        Dim Char As Gstring
-        Dim Code As Long
+        If CharCache Is Nothing Then _
+            Set CharCache = GenericArray.Of(INTERNAL_CACHE_SIZE)
 
         Code = AscW(Value)
-        Set Char = Chars.ElementAt(Code)
+        Set Char = CharCache.ElementAt(Code)
 
         If Char Is Nothing Then
             myclass.Value = ChrW$(Code)
             Set Char = New Gstring
-            Set Chars.ElementAt(Code) = Char
             myclass = EmptyStructure
+            Set CharCache.ElementAt(Code) = Char
         End If
 
-        Set Build = Char
+        Set Of = Char
         Exit Function
     End If
-        
+  
     myclass.Value = Value
-    Set Build = New Gstring
+    Set Of = New Gstring
     myclass = EmptyStructure
   
 End Function
@@ -141,7 +138,7 @@ Private Sub Class_Initialize()
     End With
 End Sub
 
-Public Function GetAt(ByVal Index As Long) As Gstring: Set GetAt = Gstring.Build(VBA.Mid$(myclass.Value, Index + 1, 1)): End Function
+Public Function GetAt(ByVal Index As Long) As Gstring: Set GetAt = Gstring.Of(VBA.mid$(myclass.Value, Index + 1, 1)): End Function
 
 Public Function ToFormat(ByVal Format As StringFormat) As String
     
@@ -153,9 +150,9 @@ Public Function ToFormat(ByVal Format As StringFormat) As String
     End Select
  
 End Function
-Public Function ToLower() As Gstring: Set ToLower = Gstring.Build(LCase(myclass.Value)): End Function
-Public Function ToUpper() As Gstring: Set ToUpper = Gstring.Build(UCase(myclass.Value)): End Function
-Public Function Replace(ByVal Find As String, ReplaceWith As String) As Gstring: Set Replace = Gstring.Build(VBA.Replace$(myclass.Value, Find, ReplaceWith)): End Function
+Public Function ToLower() As Gstring: Set ToLower = Gstring.Of(LCase(myclass.Value)): End Function
+Public Function ToUpper() As Gstring: Set ToUpper = Gstring.Of(UCase(myclass.Value)): End Function
+Public Function Replace(ByVal Find As String, ReplaceWith As String) As Gstring: Set Replace = Gstring.Of(VBA.Replace$(myclass.Value, Find, ReplaceWith)): End Function
 Public Function IsLike(ByVal Pattern As String) As Boolean: IsLike = (myclass.Value Like Pattern): End Function
 Public Function StartsWith(ByVal RegEx As String) As Boolean: StartsWith = (myclass.Value Like ("%" & RegEx)): End Function
 Public Function EndsWith(ByVal RegEx As String) As Boolean: EndsWith = (myclass.Value Like (RegEx & "%")): End Function
@@ -164,12 +161,12 @@ Public Function Find(ByRef Text As String) As Long: Find = InStr(1, myclass.Valu
 Public Function AsciiList() As GenericArray
     
     Dim Ascii As GenericArray
-    Set Ascii = GenericArray.Build(255)
+    Set Ascii = GenericArray.Of(255)
     
     Dim i As Long
     With Ascii
         For i = 0 To 255 - 1
-            Set .ElementAt(i) = Gstring.Build(VBA.Chr$(i))
+            Set .ElementAt(i) = Gstring.Of(VBA.Chr$(i))
         Next
     End With
     
@@ -177,18 +174,18 @@ Public Function AsciiList() As GenericArray
     
 End Function
 
-Public Function CountChar(ByVal C As String) As Long
+Public Function CountChar(ByVal c As String) As Long
     
     Dim i As Long
     Dim Ascii As Integer
     
-    If Len(C) > 1 Then _
+    If Len(c) > 1 Then _
         System.Throw(Me, "Private Function GetArrayStructure").NotSupported ("Len(C) > 1")
 
-    Ascii = AscW(C)
+    Ascii = AscW(c)
     
     For i = 1 To Me.Length
-        If AscW(Mid$(myclass.Value, i, 1)) = Ascii Then _
+        If AscW(mid$(myclass.Value, i, 1)) = Ascii Then _
             CountChar = CountChar + 1
     Next
     
@@ -200,9 +197,9 @@ Public Function Insert(ByVal Index As Long, Text As Gstring) As Gstring
         Index = 1
     
     If myclass.Length >= Index Then
-        Set Insert = Gstring.Build(VBA.Mid$(myclass.Value, 1, Index - 1) _
+        Set Insert = Gstring.Of(VBA.mid$(myclass.Value, 1, Index - 1) _
                         & Text.Value _
-                        & VBA.Mid$(myclass.Value, Index, myclass.Length - Index + 1))
+                        & VBA.mid$(myclass.Value, Index, myclass.Length - Index + 1))
     Else
         Set Insert = Me.Concat(Text)
     End If
@@ -214,7 +211,7 @@ Public Function Concat(ByVal Other As Gstring, Optional ByVal Delimiter = vbNull
     If Other Is Nothing Then _
         Set Concat = Me: Exit Function
         
-    Set Concat = Gstring.Build(myclass.Value & Delimiter & Other.Value)
+    Set Concat = Gstring.Of(myclass.Value & Delimiter & Other.Value)
     
 End Function
 
@@ -223,7 +220,7 @@ Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVa
     Dim i As Long
         
     If Number <= 0 Then _
-        Set Repeat = Gstring.Build(DEFAULT_VALUE): Exit Function
+        Set Repeat = Gstring.Of(DEFAULT_VALUE): Exit Function
         
     ReDim Strings(1 To Number) As String
     
@@ -231,7 +228,7 @@ Public Function Repeat(ByVal Number As Long, ByVal Text As String, Optional ByVa
         Strings(i) = Text
     Next
     
-    Set Repeat = Gstring.Build(VBA.Join$(Strings, Delimiter))
+    Set Repeat = Gstring.Of(VBA.Join$(Strings, Delimiter))
 
 End Function
 
@@ -242,11 +239,11 @@ Public Function Split(ByVal Delimiter As String) As GenericArray
     Dim Strings As Variant
     
     Strings = VBA.Split(myclass.Value, Delimiter)
-    Set Parts = GenericArray.Build(UBound(Strings) + 1)
+    Set Parts = GenericArray.Of(UBound(Strings) + 1)
     
     With Parts
         For i = LBound(Strings) To UBound(Strings)
-            Set .ElementAt(i) = Gstring.Build(CStr(Strings(i)))
+            Set .ElementAt(i) = Gstring.Of(CStr(Strings(i)))
         Next
     End With
 
@@ -359,10 +356,10 @@ Private Function GenericValue_ToParameter( _
                                           Optional ByVal Name As Gstring, _
                                           Optional ByVal Direction As ISqlParameterDirection = ISqlParameterDirection.ParamInput) As Variant
     
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = Direction
         .Name = Name.Value
         .Attributes = adParamNullable '64
@@ -371,7 +368,7 @@ Private Function GenericValue_ToParameter( _
         .Value = myclass.Value
     End With
     
-    Set GenericValue_ToParameter = p
+    Set GenericValue_ToParameter = P
     
 End Function
 
@@ -383,7 +380,15 @@ Private Property Get GenericValue_ToValue() As Variant: GenericValue_ToValue = m
 Private Property Get GenericValue_Instance() As IGeneric: Set GenericValue_Instance = Me: End Property
 Private Property Get GenericValue_Comparer() As IGenericComparer: Set GenericValue_Comparer = IGenericComparer: End Property
 
-Private Function GenericValue_Convert(ByVal Value As Variant) As GenericValue: Set GenericValue_Convert = Gstring.Build(VBA.IIf(VBA.IsNull(Value), DEFAULT_VALUE, Value)): End Function
+Private Function GenericValue_Convert(ByRef Value As Variant) As GenericValue
+
+    If VBA.IsNull(Value) Then _
+        Set GenericValue_Convert = IGeneric_Default: Exit Function
+        
+    Set GenericValue_Convert = Gstring.Of(CStr(Value))
+
+End Function
+
 Private Function GenericValue_CompareTo(ByVal Other As GenericValue) As CompareResult
     
     If Other Is Nothing Then _
@@ -403,10 +408,10 @@ Private Function GenericValue_ToSqlParameter( _
                                                  Optional ByVal Direction As ISqlParameterDirection = 1&, _
                                                  Optional ByVal Name As String) As Object
     
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = Direction
         .Name = Name
         .Attributes = 64 'adParamNullable '64
@@ -415,7 +420,7 @@ Private Function GenericValue_ToSqlParameter( _
         .Value = myclass.Value
     End With
     
-    Set GenericValue_ToSqlParameter = p
+    Set GenericValue_ToSqlParameter = P
     
 End Function
 
@@ -435,7 +440,7 @@ End Function
 
 Private Function IGenericReadOnlyList_IndexOf(ByVal Element As IGeneric) As Long: IGenericReadOnlyList_IndexOf = Me.Find(Text:=Element.ToString): End Function
 
-'IGenericCollection
+'IGenericCollection'Todo
 Private Sub IGenericCollection_Clear(): End Sub
 Private Function IGenericCollection_Contains(ByVal Element As IGeneric) As Boolean: IGenericCollection_Contains = Not Me.Find(Text:=Element.ToString) = -1: End Function
 
@@ -483,7 +488,7 @@ Private Function IGenericCollection_ToArray() As GenericArray
     
     Set Chars = GenericArray
     If Not myclass.Length = 0 Then
-        Set Chars = GenericArray.Build(myclass.Length)
+        Set Chars = GenericArray.Of(myclass.Length)
          
         With Chars
             For i = .LowerBound To .Length - 1: Set .ElementAt(i) = Me.GetAt(i): Next

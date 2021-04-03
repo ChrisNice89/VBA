@@ -66,6 +66,7 @@ Implements IGenericIterator
 Private Const BASE_INDEX As Long = 0
 Private Const SORT_ORDER As Long = 1 'Ascending
 Private Const IS_RED As Byte = 1
+Private Const IS_BLACK As Byte = 0
 
 Private Type InternalStack
     Size As Long
@@ -88,6 +89,17 @@ End Type
 Private myclass As Member
 
 Public Property Get Elements() As IGenericCollection: Set Elements = Me: End Property
+Public Property Get First() As Long: First = BASE_INDEX: End Property
+Public Property Get Last() As Long
+    
+    Dim c As Long
+    Last = BASE_INDEX
+    c = SizeOf(myclass.Root)
+    
+    If c > 0 Then _
+        Last = c - Last - 1
+   
+End Property
 Public Property Get SortOrder() As SortOrder: SortOrder = SORT_ORDER: End Property
 Private Property Get IsHeightBalanced(): IsHeightBalanced = CheckHeightBalance(myclass.Root): End Property
 Private Property Get IsBalanced(): IsBalanced = CheckRedBlackBalance(myclass.Root): End Property
@@ -105,13 +117,13 @@ Public Function Build(Optional ByVal Comparer As IGenericComparer) As GenericSor
     
 End Function
 
-Public Function AsList(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As IGenericList
+Public Function Of(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As IGenericReadOnlyList
         
     Dim SortedSet As GenericSortedSet
     Dim i As Long
     
     If IsMissing(GenericValues) Then _
-        Call System.Throw(Me, "Public Function Create").NoSuchElement("ParamArray GenericValues are missing")
+        Call System.Throw(Me, "Public Function Of").NoSuchElement("ParamArray GenericValues are missing")
         
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
@@ -121,21 +133,21 @@ Public Function AsList(ByVal Comparer As IGenericComparer, ParamArray GenericVal
     With SortedSet
         For i = LBound(GenericValues) To UBound(GenericValues)
             
-            If Not VarType(GenericValues(i)) = vbObject Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+            If Not VBA.IsObject(GenericValues(i)) Then _
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
             
             If (GenericValues(i) Is Nothing) Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Element is nothing")
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Element is nothing")
             
             If Not TypeOf GenericValues(i) Is IGeneric Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
                 
             Call .Add(Value:=GenericValues(i))
             
         Next
     End With
     
-    Set AsList = SortedSet
+    Set Of = SortedSet
     
 End Function
 
@@ -236,6 +248,15 @@ Public Function GetLowerThan(ByVal Value As IGeneric) As IGeneric
     
 End Function
 
+Public Function Reverse() As IGenericIterator
+
+    Dim c As Member
+
+    Call LoadIterator(c.Iterator, myclass.Root, Reverse:=True)
+    Set Reverse = System.CreateInstance(New GenericSortedSet, VarPtr(c), LenB(c))
+
+End Function
+
 Public Sub CopyTo( _
                     ByVal GArray As GenericArray, _
                     ByVal ArrayIndex As Long, _
@@ -295,7 +316,10 @@ Public Function DoUnionWith(ByVal Collection As IGenericCollection) As GenericSo
     End If
     
     With Enumerable
-        Do While .HasNext(Element): Call Me.Add(Element): Loop
+        Do While .HasNext(Element)
+'            If FindNode(Element) Is Nothing Then
+                Call Me.Add(Element)
+        Loop
     End With
     
     Set DoUnionWith = Me
@@ -307,7 +331,7 @@ Public Function DoExeceptWith(ByVal Collection As IGenericCollection) As Long
     Call System.Throw(Me, "Public Function ExeceptWith").NotImplemented("Not implemented yet")
         
     Dim Candidate As IGeneric
-    Dim result As Long
+    Dim Result As Long
     Dim Min As GenericNode
     Dim Max As GenericNode
     Dim Node As GenericNode
@@ -331,14 +355,14 @@ Public Function DoExeceptWith(ByVal Collection As IGenericCollection) As Long
                 If Not (myclass.Comparer.Compare(Candidate, Min) = islower) Then
                     If Not (myclass.Comparer.Compare(Candidate, Max) = isgreater) Then
                         If RemoveNode(FindNode(Candidate)) Then _
-                            result = result + 1
+                            Result = Result + 1
                     End If
                 End If
             Loop
         End With
     End If
     
-    DoExeceptWith = result
+    DoExeceptWith = Result
     
 End Function
 
@@ -371,11 +395,12 @@ Public Function DoIntersectWith(ByVal Collection As IGenericCollection) As Long
     
         Do While .HasNext(Value)
             Set Node = FindNode(Value)
-            If RemoveNode(Node) Then
+            'If RemoveNode(Node) Then
+            If Not Node Is Nothing Then
                 With Node 'reset
                     '  Set .Value = Value 'not necessary -if not reference equal?!
                     .Count = 1
-                    .IsRed = False
+                    .State = IS_BLACK
                 End With
                 Call NodesToSave.Add(Node)
             End If
@@ -403,7 +428,7 @@ Public Function DoIntersectWith(ByVal Collection As IGenericCollection) As Long
                     
                     If Split4Node(Current) Then _
                         If (Parent Is Nothing) = False Then _
-                            If Parent.IsRed Then _
+                            If Parent.State = IS_RED Then _
                                 Call EnsureBalance(Current, Parent, GrandParent, GreatGrandParent)
                     
                     Set GreatGrandParent = GrandParent
@@ -429,12 +454,12 @@ Public Function DoIntersectWith(ByVal Collection As IGenericCollection) As Long
             End If
             
             Set Node.Parent = Parent
-            Node.IsRed = True
+            Node.State = IS_RED
             
-            If (Parent.IsRed) Then _
+            If (Parent.State = IS_RED) Then _
                 Call EnsureBalance(Node, Parent, GrandParent, GreatGrandParent)
             
-            myclass.Root.IsRed = False
+            myclass.Root.State = IS_BLACK
         Loop
         
     End With
@@ -455,13 +480,13 @@ Public Function Add(ByVal Value As IGeneric) As Boolean
     Dim Parent  As GenericNode
     Dim GrandParent As GenericNode
     Dim GreatGrandParent As GenericNode
-    Dim Order As CompareResult, i As Long
+    Dim Order As CompareResult
 
     If (myclass.Root Is Nothing) Then
         Set myclass.Root = New GenericNode
         With myclass.Root
             Set .Value = Value
-            .IsRed = False
+            .State = IS_BLACK
             .Count = 1
         End With
         Add = True
@@ -474,22 +499,19 @@ Public Function Add(ByVal Value As IGeneric) As Boolean
             Order = .Compare(Value, Current.Value) '*SORT_ORDER
            
             If (Order = IsEqual) Then
-                myclass.Root.IsRed = False
-'                Do While Parent Is Nothing = False
-'                    With Parent
-'                        .Count = .Count - 1
-'                        Set Parent = .Parent
-'                    End With
-'                Loop
-                
+                myclass.Root.State = IS_BLACK
+                Do While Parent Is Nothing = False
+                    Call Parent.AddCount(-1)
+                    Set Parent = Parent.Parent
+                Loop
                 Exit Function
             End If
             
-'            Current.Count = Current.Count + 1
+            Call Current.AddCount(1)
             
             If Split4Node(Current) Then _
                 If (Parent Is Nothing) = False Then _
-                    If Parent.IsRed Then _
+                    If Parent.State = IS_RED Then _
                         Call EnsureBalance(Current, Parent, GrandParent, GreatGrandParent)
             
             Set GreatGrandParent = GrandParent
@@ -512,7 +534,7 @@ Public Function Add(ByVal Value As IGeneric) As Boolean
     With Node
         Set .Value = Value
         Set .Parent = Parent
-        .IsRed = True
+        .State = IS_RED
         .Count = 1
     End With
     
@@ -522,17 +544,10 @@ Public Function Add(ByVal Value As IGeneric) As Boolean
         Set Parent.Right = Node
     End If
     
-    If (Parent.IsRed) Then _
+    If (Parent.State = IS_RED) Then _
         Call EnsureBalance(Node, Parent, GrandParent, GreatGrandParent)
     
-    Do
-        With Parent
-            .Count = .Count + 1
-            Set Parent = .Parent
-        End With
-    Loop While Parent Is Nothing = False
-    
-    myclass.Root.IsRed = False
+    myclass.Root.State = IS_BLACK
     Add = True
      
 End Function
@@ -641,49 +656,49 @@ End Function
 
 Private Function InOrderNext(ByVal Node As GenericNode) As GenericNode
     
-    Dim p As GenericNode
+    Dim P As GenericNode
     
     If Node Is Nothing Then _
         Exit Function
         
     If Node.Right Is Nothing = False Then
-        Set p = FindMinOf(Node.Right)
+        Set P = FindMinOf(Node.Right)
     Else
-        Set p = Node.Parent
-        Do While (p Is Nothing) = False
-            If (p.Right Is Node) = False Then _
+        Set P = Node.Parent
+        Do While (P Is Nothing) = False
+            If (P.Right Is Node) = False Then _
                 Exit Do
             
-            Set Node = p
-            Set p = p.Parent
+            Set Node = P
+            Set P = P.Parent
         Loop
     End If
     
-    Set InOrderNext = p
+    Set InOrderNext = P
         
 End Function
 
 Private Function InOrderPrevious(ByVal Node As GenericNode) As GenericNode
 
-    Dim p As GenericNode
+    Dim P As GenericNode
     
     If Node Is Nothing Then _
         Exit Function
         
     If (Node.Left Is Nothing) = False Then
-        Set p = FindMaxOf(Node.Left)
+        Set P = FindMaxOf(Node.Left)
     Else
-        Set p = Node.Parent
-        Do While (p Is Nothing) = False
-            If (p.Left Is Node) = False Then _
+        Set P = Node.Parent
+        Do While (P Is Nothing) = False
+            If (P.Left Is Node) = False Then _
                 Exit Do
             
-            Set Node = p
-            Set p = p.Parent
+            Set Node = P
+            Set P = P.Parent
         Loop
     End If
     
-    Set InOrderPrevious = p
+    Set InOrderPrevious = P
 
 End Function
 
@@ -772,7 +787,7 @@ Private Sub ReplaceNode( _
     Else
     
         If Not (Succesor.Right Is Nothing) Then _
-            Succesor.Right.IsRed = True
+            Succesor.Right.State = IS_RED
         
         If Not (ParentOfSuccesor Is Match) Then _
             Set ParentOfSuccesor.Left = Succesor.Right: _
@@ -783,7 +798,7 @@ Private Sub ReplaceNode( _
     End If
         
     If Not (Succesor Is Nothing) Then _
-        Succesor.IsRed = Match.IsRed
+        Succesor.State = Match.State
                 
     Call ReplaceChildOfNodeOrRoot(ParentOfMatch, Match, Succesor)
                    
@@ -797,7 +812,7 @@ Private Function InsertLeftLeaning(ByVal Node As GenericNode, ByVal Value As IGe
         With InsertLeftLeaning
             Set .Value = Value
 '            Set .Parent = Node.Parent
-            .IsRed = True
+            .State = IS_RED
             .Count = 1
         End With
         Exit Function
@@ -817,17 +832,16 @@ Private Function InsertLeftLeaning(ByVal Node As GenericNode, ByVal Value As IGe
     End With
     
     If (IsRed(Node.Right)) Then _
-        Set Node = RotateLeft(Node): Node.IsRed = Node.Left.IsRed: Node.Left.IsRed = True
+        Set Node = RotateLeft(Node): Node.State = Node.Left.State: Node.Left.State = IS_RED
     
     If (IsRed(Node.Left)) Then _
         If IsRed(Node.Left.Left) Then _
-            Set Node = RotateRight(Node): Node.IsRed = Node.Right.IsRed: Node.Right.IsRed = True
+            Set Node = RotateRight(Node): Node.State = Node.Right.State: Node.Right.State = IS_RED
     
     With Node
         If (IsRed(.Left)) Then _
             If IsRed(.Right) Then _
-                .IsRed = Not .IsRed: .Left.IsRed = False: .Right.IsRed = False
-                'Call FlipColor(Node)
+                Call FlipColor(Node)
     End With
     
     Set InsertLeftLeaning = Node
@@ -853,23 +867,18 @@ Private Sub EnsureBalance( _
             Set NewChildOfGreatGrandParent = RotateRight(GrandParent)
         End If
         
-        If Not GrandParent Is NewChildOfGreatGrandParent Then
-            Debug.Print "hier"
-        End If
     Else
         If (CurrentIsOnRight) Then
             Set NewChildOfGreatGrandParent = RotateLeftRight(GrandParent)
         Else
             Set NewChildOfGreatGrandParent = RotateRightLeft(GrandParent)
         End If
-        If Not GrandParent Is NewChildOfGreatGrandParent Then
-            Debug.Print "hier"
-        End If
+
         Set Parent = GreatGrandParent
     End If
     
-    GrandParent.IsRed = True
-    NewChildOfGreatGrandParent.IsRed = False
+    GrandParent.State = IS_RED
+    NewChildOfGreatGrandParent.State = IS_BLACK
     
     If GreatGrandParent Is Nothing Then
         Set myclass.Root = NewChildOfGreatGrandParent
@@ -954,6 +963,7 @@ Private Function HeightOf(ByVal Node As GenericNode) As Long
     End If
 
 End Function
+
 Private Sub ReplaceChildOfNodeOrRoot( _
                                         ByVal Parent As GenericNode, _
                                         ByVal Child As GenericNode, _
@@ -982,28 +992,28 @@ End Function
 
 Private Function IsRed(ByVal Node As GenericNode) As Boolean
     If Not (Node Is Nothing) Then _
-        IsRed = Node.IsRed
+        IsRed = Node.State = IS_RED
 End Function
 
 Private Function IsBlack(ByVal Node As GenericNode) As Boolean
     If Not (Node Is Nothing) Then _
-        IsBlack = Not Node.IsRed
+        IsBlack = Node.State = IS_BLACK
 End Function
 
 Private Function IsNothingOrBlack(ByVal Node As GenericNode) As Boolean
     If (Node Is Nothing) Then _
         IsNothingOrBlack = True: Exit Function
     
-    IsNothingOrBlack = Not Node.IsRed
+    IsNothingOrBlack = Node.State = IS_BLACK
 End Function
 
 Private Function Split4Node(ByVal Node As GenericNode) As Boolean
     With Node
         If (IsRed(.Left)) Then
             If IsRed(.Right) Then
-                .IsRed = True
-                .Left.IsRed = False
-                .Right.IsRed = False
+                .State = IS_RED
+                .Left.State = IS_BLACK
+                .Right.State = IS_BLACK
                 Split4Node = True
             End If
         End If
@@ -1014,53 +1024,65 @@ Private Sub FlipColor(ByVal Node As GenericNode)
     
     If Not Node Is Nothing Then
         With Node
-            .IsRed = Not .IsRed
-            .Left.IsRed = Not .Left.IsRed
-            .Right.IsRed = Not .Right.IsRed
+            .State = IIf(.State = IS_RED, IS_BLACK, IS_RED)
+            .Left.State = IIf(.State = IS_RED, IS_BLACK, IS_RED)
+            .Right.State = IIf(.State = IS_RED, IS_BLACK, IS_RED)
         End With
     End If
 
 End Sub
 
-Private Function RotateLeft(ByVal x As GenericNode) As GenericNode
+Private Function RotateLeft(ByVal X As GenericNode) As GenericNode
 
-    Dim y  As GenericNode
+    Dim Y  As GenericNode
+    Dim i As Long, j As Long
     
-    With x
-        Set y = .Right
-        Set .Right = y.Left
+    With X
+        Set Y = .Right
+        Set .Right = Y.Left
         
         If Not .Right Is Nothing Then _
-            Set .Right.Parent = x
+            Set .Right.Parent = X: j = .Right.Count
         
-        Set y.Parent = .Parent
-        Set y.Left = x: Set .Parent = y
+        Set Y.Parent = .Parent
+        Set Y.Left = X: Set .Parent = Y
         
-        y.Count = .Count: Call UpdateSizeOf(x)
+        Y.Count = .Count
+        
+        If Not .Left Is Nothing Then _
+            i = .Left.Count
+
+        .Count = 1 + i + j
     End With
     
-    Set RotateLeft = y
+    Set RotateLeft = Y
     
 End Function
 
-Private Function RotateRight(ByVal x As GenericNode) As GenericNode
+Private Function RotateRight(ByVal X As GenericNode) As GenericNode
 
-    Dim y  As GenericNode
+    Dim Y  As GenericNode
+    Dim i As Long, j As Long
     
-    With x
-        Set y = .Left
-        Set .Left = y.Right
+    With X
+        Set Y = .Left
+        Set .Left = Y.Right
         
         If Not .Left Is Nothing Then _
-            Set .Left.Parent = x
+            Set .Left.Parent = X: i = .Left.Count
         
-        Set y.Parent = .Parent
-        Set y.Right = x: Set .Parent = y
+        Set Y.Parent = .Parent
+        Set Y.Right = X: Set .Parent = Y
         
-        y.Count = .Count: Call UpdateSizeOf(x)
+        Y.Count = .Count
+        
+        If Not .Right Is Nothing Then _
+           j = .Right.Count
+            
+        .Count = 1 + i + j
     End With
 
-    Set RotateRight = y
+    Set RotateRight = Y
     
 End Function
 
@@ -1180,28 +1202,25 @@ Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me.Elements.
 
 Private Function CloneTree(ByVal Node As GenericNode) As GenericNode
     
-    Dim newNode As GenericNode
+    Dim Clone As GenericNode
     
     If Node Is Nothing Then _
         Exit Function
-    Set newNode = New GenericNode
+    Set Clone = Node.Copy
     
-    With newNode
-        Set .Value = Node.Value
-        .Count = Node.Count
-        .IsRed = Node.IsRed
+    With Clone
         
         Set .Left = CloneTree(Node.Left)
         If Not .Left Is Nothing Then _
-            Set .Left.Parent = newNode
+            Set .Left.Parent = Clone
         
         Set .Right = CloneTree(Node.Right)
         If Not .Right Is Nothing Then _
-            Set .Right.Parent = newNode
+            Set .Right.Parent = Clone
             
     End With
     
-    Set CloneTree = newNode
+    Set CloneTree = Clone
     
 End Function
 
@@ -1246,8 +1265,8 @@ Private Sub IGenericList_RemoveAt(ByVal Index As Long): Call RemoveNode(FindNode
 
 'IGenericReadOnlyList
 Private Property Get IGenericReadOnlyList_Elements() As IGenericCollection: Set IGenericReadOnlyList_Elements = Me: End Property
-Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = BASE_INDEX: End Property
-Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = SizeOf(myclass.Root) - 1: End Property
+Private Property Get IGenericReadOnlyList_First() As Long: IGenericReadOnlyList_First = Me.First: End Property
+Private Property Get IGenericReadOnlyList_Last() As Long: IGenericReadOnlyList_Last = Me.Last: End Property
 
 Private Function IGenericReadOnlyList_GetAt(ByVal Index As Long) As IGeneric
     
@@ -1281,21 +1300,8 @@ Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericColl
             Set Enumerable = Collection
         End If
         
-'        Dim Min As GenericNode
-'        Dim Max As GenericNode
-'
-'        Set Min = Me.GetMin
-'        Set Max = Me.GetMax
-    
         With Enumerable
             Do While .HasNext(Candidate)
-            
-'                If (myclass.Comparer.Compare(Candidate, Min) = IsLower) Then _
-'                    Exit Function
-'
-'                If (myclass.Comparer.Compare(Candidate, Max) = IsGreater) Then _
-'                    Exit Function
-'
                 If (FindNode(Value:=Candidate) Is Nothing) Then _
                     Exit Function
             Loop
@@ -1350,10 +1356,10 @@ End Function
 
 Private Function IGenericCollection_Iterator() As IGenericIterator
     
-    Dim C As Member
+    Dim c As Member
 
-    Call LoadIterator(C.Iterator, myclass.Root, False)
-    Set IGenericCollection_Iterator = System.CreateInstance(New GenericSortedSet, VarPtr(C), LenB(C))
+    Call LoadIterator(c.Iterator, myclass.Root, False)
+    Set IGenericCollection_Iterator = System.CreateInstance(New GenericSortedSet, VarPtr(c), LenB(c))
     
 End Function
 

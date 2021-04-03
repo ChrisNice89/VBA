@@ -81,7 +81,7 @@ End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric: Set Item = myclass.LookupTable.Item(Key): End Property
 Public Property Set Item(ByVal Key As IGeneric, ByVal Item As IGeneric)
     
-    If (myclass.LookupTable.Add(Key, Item, Overwrite:=True)) Then _
+    If (myclass.LookupTable.TryAdd(Key, Item, Overwrite:=True)) Then _
         Call myclass.KeyList.Add(Key)
         
 End Property
@@ -109,7 +109,7 @@ End Function
 Public Function GetEntry(ByVal Index As Long) As GenericPair
 
     Dim Key As IGeneric
-    Set Key = Me.GetKey(Index)
+    Set Key = myclass.KeyList.ElementAt(Index)
     Set GetEntry = GenericPair.Build(Key, myclass.LookupTable.Item(Key))
     
 End Function
@@ -117,20 +117,19 @@ End Function
 Public Function GetKeys() As GenericArray: Set GetKeys = myclass.KeyList.Elements.ToArray: End Function
 Public Function GetValues() As GenericArray: Set GetValues = myclass.LookupTable.GetValues: End Function
 
-Public Sub Add(ByVal Key As IGeneric, ByVal Item As IGeneric)
+Public Sub Add(ByVal Key As IGeneric, ByVal Value As IGeneric, Optional ByVal Overwrite As Boolean)
     
-    If (myclass.LookupTable.Add(Key, Item, Overwrite:=False)) Then _
+    If (myclass.LookupTable.TryAdd(Key, Value, Overwrite:=Overwrite)) Then _
         Call myclass.KeyList.Add(Key)
    
 End Sub
 
-
 Public Function AddAll(ByVal Map As GenericLinkedMap) As GenericOrderedMap
     
-    Dim p As GenericPair
+    Dim P As GenericPair
   
     With Map.Elements.Iterator()
-        Do While .HasNext(p): Call Me.Add(p.Key, p.Value): Loop
+        Do While .HasNext(P): Call Me.Add(P.Key, P.Value): Loop
     End With
     
     Set AddAll = Me
@@ -141,44 +140,37 @@ Public Function ContainsKey(ByVal Key As IGeneric) As Boolean: ContainsKey = myc
 Public Function ContainsValue(ByVal Value As IGeneric) As Boolean: ContainsValue = myclass.LookupTable.ContainsValue(Value): End Function
 
 Public Function TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: TryGetValue = myclass.LookupTable.TryGetValue(Key, Value): End Function
-Public Function IndexOfKey(ByVal Key As IGeneric) As Long
-
-    If (Key Is Nothing) Then _
-        Call System.Throw(Me, "Public Function IndexOfKey").IsNothing("(Key Is Nothing)")
-    
-    IndexOfKey = myclass.KeyList.IndexOf(Element:=Key, Comparer:=myclass.Comparer)
-    
-End Function
+Public Function IndexOfKey(ByVal Key As IGeneric) As Long: IndexOfKey = myclass.KeyList.IndexOf(Element:=Key, Comparer:=myclass.Comparer): End Function
 'Use equality
 Public Function IndexOfValue(ByVal Value As IGeneric) As Long
     
     Dim i As Long
     
-    For i = myclass.KeyList.First To myclass.KeyList.Last
-        If (myclass.LookupTable.Item(myclass.KeyList.ElementAt(i)).Equals(Value)) Then _
-            IndexOfValue = i: Exit Function
-    Next
-   
+    With myclass.KeyList
+        For i = .First To .Last
+            If (myclass.LookupTable.Item(.ElementAt(i)).Equals(Value)) Then _
+                IndexOfValue = i: Exit Function
+        Next
+    End With
     IndexOfValue = -1
 
 End Function
 
 Public Sub RemoveAt(ByVal Index As Long)
 
-    If (myclass.LookupTable.Remove(Me.GetKey(Index))) Then _
+    If (myclass.LookupTable.TryRemove(myclass.KeyList.ElementAt(Index))) Then _
         Call myclass.KeyList.RemoveAt(Index)
         
 End Sub
 
-Public Function Remove(ByVal Key As IGeneric) As Boolean
+Public Function TryRemove(ByVal Key As IGeneric) As Boolean
     
     Dim i As Long
-    i = Me.IndexOfKey(Key:=Key)
     
-    If (i >= 0) Then
-        If (myclass.LookupTable.Remove(myclass.KeyList.ElementAt(i))) Then _
-            Call myclass.KeyList.RemoveAt(i): Remove = True
-        
+    If (myclass.LookupTable.TryRemove(Key)) Then
+        i = myclass.KeyList.IndexOf(Element:=Key, Comparer:=myclass.Comparer)
+        Call myclass.KeyList.RemoveAt(Index:=i)
+        TryRemove = True
     End If
     
 End Function
@@ -227,31 +219,72 @@ End Function
 
 Private Function IGenericReadOnlyList_IndexOf(ByVal Element As IGeneric) As Long
   
-    If Not (Element Is Nothing) Then _
-        If myclass.LookupTable.ContainsKey(Element) Then _
-            IGenericReadOnlyList_IndexOf = myclass.KeyList.IndexOf(Element): Exit Function
-  
-    IGenericReadOnlyList_IndexOf = -1
+    If myclass.LookupTable.ContainsKey(Key:=Element) Then
+        IGenericReadOnlyList_IndexOf = myclass.KeyList.IndexOf(Element:=Element, Comparer:=myclass.Comparer)
+    Else
+        IGenericReadOnlyList_IndexOf = -1
+    End If
     
 End Function
 
 'IGenericMap
 Private Property Get IGenericMap_Elements() As IGenericCollection: Set IGenericMap_Elements = Me: End Property
-Private Property Set IGenericMap_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set myclass.LookupTable.Item(Key) = Item: End Property
-Private Property Get IGenericMap_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericMap_Item = myclass.LookupTable.Item(Key): End Property
+Private Property Set IGenericMap_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set Me.Item(Key) = Item: End Property
+Private Property Get IGenericMap_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericMap_Item = Me.Item(Key): End Property
 Private Property Get IGenericMap_Comparer() As IGenericComparer: Set IGenericMap_Comparer = myclass.Comparer: End Property
+'Todo
+Private Function IGenericMap_TryAdd(ByVal Key As IGeneric, ByVal Value As IGeneric, Optional ByVal Overwrite As Boolean) As Boolean
+    
+    If (myclass.LookupTable.TryAdd(Key, Value, Overwrite:=Overwrite)) Then
+        Call myclass.KeyList.Add(Key)
+        IGenericMap_TryAdd = True
+    End If
+    
+End Function
+
+Private Function IGenericMap_TryRemove(ByVal Key As IGeneric) As Boolean: IGenericMap_TryRemove = Me.TryRemove(Key:=Key): End Function
+Private Function IGenericMap_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericMap_TryGetValue = myclass.LookupTable.TryGetValue(Key, Value): End Function
 
 Private Function IGenericMap_GetKeys() As GenericArray: Set IGenericMap_GetKeys = Me.GetKeys: End Function
 Private Function IGenericMap_GetValues() As GenericArray: Set IGenericMap_GetValues = Me.GetValues: End Function
 Private Function IGenericMap_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericMap_ContainsKey = myclass.LookupTable.ContainsKey(Key): End Function
 Private Function IGenericMap_ContainsValue(ByVal Value As IGeneric) As Boolean: IGenericMap_ContainsValue = myclass.LookupTable.ContainsValue(Value): End Function
-Private Function IGenericMap_Add(ByVal Key As IGeneric, ByVal Value As IGeneric, Optional ByVal Overwrite As Boolean) As Boolean: IGenericMap_Add = myclass.LookupTable.Add(Key, Value, Overwrite:=Overwrite): End Function
-Private Function IGenericMap_Remove(ByVal Key As IGeneric) As Boolean: IGenericMap_Remove = myclass.LookupTable.Remove(Key): End Function
-Private Function IGenericMap_RemoveAll(ByVal Keys As IGenericCollection) As Long: IGenericMap_RemoveAll = myclass.LookupTable.RemoveAll(Keys:=Keys): End Function
-Private Function IGenericMap_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericMap_TryGetValue = myclass.LookupTable.TryGetValue(Key, Value): End Function
+
+Private Function IGenericMap_RemoveAll(ByVal Keys As IGenericCollection) As Long
+    
+    Dim Key As IGeneric
+    Dim Count As Long
+    
+    With Keys.Iterator
+        Do While .HasNext(Key)
+            If Me.TryRemove(Key:=Key) Then _
+                Count = Count + 1
+            
+        Loop
+    End With
+    
+    IGenericMap_RemoveAll = Count
+    
+End Function
+
 Private Function IGenericMap_AddAll(ByVal Map As IGenericMap, Optional ByVal Overwrite As Boolean) As IGenericMap
-    Call myclass.LookupTable.AddAll(Map, Overwrite:=Overwrite)
+    
+    Dim Pair As GenericPair
+  
+    If (Map Is Nothing) Then _
+        Call System.Throw(Me, "Private Function IGenericMap_AddAll").IsNothing("(Map Is Nothing)")
+    
+    If (Map Is Me) Then _
+        Exit Function
+            
+    If (Map.Elements.Count > 0) Then
+        With Map.Elements.Iterator
+            Do While .HasNext(Pair): Call Me.Add(Pair.Key, Pair.Value, Overwrite:=Overwrite): Loop
+        End With
+    End If
+    
     Set IGenericMap_AddAll = Me
+    
 End Function
 
 'IGenericCollection
@@ -288,12 +321,12 @@ Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericColl
 Private Function IGenericCollection_Iterator() As IGenericIterator: Set IGenericCollection_Iterator = myclass.LookupTable.Elements.Iterator: End Function
 Private Function IGenericCollection_Copy() As IGenericCollection
     
-    Dim C As Member
+    Dim c As Member
     
-    Set C.Comparer = myclass.Comparer
-    Set C.LookupTable = myclass.LookupTable.Elements.Copy
-    Set C.KeyList = myclass.KeyList.Elements.Copy
+    Set c.Comparer = myclass.Comparer
+    Set c.LookupTable = myclass.LookupTable.Elements.Copy
+    Set c.KeyList = myclass.KeyList.Elements.Copy
     
-    Set IGenericCollection_Copy = System.CreateInstance(New GenericOrderedMap, VarPtr(C), LenB(C))
+    Set IGenericCollection_Copy = System.CreateInstance(New GenericOrderedMap, VarPtr(c), LenB(c))
     
 End Function

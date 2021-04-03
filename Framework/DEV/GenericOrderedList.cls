@@ -140,8 +140,8 @@ Public Property Let Capacity(ByVal Value As Long)
             
             With myclass.Items
                 If (myclass.Size > 0) Then _
-                    Call CopyMemory(Dst:=ByVal newItems.AdressOf(Index:=.LowerBound), Src:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size): _
-                    Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size)
+                    Call CopyMemory(Dst:=ByVal newItems.AdressOf(.LowerBound), Src:=ByVal .AdressOf(.LowerBound), Length:=.Size): _
+                    Call ZeroMemory(Dst:=ByVal .AdressOf(.LowerBound), Length:=.Size)
             End With
             
             Set myclass.Items = newItems
@@ -190,27 +190,27 @@ Public Function Build(Optional ByVal Capacity As Long) As GenericOrderedList
     
 End Function
 
-Public Function AsList(ParamArray GenericValues() As Variant) As IGenericList
+Public Function Of(ParamArray GenericValues() As Variant) As IGenericReadOnlyList
     
     Dim newList As Member
     Dim i As Long
     
     If IsMissing(GenericValues) Then _
-        Call System.Throw(Me, "Public Function AsList").NoSuchElement("ParamArray GenericValues are missing")
+        Call System.Throw(Me, "Public Function Of").NoSuchElement("ParamArray GenericValues are missing")
     
     Set newList.Items = GenericArray.Build(UBound(GenericValues) + 1)
     
     With newList.Items
         For i = LBound(GenericValues) To UBound(GenericValues)
             
-            If Not VarType(GenericValues(i)) = vbObject Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+            If Not VBA.IsObject(GenericValues(i)) Then _
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
             
             If (GenericValues(i) Is Nothing) Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Element is nothing")
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Element is nothing")
             
             If Not TypeOf GenericValues(i) Is IGeneric Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
                 
             Set .ElementAt(i) = GenericValues(i)
           
@@ -218,7 +218,7 @@ Public Function AsList(ParamArray GenericValues() As Variant) As IGenericList
         newList.Size = .Length
     End With
     
-    Set AsList = System.CreateInstance(New GenericOrderedList, VarPtr(newList), LenB(newList))
+    Set Of = System.CreateInstance(New GenericOrderedList, VarPtr(newList), LenB(newList))
     
 End Function
 
@@ -299,8 +299,8 @@ Public Function InsertAll(ByVal Index As Long, ByVal Collection As IGenericColle
             
         With myclass.Items
             If (Index < myclass.Size) Then _
-                Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + Count), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index)): _
-                Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(Count))
+                Call CopyMemory(Dst:=ByVal .AdressOf(Index + Count), Src:=ByVal .AdressOf(Index), Length:=.SizeOf(myclass.Size - Index)): _
+                Call ZeroMemory(Dst:=ByVal .AdressOf(Index), Length:=.SizeOf(Count))
                 
         End With
         
@@ -330,8 +330,8 @@ Public Sub Insert(ByVal Index As Long, ByVal Item As IGeneric)
         
     With myclass.Items
         If (Index < myclass.Size) Then _
-            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index + 1), Src:=ByVal .AdressOf(Index), Length:=.SizeOf(myclass.Size - Index)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(Index), Length:=.SizeOf(1))
          
          Set .ElementAt(Index) = Item
 
@@ -361,8 +361,8 @@ Public Sub RemoveAt(ByVal Index As Long)
         Set .ElementAt(Index) = Nothing
      
         If (Index < InterlockedDecrement(myclass.Size)) Then _
-            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=myclass.Size), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index), Src:=ByVal .AdressOf(Index + 1), Length:=.SizeOf(myclass.Size - Index)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(myclass.Size), Length:=.SizeOf(1))
     
     End With
 
@@ -428,12 +428,12 @@ Public Function Sort( _
     If (myclass.Size - Index < Count) Then _
         Call System.Throw(Me, "Public Sub Sort").ArgOutOfRange("(myclass.Size - Index < Count)")
         
-    Call myclass.Items.Sort(Order:=Order, Index:=Index, Length:=Count, Comparer:=Comparer)
+    Call myclass.Items.Sort(Order:=Order, Comparer:=Comparer, Index:=Index, Length:=Count)
     Set Sort = Me
     
 End Function
 
-Public Function Contains(Item As IGeneric) As Boolean: Contains = Not (myclass.Items.IndexOf(Value:=Item, Length:=myclass.Size, Comparer:=IGenericComparer) = -1): End Function
+Public Function Contains(Item As IGeneric) As Boolean: Contains = Not (myclass.Items.IndexOf(Value:=Item, Length:=myclass.Size) = -1): End Function
 
 Public Function BinarySearch( _
                                 ByVal Element As IGeneric, _
@@ -457,7 +457,10 @@ Public Function BinarySearch( _
     If (myclass.Size - Index < Count) Then _
         Call System.Throw(Me, "Public Function BinarySearch").InvalidInput("(myclass.Size - Index < Count)")
     
-    BinarySearch = myclass.Items.BinarySearch(Value:=Element, Order:=Order, Index:=Index, Length:=Count, Comparer:=Comparer)
+    If Comparer Is Nothing Then _
+        Set Comparer = IGenericComparer
+
+    BinarySearch = myclass.Items.BinarySearch(Value:=Element, Order:=Order, Comparer:=Comparer, Index:=Index, Length:=Count)
     
 End Function
 
@@ -537,7 +540,7 @@ Private Function RemoveBulk(ByVal Collection As IGenericCollection, ByVal Check 
     Dim Candidate As IGeneric
     Dim Enumerable As IGenericIterator
     
-    Dim result As Long
+    Dim Result As Long
     Dim r As Long
     Dim w As Long
     Dim found As Boolean
@@ -572,14 +575,15 @@ Private Function RemoveBulk(ByVal Collection As IGenericCollection, ByVal Check 
             If Not (r = myclass.Size) Then _
                 Call System.Throw(Me, "Public Sub RemoveAll").InvalidOperation
           
-            For r = w To myclass.Size - 1: Set .ElementAt(r) = Nothing: Next
-            result = myclass.Size - w
+            Call .Fill(Element:=Nothing, Index:=w, Length:=myclass.Size - 1)
+            
+            Result = myclass.Size - w
            
         End With
     End If
     
-    myclass.Size = myclass.Size - result
-    RemoveBulk = result
+    myclass.Size = myclass.Size - Result
+    RemoveBulk = Result
 
 End Function
 
@@ -673,7 +677,7 @@ Private Function IGenericCollection_ToArray() As GenericArray
 
 End Function
 
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Not (myclass.Items.IndexOf(Value:=Item, Length:=myclass.Size, Comparer:=IGenericComparer) = -1): End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = Not (myclass.Items.IndexOf(Value:=Item, Length:=myclass.Size) = -1): End Function
 Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericCollection) As Boolean
  
     Dim Candidate As IGeneric
@@ -692,7 +696,7 @@ Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericColl
 
         With Enumerable
             Do While .HasNext(Candidate)
-                If (myclass.Items.IndexOf(Value:=Candidate, Length:=myclass.Size, Comparer:=IGenericComparer) < 0) Then _
+                If (myclass.Items.IndexOf(Value:=Candidate, Length:=myclass.Size) < 0) Then _
                     Exit Function
             Loop
         End With
@@ -712,21 +716,21 @@ Private Sub IGenericCollection_Clear()
 End Sub
 'Todo check excees
 Private Function IGenericCollection_Copy() As IGenericCollection
-    Dim C As Member
+    Dim c As Member
 
-    Set C.Items = myclass.Items.Elements.Copy ' Depends on excees
-    C.Size = myclass.Size
+    Set c.Items = myclass.Items.Elements.Copy ' Depends on excees
+    c.Size = myclass.Size
  
-    Set IGenericCollection_Copy = System.CreateInstance(New GenericOrderedList, VarPtr(C), LenB(C))
+    Set IGenericCollection_Copy = System.CreateInstance(New GenericOrderedList, VarPtr(c), LenB(c))
    
 End Function
 
 Private Function IGenericCollection_Iterator() As IGenericIterator
 
-    Dim C As Member
+    Dim c As Member
     
-    Call LoadIterator(C.Iterator, myclass.Items, myclass.Size)
-    Set IGenericCollection_Iterator = System.CreateInstance(New GenericOrderedList, VarPtr(C), LenB(C))
+    Call LoadIterator(c.Iterator, myclass.Items, myclass.Size)
+    Set IGenericCollection_Iterator = System.CreateInstance(New GenericOrderedList, VarPtr(c), LenB(c))
 
 End Function
 

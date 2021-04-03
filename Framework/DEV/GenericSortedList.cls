@@ -114,8 +114,8 @@ Public Property Let Capacity(ByVal Value As Long)
             
             If (myclass.Size > 0) Then
                 With myclass.Items
-                    Call CopyMemory(Dst:=ByVal newItems.AdressOf(Index:=.LowerBound), Src:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size): _
-                    Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=.LowerBound), Length:=.Size)
+                    Call CopyMemory(Dst:=ByVal newItems.AdressOf(.LowerBound), Src:=ByVal .AdressOf(.LowerBound), Length:=.Size): _
+                    Call ZeroMemory(Dst:=ByVal .AdressOf(.LowerBound), Length:=.Size)
                 End With
             End If
            
@@ -149,13 +149,13 @@ Public Function Build(Optional ByVal Capacity As Long, Optional ByVal Comparer A
     
 End Function
 
-Public Function AsList(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As IGenericList
+Public Function Of(ByVal Comparer As IGenericComparer, ParamArray GenericValues() As Variant) As IGenericReadOnlyList
         
     Dim i As Long
     Dim newList As Member
     
     If IsMissing(GenericValues) Then _
-        Call System.Throw(Me, "Public Function Create").NoSuchElement("ParamArray GenericValues are missing")
+        Call System.Throw(Me, "Public Function Of").NoSuchElement("ParamArray GenericValues are missing")
         
     If Comparer Is Nothing Then _
         Set Comparer = IGenericComparer
@@ -167,14 +167,14 @@ Public Function AsList(ByVal Comparer As IGenericComparer, ParamArray GenericVal
     With newList.Items
         For i = LBound(GenericValues) To UBound(GenericValues)
             
-            If Not VarType(GenericValues(i)) = vbObject Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
+            If Not VBA.IsObject(GenericValues(i)) Then _
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Datatype {" & TypeName$(GenericValues(i)) & "} not allowed")
             
             If (GenericValues(i) Is Nothing) Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Element is nothing")
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Element is nothing")
             
             If Not TypeOf GenericValues(i) Is IGeneric Then _
-                Call System.Throw(Me, "Public Function AsList").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
+                Call System.Throw(Me, "Public Function Of").InvalidInput("Not TypeOf GenericValues(i) Is IGeneric")
                 
             Set .ElementAt(i) = GenericValues(i)
             
@@ -189,7 +189,7 @@ Public Function AsList(ByVal Comparer As IGenericComparer, ParamArray GenericVal
             
     End With
                                                                           
-    Set AsList = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
+    Set Of = System.CreateInstance(New GenericSortedList, VarPtr(newList), LenB(newList))
     
 End Function
                                                                                         
@@ -235,40 +235,11 @@ Public Sub TrimExcess()
 
 End Sub
 
-Public Function Contains(ByVal Element As IGeneric) As Boolean: Contains = (myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer) >= 0): End Function
+Public Function Contains(ByVal Element As IGeneric) As Boolean: Contains = (myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Comparer:=myclass.Comparer, Length:=myclass.Size) >= 0): End Function
 
 Public Function Distinct() As GenericSortedList
-    
-    Dim uniqueCount As Long
-    Dim lastIndex As Long
-    Dim i As Long
-    
-    If myclass.Size > 1 Then
-        With myclass.Items
-            
-            lastIndex = Me.Last
-            uniqueCount = .LowerBound + 1 'first element doesnt need to be shifted
-    
-            'Find first dup element
-            Do While (uniqueCount < myclass.Size)
-                If (myclass.Comparer.Compare(.ElementAt(uniqueCount - 1), .ElementAt(uniqueCount)) = IsEqual) Then _
-                    Exit Do
-                uniqueCount = uniqueCount + 1
-            Loop
-            'Shift unique elements
-            For i = uniqueCount + 1 To lastIndex
-                If Not (myclass.Comparer.Compare(.ElementAt(i - 1), .ElementAt(i)) = IsEqual) Then
-                    Set .ElementAt(uniqueCount) = .ElementAt(i)
-                    uniqueCount = uniqueCount + 1
-                End If
-            Next
-            
-            Call ClearRange(uniqueCount, lastIndex)
-            myclass.Size = uniqueCount
-            
-        End With
-    End If
-    
+
+    myclass.Size = myclass.Items.Distinct(Comparer:=myclass.Comparer, Length:=myclass.Size)
     Set Distinct = Me
     
 End Function
@@ -292,8 +263,8 @@ Public Sub RemoveAt(ByVal Index As Long)
     
     If (Index < InterlockedDecrement(myclass.Size)) Then
         With myclass.Items
-            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index), Src:=ByVal .AdressOf(Index:=Index + 1), Length:=.SizeOf(myclass.Size - Index)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=myclass.Size), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index), Src:=ByVal .AdressOf(Index + 1), Length:=.SizeOf(myclass.Size - Index)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(myclass.Size), Length:=.SizeOf(1))
         End With
     End If
     
@@ -306,7 +277,7 @@ Public Function Add(ByVal Element As IGeneric) As Boolean
        
     Dim i As Long
    
-    i = myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer)
+    i = myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Comparer:=myclass.Comparer, Length:=myclass.Size)
    
     If (i >= 0&) Then _
         i = Not i
@@ -366,8 +337,8 @@ Private Sub Insert(ByVal Index As Long, ByVal Element As IGeneric)
     
     With myclass.Items
         If (Index < myclass.Size) Then _
-            Call CopyMemory(Dst:=ByVal .AdressOf(Index:=Index + 1), Src:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(myclass.Size - Index)): _
-            Call ZeroMemory(Dst:=ByVal .AdressOf(Index:=Index), Length:=.SizeOf(1))
+            Call CopyMemory(Dst:=ByVal .AdressOf(Index + 1), Src:=ByVal .AdressOf(Index), Length:=.SizeOf(myclass.Size - Index)): _
+            Call ZeroMemory(Dst:=ByVal .AdressOf(Index), Length:=.SizeOf(1))
     
         Set .ElementAt(Index) = Element
     End With
@@ -385,7 +356,7 @@ End Sub
 Public Function IndexOf(ByVal Element As IGeneric) As Long
      
     Dim ret As Long
-    ret = myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer)
+    ret = myclass.Items.BinarySearch(Value:=Element, Order:=SORT_ORDER, Comparer:=myclass.Comparer, Length:=myclass.Size)
 
     IndexOf = IIf(ret >= 0, ret, -1)
     
@@ -436,7 +407,7 @@ End Sub
 Private Function RemoveBulk(ByVal Collection As IGenericCollection, ByVal Check As Boolean) As Long
     
     Dim Candidate As IGeneric
-    Dim result As Long
+    Dim Result As Long
     Dim r As Long
     Dim w As Long
     
@@ -456,30 +427,24 @@ Private Function RemoveBulk(ByVal Collection As IGenericCollection, ByVal Check 
             If Not (r = myclass.Size) Then _
                 Call System.Throw(Me, "Public Sub RemoveAll").InvalidOperation
             
-            Call ClearRange(w, myclass.Size - 1)
-            result = myclass.Size - w
+            Call .Fill(Element:=Nothing, Index:=w, Length:=myclass.Size - 1)
+            
+            Result = myclass.Size - w
            
         End With
     End If
     
-    myclass.Size = myclass.Size - result
-    RemoveBulk = result
+    myclass.Size = myclass.Size - Result
+    RemoveBulk = Result
     
 End Function
-
-Private Sub ClearRange(ByVal BeginAt As Long, ByVal EndAt As Long)
-    Dim i As Long
-    With myclass.Items
-        For i = BeginAt To EndAt: Set .ElementAt(i) = Nothing: Next
-    End With
-End Sub
 
 Private Function Merge( _
                         ByVal SortedA As GenericArray, _
                         ByVal LengthA As Long, _
                         ByVal SortedB As GenericArray, _
                         ByVal LengthB As Long, _
-                        Optional ByVal Comparer As IGenericComparer, _
+                        ByVal Comparer As IGenericComparer, _
                         Optional ByVal Order As SortOrder = SORT_ORDER) As GenericArray
     
     Dim i As Long, j As Long, k As Long
@@ -488,9 +453,6 @@ Private Function Merge( _
     Dim Merged As GenericArray
     Set Merged = GenericArray.Build(LengthA + LengthB)
     
-    If Comparer Is Nothing Then _
-        Set Comparer = IGenericComparer
-        
     With Merged
     
         Do While (i < LengthA And j < LengthB)
@@ -614,7 +576,7 @@ Private Function IGenericCollection_ToArray() As GenericArray
 
 End Function
 
-Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = myclass.Items.BinarySearch(Value:=Item, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer) >= 0: End Function
+Private Function IGenericCollection_Contains(ByVal Item As IGeneric) As Boolean: IGenericCollection_Contains = myclass.Items.BinarySearch(Value:=Item, Order:=SORT_ORDER, Comparer:=myclass.Comparer, Length:=myclass.Size) >= 0: End Function
 
 Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericCollection) As Boolean
     
@@ -634,7 +596,7 @@ Private Function IGenericCollection_ContainsAll(ByVal Collection As IGenericColl
         
         With Enumerable
             Do While .HasNext(Candidate)
-                If (myclass.Items.BinarySearch(Value:=Candidate, Order:=SORT_ORDER, Length:=myclass.Size, Comparer:=myclass.Comparer) < 0) Then _
+                If (myclass.Items.BinarySearch(Value:=Candidate, Order:=SORT_ORDER, Comparer:=myclass.Comparer, Length:=myclass.Size) < 0) Then _
                     Exit Function
             Loop
         End With
@@ -657,22 +619,22 @@ End Sub
 
 Private Function IGenericCollection_Copy() As IGenericCollection
     
-    Dim C As Member
+    Dim c As Member
     
-    Set C.Comparer = myclass.Comparer
-    Set C.Items = myclass.Items.Elements.Copy
-    C.Size = myclass.Size
+    Set c.Comparer = myclass.Comparer
+    Set c.Items = myclass.Items.Elements.Copy
+    c.Size = myclass.Size
  
-    Set IGenericCollection_Copy = System.CreateInstance(New GenericSortedList, VarPtr(C), LenB(C))
+    Set IGenericCollection_Copy = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
     
 End Function
 
 Private Function IGenericCollection_Iterator() As IGenericIterator
 
-    Dim C As Member
+    Dim c As Member
     
-    Call LoadIterator(C.Iterator, myclass.Items, myclass.Size)
-    Set IGenericCollection_Iterator = System.CreateInstance(New GenericSortedList, VarPtr(C), LenB(C))
+    Call LoadIterator(c.Iterator, myclass.Items, myclass.Size)
+    Set IGenericCollection_Iterator = System.CreateInstance(New GenericSortedList, VarPtr(c), LenB(c))
 
 End Function
 

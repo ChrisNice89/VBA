@@ -72,19 +72,19 @@ End Function
 
 Private Function IGenericComparer_Compare(ByVal A As IGeneric, ByVal B As IGeneric) As CompareResult
 
-    Dim x As GenericPair, y As GenericPair
-    Set x = A: Set y = B
+    Dim X As GenericPair, Y As GenericPair
+    Set X = A: Set Y = B
     
-    IGenericComparer_Compare = System.DefaultComparer.Compare(x.Key, y.Key)
+    IGenericComparer_Compare = System.DefaultComparer.Compare(X.Key, Y.Key)
     
 End Function
 '
 Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
 
-    Dim x As GenericPair, y As GenericPair
-    Set x = A: Set y = B
+    Dim X As GenericPair, Y As GenericPair
+    Set X = A: Set Y = B
 
-    IGenericComparer_Equals = System.DefaultComparer.Equals(x.Key, y.Key)
+    IGenericComparer_Equals = System.DefaultComparer.Equals(X.Key, Y.Key)
 
 End Function
 

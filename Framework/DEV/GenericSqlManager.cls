@@ -32,9 +32,9 @@ Option Explicit
 Implements IGeneric
 Implements IGenericIterator
 
-Private Const EXECUTE_ASYNC As Boolean = True
+Private Const EXECUTE_ASYNC As Boolean = False
 Private Const CLOSE_CONNECTION_IMMEDIATELY  As Boolean = True
-Private Const DEBUG_MODE  As Boolean = False
+Private Const DEBUG_MODE  As Boolean = True
 Private Const ASYNC_OPTION As Long = 16& 'Dont change!
 
 Private Enum ISqlQueryStatus
@@ -254,7 +254,6 @@ End Type
 Private Type Member
     Credentials As Credentials
     Locks As Long
-    ParameterList As IGenericList
     Iterator As Iterator
 End Type
 Private myclass As Member
@@ -265,10 +264,6 @@ Attribute Database.VB_VarHelpID = -1
 Public Property Get IsConnected() As Boolean
     If Not Database Is Nothing Then _
         IsConnected = (Database.State And ISqlObjectState.IsOpen_State) = ISqlObjectState.IsOpen_State
-End Property
-
-Private Property Get ParameterList() As IGenericList
-    Set ParameterList = GenericOrderedList.Build(64)
 End Property
 
 Public Function BuildSqlConnection( _
@@ -289,8 +284,7 @@ Public Function BuildSqlConnection( _
         End If
         .Prompt = PromptNever
     End With
-   
-    Set myclass.ParameterList = ParameterList
+
     Set BuildSqlConnection = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
 
 End Function
@@ -308,8 +302,7 @@ Public Function BuildAccessConnection( _
         .Filepassword = Filepassword
         .Prompt = PromptNever
     End With
-    
-    Set myclass.ParameterList = ParameterList
+ 
     Set BuildAccessConnection = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
 
 End Function
@@ -324,7 +317,6 @@ Public Function BuildCsvConnection(ByVal File As String, Optional ByVal Filepass
         .Prompt = PromptNever
     End With
     
-    Set myclass.ParameterList = ParameterList
     Set BuildCsvConnection = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
 
 End Function
@@ -338,107 +330,93 @@ Public Function BuildExcelConnection(ByVal File As String, Optional ByVal Filepa
         .SSPI = True
         .Prompt = PromptNever
     End With
-    
-    Set myclass.ParameterList = ParameterList
+
     Set BuildExcelConnection = System.CreateInstance(New GenericSqlManager, VarPtr(myclass), LenB(myclass))
     
 End Function
 
 Private Function ExecuteSchema(ByVal Schema As ISqlDBSchema, ParamArray Args() As Variant) As ADODB.Recordset
     
-    Dim Rs As ADODB.Recordset
+    Dim RS As ADODB.Recordset
     
     With CreateConnection(myclass.Credentials)
         Call .Open
         
         If IsMissing(Args) Then
-            Set Rs = .OpenSchema(Schema)
+            Set RS = .OpenSchema(Schema)
         Else
-            Set Rs = .OpenSchema(Schema, Args)
+            Set RS = .OpenSchema(Schema, Args)
         End If
         
 '        Call .Close
         
     End With
     
-    Set ExecuteSchema = Rs
+    Set ExecuteSchema = RS
     
 End Function
 
-Public Function SelectWhere(ByVal Table As Gstring, ByVal Fields As IGenericReadOnlyList, ByVal Where As GenericPair, ByVal Operator As Gstring) As IGenericIterator
+Public Function SelectFrom(ByVal Table As Gstring, ByVal Fields As IGenericReadOnlyList) As Gstring
    
-    Const SELECT_STATEMENT As String = "SELECT [] FROM [] WHERE []"
+    Const SELECT_STATEMENT As String = "SELECT [] FROM []"
     Dim Sql As Gstring
     
     If (Fields Is Nothing) Then _
-        Call System.Throw(Me, "Public Function SelectWhere").IsNothing("(Fields Is Nothing)")
-'
-    Call Me.Prepare
-    Call Connect(Database)
-'
+        Call System.Throw(Me, "Public Function SelectFrom").IsNothing("(Fields Is Nothing)")
+
     With Gstring
-        Set Sql = .Build(SELECT_STATEMENT) _
-                    .Insert(26, .Build(Where.Key)).Concat(.Build(Operator.Value & "?")) _
+        Set Sql = .Of(SELECT_STATEMENT) _
                     .Insert(17, Table) _
                     .Insert(9, .Join(Fields, "],["))
-                   
     End With
     
-    Call myclass.ParameterList.Add(Where.Value)
-    Set SelectWhere = Me.RowMapper(Me.Query(Sql.Value, myclass.ParameterList), Fields)
-    Call myclass.ParameterList.Pop
+    Set SelectFrom = Sql
     
 End Function
 
-Public Sub UpdateWhere(ByVal Table As Gstring, ByVal Updates As IGenericMap, ByVal Where As GenericPair, ByVal Operator As Gstring)
+Public Function Where(ByVal Field As Gstring, ByVal Operator As Gstring) As Gstring
+    Set Where = Gstring.Of("WHERE [" & Field.Value & "]" & Operator.Value & "?")
+End Function
+
+Public Function Update(ByVal Table As Gstring, ByVal Fields As IGenericReadOnlyList) As Gstring
     
-    Const UPDATE_STATEMENT As String = "UPDATE [] SET []=? WHERE []"
+    Const UPDATE_STATEMENT As String = "UPDATE [] SET []=?"
     Dim Sql As Gstring
     
-    If (Updates Is Nothing) Then _
-        Call System.Throw(Me, "Public Sub UpdateWhere").IsNothing("(Updates Is Nothing)")
-    
-    Call Me.Prepare
-    Call Connect(Database)
+    If (Fields Is Nothing) Then _
+        Call System.Throw(Me, "Public Function Update").IsNothing("(Fields Is Nothing)")
 
     With Gstring
-        Set Sql = .Build(UPDATE_STATEMENT) _
-                    .Insert(27, .Build(Where.Key)).Concat(.Build(Operator.Value & "?")) _
-                    .Insert(16, .Join(Updates.GetKeys, "]=?,[")) _
+        Set Sql = .Of(UPDATE_STATEMENT) _
+                    .Insert(16, .Join(Fields, "]=?,[")) _
                     .Insert(9, Table)
     End With
     
-    Call myclass.ParameterList.AddAll(Updates.GetValues)
-    Call myclass.ParameterList.Add(Where.Value)
-    Call Me.Execute(Sql.Value, myclass.ParameterList)
-    Call myclass.ParameterList.Elements.Clear
+    Set Update = Sql
     
-End Sub
+End Function
 
-Public Sub InsertInto(ByVal Table As Gstring, ByVal Updates As IGenericMap)
+Public Function InsertInto(ByVal Table As Gstring, ByVal Fields As IGenericReadOnlyList) As Gstring
 
     Const INSERT_STATEMENT As String = "INSERT INTO [] () VALUES ()"
     Dim Sql As Gstring
     
-    If (Updates Is Nothing) Then _
-        Call System.Throw(Me, "Public Sub InsertInto").IsNothing("(Updates)")
-    
-    Call Me.Prepare
-    Call Connect(Database)
-    
+    If (Fields Is Nothing) Then _
+        Call System.Throw(Me, "Public Function InsertInto").IsNothing("(Fields Is Nothing)")
+
     'Used String Readonly here to avoid .Repeat(Parameters.Count, "?").ToArray !
     With Gstring
-        Set Sql = .Build(INSERT_STATEMENT) _
-                    .Insert(27, .Join(.Repeat(Updates.Elements.Count, "?"), ",")) _
-                    .Insert(17, .Join(Updates.GetKeys, ",")) _
+        Set Sql = .Of(INSERT_STATEMENT) _
+                    .Insert(27, .Join(.Repeat(Fields.Elements.Count, "?"), ",")) _
+                    .Insert(17, .Join(Fields, ",")) _
                     .Insert(14, Table)
     End With
       
-    Call Me.Execute(Sql.Value, Updates.GetValues)
+    Set InsertInto = Sql
     
-End Sub
+End Function
 
-Public Function Execute(ByVal Sql As String, Optional ByVal Parameters As IGenericReadOnlyList) As Long
+Public Function Execute(ByVal Sql As Gstring, Optional ByVal Parameters As IGenericReadOnlyList) As Long
   
     Dim AffectedRecords As Long
     
@@ -446,24 +424,31 @@ Public Function Execute(ByVal Sql As String, Optional ByVal Parameters As IGener
         Set Database = CreateConnection(myclass.Credentials)
     
     On Error Resume Next
-        Call CreateCommand(Database, Sql, 0, Parameters).Execute(AffectedRecords, , 128 + IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
+        Call CreateCommand(Database, Sql.Value, 0, Parameters).Execute(AffectedRecords, , 128 + IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
     On Error GoTo 0
     
     Execute = AffectedRecords
     
 End Function
 
-Public Function Query(ByVal Sql As String, Optional ByVal Parameters As IGenericReadOnlyList) As ADODB.Recordset
+Public Function Query(ByVal Sql As Gstring, ByVal Fields As IGenericReadOnlyList, Optional ByVal Parameters As IGenericReadOnlyList) As IGenericIterator
     
+    Dim RS As ADODB.Recordset
+    
+    If (Fields Is Nothing) Then _
+        Call System.Throw(Me, "Public Function Query").IsNothing("(Fields Is Nothing)")
+        
     If Database Is Nothing Then _
         Set Database = CreateConnection(myclass.Credentials)
     
-    Set Query = Me.CreateRecordset(ISqlRecodsetType.Disconnected_Recordset)
+    Set RS = Me.CreateRecordset(ISqlRecodsetType.Disconnected_Recordset)
     
     On Error Resume Next
-        Call Query.Open(CreateCommand(Database, Sql, ReturnRecords, Parameters), , , , IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
+        Call RS.Open(CreateCommand(Database, Sql.Value, ReturnRecords, Parameters), , , , IIf(EXECUTE_ASYNC, ASYNC_OPTION, 0))
     On Error GoTo 0
-
+    
+    Set Query = GenericSqlManager.RowMapper(RS, Fields)
+    
 End Function
 
 Public Sub Prepare()
@@ -503,7 +488,7 @@ Public Function ColumnsOf(ByVal Table As Gstring) As IGenericReadOnlyList
     With TableStructure(Table.Value)
         Set Columns = GenericOrderedList.Build(255)
         Do While Not (.EOF)
-            Call Columns.Add(Gstring.Build(.Fields.Item("COLUMN_NAME").Value))
+            Call Columns.Add(Gstring.Of(.Fields.Item("COLUMN_NAME").Value))
             
 '            Field = VBA.Replace$(.Fields.Item("COLUMN_NAME").Value, " ", "_")
 '            Field = VBA.Replace$(Field, ":", "_")
@@ -521,10 +506,10 @@ End Function
 
 Public Function CreateRecordset(ByVal Setting As ISqlRecodsetType) As ADODB.Recordset
 
-    Dim Rs As ADODB.Recordset
-    Set Rs = New ADODB.Recordset
+    Dim RS As ADODB.Recordset
+    Set RS = New ADODB.Recordset
     
-    With Rs
+    With RS
         Select Case Setting
             Case ISqlRecodsetType.ReadOnly_Recordset
                 .CursorLocation = ISqlCursorLocation.UseServer
@@ -557,7 +542,7 @@ Public Function CreateRecordset(ByVal Setting As ISqlRecodsetType) As ADODB.Reco
         End Select
     End With
 
-    Set CreateRecordset = Rs
+    Set CreateRecordset = RS
    
 End Function
 
@@ -618,7 +603,7 @@ Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Con
         
         Select Case Credentials.ProviderTyp
             Case ISqlConnectionProvider.Excel_Provider
-                Select Case VBA.Mid$(Credentials.DataSource, InStrRev(Credentials.DataSource, ".") + 1)
+                Select Case VBA.mid$(Credentials.DataSource, InStrRev(Credentials.DataSource, ".") + 1)
                     Case "xlsx"  'Excel 2007-2010 Workbook (.xlsx)
                         .Provider = "Microsoft.ACE.OLEDB.12.0"
                         .Properties("Extended Properties") = "Excel 12.0 Xml;HDR=YES"
@@ -692,7 +677,7 @@ Private Function CreateConnection(ByRef Credentials As Credentials) As ADODB.Con
         .Properties("Persist Security Info") = False
         .Properties("Prompt") = Credentials.Prompt
         
-        Dim p As ADODB.Property
+        Dim P As ADODB.Property
         If DEBUG_MODE Then
 '            Debug.Print "Provider :: " & .Provider
 '            For Each p In .Properties
@@ -740,10 +725,12 @@ Private Function CreateCommand( _
         If Parameters.Elements.Count > 0 Then
             With Parameters.Elements.Iterator
                 Do While .HasNext(Value)
-                    If Not Value.Instance.IsDefault Then
-                        Call Command.Parameters.Append(Value.ToSqlParameter)
-                    Else
-                        Call Command.Parameters.Append(Command.CreateParameter(Type:=Value.SqlType, Direction:=ISqlParameterDirection.ParamInput, Size:=1, Value:=Null)) 'Size=? for type 202 TODO
+                    If Not Value Is Nothing Then
+                        If Not Value.Instance.IsDefault Then
+                            Call Command.Parameters.Append(Value.ToSqlParameter)
+                        Else
+                            Call Command.Parameters.Append(Command.CreateParameter(Type:=Value.SqlType, Direction:=ISqlParameterDirection.ParamInput, Size:=1, Value:=Null)) 'Size=? for type 202 TODO
+                        End If
                     End If
                 Loop
             End With
@@ -918,13 +905,16 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset, ByVal Fields As IGen
         Set newClass.Iterator.Buffer = GenericOrderedMap.Build(.Elements.Count)
         
         For i = .First To .Last
+        
             Set FieldName = .GetAt(i)
             
             If (FieldName Is Nothing) Then _
                 Call System.Throw(Me, "Public Function RowMapper").IsNothing("Fields")
             
             Set newClass.Iterator.Fields(i).Name = FieldName
+            
             Call newClass.Iterator.Buffer.Add(FieldName, Nothing)
+            
         Next
         
     End With
@@ -947,7 +937,7 @@ Public Function RowMapper(ByVal Records As ADODB.Recordset, ByVal Fields As IGen
                 Call System.Throw(Me, "Public Function RowMapper").InvalidInput("number if fields that should mapped doesnt match with queried recordset fields")
             
             For i = 0 To .Fields.Count - 1
-'                Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type
+                Debug.Print .Fields(i).Name & " :: " & .Fields(i).Type
                 Select Case .Fields(i).Type
                     Case Is = ISqlDataType.Boolean_Type: Set newClass.Iterator.Fields(i).SqlType = Gbool
                     Case Is = ISqlDataType.Char_Type: Set newClass.Iterator.Fields(i).SqlType = Gstring

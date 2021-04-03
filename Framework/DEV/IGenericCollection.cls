@@ -24,6 +24,7 @@ Option Explicit
 '*
 '*
 '* Notes: The IGenericCollection does about what you'd expect given that a Collection represents a group of objects.
+'*        Provides a custom implementation of the IGenericComparer interface for use with collection classes such as the Map class, or with methods such as List.Sort.
 '*
 '*
 '*
@@ -58,11 +59,11 @@ Private Function IGenericComparer_GetHashCode(ByVal Obj As IGeneric) As Long
     If (Obj Is Nothing) Then _
         Exit Function
     
-    Dim C As IGenericCollection
+    Dim c As IGenericCollection
     Dim H As Double
     
-    Set C = Obj
-    With C.Iterator
+    Set c = Obj
+    With c.Iterator
         Do While .HasNext(Obj)
             If Not Obj Is Nothing Then
                 H = 31 * H + Obj.HashValue
@@ -103,7 +104,7 @@ End Function
 Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneric) As Boolean
     
     Dim First As IGenericCollection, Second As IGenericCollection
-    Dim x As IGenericIterator, y As IGenericIterator
+    Dim X As IGenericIterator, Y As IGenericIterator
     Dim i As IGeneric, j As IGeneric
     
     If A Is B Then _
@@ -117,9 +118,9 @@ Private Function IGenericComparer_Equals(ByVal A As IGeneric, ByVal B As IGeneri
     If Not First.Count = Second.Count Then _
         Exit Function
     
-    Set x = First.Iterator: Set y = Second.Iterator
+    Set X = First.Iterator: Set Y = Second.Iterator
     
-    Do While (x.HasNext(i) And y.HasNext(j))
+    Do While (X.HasNext(i) And Y.HasNext(j))
     
         If Not i Is j Then
             If Not (i Is Nothing) Then

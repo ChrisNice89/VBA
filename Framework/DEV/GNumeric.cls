@@ -7,7 +7,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
-
 Option Explicit
 
 Implements IGeneric
@@ -56,28 +55,29 @@ Public Property Get IsNegative() As Boolean: IsNegative = myclass.Value < 0: End
 Public Property Get Fraction() As Currency: Fraction = myclass.Value - Int(myclass.Value): End Property
 Public Property Get IsEven() As Boolean: IsEven = (Me.Modulus(myclass.Value, 2@) = 0): End Property
 
-Public Static Function Build(ByVal Value As Currency) As Gnumeric
-Attribute Build.VB_UserMemId = 0
+Public Function Of(ByVal Value As Currency) As Gnumeric
+Attribute Of.VB_UserMemId = 0
     
-    Dim Zero As Gnumeric
+    Static Zero As Gnumeric
     
     If Not (Me Is Gnumeric) Then _
-        Set Build = Gnumeric.Build(Value): Exit Function
+        Set Of = Gnumeric.Of(Value): Exit Function
     
-    If Value = 0 Then
+    If Value = DEFAULT_VALUE Then
     
         If Zero Is Nothing Then
-            myclass.Value = 0
+            myclass.Value = DEFAULT_VALUE
             Set Zero = New Gnumeric
             myclass = EmptyStructure
         End If
     
-        Set Build = Zero
-       
+        Set Of = Zero
+        Exit Function
     End If
     
     myclass.Value = Value
-    Set Build = New Gnumeric: myclass = EmptyStructure
+    Set Of = New Gnumeric
+    myclass = EmptyStructure
 
 End Function
 
@@ -136,7 +136,7 @@ Public Function Floor() As Gnumeric
     Set Floor = Me
     
     If Floor.HasFraction Then _
-        Set Floor = Gnumeric.Build(VBA.Int(myclass.Value))
+        Set Floor = Gnumeric.Of(VBA.Int(myclass.Value))
   
 End Function
 'TODO Overflow
@@ -145,17 +145,17 @@ Public Function Ceiling() As Gnumeric
     Set Ceiling = Me
     
     If Ceiling.HasFraction Then _
-        Set Ceiling = Gnumeric.Build(VBA.Int(myclass.Value) + 1) '-VBA.Int(-myclass.Value)
+        Set Ceiling = Gnumeric.Of(VBA.Int(myclass.Value) + 1) '-VBA.Int(-myclass.Value)
   
 End Function
 
 Public Function LOGn(ByVal Base As Byte) As Long: LOGn = Log(myclass.Value) / Log(Base): End Function
-Public Function Multiply(ByVal Other As Gnumeric) As Gnumeric: Set Multiply = Gnumeric.Build(myclass.Value * Other.Value): End Function
-Public Function Minus(ByVal Other As Gnumeric) As Gnumeric: Set Minus = Gnumeric.Build(myclass.Value - Other.Value): End Function
-Public Function Plus(ByVal Other As Gnumeric) As Gnumeric: Set Plus = Gnumeric.Build(myclass.Value + Other.Value): End Function
+Public Function Multiply(ByVal Other As Gnumeric) As Gnumeric: Set Multiply = Gnumeric.Of(myclass.Value * Other.Value): End Function
+Public Function Minus(ByVal Other As Gnumeric) As Gnumeric: Set Minus = Gnumeric.Of(myclass.Value - Other.Value): End Function
+Public Function Plus(ByVal Other As Gnumeric) As Gnumeric: Set Plus = Gnumeric.Of(myclass.Value + Other.Value): End Function
 Public Function Modulus(ByRef A As Currency, ByRef B As Currency) As Currency: Modulus = (A - (Int(A / B) * B)): End Function
-Public Function Modulo(ByVal Other As Gnumeric) As Gnumeric: Set Modulo = Gnumeric.Build(Me.Modulus(myclass.Value, Other.Value)): End Function
-Public Function Add(ByVal Factor As Currency) As Gnumeric: Set Add = Gnumeric.Build(myclass.Value + Factor): End Function
+Public Function Modulo(ByVal Other As Gnumeric) As Gnumeric: Set Modulo = Gnumeric.Of(Me.Modulus(myclass.Value, Other.Value)): End Function
+Public Function Add(ByVal Factor As Currency) As Gnumeric: Set Add = Gnumeric.Of(myclass.Value + Factor): End Function
 Public Function ToLong(ByVal V As Currency) As Long: ToLong = CLng(V - (Fix(V / MAXLONG) * MAXLONG)): End Function
 
 'IGeneric
@@ -197,12 +197,12 @@ Private Property Get GenericValue_ToValue() As Variant: GenericValue_ToValue = m
 Private Property Get GenericValue_Instance() As IGeneric: Set GenericValue_Instance = Me: End Property
 Private Property Get GenericValue_Comparer() As IGenericComparer: Set GenericValue_Comparer = IGenericComparer: End Property
 
-Private Function GenericValue_Convert(ByVal Value As Variant) As GenericValue
+Private Function GenericValue_Convert(ByRef Value As Variant) As GenericValue
 
     If VBA.IsNull(Value) Then _
         Set GenericValue_Convert = IGeneric_Default: Exit Function
         
-    Set GenericValue_Convert = Gnumeric.Build(Value)
+    Set GenericValue_Convert = Gnumeric.Of(CCur(Value))
     
 End Function
 
@@ -211,9 +211,8 @@ Private Function GenericValue_CompareTo(ByVal Other As GenericValue) As CompareR
     If Other Is Nothing Then _
         GenericValue_CompareTo = isgreater: Exit Function
     
-    Dim n As Gnumeric:  Set n = Other
-    Dim i As Currency
-    i = n.Value
+    Dim otherNumber As Gnumeric:  Set otherNumber = Other
+    Dim i As Currency: i = otherNumber.Value
     
     Select Case True
         Case myclass.Value > i: GenericValue_CompareTo = isgreater
@@ -225,10 +224,10 @@ End Function
 
 Private Function GenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = Direction
         .Attributes = adParamNullable '64
         .PRECISION = PRECISION
@@ -238,6 +237,6 @@ Private Function GenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPar
         .Value = myclass.Value
     End With
     
-    Set GenericValue_ToSqlParameter = p
+    Set GenericValue_ToSqlParameter = P
     
 End Function

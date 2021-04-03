@@ -108,7 +108,7 @@ Private myclass As Member
 
 Public Property Get Elements() As IGenericCollection: Set Elements = Me: End Property
 Public Property Get Comparer() As IGenericComparer: Set Comparer = myclass.Comparer: End Property
-Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.Add(Key, Value, True): End Property
+Public Property Set Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Call Me.TryAdd(Key, Value, True): End Property
 Public Property Get Item(ByVal Key As IGeneric) As IGeneric
     
     Dim Bucket As GenericBucket: Set Bucket = FindBucket(Key)
@@ -224,17 +224,22 @@ Public Function TryGetValue(ByVal Key As IGeneric, ByRef Value As IGeneric) As B
   
 End Function
 
-Public Function Add( _
-                    ByVal Key As IGeneric, _
-                    ByVal Value As IGeneric, _
-                    Optional ByVal Overwrite As Boolean) As Boolean
+Public Function TryAdd( _
+                        ByVal Key As IGeneric, _
+                        ByVal Value As IGeneric, _
+                        Optional ByVal Overwrite As Boolean) As Boolean
 
     Dim Hash As HashItem
     Dim Bucket As GenericBucket, State As Byte
     Dim EmptyBucket As GenericBucket
    
-    If (myclass.Count >= myclass.LoadSize) Then _
-        Call Expand
+    If (myclass.Count >= myclass.LoadSize) Then
+        If myclass.Buckets.Length > 0 Then 'using buckets here to avoid using factory instance
+            Call Expand
+        Else
+            Call Initialize(myclass, DEFAULT_CAPACITY)
+        End If
+    End If
     
     With myclass.Buckets 'Dont Call Resize/Expand inside loop! Will cause Bugs!
         
@@ -273,7 +278,7 @@ Public Function Add( _
                 End With
                    
                 Call InterlockedIncrement(myclass.Count)
-                Add = True
+                TryAdd = True
                 Exit Do
                 
             End If
@@ -316,7 +321,7 @@ Public Function AddAll(ByVal Map As IGenericMap, Optional ByVal Overwrite As Boo
             
     If (Map.Elements.Count > 0) Then
         With Map.Elements.Iterator
-            Do While .HasNext(Pair): Call Me.Add(Pair.Key, Pair.Value, Overwrite:=Overwrite): Loop
+            Do While .HasNext(Pair): Call Me.TryAdd(Pair.Key, Pair.Value, Overwrite:=Overwrite): Loop
         End With
     End If
     
@@ -324,7 +329,7 @@ Public Function AddAll(ByVal Map As IGenericMap, Optional ByVal Overwrite As Boo
     
 End Function
 
-Public Function Remove(ByVal Key As IGeneric) As Boolean
+Public Function TryRemove(ByVal Key As IGeneric) As Boolean
     
     Dim Bucket As GenericBucket: Set Bucket = FindBucket(Key)
     
@@ -341,7 +346,7 @@ Public Function Remove(ByVal Key As IGeneric) As Boolean
         End With
         
         Call InterlockedDecrement(myclass.Count)
-        Remove = True
+        TryRemove = True
     End If
     
 End Function
@@ -363,7 +368,7 @@ Public Function RemoveAll(ByVal Keys As IGenericCollection) As Long
 
             With Keys.Iterator
                 Do While .HasNext(Candidate)
-                    If Me.Remove(Candidate) Then _
+                    If Me.TryRemove(Candidate) Then _
                         Count = Count + 1
                 Loop
             End With
@@ -507,7 +512,7 @@ End Sub
 
 Private Static Function getPrime(Optional ByVal Min As Long = 0) As Long
     
-    Dim p As Long
+    Dim P As Long
     Dim i As Long
     Dim Primes() As Long
     
@@ -529,15 +534,15 @@ Private Static Function getPrime(Optional ByVal Min As Long = 0) As Long
         Next
     End If
     
-    For p = LBound(Primes) + 5 To UBound(Primes) 'Step 2
-        If Primes(p) >= Min Then _
-            getPrime = Primes(p): Exit Function
+    For P = LBound(Primes) To UBound(Primes) 'Step 2
+        If Primes(P) >= Min Then _
+            getPrime = Primes(P): Exit Function
     Next
     
-    For p = Min To MAXPRIME
-        If IsPrime(p) Then _
-            If (((p - 1) Mod HASHPRIME) = 0 = False) Then _
-                getPrime = p: Exit Function
+    For P = Min To MAXPRIME
+        If IsPrime(P) Then _
+            If (((P - 1) Mod HASHPRIME) = 0 = False) Then _
+                getPrime = P: Exit Function
     Next
    
     getPrime = Min
@@ -726,16 +731,17 @@ End Function
 Private Property Get IGenericMap_Elements() As IGenericCollection: Set IGenericMap_Elements = Me: End Property
 Private Property Get IGenericMap_Comparer() As IGenericComparer: Set IGenericMap_Comparer = myclass.Comparer: End Property
 Private Property Get IGenericMap_Item(ByVal Key As IGeneric) As IGeneric: Set IGenericMap_Item = Me.Item(Key:=Key): End Property
-Private Property Set IGenericMap_Item(ByVal Key As IGeneric, ByVal Item As IGeneric): Set Me.Item(Key:=Key) = Item: End Property
+Private Property Set IGenericMap_Item(ByVal Key As IGeneric, ByVal Value As IGeneric): Set Me.Item(Key:=Key) = Value: End Property
 
+Private Function IGenericMap_TryAdd(ByVal Key As IGeneric, ByVal Value As IGeneric, Optional ByVal Overwrite As Boolean) As Boolean: IGenericMap_TryAdd = Me.TryAdd(Key:=Key, Value:=Value, Overwrite:=True): End Function
 Private Function IGenericMap_TryGetValue(ByVal Key As IGeneric, Value As IGeneric) As Boolean: IGenericMap_TryGetValue = Me.TryGetValue(Key:=Key, Value:=Value): End Function
+Private Function IGenericMap_TryRemove(ByVal Key As IGeneric) As Boolean: IGenericMap_TryRemove = Me.TryRemove(Key:=Key): End Function
+
 Private Function IGenericMap_GetKeys() As GenericArray: Set IGenericMap_GetKeys = Me.GetKeys: End Function
 Private Function IGenericMap_GetValues() As GenericArray: Set IGenericMap_GetValues = Me.GetValues: End Function
-Private Function IGenericMap_Add(ByVal Key As IGeneric, ByVal Value As IGeneric, Optional ByVal Overwrite As Boolean) As Boolean: IGenericMap_Add = Me.Add(Key:=Key, Value:=Value, Overwrite:=True): End Function
 Private Function IGenericMap_AddAll(ByVal Map As IGenericMap, Optional ByVal Overwrite As Boolean) As IGenericMap: Set IGenericMap_AddAll = Me.AddAll(Map:=Map, Overwrite:=Overwrite): End Function
 Private Function IGenericMap_ContainsKey(ByVal Key As IGeneric) As Boolean: IGenericMap_ContainsKey = Me.ContainsKey(Key:=Key): End Function
 Private Function IGenericMap_ContainsValue(ByVal Value As IGeneric) As Boolean: IGenericMap_ContainsValue = Me.ContainsValue(Value:=Value): End Function
-Private Function IGenericMap_Remove(ByVal Key As IGeneric) As Boolean: IGenericMap_Remove = Me.Remove(Key:=Key): End Function
 Private Function IGenericMap_RemoveAll(ByVal Keys As IGenericCollection) As Long: IGenericMap_RemoveAll = Me.RemoveAll(Keys:=Keys): End Function
 
 'IGenericCollection
@@ -825,12 +831,12 @@ End Function
 
 Private Function IGenericCollection_Copy() As IGenericCollection
     
-    Dim C As Member
+    Dim c As Member
     Dim oldBucket As GenericBucket
     Dim newBucket As GenericBucket
     Dim Hash As HashItem
     
-    With C
+    With c
         Set .Comparer = myclass.Comparer
         .LoadSize = myclass.LoadSize
         .Count = myclass.Count
@@ -842,7 +848,7 @@ Private Function IGenericCollection_Copy() As IGenericCollection
         
     End With
     
-    With C.Buckets
+    With c.Buckets
     
         Hash.Size = .Length
         Set oldBucket = myclass.Head.After
@@ -858,8 +864,8 @@ Private Function IGenericCollection_Copy() As IGenericCollection
                     Set .ElementAt(Hash.Index) = newBucket
                     
                     With newBucket
-                        Set .After = C.Head
-                        Set .Before = C.Head.Before
+                        Set .After = c.Head
+                        Set .Before = c.Head.Before
                         Set .Before.After = newBucket
                         Set .After.Before = newBucket
                         .State = (HAS_ENTRY) '!
@@ -871,7 +877,7 @@ Private Function IGenericCollection_Copy() As IGenericCollection
                 End If
                 
                 If Not (newBucket.State And HAS_COLLISION) = HAS_COLLISION Then _
-                    newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(C.Occupancy)
+                    newBucket.State = (HAS_COLLISION Or HAS_ENTRY): Call InterlockedIncrement(c.Occupancy)
                 
                 Hash.Index = (Hash.Index + Hash.Incr) Mod Hash.Size
             Loop
@@ -881,16 +887,16 @@ Private Function IGenericCollection_Copy() As IGenericCollection
         Loop
     End With
     
-    Set IGenericCollection_Copy = System.CreateInstance(New GenericLinkedMap, VarPtr(C), LenB(C))
+    Set IGenericCollection_Copy = System.CreateInstance(New GenericLinkedMap, VarPtr(c), LenB(c))
    
 End Function
 
 Private Function IGenericCollection_Iterator() As IGenericIterator
     
-    Dim C As Member
+    Dim c As Member
     
-    Call LoadIterator(C.Iterator, myclass.Head)
-    Set IGenericCollection_Iterator = System.CreateInstance(New GenericLinkedMap, VarPtr(C), LenB(C))
+    Call LoadIterator(c.Iterator, myclass.Head)
+    Set IGenericCollection_Iterator = System.CreateInstance(New GenericLinkedMap, VarPtr(c), LenB(c))
     
 End Function
 

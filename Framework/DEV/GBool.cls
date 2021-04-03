@@ -35,17 +35,17 @@ Private Type Member
 End Type
 Private myclass As Member
 
-Public Property Get IsDefault() As Boolean: IsDefault = Me Is GBool: End Property
+Public Property Get IsDefault() As Boolean: IsDefault = Me Is Gbool: End Property
 Public Property Get IsTrue() As Boolean: IsTrue = myclass.Value = TRUE_VALUE: End Property
 Public Property Get Value() As Byte: Value = myclass.Value: End Property
-Public Property Get Invert() As GBool: Set Invert = GBool.Build(IIf(myclass.Value = TRUE_VALUE, False, True)): End Property
+Public Property Get Invert() As Gbool: Set Invert = Gbool.Of(IIf(myclass.Value = TRUE_VALUE, False, True)): End Property
 
-Private Static Function BuildTrue() As GBool
+Private Static Function BuildTrue() As Gbool
     
-    Dim TrueValue As GBool
+    Dim TrueValue As Gbool
     If TrueValue Is Nothing Then
         myclass.Value = TRUE_VALUE
-        Set TrueValue = New GBool
+        Set TrueValue = New Gbool
         myclass = EmptyStructure
     End If
     
@@ -53,12 +53,12 @@ Private Static Function BuildTrue() As GBool
     
 End Function
 
-Private Static Function BuildFalse() As GBool
+Private Static Function BuildFalse() As Gbool
     
-    Dim FalseValue As GBool
+    Dim FalseValue As Gbool
     If FalseValue Is Nothing Then
         myclass.Value = FALSE_VALUE
-        Set FalseValue = New GBool
+        Set FalseValue = New Gbool
         myclass = EmptyStructure
     End If
     
@@ -66,22 +66,22 @@ Private Static Function BuildFalse() As GBool
     
 End Function
 
-Public Function Build(ByVal Value As Boolean) As GBool
-Attribute Build.VB_UserMemId = 0
+Public Function Of(ByVal Value As Boolean) As Gbool
+Attribute Of.VB_UserMemId = 0
     
-    If Not (Me Is GBool) Then _
-        Set Build = GBool.Build(Value): Exit Function
+    If Not (Me Is Gbool) Then _
+        Set Of = Gbool.Of(Value): Exit Function
         
     If Value = True Then
-        Set Build = BuildTrue
+        Set Of = BuildTrue
     Else
-        Set Build = BuildFalse
+        Set Of = BuildFalse
     End If
     
 End Function
 
 Private Sub Class_Initialize()
-    myclass.Value = GBool.Value
+    myclass.Value = Gbool.Value
 End Sub
 
 Public Function ToBoolean() As Boolean: ToBoolean = IIf(myclass.Value = TRUE_VALUE, True, False): End Function
@@ -100,12 +100,12 @@ End Function
 'IGeneric
 Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
 Private Property Get IGeneric_IsDefault() As Boolean: IGeneric_IsDefault = Me.IsDefault: End Property
-Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = GBool: End Property
+Private Property Get IGeneric_Default() As IGeneric: Set IGeneric_Default = Gbool: End Property
 Private Property Get IGeneric_VirtualPointer() As Long: IGeneric_VirtualPointer = VarPtr(myclass): End Property
 Private Property Get IGeneric_VirtualSize() As Long: IGeneric_VirtualSize = LenB(myclass): End Property
 Private Property Get IGeneric_HashValue() As Long:  IGeneric_HashValue = myclass.Value: End Property
 Private Property Get IGeneric_IsMutable() As Boolean: IGeneric_IsMutable = False: End Property
-Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is GBool):  End Property
+Private Property Get IGeneric_IsRelatedTo(ByVal Other As IGeneric) As Boolean: IGeneric_IsRelatedTo = (TypeOf Other Is Gbool):  End Property
 
 Private Function EmptyStructure() As Member: End Function
 Private Function IGeneric_Clone() As IGeneric: Set IGeneric_Clone = Me: End Function
@@ -115,10 +115,10 @@ Private Function IGeneric_Equals(ByVal Other As IGeneric) As Boolean
     If Other Is Nothing Then _
         IGeneric_Equals = False: Exit Function
 
-    If Not TypeOf Other Is GBool Then _
+    If Not TypeOf Other Is Gbool Then _
         IGeneric_Equals = False: Exit Function
    
-    Dim otherBool As GBool: Set otherBool = Other
+    Dim otherBool As Gbool: Set otherBool = Other
     IGeneric_Equals = (myclass.Value = otherBool.Value)
      
 End Function
@@ -132,7 +132,7 @@ Private Property Get GenericValue_ToValue() As Variant: GenericValue_ToValue = m
 Private Property Get GenericValue_Instance() As IGeneric: Set GenericValue_Instance = Me: End Property
 Private Property Get GenericValue_Comparer() As IGenericComparer: Set GenericValue_Comparer = IGenericComparer: End Property
 
-Private Function GenericValue_Convert(ByVal Value As Variant) As GenericValue
+Private Function GenericValue_Convert(ByRef Value As Variant) As GenericValue
 
     If VBA.IsNull(Value) Then _
         Set GenericValue_Convert = IGeneric_Default: Exit Function
@@ -140,27 +140,27 @@ Private Function GenericValue_Convert(ByVal Value As Variant) As GenericValue
     Select Case VarType(Value)
         Case VbVarType.vbByte, VbVarType.vbInteger, VbVarType.vbLong
             If Value = TRUE_VALUE Then
-                Set GenericValue_Convert = GBool.Build(True)
+                Set GenericValue_Convert = Gbool.Of(True)
             Else
-                Set GenericValue_Convert = GBool.Build(False)
+                Set GenericValue_Convert = Gbool.Of(False)
             End If
         Case VbVarType.vbBoolean
             If Value = True Then
-                Set GenericValue_Convert = GBool.Build(True)
+                Set GenericValue_Convert = Gbool.Of(True)
             Else
-                Set GenericValue_Convert = GBool.Build(False)
+                Set GenericValue_Convert = Gbool.Of(False)
             End If
         Case VbVarType.vbString
             If VBA.StrComp(VBA.Trim$(Value), TRUE_STRING, vbTextCompare) = 0 Then
-                Set GenericValue_Convert = GBool.Build(True)
+                Set GenericValue_Convert = Gbool.Of(True)
             Else
-                Set GenericValue_Convert = GBool.Build(False)
+                Set GenericValue_Convert = Gbool.Of(False)
             End If
         Case Else
             If CBool(Value) Then
-                Set GenericValue_Convert = GBool.Build(True)
+                Set GenericValue_Convert = Gbool.Of(True)
             Else
-                Set GenericValue_Convert = GBool.Build(False)
+                Set GenericValue_Convert = Gbool.Of(False)
             End If
     End Select
 
@@ -171,7 +171,7 @@ Private Function GenericValue_CompareTo(ByVal Other As GenericValue) As CompareR
     If Other Is Nothing Then _
         GenericValue_CompareTo = isgreater: Exit Function
     
-    Dim otherBool As GBool: Set otherBool = Other
+    Dim otherBool As Gbool: Set otherBool = Other
     
     If myclass.Value = otherBool.Value Then _
         GenericValue_CompareTo = IsEqual: Exit Function
@@ -185,10 +185,10 @@ End Function
 
 Private Function GenericValue_ToSqlParameter(Optional ByVal Direction As ISqlParameterDirection = 1&, Optional ByVal Name As String) As Object
     
-    Dim p As ADODB.Parameter
-    Set p = New ADODB.Parameter
+    Dim P As ADODB.Parameter
+    Set P = New ADODB.Parameter
     
-    With p
+    With P
         .Direction = Direction
         .Attributes = adParamNullable '64
         .Type = GenericValue_VarType
@@ -196,6 +196,6 @@ Private Function GenericValue_ToSqlParameter(Optional ByVal Direction As ISqlPar
         .Value = myclass.Value
     End With
     
-    Set GenericValue_ToSqlParameter = p
+    Set GenericValue_ToSqlParameter = P
     
 End Function

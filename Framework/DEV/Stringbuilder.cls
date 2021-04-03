@@ -70,6 +70,6 @@ Failed:
 End Function
 
 Public Function ToString() As String
-    ToString = Mid(mString, 1, Length)
+    ToString = mid(mString, 1, Length)
 End Function
 

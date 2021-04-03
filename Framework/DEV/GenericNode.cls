@@ -13,11 +13,11 @@ Option Explicit
 Implements IGeneric
 
 Private Type Member
+    State As Byte
     Value As IGeneric
     Parent As GenericNode
     Left As GenericNode
     Right As GenericNode
-    IsRed As Boolean
     Count As Long
 End Type
 Private myclass As Member
@@ -27,8 +27,9 @@ Public Property Get IsLeaf() As Boolean
         If myclass.Right Is Nothing Then _
             IsLeaf = True
 End Property
-Public Property Get IsRed() As Boolean: IsRed = myclass.IsRed: End Property
-Public Property Let IsRed(ByVal Value As Boolean):  myclass.IsRed = Value: End Property
+
+Public Property Get State() As Byte: State = myclass.State: End Property
+Public Property Let State(ByVal Value As Byte):  myclass.State = Value: End Property
 
 Public Property Get Count() As Long: Count = myclass.Count: End Property
 Public Property Let Count(ByVal Value As Long):  myclass.Count = Value: End Property
@@ -40,62 +41,84 @@ Public Property Get Right() As GenericNode: Set Right = myclass.Right: End Prope
 Public Property Set Right(ByVal r As GenericNode): Set myclass.Right = r: End Property
 
 Public Property Get Parent() As GenericNode: Set Parent = myclass.Parent: End Property
-Public Property Set Parent(ByVal p As GenericNode): Set myclass.Parent = p: End Property
+Public Property Set Parent(ByVal P As GenericNode): Set myclass.Parent = P: End Property
 
 Public Property Get Value() As IGeneric: Set Value = myclass.Value: End Property
 Public Property Set Value(ByVal V As IGeneric): Set myclass.Value = V: End Property
 
+Public Sub AddCount(ByVal Count As Long): myclass.Count = myclass.Count + Count: End Sub
+
+Public Function Copy() As GenericNode
+    
+    Dim newNode As GenericNode
+    Set newNode = New GenericNode
+    
+    With newNode
+        Set .Value = myclass.Value
+        .State = myclass.State
+        .Count = myclass.Count
+    End With
+    
+    Set Copy = newNode
+    
+End Function
+
 Public Function InOrderNext() As GenericNode
     
-    Dim p As GenericNode
+    Dim P As GenericNode
     Dim n As GenericNode
     
     If myclass.Right Is Nothing = False Then
-        Set p = myclass.Right
-        Do While (p.Left Is Nothing) = False
-            Set p = p.Left
+        Set P = myclass.Right
+        Do While (P.Left Is Nothing) = False
+            Set P = P.Left
         Loop
     Else
-        Set p = myclass.Parent
+        Set P = myclass.Parent
         Set n = Me
-        Do While (p Is Nothing) = False
-            If (p.Right Is n) = False Then _
+        Do While (P Is Nothing) = False
+            If (P.Right Is n) = False Then _
                 Exit Do
             
-            Set n = p
-            Set p = p.Parent
+            Set n = P
+            Set P = P.Parent
         Loop
     End If
     
-    Set InOrderNext = p
+    Set InOrderNext = P
         
 End Function
 
 Public Function InOrderPrevious() As GenericNode
     
-    Dim p As GenericNode
+    Dim P As GenericNode
     Dim n As GenericNode
     
     If myclass.Left Is Nothing = False Then
-        Set p = myclass.Left
-        Do While (p.Right Is Nothing) = False
-            Set p = p.Right
+        Set P = myclass.Left
+        Do While (P.Right Is Nothing) = False
+            Set P = P.Right
         Loop
     Else
-        Set p = myclass.Parent
+        Set P = myclass.Parent
         Set n = Me
-        Do While (p Is Nothing) = False
-            If (p.Left Is n) = False Then _
+        Do While (P Is Nothing) = False
+            If (P.Left Is n) = False Then _
                 Exit Do
             
-            Set n = p
-            Set p = p.Parent
+            Set n = P
+            Set P = P.Parent
         Loop
     End If
     
-    Set InOrderPrevious = p
+    Set InOrderPrevious = P
         
 End Function
+
+
+'Private Sub Class_Terminate()
+'    Debug.Print "Node Delete"
+'End Sub
 
 'IGeneric
 Private Property Get IGeneric_ClassName() As String: IGeneric_ClassName = TypeName$(Me): End Property
@@ -142,7 +165,7 @@ Private Function IGeneric_Clone() As IGeneric
         Set .Left = myclass.Left '!
         Set .Right = myclass.Right '!
         Set .Parent = myclass.Parent '!
-        .IsRed = myclass.IsRed
+        .State = myclass.State
         .Count = myclass.Count
     End With
     

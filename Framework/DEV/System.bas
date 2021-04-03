@@ -82,7 +82,7 @@ Public Function DecreSystemnt(ByRef i As Long) As Long: i = (Not -i): DecreSyste
 Public Function IncreSystemnt(ByRef i As Long) As Long: i = (-(Not i)): IncreSystemnt = i: End Function
 Public Function RIGHTSHIFT(ByVal Value As Long, Shift As Byte) As Double: RIGHTSHIFT = Value / (2& ^ Shift): End Function
 Public Function LEFTSHIFT(ByVal Value As Long, Shift As Byte) As Double: LEFTSHIFT = Value * (2& ^ Shift): End Function
-Public Function LimitDouble(ByVal d As Double) As Long: LimitDouble = CLng(d - (Fix(d / MAXVALUE) * MAXVALUE)): End Function
+Public Function LimitDouble(ByVal D As Double) As Long: LimitDouble = CLng(D - (Fix(D / MAXVALUE) * MAXVALUE)): End Function
 Public Function X0R(ByVal d1 As Double, ByVal d2 As Double) As Long: X0R = CLng(d1 - (Fix(d1 / MAXVALUE) * MAXVALUE)) Xor CLng(d2 - (Fix(d2 / MAXVALUE) * MAXVALUE)): End Function
 Public Function LOGn(ByVal Value, Optional ByVal Base As Byte = 2) As Long: LOGn = Log(Value) / Log(Base): End Function
 
