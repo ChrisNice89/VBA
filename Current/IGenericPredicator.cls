@@ -12,7 +12,6 @@ Attribute VB_Exposed = True
 '@Folder "Base.Abstract"
 Option Explicit
 
-
 '@DefaultMember
 Public Function IsTrue(ByVal A As Object, ByVal B As Object) As Boolean: End Function
 Attribute IsTrue.VB_UserMemId = 0
